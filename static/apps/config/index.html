@@ -1,1 +1,1308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Prism@.TEC · Alset Net v4.0 | IA Distribuida + Editor Visual</title>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #F4B400;
+            --primary-dark: #FB8C00;
+            --bg-primary: #0A0A0A;
+            --bg-secondary: #0F0F0F;
+            --bg-card: #141414;
+            --bg-elevated: #1A1A1A;
+            --text-primary: #FFFFFF;
+            --text-secondary: #B0B0B0;
+            --text-muted: #6B6B6B;
+            --accent-green: #4CAF50;
+            --accent-red: #FF5252;
+            --accent-orange: #FF9800;
+            --accent-purple: #9C27B0;
+            --border: rgba(244, 180, 0, 0.15);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: radial-gradient(ellipse at 20% 30%, #0F0F0F, #050505);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap');
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-50px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        #loginOverlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 50%, #0F0F0F, #050505);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            backdrop-filter: blur(10px);
+        }
+
+        .login-card {
+            background: rgba(20, 20, 20, 0.9);
+            backdrop-filter: blur(20px);
+            padding: 3rem;
+            border-radius: 32px;
+            border: 1px solid rgba(244, 180, 0, 0.2);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .logo-container svg { width: 48px; height: 48px; stroke: #F4B400; stroke-width: 1.5; fill: none; }
+
+        #adminDashboard { display: none; min-height: 100vh; }
+
+        .sidebar {
+            width: 280px;
+            background: rgba(15, 15, 15, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(244, 180, 0, 0.1);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar-header { padding: 2rem 1.5rem; border-bottom: 1px solid rgba(244, 180, 0, 0.15); }
+        
+        .nav-item {
+            padding: 0.875rem 1.5rem;
+            margin: 0.25rem 0.75rem;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .nav-item svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+        .nav-item:hover { background: rgba(244, 180, 0, 0.1); color: var(--primary); transform: translateX(5px); }
+        .nav-item.active { background: linear-gradient(135deg, rgba(244, 180, 0, 0.15), rgba(251, 140, 0, 0.08)); color: var(--primary); border-left: 3px solid var(--primary); }
+
+        .main-content { margin-left: 280px; padding: 2rem; min-height: 100vh; }
+
+        .card {
+            background: rgba(20, 20, 20, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(244, 180, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+        }
+        .card:hover { transform: translateY(-2px); border-color: rgba(244, 180, 0, 0.3); }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 1.5rem;
+            text-align: center;
+            border: 1px solid rgba(244, 180, 0, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .stat-card:hover { transform: translateY(-5px); border-color: var(--primary); }
+        .stat-card svg { width: 32px; height: 32px; stroke: var(--primary); fill: none; stroke-width: 1.5; margin-bottom: 1rem; }
+        .stat-card h3 { font-size: 2rem; font-weight: 700; color: var(--primary); margin: 0.5rem 0; }
+        .stat-card small { font-size: 0.7rem; color: var(--text-muted); }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(26, 26, 26, 0.8);
+            border: 1px solid rgba(244, 180, 0, 0.15);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: 'Inter', monospace;
+            margin-bottom: 1rem;
+        }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: var(--primary); }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 40px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        .btn-primary { background: linear-gradient(135deg, #F4B400, #FB8C00); color: #0A0A0A; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(244, 180, 0, 0.3); }
+        .btn-secondary { background: rgba(26, 26, 26, 0.8); color: var(--text-primary); border: 1px solid rgba(244, 180, 0, 0.2); }
+        .btn-secondary:hover { border-color: var(--primary); }
+        .btn-danger { background: linear-gradient(135deg, #FF5252, #D32F2F); color: white; }
+        .btn-success { background: linear-gradient(135deg, #4CAF50, #388E3C); color: white; }
+        .btn-warning { background: linear-gradient(135deg, #FF9800, #E65100); color: white; }
+        .btn-purple { background: linear-gradient(135deg, #9C27B0, #7B1FA2); color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 0.75rem; }
+
+        .console, .terminal {
+            background: #0A0A0A;
+            color: #F4B400;
+            padding: 1rem;
+            border-radius: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            overflow-y: auto;
+            border: 1px solid rgba(244, 180, 0, 0.15);
+        }
+        .console { height: 300px; }
+        .terminal { height: 250px; }
+
+        .terminal-input { display: flex; gap: 8px; margin-top: 1rem; }
+        .terminal-input input { flex: 1; margin-bottom: 0; }
+
+        .agent-badge, .dns-entry, .model-item, .cert-item, .peer-item, .app-item, .entity-item, .relation-item {
+            background: rgba(26, 26, 26, 0.6);
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 3px solid var(--primary);
+            transition: all 0.3s ease;
+        }
+        .agent-badge:hover, .dns-entry:hover, .entity-item:hover, .relation-item:hover { transform: translateX(5px); background: rgba(26, 26, 26, 0.8); }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); position: fixed; }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; padding: 1rem; }
+            .stats-grid, .grid-2, .grid-3 { grid-template-columns: 1fr; }
+        }
+
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 1000; }
+        .toast {
+            background: rgba(20, 20, 20, 0.95);
+            backdrop-filter: blur(10px);
+            border-left: 4px solid var(--primary);
+            padding: 1rem 1.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 12px;
+            animation: slideInLeft 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .loading { text-align: center; padding: 2rem; color: var(--primary); }
+        .spinner { width: 40px; height: 40px; border: 3px solid rgba(244, 180, 0, 0.2); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+
+        .tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(244, 180, 0, 0.15); padding-bottom: 0.5rem; flex-wrap: wrap; }
+        .tab { padding: 8px 16px; cursor: pointer; border-radius: 8px; }
+        .tab.active { background: rgba(244, 180, 0, 0.1); color: var(--primary); }
+
+        .admin-section { display: none; animation: fadeInUp 0.5s ease; }
+        .admin-section.active { display: block; }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+        .status-valid { background: #4CAF50; color: white; }
+        .status-revoked { background: #FF5252; color: white; }
+        .status-pending { background: #FF9800; color: #0A0A0A; }
+
+        .cert-detail { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
+        .detail-label { color: var(--primary); font-weight: 600; }
+        
+        .progress-bar { width: 100%; background-color: #2A2A2A; border-radius: 10px; margin: 10px 0; overflow: hidden; }
+        .progress-fill { width: 0%; height: 20px; background-color: var(--primary); transition: width 0.3s; }
+        
+        .file-upload-area {
+            border: 2px dashed rgba(244, 180, 0, 0.3);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+        .file-upload-area:hover { border-color: var(--primary); background: rgba(244, 180, 0, 0.05); }
+        
+        .file-tree {
+            background: rgba(26, 26, 26, 0.4);
+            border-radius: 12px;
+            padding: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
+        .file-tree-item {
+            padding: 4px 8px;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .file-tree-item:hover { background: rgba(244, 180, 0, 0.1); }
+        .file-tree-item.selected { background: rgba(244, 180, 0, 0.2); border-left: 2px solid var(--primary); }
+        .folder-item { color: var(--primary); }
+        .file-item { color: var(--text-secondary); }
+
+        /* Componentes del Editor Visual */
+        .component-block {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin: 6px 0;
+            cursor: grab;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+        }
+        .component-block:active { cursor: grabbing; }
+        .component-block:hover { border-color: var(--primary); transform: translateX(5px); background: rgba(244, 180, 0, 0.05); }
+        
+        .category-title {
+            color: var(--primary);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 12px 0 8px 0;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .editor-canvas {
+            min-height: 500px;
+            background: rgba(26,26,26,0.3);
+            border-radius: 12px;
+            position: relative;
+            padding: 16px;
+            border: 1px dashed var(--border);
+        }
+        
+        .canvas-block {
+            background: var(--bg-card);
+            border-left: 3px solid var(--primary);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .canvas-block:hover { transform: translateX(3px); background: rgba(244, 180, 0, 0.05); }
+        
+        .relation-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        .relation-one-to-one { background: #4CAF50; color: white; }
+        .relation-one-to-many { background: #2196F3; color: white; }
+        .relation-many-to-many { background: #9C27B0; color: white; }
+        .relation-dependency { background: #FF9800; color: #0A0A0A; }
+        .relation-inheritance { background: #00BCD4; color: #0A0A0A; }
+        
+        .preview-frame {
+            width: 100%;
+            height: 400px;
+            border: none;
+            border-radius: 12px;
+            background: white;
+        }
+        
+        .help-content {
+            animation: fadeInUp 0.3s ease;
+        }
+        .help-content pre {
+            background: #0A0A0A;
+            padding: 12px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-family: monospace;
+            font-size: 0.75rem;
+            border: 1px solid var(--border);
+        }
+        .help-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        .help-content th, .help-content td {
+            border: 1px solid var(--border);
+            padding: 8px;
+            text-align: left;
+        }
+        .help-content th { background: rgba(244,180,0,0.1); color: var(--primary); }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 10001;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div id="loginOverlay">
+    <div class="login-card">
+        <div class="logo-container"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+        <h2 style="margin-bottom: 0.5rem;">Prism<span style="color:var(--primary);">@</span>.TEC</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 2rem;">Red P2P Descentralizada · IA Distribuida · dApps</p>
+        
+        <div id="loginStep1">
+            <input type="text" id="configCid" placeholder="CID de Configuración (ej: Qm...)">
+            <input type="password" id="nodePass" placeholder="Clave Maestra del Nodo">
+            <button class="btn btn-primary" onclick="loginNode()" style="width: 100%;">Verificar Identidad</button>
+            <p style="margin-top: 1.5rem; font-size: 0.8rem; cursor: pointer; color: var(--primary);" onclick="showSetup()">Configurar nuevo nodo</p>
+        </div>
+        <div id="setupStep" style="display:none;">
+            <p style="color: var(--primary); margin-bottom: 1rem;">ESTABLECER CREDENCIALES INICIALES</p>
+            <input type="password" id="newPass" placeholder="Nueva Clave de Nodo">
+            <button class="btn btn-primary" onclick="initializeSecurity()" style="width: 100%; margin-top: 1rem;">Generar CID de Seguridad</button>
+            <p style="margin-top: 1rem; font-size: 0.7rem; cursor: pointer; color: var(--text-muted);" onclick="showLogin()">← Volver al login</p>
+        </div>
+    </div>
+</div>
+
+<div id="adminDashboard">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 1rem;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#F4B400" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                <div><h3 style="color: var(--primary);">Prism<span style="color:white;">@</span>.TEC</h3><p style="font-size: 0.6rem; opacity: 0.6;">v4.0 · IA Distribuida</p></div>
+            </div>
+            <div id="nodeInfo"><p id="nodeIdDisplay" style="font-size: 0.65rem; opacity: 0.5;"></p></div>
+            <div id="connectionStatus" style="font-size: 0.6rem; margin-top: 8px;"><span class="status-badge status-valid">● Conectado</span></div>
+        </div>
+        <nav style="flex: 1;">
+            <div class="nav-item active" onclick="switchTab('sec-dashboard', this)"><svg viewBox="0 0 24 24"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg><span>Dashboard</span></div>
+            <div class="nav-item" onclick="switchTab('sec-red', this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span>Red & Topología</span></div>
+            <div class="nav-item" onclick="switchTab('sec-ia', this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg><span>IA Distribuida</span></div>
+            <div class="nav-item" onclick="switchTab('sec-modelos', this)"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M12 22V12"/><path d="M9 10.5l3-1.5 3 1.5"/></svg><span>Modelos IA</span></div>
+            <div class="nav-item" onclick="switchTab('sec-entrenamiento', this)"><svg viewBox="0 0 24 24"><path d="M2 12h20M12 2v20"/><circle cx="12" cy="12" r="4"/></svg><span>Entrenamiento</span></div>
+            <div class="nav-item" onclick="switchTab('sec-sellado', this)"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>Sellado VC</span></div>
+            <div class="nav-item" onclick="switchTab('sec-verificar', this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg><span>Verificar VC</span></div>
+            <div class="nav-item" onclick="switchTab('sec-revocar', this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 9 6 6M15 9l-6 6"/></svg><span>Revocar VC</span></div>
+            <div class="nav-item" onclick="switchTab('sec-dns', this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H5.78a1.65 1.65 0 0 0-1.51 1 1.65 1.65 0 0 0 .33 1.82l.07.07A10 10 0 0 0 12 17.66a10 10 0 0 0 6.33-2.59l.07-.07z"/></svg><span>DNS ANS</span></div>
+            <div class="nav-item" onclick="switchTab('sec-agentes', this)"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Agentes UTXO</span></div>
+            <div class="nav-item" onclick="switchTab('sec-root', this)"><svg viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg><span>RootCID</span></div>
+            <div class="nav-item" onclick="switchTab('sec-ipfs', this)"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 7h8M8 12h8M8 17h4"/></svg><span>IPFS Explorer</span></div>
+            <div class="nav-item" onclick="switchTab('sec-lisp', this)"><svg viewBox="0 0 24 24"><path d="M5 9h14M5 15h14M12 3v18"/></svg><span>LispAI Engine</span></div>
+            <div class="nav-item" onclick="switchTab('sec-dapps', this)"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M8 8h8M8 12h4"/></svg><span>dApps</span></div>
+            <div class="nav-item" onclick="switchTab('sec-poh', this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5.5 20a7.5 7.5 0 0 1 13 0"/></svg><span>Proof of Humanity</span></div>
+            <div class="nav-item" onclick="switchTab('sec-auditoria', this)"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg><span>Auditoría</span></div>
+            <div class="nav-item" onclick="switchTab('sec-webapps', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="2.18"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5"/></svg><span>Web Apps</span></div>
+            <div class="nav-item" onclick="switchTab('sec-editor', this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg><span>Editor Visual</span></div>
+            <div class="nav-item" onclick="switchTab('sec-entidades', this)"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M9 9h6v6H9z"/><path d="M4 12h3M17 12h3M12 4v3M12 17v3"/></svg><span>Entidades</span></div>
+            <div class="nav-item" onclick="switchTab('sec-relaciones', this)"><svg viewBox="0 0 24 24"><path d="M2 12h7M15 12h7M12 2v7M12 15v7"/><circle cx="12" cy="12" r="3"/></svg><span>Relaciones</span></div>
+            <div class="nav-item" onclick="switchTab('sec-ayuda', this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>Ayuda</span></div>
+        </nav>
+        <div style="padding: 1.5rem; border-top: 1px solid var(--border); margin-top: auto;"><button class="btn btn-secondary btn-sm" onclick="logout()" style="width: 100%;">Desconectar Nodo</button></div>
+    </aside>
+
+    <main class="main-content">
+        <!-- Dashboard -->
+        <section id="sec-dashboard" class="admin-section active">
+            <h2 style="margin-bottom: 1.5rem;">Panel de Control Maestro</h2>
+            <div class="stats-grid">
+                <div class="stat-card" onclick="switchTab('sec-red')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><div>Peers Conectados</div><h3 id="statPeers">0</h3><small>click para ver</small></div>
+                <div class="stat-card" onclick="switchTab('sec-verificar')"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><div>VCs Emitidos</div><h3 id="statCertificados">0</h3><small>click para verificar</small></div>
+                <div class="stat-card" onclick="switchTab('sec-agentes')"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><div>Agentes UTXO</div><h3 id="statAgentes">0</h3><small>click para gestionar</small></div>
+                <div class="stat-card" onclick="switchTab('sec-ipfs')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 7h8M8 12h8M8 17h4"/></svg><div>Bloques IPFS</div><h3 id="statBloques">0</h3><small>click para explorar</small></div>
+            </div>
+            <div class="grid-2"><div class="card"><h4>Últimos Eventos</h4><div id="netConsole" class="console">Esperando eventos...</div></div><div class="card"><h4>Red Neuronal</h4><div id="networkStatus" class="console">Cargando...</div></div></div>
+        </section>
+
+        <!-- Red P2P -->
+        <section id="sec-red" class="admin-section"><h2>Infraestructura P2P</h2><div class="stats-grid"><div class="stat-card"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><div>Peers Activos</div><h3 id="peerCount">0</h3></div></div><div class="card"><h4>Lista de Peers</h4><div id="peersList" class="console">Cargando...</div><button class="btn btn-secondary btn-sm" onclick="refreshNetwork()" style="margin-top:1rem;">🔄 Escanear Mesh</button></div><div class="card"><h4>Topología de Red</h4><div id="topologiaRed" class="console">Cargando...</div></div></section>
+
+        <!-- IA Distribuida -->
+        <section id="sec-ia" class="admin-section">
+            <h2>IA Distribuida</h2>
+            <div class="card"><h4>Estado Neurona</h4><div id="neuronState" class="console">Cargando...</div><button class="btn btn-secondary btn-sm" onclick="loadNeuronState()">Actualizar</button></div>
+            <div class="card"><h4>Configurar Neurona</h4><select id="neuronTypeSelect"><option value="input">Input</option><option value="hidden">Hidden</option><option value="output">Output</option></select><input type="number" id="spikeThreshold" placeholder="Umbral (0-1)" step="0.1"><input type="number" id="leakRate" placeholder="Tasa de fuga (0-1)" step="0.01"><button class="btn btn-primary" onclick="configurarNeurona()">Aplicar</button></div>
+            <div class="card"><h4>Conectar Sinapsis</h4><input id="conectarTarget" placeholder="ID del nodo destino"><input id="conectarPeso" placeholder="Peso inicial (0-1)" step="0.1" value="0.5"><button class="btn btn-primary" onclick="conectarSinapsis()">Conectar</button></div>
+            <div class="card"><h4>Sinapsis Activas</h4><div id="synapsesList" class="console">Cargando...</div><button class="btn btn-warning btn-sm" onclick="limpiarSinapsis()" style="margin-top:1rem;">🧹 Limpiar Sinapsis</button></div>
+            <div class="card"><h4>Inferencia Local</h4><div class="grid-3"><input type="number" id="inf1" placeholder="Valor 1" step="0.1"><input type="number" id="inf2" placeholder="Valor 2" step="0.1"><input type="number" id="inf3" placeholder="Valor 3" step="0.1"></div><button class="btn btn-primary" onclick="realizarInferencia()">Inferir</button><div id="infResult" class="console" style="margin-top:1rem; display:none;"></div></div>
+        </section>
+
+        <!-- Modelos IA -->
+        <section id="sec-modelos" class="admin-section"><h2>Modelos IA</h2><div class="grid-2"><div class="card"><h4>Crear Modelo Lisp</h4><input id="modelName" placeholder="Nombre"><select id="modelType"><option value="clasificador">Clasificador Simple</option><option value="xor">XOR</option><option value="sentimiento">Sentimiento</option></select><button class="btn btn-primary" onclick="crearModeloLisp()">Crear</button></div><div class="card"><h4>Guardar Estado IA</h4><button class="btn btn-success" onclick="guardarEstadoIA()">Guardar Estado Actual</button><div id="saveModelResult" class="console" style="margin-top:1rem; display:none;"></div></div></div><div class="card"><h4>Ejecutar Código Lisp</h4><textarea id="modelLispCode" rows="4" placeholder="(defun mi-funcion (x) (* x 2))&#10;(mi-funcion 5)"></textarea><button class="btn btn-secondary" onclick="ejecutarLisp()">Ejecutar</button><div id="lispResult" class="console" style="margin-top:1rem; display:none;"></div></div></section>
+
+        <!-- Entrenamiento -->
+        <section id="sec-entrenamiento" class="admin-section"><h2>Entrenamiento Hebbiano</h2><div class="grid-2"><div class="card"><h4>Parámetros</h4><input type="number" id="trainEpocas" value="10"><input type="number" id="trainTasa" value="0.1"><button class="btn btn-primary" onclick="iniciarEntrenamientoHebbiano()">Entrenar</button><div class="progress-bar" id="trainProgressBar" style="display:none;"><div class="progress-fill" id="trainProgressFill"></div></div></div><div class="card"><h4>Estado</h4><div id="trainingStatus" class="console">Listo</div></div></div><div class="card"><h4>Prueba de Inferencia</h4><div class="grid-3"><input id="testInput1" placeholder="Valor 1" step="0.1"><input id="testInput2" placeholder="Valor 2" step="0.1"><input id="testInput3" placeholder="Valor 3" step="0.1"></div><button class="btn btn-secondary" onclick="testInferencia()">Probar</button><div id="testResult" class="console" style="margin-top:1rem; display:none;"></div></div></section>
+
+        <!-- Sellado VC -->
+        <section id="sec-sellado" class="admin-section"><h2>Sellado VC</h2><div class="card"><input type="file" id="fileToSeal"><textarea id="docContent" rows="4" placeholder="Contenido a certificar..."></textarea><button class="btn btn-primary" onclick="actionSellar()">Generar VC</button><div id="selladoOutput" class="console" style="margin-top:1rem; display:none;"></div></div></section>
+
+        <!-- Verificar VC -->
+        <section id="sec-verificar" class="admin-section"><h2>Verificador VC</h2><div class="card"><input id="verifyCid" placeholder="CID del VC"><button class="btn btn-primary" onclick="actionVerificar()">Verificar</button><div id="verifyOutput" class="console" style="margin-top:1rem; display:none;"></div></div><div class="card"><h4>Certificados en Blockstore</h4><div id="certList" class="console">Cargando certificados...</div></div></section>
+
+        <!-- Revocar VC -->
+        <section id="sec-revocar" class="admin-section"><h2>Revocar VC</h2><div class="card"><input id="revokeCid" placeholder="CID del VC"><textarea id="revokeMotivo" rows="3" placeholder="Motivo de revocación..."></textarea><button class="btn btn-danger" onclick="actionRevocar()">Revocar</button><div id="revokeOutput" class="console" style="margin-top:1rem; display:none;"></div></div></section>
+
+        <!-- DNS ANS -->
+        <section id="sec-dns" class="admin-section"><h2>DNS ANS</h2><div class="grid-2"><div class="card"><h4>Registrar (vía Lisp)</h4><input id="dnsAlias" placeholder="Alias (ej: midapp.ans)"><input id="dnsAgentId" placeholder="ID Agente"><button class="btn btn-success" onclick="actionRegisterDNS()">Registrar</button></div><div class="card"><h4>Resolver</h4><input id="resolveAlias" placeholder="Alias"><button class="btn btn-secondary" onclick="actionResolveDNS()">Resolver</button><div id="resolveResult" class="console" style="margin-top:1rem;"></div></div></div><div class="card"><h4>Registros DNS</h4><div id="dnsList">Cargando...</div><button class="btn btn-secondary btn-sm" onclick="loadDNSList()">Actualizar</button></div></section>
+
+        <!-- Agentes UTXO -->
+        <section id="sec-agentes" class="admin-section"><h2>Agentes UTXO</h2><div class="card"><button class="btn btn-primary" onclick="actionCrearAgente()">➕ Crear Nuevo Agente</button></div><div class="card"><h4>Agentes Registrados</h4><div id="agentesList">Cargando...</div></div><div class="card"><h4>Modificar Agente</h4><input id="modAgentId" placeholder="ID del Agente"><input id="modBalance" placeholder="Nuevo Balance" type="number" step="1"><input id="modRootCID" placeholder="Nuevo RootCID"><button class="btn btn-warning" onclick="actionModificarAgente()">Modificar</button></div><div class="card"><h4>Transferencia UTXO</h4><input id="txFrom" placeholder="ID Origen"><input id="txTo" placeholder="ID Destino"><input id="txAmount" placeholder="Monto" type="number" step="1"><button class="btn btn-primary" onclick="actionTransferenciaUTXO()">Transferir</button><div id="txOutput" class="console" style="margin-top:1rem; display:none;"></div></div></section>
+
+        <!-- RootCID -->
+        <section id="sec-root" class="admin-section"><h2>RootCID</h2><div class="grid-2"><div class="card"><h4>Asignar RootCID</h4><input id="rootAgentId" placeholder="ID Agente"><input id="rootCidValue" placeholder="RootCID"><button class="btn btn-primary" onclick="actionSetRootCID()">Asignar</button></div><div class="card"><h4>Consultar RootCID</h4><input id="viewRootAgentId" placeholder="ID Agente"><button class="btn btn-secondary" onclick="actionGetRootCID()">Consultar</button><div id="rootResult" class="console" style="margin-top:1rem;"></div></div></div><div class="card"><h4>Agentes con RootCID</h4><div id="rootStatusList">Cargando...</div></div><div class="card"><h4>Visualizador Web</h4><input id="webViewerAlias" placeholder="Alias o ID del agente"><button class="btn btn-purple" onclick="openWebViewer()">🌐 Abrir Visualizador</button></div></section>
+
+        <!-- IPFS Explorer -->
+        <section id="sec-ipfs" class="admin-section"><h2>IPFS Explorer</h2><div class="card"><h4>Subir Texto a IPFS</h4><textarea id="ipfsContent" rows="4" placeholder="Contenido a subir..."></textarea><button class="btn btn-primary" onclick="subirTextoIPFS()">Subir Texto</button></div><div class="card"><h4>Subir Archivo a IPFS</h4><div class="file-upload-area" onclick="document.getElementById('fileInput').click()"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#F4B400" stroke-width="1.5"><path d="M12 3v12m0 0-3-3m3 3 3-3M5 21h14"/></svg><p>Haz clic o arrastra un archivo</p><input type="file" id="fileInput" style="display:none" onchange="subirArchivoIPFS(this)"></div><div id="uploadProgress" style="display:none;" class="progress-bar"><div class="progress-fill" id="uploadProgressFill"></div></div></div><div class="card"><h4>Recuperar por CID</h4><input id="searchCid" placeholder="CID"><button class="btn btn-secondary" onclick="actionFetch()">Fetch</button><div id="fetchOutput" style="margin-top:1rem; display:none;"></div></div><div class="card"><h4>Blockstore Local</h4><div id="ipfsList">Cargando...</div><button class="btn btn-danger btn-sm" onclick="limpiarBlockstore()" style="margin-top:1rem;">🗑️ Limpiar Blockstore</button></div></section>
+
+        <!-- LispAI Engine -->
+        <section id="sec-lisp" class="admin-section"><h2>LispAI Engine</h2><div class="tabs"><div class="tab active" onclick="switchLispTab('editor')">Editor</div><div class="tab" onclick="switchLispTab('terminal')">Terminal</div></div><div id="lispEditorTab"><textarea id="lispEditor" rows="12" style="width:100%; background:#1A1A1A; color:#F4B400; font-family:monospace;">;; Código Lisp aquí
+(defun fibonacci (n)
+  (if (< n 2)
+      n
+      (+ (fibonacci (- n 1)) (fibonacci (- n 2)))))
+(fibonacci 10)</textarea><div style="margin-top:1rem;"><button class="btn btn-primary" onclick="actionLispEditor()">▶ Ejecutar</button><button class="btn btn-secondary" onclick="saveLispCodeAsDapp()">💾 Guardar como dApp</button><button class="btn btn-secondary" onclick="clearLispEditor()">🗑 Limpiar</button></div><div id="editorOutput" class="console" style="margin-top:1rem; display:none;"></div></div><div id="lispTerminalTab" style="display:none;"><div id="terminalConsole" class="terminal">> Alset LispAI Terminal v4.0<br>> Listo para ejecutar comandos...</div><div class="terminal-input"><input id="terminalInput" placeholder="(+ 1 2 3)" onkeypress="if(event.key==='Enter') executeTerminal()"><button class="btn btn-primary" onclick="executeTerminal()">Ejecutar</button></div></div></section>
+
+        <!-- dApps -->
+        <section id="sec-dapps" class="admin-section"><h2>dApps</h2><div class="grid-2"><div class="card"><h4>Nueva dApp</h4><input id="dappName" placeholder="Nombre de la dApp"><textarea id="dappCode" rows="6" placeholder="Código Lisp de la dApp..."></textarea><button class="btn btn-primary" onclick="deployDapp()">📦 Desplegar</button></div><div class="card"><h4>dApps Desplegadas</h4><div id="dappsList">Cargando...</div></div></div><div class="card"><h4>Publicar vía RootCID</h4><div class="grid-2"><input id="publishAgentId" placeholder="ID del Agente"><input id="publishCid" placeholder="CID de la dApp"><button class="btn btn-purple" onclick="publicarDappRootCID()">🚀 Publicar</button></div><div id="publishResult" class="console" style="margin-top:1rem; display:none;"></div></div></section>
+
+        <!-- PoH -->
+        <section id="sec-poh" class="admin-section"><h2>Proof of Humanity</h2><div class="grid-2"><div class="card"><h4>Registrar Actividad</h4><p style="margin-bottom:1rem;color:var(--text-muted);">Mueve el ratón, escribe o haz clic para registrar eventos.</p><div id="pohStats" style="text-align:center; padding:1rem; background:rgba(26,26,26,0.5); border-radius:12px;"><span style="font-size:2rem;" id="pohCounter">0</span><br>Eventos registrados</div><button class="btn btn-primary" onclick="generatePoHProof()" style="width:100%; margin-top:1rem;">🔐 Generar Prueba de Humanidad</button></div><div class="card"><h4>Última Prueba</h4><div id="lastProof" class="console">No hay pruebas generadas aún.</div></div></div><div class="card"><h4>Actividad en Tiempo Real</h4><div id="pohEvents" class="console">Esperando eventos...</div></div></section>
+
+        <!-- Auditoría -->
+        <section id="sec-auditoria" class="admin-section"><h2>Sistema de Auditoría Forense</h2><div class="card"><div style="display:flex; gap:10px; margin-bottom:1rem;"><input id="auditFilter" placeholder="Filtrar por acción..." style="flex:1;"><button class="btn btn-secondary" onclick="loadAuditLog()">🔍 Filtrar</button><button class="btn btn-secondary" onclick="loadAuditLog(true)">🔄 Recargar</button><button class="btn btn-danger" onclick="clearAuditLog()">🗑 Limpiar Log</button></div><div id="auditLog" class="console" style="height:500px;">Cargando auditoría...</div></div></section>
+
+        <!-- Web Apps -->
+        <section id="sec-webapps" class="admin-section"><h2>📱 Web Apps</h2><div class="grid-2"><div class="card"><h3>📦 Registrar Nueva App</h3><div class="file-upload-area" id="appUploadArea"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#F4B400" stroke-width="1.5"><path d="M12 3v12m0 0-3-3m3 3 3-3M5 21h14"/></svg><p>Arrastra y suelta una carpeta o selecciona archivos</p><input type="file" id="appFileInput" webkitdirectory directory multiple style="display:none"></div><input type="text" id="appName" placeholder="Nombre de la app"><div style="display: flex; gap: 8px;"><button class="btn btn-secondary" onclick="selectAppFolder()">📂 Seleccionar Carpeta</button><button class="btn btn-primary" onclick="uploadAndRegisterApp()">🚀 Subir y Registrar</button></div><div id="appUploadStatus" class="console" style="margin-top:1rem; font-size:0.7rem; display:none;"></div></div><div class="card"><h3>🗂️ Apps en el Servidor</h3><div class="file-tree" id="serverAppsTree"><div class="loading">Cargando...</div></div><div style="margin-top:12px;"><button class="btn btn-success btn-sm" onclick="refreshServerApps()">🔄 Refrescar</button><button class="btn btn-primary btn-sm" onclick="registerSelectedServerApp()" id="registerServerAppBtn" disabled>✅ Registrar Seleccionada</button></div></div></div><div class="card"><h3>📋 Apps Registradas</h3><div id="registeredAppsList" class="console">Cargando...</div><button class="btn btn-secondary btn-sm" onclick="loadRegisteredApps()">🔄 Actualizar</button></div></section>
+
+        <!-- Editor Visual -->
+        <section id="sec-editor" class="admin-section">
+            <h2>🎨 Editor Visual de Agentes y Entidades</h2>
+            <p style="margin-bottom: 1rem; color: var(--text-muted);">Arrastra y conecta bloques para construir tu sistema. El editor genera el código Lisp automáticamente.</p>
+            <div class="grid-2" style="grid-template-columns: 300px 1fr;">
+                <div class="card" style="height: 65vh; overflow-y: auto; display: flex; flex-direction: column;">
+                    <h4 style="margin-bottom: 0.5rem;">📦 Componentes</h4>
+                    <div style="flex: 1; overflow-y: auto;">
+                        <div class="category-title">👤 AGENTES</div>
+                        <div class="component-block" draggable="true" data-type="agente" data-name="Agente" ondragstart="dragStart(event)"><span>👤</span> Agente Base</div>
+                        <div class="component-block" draggable="true" data-type="vendedor" data-name="Vendedor" ondragstart="dragStart(event)"><span>🛒</span> Vendedor</div>
+                        <div class="component-block" draggable="true" data-type="cliente" data-name="Cliente" ondragstart="dragStart(event)"><span>👥</span> Cliente</div>
+                        <div class="component-block" draggable="true" data-type="admin" data-name="Admin" ondragstart="dragStart(event)"><span>👑</span> Administrador</div>
+                        
+                        <div class="category-title">📊 ENTIDADES</div>
+                        <div class="component-block" draggable="true" data-type="producto" data-name="Producto" ondragstart="dragStart(event)"><span>📦</span> Producto</div>
+                        <div class="component-block" draggable="true" data-type="venta" data-name="Venta" ondragstart="dragStart(event)"><span>💰</span> Venta</div>
+                        <div class="component-block" draggable="true" data-type="inventario" data-name="Inventario" ondragstart="dragStart(event)"><span>📊</span> Inventario</div>
+                        <div class="component-block" draggable="true" data-type="empleado" data-name="Empleado" ondragstart="dragStart(event)"><span>👔</span> Empleado</div>
+                        <div class="component-block" draggable="true" data-type="nomina" data-name="Nómina" ondragstart="dragStart(event)"><span>📈</span> Nómina</div>
+                        <div class="component-block" draggable="true" data-type="finanzas" data-name="Finanzas" ondragstart="dragStart(event)"><span>🏦</span> Finanzas</div>
+                        
+                        <div class="category-title">🔗 RELACIONES</div>
+                        <div class="component-block" draggable="true" data-type="conexion" data-name="Conexión" ondragstart="dragStart(event)"><span>🔗</span> Conexión entre agentes</div>
+                        <div class="component-block" draggable="true" data-type="sinapsis" data-name="Sinapsis" ondragstart="dragStart(event)"><span>🧠</span> Sinapsis neuronal</div>
+                        <div class="component-block" draggable="true" data-type="relacion" data-name="Relación" ondragstart="dragStart(event)"><span>🔀</span> Relación entre entidades</div>
+                        
+                        <div class="category-title">⚙️ MÓDULOS PERSONALIZADOS</div>
+                        <div id="customModulesList"><div class="cert-detail" style="padding: 0.5rem;">No hay módulos personalizados</div></div>
+                        <button class="btn btn-secondary btn-sm" onclick="openCreateModuleModal()" style="margin-top: 0.5rem; width: 100%;">➕ Crear Nuevo Módulo</button>
+                        
+                        <div class="category-title">🔧 ENTIDADES PERSONALIZADAS</div>
+                        <div id="customEntitiesList"><div class="cert-detail" style="padding: 0.5rem;">No hay entidades personalizadas</div></div>
+                        <button class="btn btn-secondary btn-sm" onclick="openCreateEntityModal()" style="margin-top: 0.5rem; width: 100%;">➕ Crear Nueva Entidad</button>
+                    </div>
+                </div>
+                <div class="card" style="height: 65vh; display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 8px;">
+                        <h4>🖌️ Canvas</h4>
+                        <div>
+                            <button class="btn btn-secondary btn-sm" onclick="clearCanvas()">🗑 Limpiar</button>
+                            <button class="btn btn-primary btn-sm" onclick="generateLispCode()">⚡ Generar Código</button>
+                            <button class="btn btn-success btn-sm" onclick="deployCanvas()">🚀 Desplegar</button>
+                            <button class="btn btn-purple btn-sm" onclick="showPreview()">👁️ Vista Previa</button>
+                        </div>
+                    </div>
+                    <div id="editorCanvas" class="editor-canvas" style="flex: 1; overflow-y: auto; min-height: 450px;" ondragover="dragOver(event)" ondrop="dropOnCanvas(event)">
+                        <div class="canvas-placeholder" style="text-align: center; padding: 2rem; color: var(--text-muted);">Arrastra componentes aquí</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card" id="propertyPanel" style="display: none;">
+                <h4>⚙️ Propiedades del Componente</h4>
+                <div id="propertyForm"></div>
+                <div style="margin-top: 1rem; display: flex; gap: 8px;">
+                    <button class="btn btn-primary btn-sm" onclick="saveProperties()">💾 Guardar</button>
+                    <button class="btn btn-secondary btn-sm" onclick="closePropertyPanel()">❌ Cerrar</button>
+                </div>
+            </div>
+            <div class="card" id="previewPanel" style="display: none;">
+                <h4>👁️ Vista Previa de la App</h4>
+                <iframe id="previewFrame" class="preview-frame" srcdoc="<div style='display:flex;align-items:center;justify-content:center;height:100%;background:#0A0A0A;color:#F4B400;'>Genera código primero...</div>"></iframe>
+                <div style="margin-top: 1rem; display: flex; gap: 8px;">
+                    <button class="btn btn-primary btn-sm" onclick="refreshPreview()">🔄 Refrescar</button>
+                    <button class="btn btn-secondary btn-sm" onclick="closePreviewPanel()">❌ Cerrar</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gestión de Entidades -->
+        <section id="sec-entidades" class="admin-section">
+            <h2>📊 Gestión de Entidades</h2>
+            <div class="grid-2">
+                <div class="card"><h4>➕ Crear Nueva Entidad</h4><input id="newEntityName" placeholder="Nombre (ej: Producto)"><input id="newEntityParent" placeholder="Hereda de (opcional)"><textarea id="newEntityAttrs" rows="4" placeholder="Atributos (JSON):&#10;{&#10;  \"nombre\": \"string\",&#10;  \"precio\": \"number\",&#10;  \"stock\": \"number\"&#10;}"></textarea><button class="btn btn-primary" onclick="createEntityFromForm()">Crear Entidad</button></div>
+                <div class="card"><h4>📋 Entidades Existentes</h4><div id="entitiesList" class="console">Cargando entidades...</div><button class="btn btn-secondary btn-sm" onclick="loadEntities()">🔄 Recargar</button></div>
+            </div>
+        </section>
+
+        <!-- Gestión de Relaciones -->
+        <section id="sec-relaciones" class="admin-section">
+            <h2>🔗 Gestión de Relaciones entre Entidades</h2>
+            <div class="grid-2">
+                <div class="card"><h4>➕ Crear Nueva Relación</h4>
+                    <select id="relFromEntity"><option value="">Selecciona entidad origen</option></select>
+                    <select id="relToEntity"><option value="">Selecciona entidad destino</option></select>
+                    <select id="relType"><option value="one-to-one">🔗 Uno a Uno (1:1)</option><option value="one-to-many">📚 Uno a Muchos (1:N)</option><option value="many-to-many">🔄 Muchos a Muchos (N:M)</option><option value="dependency">⚡ Dependencia</option><option value="inheritance">🌳 Herencia</option></select>
+                    <input id="relCardinalidad" placeholder="Cardinalidad (ej: 0..*, 1..1)" value="1..*">
+                    <button class="btn btn-primary" onclick="createRelationship()">Crear Relación</button>
+                </div>
+                <div class="card"><h4>📋 Relaciones Existentes</h4><div id="relationsList" class="console">Cargando relaciones...</div><button class="btn btn-secondary btn-sm" onclick="loadRelations()">🔄 Recargar</button></div>
+            </div>
+            <div class="card"><h4>📊 Diagrama de Relaciones</h4><div id="relationDiagram" class="console" style="font-family: monospace;">Selecciona entidades para ver el diagrama</div></div>
+        </section>
+
+        <!-- Ayuda -->
+        <section id="sec-ayuda" class="admin-section"><h2>📚 Centro de Ayuda</h2>
+            <div class="tabs"><div class="tab active" onclick="switchHelpTab('intro')">Introducción</div><div class="tab" onclick="switchHelpTab('agentes')">Agentes</div><div class="tab" onclick="switchHelpTab('modulos')">Módulos Lego</div><div class="tab" onclick="switchHelpTab('entidades')">Entidades</div><div class="tab" onclick="switchHelpTab('relaciones')">Relaciones</div><div class="tab" onclick="switchHelpTab('seguridad')">Seguridad</div><div class="tab" onclick="switchHelpTab('ejemplos')">Ejemplos</div></div>
+            <div id="help-intro" class="help-content active"><div class="card"><h3>🌐 ¿Qué es Red Alset?</h3><p>Red Alset es una plataforma descentralizada donde cada componente es un bloque Lego digital: autónomo, modular y accesible.</p><h4>Principios:</h4><ul><li><strong>Descentralización:</strong> Sin servidores centrales</li><li><strong>Autonomía:</strong> Cada agente es dueño de sus datos</li><li><strong>Composición:</strong> Los agentes se conectan como Legos</li><li><strong>Inclusión:</strong> Cualquier persona puede participar</li></ul></div></div>
+            <div id="help-agentes" class="help-content" style="display:none;"><div class="card"><h3>👤 Agentes</h3><p>Un Agente es la unidad fundamental. Contiene: ID único, RootCID (contenido), Balance UTXO (economía), Estado neuronal (IA opcional).</p><pre><code>(crear-agente "mi-tienda")
+(register-name "mitienda.ans" "mi-tienda")
+(set-agent-root "mi-tienda" "QmHash...")</code></pre></div></div>
+            <div id="help-modulos" class="help-content" style="display:none;"><div class="card"><h3>🧩 Módulos como Piezas Lego</h3><p>Cada módulo es un agente con un rol específico. Módulos predefinidos: Inventario, Ventas, Nómina, Finanzas, Clientes.</p><pre><code>(connect-to-neuron "modulo-inventario" 0.8)</code></pre></div></div>
+            <div id="help-entidades" class="help-content" style="display:none;"><div class="card"><h3>📊 Entidades Programáticas</h3><p>Las entidades son objetos con atributos que pueden heredar y relacionarse.</p><pre><code>(crear-entidad "Producto" '{"nombre":"Laptop","precio":1200})</code></pre><h4>Tipos de relación:</h4><ul><li><strong>1:1</strong> - Uno a uno</li><li><strong>1:N</strong> - Uno a muchos</li><li><strong>N:M</strong> - Muchos a muchos</li><li><strong>Dependencia</strong> - Una entidad depende de otra</li><li><strong>Herencia</strong> - Una entidad hereda de otra</li></ul></div></div>
+            <div id="help-relaciones" class="help-content" style="display:none;"><div class="card"><h3>🔗 Relaciones entre Entidades</h3><p>Las relaciones definen cómo las entidades se conectan entre sí.</p><pre><code>(crear-relacion "compra" "Cliente" "Producto" "1..*")</code></pre></div></div>
+            <div id="help-seguridad" class="help-content" style="display:none;"><div class="card"><h3>🔐 Seguridad estilo JWT en Alset</h3><p>Tokens descentralizados basados en identidades criptográficas.</p><pre><code>POST /api/auth/token
+{
+  "agent_id": "mi-agente",
+  "roles": ["admin"],
+  "duracion_horas": 24
+}</code></pre></div></div>
+            <div id="help-ejemplos" class="help-content" style="display:none;"><div class="card"><h3>💡 Ejemplos Prácticos</h3><h4>Tienda Comunitaria:</h4><pre><code>(crear-agente "tienda")
+(crear-entidad "Producto" '{"nombre":"Laptop","precio":1200})
+(register-name "mitienda.negocio.ans" "tienda")
+(generar-pagina-web "tienda")</code></pre><h4>Microcréditos:</h4><pre><code>(defun solicitar-prestamo (monto)
+  (transferir-utxo "fondo" "solicitante" monto))</code></pre></div></div>
+        </section>
+    </main>
+</div>
+
+<!-- Modales -->
+<div id="createModuleModal" class="modal"><div class="card modal-content"><h3>➕ Crear Nuevo Módulo</h3><input type="text" id="newModuleName" placeholder="Nombre"><input type="text" id="newModuleRol" placeholder="Rol"><textarea id="newModuleAtributos" rows="4" placeholder='Atributos JSON: {"campo": "valor"}'></textarea><div style="display: flex; gap: 8px;"><button class="btn btn-primary" onclick="createCustomModule()">Crear</button><button class="btn btn-secondary" onclick="closeCreateModuleModal()">Cancelar</button></div></div></div>
+<div id="createEntityModal" class="modal"><div class="card modal-content"><h3>➕ Crear Nueva Entidad</h3><input type="text" id="newCustomEntityName" placeholder="Nombre"><input type="text" id="newCustomEntityType" placeholder="Tipo"><textarea id="newCustomEntityAtributos" rows="4" placeholder='Atributos: {"campo": "tipo"}'></textarea><input type="text" id="newCustomEntityHereda" placeholder="Hereda de (opcional)"><div style="display: flex; gap: 8px;"><button class="btn btn-primary" onclick="createCustomEntity()">Crear</button><button class="btn btn-secondary" onclick="closeCreateEntityModal()">Cancelar</button></div></div></div>
+
+<script>
+// ============================================
+// VARIABLES GLOBALES
+// ============================================
+let refreshInterval = null;
+let currentLispTab = 'editor';
+let pohEventCount = 0;
+let pohEventsList = [];
+let selectedServerAppPath = null;
+let filesToUpload = [];
+let canvasBlocks = [];
+let selectedBlockId = null;
+let customModules = [];
+let customEntities = [];
+
+// ============================================
+// TOAST
+// ============================================
+function showToast(msg, type) { let t = document.createElement('div'); t.className = 'toast'; t.innerHTML = `<span>${type === 'success' ? '✓' : (type === 'error' ? '✗' : '!')}</span><span>${msg}</span>`; document.getElementById('toastContainer').appendChild(t); setTimeout(() => t.remove(), 4000); }
+
+// ============================================
+// LOGIN
+// ============================================
+async function loginNode() {
+    let configCid = document.getElementById('configCid').value;
+    let pass = document.getElementById('nodePass').value;
+    if (!configCid || !pass) { showToast('Ingrese CID y clave', 'error'); return; }
+    try {
+        let res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ config_cid: configCid, clave: pass }) });
+        if (res.ok) { let data = await res.json(); document.getElementById('nodeIdDisplay').innerHTML = `🆔 ${data.node.substring(0,20)}...`; showToast('Autenticación exitosa', 'success'); enterDashboard(); }
+        else showToast('Credenciales inválidas', 'error');
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+function showSetup() { document.getElementById('loginStep1').style.display = 'none'; document.getElementById('setupStep').style.display = 'block'; }
+function showLogin() { document.getElementById('loginStep1').style.display = 'block'; document.getElementById('setupStep').style.display = 'none'; }
+async function initializeSecurity() {
+    let pass = document.getElementById('newPass').value;
+    if (!pass) { showToast('Ingrese contraseña', 'error'); return; }
+    let res = await fetch('/api/admin/update-pass', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nuevaClave: pass }) });
+    let data = await res.json();
+    alert(`CID: ${data.config_cid}\n⚠️ GUÁRDELO`);
+    location.reload();
+}
+function logout() { if (refreshInterval) clearInterval(refreshInterval); location.reload(); }
+function enterDashboard() { document.getElementById('loginOverlay').style.display = 'none'; document.getElementById('adminDashboard').style.display = 'block'; refreshAll(); initPoHCollector(); refreshInterval = setInterval(() => refreshAll(), 30000); }
+
+// ============================================
+// REFRESH
+// ============================================
+async function refreshAll() {
+    try {
+        let peers = await (await fetch('/api/network/peers')).json();
+        document.getElementById('statPeers').innerText = peers.length;
+        document.getElementById('peerCount').innerText = peers.length;
+        let agentes = await (await fetch('/api/agentes')).json();
+        document.getElementById('statAgentes').innerText = Object.keys(agentes).length;
+        let ipfs = await (await fetch('/api/ipfs/list')).json();
+        document.getElementById('statBloques').innerText = ipfs.length;
+        let audit = await (await fetch('/api/audit/log')).json();
+        let certs = audit.filter(l => l.action === 'VC_EMITIDO' || l.action === 'CERTIFICADO_GENERADO').length;
+        document.getElementById('statCertificados').innerText = certs;
+        await Promise.all([refreshNetwork(), loadAgentes(), loadIPFSList(), loadDNSList(), loadRootStatus(), loadDapps(), loadNeuronState(), loadSynapses(), loadAuditLog(), loadCertList(), loadRegisteredApps(), refreshServerApps(), loadEntities(), loadRelations()]);
+    } catch(e) { console.error(e); }
+}
+
+// ============================================
+// FUNCIONES EXISTENTES (resumidas pero completas)
+// ============================================
+async function refreshNetwork() { try { let peers = await (await fetch('/api/network/peers')).json(); let html = ''; peers.forEach(p => { html += `<div class="peer-item"><div><strong>${p.id.substring(0,40)}...</strong><br><span class="cert-detail">Conectado</span></div><span class="status-badge status-valid">● Conectado</span></div>`; }); document.getElementById('peersList').innerHTML = html || '<div class="loading">No hay peers</div>'; let topoRes = await fetch('/api/ia/topologia'); let topoData = await topoRes.json(); document.getElementById('topologiaRed').innerHTML = JSON.stringify(topoData, null, 2); let netStatus = document.getElementById('networkStatus'); netStatus.innerHTML = `🧠 Neurona ID: ${topoData.neuron_id || 'N/A'}\n📊 Tipo: ${topoData.neuron_type || 'N/A'}\n🔗 Sinapsis: ${topoData.synapses || 0}\n👥 Peers: ${topoData.peers_count || 0}`; } catch(e) { console.error(e); } }
+async function loadNeuronState() { try { let res = await fetch('/api/ia/estado'); let data = await res.json(); document.getElementById('neuronState').innerHTML = JSON.stringify(data, null, 2); } catch(e) { document.getElementById('neuronState').innerHTML = 'Error'; } }
+async function configurarNeurona() { let type = document.getElementById('neuronTypeSelect').value; let thr = document.getElementById('spikeThreshold').value; let leak = document.getElementById('leakRate').value; try { let res = await fetch('/api/ia/configurar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ neuron_type: type, spike_threshold: parseFloat(thr) || 0.6, leak_rate: parseFloat(leak) || 0.01 }) }); if (res.ok) showToast('Neurona configurada', 'success'); loadNeuronState(); } catch(e) { showToast('Error', 'error'); } }
+async function conectarSinapsis() { let target = document.getElementById('conectarTarget').value; let peso = parseFloat(document.getElementById('conectarPeso').value); if (!target) { showToast('Ingrese ID destino', 'error'); return; } try { let res = await fetch('/api/ia/sinapsis/conectar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nodo_destino: target, peso_inicial: peso || 0.5 }) }); if (res.ok) { showToast(`Sinapsis conectada a ${target.substring(0,20)}`, 'success'); loadSynapses(); } else showToast('Error', 'error'); } catch(e) { showToast('Error: ' + e.message, 'error'); } }
+async function loadSynapses() { try { let res = await fetch('/api/ia/estado'); let data = await res.json(); if (data.synapses && data.synapses.length > 0) { let html = ''; data.synapses.forEach(s => { html += `<div class="agent-badge"><div><strong>Target: ${s.target.substring(0,30)}...</strong><br><span class="cert-detail">Peso: ${s.weight.toFixed(4)} | Spikes: ${s.successful_fires}</span></div></div>`; }); document.getElementById('synapsesList').innerHTML = html; } else { document.getElementById('synapsesList').innerHTML = 'No hay sinapsis activas'; } } catch(e) { document.getElementById('synapsesList').innerHTML = 'Error'; } }
+async function limpiarSinapsis() { if (!confirm('¿Eliminar TODAS las sinapsis?')) return; try { let res = await fetch('/api/ia/sinapsis/clear', { method: 'POST' }); if (res.ok) showToast('Sinapsis limpiadas', 'success'); loadSynapses(); loadNeuronState(); } catch(e) { showToast('Error', 'error'); } }
+async function realizarInferencia() { let i1 = parseFloat(document.getElementById('inf1').value) || 0; let i2 = parseFloat(document.getElementById('inf2').value) || 0; let i3 = parseFloat(document.getElementById('inf3').value) || 0; try { let res = await fetch('/api/ia/inferir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entrada: [i1, i2, i3] }) }); let data = await res.json(); let out = document.getElementById('infResult'); out.style.display = 'block'; out.innerHTML = `✅ INFERENCIA\n📊 Entrada: [${i1}, ${i2}, ${i3}]\n🎯 Salida: ${data.output[0]}\n🖧 Procesado por: ${(data.processed_by || '').substring(0,30)}...`; showToast('Inferencia completada', 'success'); } catch(e) { showToast('Error', 'error'); } }
+async function crearModeloLisp() { let name = document.getElementById('modelName').value; if (!name) { showToast('Ingrese nombre', 'error'); return; } let type = document.getElementById('modelType').value; let codigo = type === 'clasificador' ? `(defun ${name} (x) (sigmoid x))` : type === 'xor' ? `(defun ${name} (x y) (if (> (+ x y) 1) 1 0))` : `(defun ${name} (x) (if (> x 0) 1 0))`; await ejecutarLispCustom(codigo); showToast(`Modelo ${name} creado`, 'success'); }
+async function ejecutarLisp() { let code = document.getElementById('modelLispCode').value; if (!code) { showToast('Ingrese código', 'error'); return; } await ejecutarLispCustom(code); }
+async function ejecutarLispCustom(code) { try { let res = await fetch('/api/lispai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cmd: code }) }); let data = await res.json(); let outDiv = document.getElementById('lispResult'); outDiv.style.display = 'block'; outDiv.innerHTML = `✅ RESULTADO:\n${JSON.stringify(data.resultado, null, 2)}`; showToast('Código ejecutado', 'success'); } catch(e) { showToast('Error', 'error'); } }
+async function guardarEstadoIA() { try { let estado = await fetch('/api/ia/estado'); let estadoData = await estado.json(); let add = await fetch('/api/ipfs/add', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: JSON.stringify({ name: 'estado_ia', timestamp: Date.now(), estado: estadoData }) }); let cid = await add.json(); document.getElementById('saveModelResult').style.display = 'block'; document.getElementById('saveModelResult').innerHTML = `✅ Estado IA guardado\n🔑 CID: ${cid.cid}`; showToast('Estado guardado', 'success'); } catch(e) { showToast('Error', 'error'); } }
+async function iniciarEntrenamientoHebbiano() { let epocas = parseInt(document.getElementById('trainEpocas').value); let tasa = parseFloat(document.getElementById('trainTasa').value); let statusDiv = document.getElementById('trainingStatus'); let progressFill = document.getElementById('trainProgressFill'); document.getElementById('trainProgressBar').style.display = 'block'; for (let ep = 1; ep <= epocas; ep++) { progressFill.style.width = `${(ep / epocas) * 100}%`; statusDiv.innerHTML = `Entrenando época ${ep}/${epocas}...`; try { await fetch('/api/ia/aprender', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tasa_aprendizaje: tasa }) }); } catch(e) { console.error(e); } await new Promise(r => setTimeout(r, 100)); } document.getElementById('trainProgressBar').style.display = 'none'; statusDiv.innerHTML = `✅ ENTRENAMIENTO COMPLETADO\nTasa: ${tasa}\nÉpocas: ${epocas}`; showToast('Entrenamiento completado', 'success'); loadSynapses(); loadNeuronState(); }
+async function testInferencia() { let i1 = parseFloat(document.getElementById('testInput1').value) || 0; let i2 = parseFloat(document.getElementById('testInput2').value) || 0; let i3 = parseFloat(document.getElementById('testInput3').value) || 0; try { let res = await fetch('/api/ia/inferir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entrada: [i1, i2, i3] }) }); let data = await res.json(); document.getElementById('testResult').style.display = 'block'; document.getElementById('testResult').innerHTML = `🎯 RESULTADO\n📊 Entrada: [${i1}, ${i2}, ${i3}]\n🎯 Salida: ${data.output[0]}`; } catch(e) { showToast('Error', 'error'); } }
+async function actionSellar() { let file = document.getElementById('fileToSeal').files[0]; let content = file ? await file.text() : document.getElementById('docContent').value; if (!content) { showToast('Ingrese contenido', 'error'); return; } try { let add = await fetch('/api/ipfs/add', { method: 'POST', body: content }); let cid = await add.json(); let seal = await fetch('/api/prism/sellar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cid: cid.cid }) }); let sealData = await seal.json(); document.getElementById('selladoOutput').style.display = 'block'; document.getElementById('selladoOutput').innerHTML = `✅ VC GENERADO\n📄 CID: ${cid.cid}\n🔒 VC: ${sealData.certificado_cid}\n🏢 Garante: ${sealData.entidad}`; showToast('VC generado', 'success'); refreshAll(); } catch(e) { showToast('Error', 'error'); } }
+async function actionVerificar() { let cid = document.getElementById('verifyCid').value; if (!cid) { showToast('Ingrese CID', 'error'); return; } try { let res = await fetch(`/api/prism/verificar?cid=${cid}`); let data = await res.json(); let statusColor = data.status_integral === 'AUTÉNTICO' ? '#4CAF50' : (data.status_integral === 'REVOCADO' ? '#FF5252' : '#FF9800'); document.getElementById('verifyOutput').style.display = 'block'; document.getElementById('verifyOutput').innerHTML = `📊 VERIFICACIÓN\n🔍 Estado: <span style="color:${statusColor};">${data.status_integral}</span>\n✓ Firma válida: ${data.firma_valida ? '✅ Sí' : '❌ No'}\n⚠️ Revocado: ${data.revocado ? '✅ Sí' : '❌ No'}`; showToast(data.status_integral === 'AUTÉNTICO' ? 'VC auténtico' : 'VC inválido', data.status_integral === 'AUTÉNTICO' ? 'success' : 'warning'); } catch(e) { showToast('Error', 'error'); } }
+async function actionRevocar() { let cid = document.getElementById('revokeCid').value; let motivo = document.getElementById('revokeMotivo').value; if (!cid) { showToast('Ingrese CID', 'error'); return; } try { let res = await fetch('/api/prism/revocar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cid: cid, motivo: motivo || 'Revocado' }) }); let data = await res.json(); document.getElementById('revokeOutput').style.display = 'block'; document.getElementById('revokeOutput').innerHTML = `✅ VC REVOCADO\n📋 Ticket: ${data.ticket_cid}\n🔒 VC: ${data.certificado_revocado}`; showToast('VC revocado', 'warning'); refreshAll(); } catch(e) { showToast('Error', 'error'); } }
+async function loadCertList() { try { let blocks = await (await fetch('/api/ipfs/list')).json(); let possibleVCs = blocks.filter(b => b.preview.includes('VerifiableCredential') || b.preview.includes('VC')); let html = ''; possibleVCs.slice(0,20).forEach(v => { html += `<div class="cert-item"><div><strong>${v.cid.substring(0,40)}...</strong><div class="cert-detail">📏 ${v.size} bytes</div></div><div><button class="btn btn-primary btn-sm" onclick="actionVerificarManual('${v.cid}')">Verificar</button></div></div>`; }); document.getElementById('certList').innerHTML = html || '<div class="loading">No hay certificados</div>'; } catch(e) { document.getElementById('certList').innerHTML = '<div class="loading">Error</div>'; } }
+function actionVerificarManual(cid) { document.getElementById('verifyCid').value = cid; actionVerificar(); switchTab('sec-verificar'); }
+async function actionRegisterDNS() { let alias = document.getElementById('dnsAlias').value; let agent = document.getElementById('dnsAgentId').value; if (!alias || !agent) { showToast('Complete campos', 'error'); return; } try { let res = await fetch('/api/lispai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cmd: `(register-name "${alias}" "${agent}")` }) }); let data = await res.json(); if (data.resultado === 'OK') { showToast(`DNS "${alias}" registrado`, 'success'); loadDNSList(); } else showToast('Error', 'error'); } catch(e) { showToast('Error', 'error'); } }
+async function actionResolveDNS() { let alias = document.getElementById('resolveAlias').value; if (!alias) { showToast('Ingrese alias', 'error'); return; } try { let res = await fetch('/api/dns/resolve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ alias: alias }) }); let data = await res.json(); document.getElementById('resolveResult').innerHTML = data.agent_id ? `✅ Resolución: ${alias} → ${data.agent_id}` : '❌ No encontrado'; } catch(e) { document.getElementById('resolveResult').innerHTML = `❌ Error: ${e.message}`; } }
+async function loadDNSList() { try { let res = await fetch('/api/dns/list'); let data = await res.json(); let html = ''; for (let [alias, agent] of Object.entries(data.nombres || {})) { html += `<div class="dns-entry"><div><strong>${escapeHtml(alias)}</strong><br><span class="cert-detail">🔗 Agente: ${agent.substring(0,30)}...</span></div><div><button class="btn btn-danger btn-sm" onclick="actionDeleteDNS('${escapeHtml(alias)}')">Eliminar</button></div></div>`; } document.getElementById('dnsList').innerHTML = html || '<div class="loading">No hay registros</div>'; } catch(e) { document.getElementById('dnsList').innerHTML = '<div class="loading">Error</div>'; } }
+async function actionDeleteDNS(alias) { if (!confirm(`¿Eliminar "${alias}"?`)) return; try { await fetch('/api/dns/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ alias: alias }) }); showToast('DNS eliminado', 'success'); loadDNSList(); } catch(e) { showToast('Error', 'error'); } }
+async function loadAgentes() { try { let res = await fetch('/api/agentes'); if (!res.ok) throw new Error('Error'); let agentes = await res.json(); let html = ''; for (let [id, agente] of Object.entries(agentes)) { html += `<div class="agent-badge"><div><strong>${escapeHtml(id.substring(0,25))}...</strong><br><span class="cert-detail">💰 Balance: ${agente.balance_utxo || 0} UTXO</span><span class="cert-detail">📅 Última: ${new Date((agente.ultima_actualizacion || 0) * 1000).toLocaleString()}</span>${agente.root_cid ? `<div class="cert-detail">🌿 RootCID: ${agente.root_cid.substring(0,30)}...</div>` : ''}</div><div><button class="btn btn-warning btn-sm" onclick="modificarAgente('${escapeHtml(id)}')">✏️</button><button class="btn btn-danger btn-sm" onclick="eliminarAgente('${escapeHtml(id)}')">🗑</button></div></div>`; } document.getElementById('agentesList').innerHTML = html || '<div class="loading">No hay agentes</div>'; } catch(e) { document.getElementById('agentesList').innerHTML = '<div class="loading">Error</div>'; } }
+async function actionCrearAgente() { try { let res = await fetch('/api/crear-agente', { method: 'POST' }); if (!res.ok) throw new Error('Error'); let agent = await res.json(); showToast(`Agente creado: ${agent.id.substring(0,15)}...`, 'success'); await refreshAll(); loadAgentes(); } catch(e) { showToast('Error: ' + e.message, 'error'); } }
+async function eliminarAgente(id) { if (!confirm(`¿Eliminar agente "${id.substring(0,15)}..."?`)) return; try { let res = await fetch('/api/eliminar-agente', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }) }); let data = await res.json(); if (res.ok && data.status === 'deleted') { showToast(`Agente eliminado`, 'success'); await refreshAll(); loadAgentes(); } else { showToast(data.error || 'Error', 'error'); } } catch(e) { showToast('Error: ' + e.message, 'error'); } }
+async function modificarAgente(id) { let nuevoBalance = prompt('💰 Nuevo balance:', '1000'); let nuevoRoot = prompt('🌿 Nuevo RootCID:', ''); if (!nuevoBalance && !nuevoRoot) return; try { let res = await fetch('/api/modificar-agente', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, balance_utxo: parseFloat(nuevoBalance) || 0, root_cid: nuevoRoot || '' }) }); if (res.ok) { showToast('Agente modificado', 'success'); await refreshAll(); loadAgentes(); } else { let error = await res.json(); showToast(error.error || 'Error', 'error'); } } catch(e) { showToast('Error: ' + e.message, 'error'); } }
+async function actionModificarAgente() { let id = document.getElementById('modAgentId').value; let balance = parseFloat(document.getElementById('modBalance').value); let rootCID = document.getElementById('modRootCID').value; if (!id) { showToast('Ingrese ID', 'error'); return; } try { let res = await fetch('/api/modificar-agente', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, balance_utxo: balance || 0, root_cid: rootCID || '' }) }); if (res.ok) { showToast('Agente modificado', 'success'); document.getElementById('modAgentId').value = ''; document.getElementById('modBalance').value = ''; document.getElementById('modRootCID').value = ''; await refreshAll(); loadAgentes(); } else { let error = await res.json(); showToast(error.error || 'Error', 'error'); } } catch(e) { showToast('Error: ' + e.message, 'error'); } }
+async function actionTransferenciaUTXO() { let from = document.getElementById('txFrom').value; let to = document.getElementById('txTo').value; let amount = parseFloat(document.getElementById('txAmount').value); if (!from || !to || !amount) { showToast('Complete campos', 'error'); return; } if (amount <= 0) { showToast('Monto > 0', 'error'); return; } try { let res = await fetch('/api/lispai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cmd: `(transferir-utxo "${from}" "${to}" ${amount})` }) }); let data = await res.json(); let outDiv = document.getElementById('txOutput'); outDiv.style.display = 'block'; if (data.error) { outDiv.innerHTML = `❌ TRANSFERENCIA FALLIDA\n💸 Origen: ${from}\n🎯 Destino: ${to}\n💰 Monto: ${amount}\n❌ Error: ${data.error}`; showToast('Error', 'error'); } else { outDiv.innerHTML = `✅ TRANSFERENCIA\n💸 Origen: ${from}\n🎯 Destino: ${to}\n💰 Monto: ${amount}`; showToast('Transferencia realizada', 'success'); document.getElementById('txFrom').value = ''; document.getElementById('txTo').value = ''; document.getElementById('txAmount').value = ''; await refreshAll(); loadAgentes(); } } catch(e) { showToast('Error: ' + e.message, 'error'); } }
+async function actionSetRootCID() { let agent = document.getElementById('rootAgentId').value; let cid = document.getElementById('rootCidValue').value; if (!agent || !cid) { showToast('Complete campos', 'error'); return; } try { await fetch('/api/lispai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cmd: `(set-agent-root "${agent}" "${cid}")` }) }); showToast('RootCID asignado', 'success'); refreshAll(); } catch(e) { showToast('Error', 'error'); } }
+async function actionGetRootCID() { let agent = document.getElementById('viewRootAgentId').value; if (!agent) { showToast('Ingrese ID', 'error'); return; } try { let res = await fetch(`/api/agentes/${agent}/root`); let data = await res.json(); document.getElementById('rootResult').innerHTML = data.root_cid ? `✅ RootCID: ${data.root_cid}<br>📅 Actualización: ${new Date(data.updated_at * 1000).toLocaleString()}` : '⚠️ Sin RootCID'; } catch(e) { document.getElementById('rootResult').innerHTML = `❌ Error: ${e.message}`; } }
+async function loadRootStatus() { try { let agentes = await (await fetch('/api/agentes')).json(); let html = ''; Object.values(agentes).forEach(a => { if (a.root_cid) html += `<div class="agent-badge"><div><strong>${escapeHtml(a.id.substring(0,20))}...</strong><div class="cert-detail">🌿 RootCID: ${a.root_cid.substring(0,40)}...</div></div><div><button class="btn btn-secondary btn-sm" onclick="actionGetRootCIDManual('${escapeHtml(a.id)}')">Ver</button></div></div>`; }); document.getElementById('rootStatusList').innerHTML = html || '<div class="loading">No hay RootCIDs</div>'; } catch(e) { document.getElementById('rootStatusList').innerHTML = '<div class="loading">Error</div>'; } }
+async function actionGetRootCIDManual(id) { document.getElementById('viewRootAgentId').value = id; actionGetRootCID(); }
+function openWebViewer() { let alias = document.getElementById('webViewerAlias').value; if (!alias) { showToast('Ingrese alias', 'error'); return; } window.open(`/w/${alias}`, '_blank'); }
+async function subirTextoIPFS() { let content = document.getElementById('ipfsContent').value; if (!content) { showToast('Ingrese contenido', 'error'); return; } try { let res = await fetch('/api/ipfs/add', { method: 'POST', body: content }); let data = await res.json(); showToast(`Texto subido: ${data.cid.substring(0,30)}...`, 'success'); refreshAll(); document.getElementById('ipfsContent').value = ''; } catch(e) { showToast('Error', 'error'); } }
+async function subirArchivoIPFS(input) { let file = input.files[0]; if (!file) return; let progressBar = document.getElementById('uploadProgress'); progressBar.style.display = 'block'; try { let reader = new FileReader(); reader.onload = async function(e) { let content = e.target.result; let res = await fetch('/api/ipfs/add', { method: 'POST', body: content }); let data = await res.json(); progressBar.style.display = 'none'; showToast(`Archivo subido: ${data.cid.substring(0,30)}...`, 'success'); refreshAll(); }; reader.readAsArrayBuffer(file); } catch(e) { progressBar.style.display = 'none'; showToast('Error', 'error'); } }
+async function actionFetch() { let cid = document.getElementById('searchCid').value; if (!cid) { showToast('Ingrese CID', 'error'); return; } try { let res = await fetch('/api/ipfs/fetch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cid: cid }) }); if (!res.ok) throw new Error('No encontrado'); let data = await res.json(); document.getElementById('fetchOutput').style.display = 'block'; let preview = data.data.length > 500 ? data.data.substring(0,500) + '...' : data.data; document.getElementById('fetchOutput').innerHTML = `✅ ENCONTRADO\n📦 CID: ${data.cid}\n📏 Tamaño: ${data.size} bytes\n📄 Preview:\n${escapeHtml(preview)}`; showToast('Bloque encontrado', 'success'); } catch(e) { showToast('No encontrado', 'error'); } }
+async function loadIPFSList() { try { let blocks = await (await fetch('/api/ipfs/list')).json(); let html = ''; blocks.slice(0,20).forEach(b => { let preview = b.preview.length > 100 ? b.preview.substring(0,100) + '...' : b.preview; html += `<div style="padding:10px;background:#1A1A1A;border-radius:12px;margin-bottom:10px;"><div><strong>${b.cid.substring(0,40)}...</strong></div><div class="cert-detail">📏 ${b.size} bytes</div><div>${escapeHtml(preview)}</div><button class="btn btn-danger btn-sm" onclick="eliminarBloque('${b.cid}')" style="margin-top:8px;">Eliminar</button></div>`; }); document.getElementById('ipfsList').innerHTML = html || '<div class="loading">No hay bloques</div>'; } catch(e) { document.getElementById('ipfsList').innerHTML = '<div class="loading">Error</div>'; } }
+async function eliminarBloque(cid) { if (!confirm('¿Eliminar bloque?')) return; try { let res = await fetch('/api/ipfs/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cid: cid }) }); if (res.ok) { showToast('Bloque eliminado', 'success'); refreshAll(); } else showToast('Error', 'error'); } catch(e) { showToast('Error: ' + e.message, 'error'); } }
+async function limpiarBlockstore() { if (!confirm('¿Eliminar TODOS los bloques? Escribe YES')) return; let confirmText = prompt('Escribe YES para confirmar:'); if (confirmText !== 'YES') { showToast('Cancelado', 'warning'); return; } try { let res = await fetch('/api/ipfs/clear', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: 'YES' }) }); if (res.ok) { showToast('Blockstore limpiada', 'success'); refreshAll(); } else showToast('Error', 'error'); } catch(e) { showToast('Error: ' + e.message, 'error'); } }
+async function actionLispEditor() { let code = document.getElementById('lispEditor').value; if (!code) { showToast('Escriba código', 'error'); return; } try { let res = await fetch('/api/lispai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cmd: code }) }); let data = await res.json(); document.getElementById('editorOutput').style.display = 'block'; document.getElementById('editorOutput').innerHTML = `✅ EJECUCIÓN\n📝 Código:\n${escapeHtml(code)}\n🎯 Resultado:\n${JSON.stringify(data.resultado, null, 2)}`; showToast('Código ejecutado', 'success'); } catch(e) { showToast('Error', 'error'); } }
+async function executeTerminal() { let input = document.getElementById('terminalInput'); let cmd = input.value; if (!cmd) return; let term = document.getElementById('terminalConsole'); term.innerHTML += `<div>> ${escapeHtml(cmd)}</div>`; try { let res = await fetch('/api/lispai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cmd: cmd }) }); let data = await res.json(); term.innerHTML += `<div style="color:#4CAF50;">=> ${JSON.stringify(data.resultado)}</div>`; term.scrollTop = term.scrollHeight; input.value = ''; } catch(e) { term.innerHTML += `<div style="color:#FF5252;">=> Error: ${e.message}</div>`; } }
+function switchLispTab(tab) { currentLispTab = tab; document.getElementById('lispEditorTab').style.display = tab === 'editor' ? 'block' : 'none'; document.getElementById('lispTerminalTab').style.display = tab === 'terminal' ? 'block' : 'none'; document.querySelectorAll('#sec-lisp .tab').forEach(t => t.classList.remove('active')); if (event && event.target) event.target.classList.add('active'); }
+function clearLispEditor() { document.getElementById('lispEditor').value = ''; showToast('Editor limpiado', 'info'); }
+async function saveLispCodeAsDapp() { let code = document.getElementById('lispEditor').value; if (!code) { showToast('Escriba código', 'error'); return; } let name = prompt('Nombre de la dApp:'); if (!name) return; try { let add = await fetch('/api/ipfs/add', { method: 'POST', body: code }); let cid = await add.json(); let dapps = JSON.parse(localStorage.getItem('alset_dapps') || '[]'); dapps.push({ name, code, cid: cid.cid, date: new Date().toISOString() }); localStorage.setItem('alset_dapps', JSON.stringify(dapps)); showToast(`dApp guardada`, 'success'); loadDapps(); } catch(e) { showToast('Error', 'error'); } }
+async function loadDapps() { let dapps = JSON.parse(localStorage.getItem('alset_dapps') || '[]'); let html = ''; dapps.forEach(d => { html += `<div class="dns-entry"><div><strong>${escapeHtml(d.name)}</strong><br><span class="cert-detail">📅 ${new Date(d.date).toLocaleString()}</span><br><span style="font-size:0.6rem;">CID: ${d.cid.substring(0,30)}...</span></div><div><button class="btn btn-primary btn-sm" onclick="loadDapp('${d.cid}')">Cargar</button><button class="btn btn-danger btn-sm" onclick="deleteDapp('${d.cid}')">Eliminar</button></div></div>`; }); document.getElementById('dappsList').innerHTML = html || '<div class="loading">No hay dApps</div>'; }
+async function loadDapp(cid) { try { let res = await fetch('/api/ipfs/fetch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cid: cid }) }); let data = await res.json(); document.getElementById('lispEditor').value = data.data; switchTab('sec-lisp'); showToast('dApp cargada', 'success'); } catch(e) { showToast('Error', 'error'); } }
+function deleteDapp(cid) { if (!confirm('¿Eliminar dApp?')) return; let dapps = JSON.parse(localStorage.getItem('alset_dapps') || '[]'); dapps = dapps.filter(d => d.cid !== cid); localStorage.setItem('alset_dapps', JSON.stringify(dapps)); loadDapps(); showToast('dApp eliminada', 'info'); }
+async function deployDapp() { let name = document.getElementById('dappName').value; let code = document.getElementById('dappCode').value; if (!name || !code) { showToast('Complete campos', 'error'); return; } try { let add = await fetch('/api/ipfs/add', { method: 'POST', body: code }); let cid = await add.json(); let dapps = JSON.parse(localStorage.getItem('alset_dapps') || '[]'); dapps.push({ name, code, cid: cid.cid, date: new Date().toISOString() }); localStorage.setItem('alset_dapps', JSON.stringify(dapps)); showToast(`dApp desplegada`, 'success'); document.getElementById('dappName').value = ''; document.getElementById('dappCode').value = ''; loadDapps(); } catch(e) { showToast('Error', 'error'); } }
+async function publicarDappRootCID() { let agent = document.getElementById('publishAgentId').value; let cid = document.getElementById('publishCid').value; if (!agent || !cid) { showToast('Complete campos', 'error'); return; } try { await fetch('/api/lispai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cmd: `(set-agent-root "${agent}" "${cid}")` }) }); showToast('dApp publicada', 'success'); refreshAll(); } catch(e) { showToast('Error', 'error'); } }
+function initPoHCollector() { let eventsDiv = document.getElementById('pohEvents'); let counter = document.getElementById('pohCounter'); let record = (type, meta) => { pohEventCount++; counter.innerText = pohEventCount; pohEventsList.unshift({ time: new Date().toLocaleTimeString(), type, meta }); if (pohEventsList.length > 20) pohEventsList.pop(); eventsDiv.innerHTML = pohEventsList.map(e => `<div>[${e.time}] ${e.type}${e.meta ? ': ' + e.meta : ''}</div>`).join(''); fetch('/api/poh/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event_type: type, metadata: meta || '' }) }).catch(console.error); }; document.addEventListener('mousemove', () => record('mouse_move', '')); document.addEventListener('click', () => record('click', '')); document.addEventListener('keypress', (e) => record('keypress', e.key)); document.addEventListener('scroll', () => record('scroll', '')); setInterval(() => record('heartbeat', 'periodic'), 30000); }
+async function generatePoHProof() { if (pohEventCount < 5) { showToast('Registre al menos 5 eventos', 'warning'); return; } try { let res = await fetch('/api/poh/proof'); let data = await res.json(); document.getElementById('lastProof').innerHTML = `✅ Prueba Generada\n🔑 Proof CID: ${data.proof_cid}\n🆔 Sesión: ${data.session}\n📊 Eventos: ${data.events}`; showToast('Prueba generada', 'success'); } catch(e) { showToast('Error', 'error'); } }
+async function loadAuditLog() { try { let res = await fetch('/api/audit/log'); let log = await res.json(); let filter = document.getElementById('auditFilter').value.toLowerCase(); if (filter) log = log.filter(e => e.action.toLowerCase().includes(filter) || e.detail.toLowerCase().includes(filter)); let html = ''; log.slice(0,50).forEach(e => { html += `<div style="border-bottom:1px solid #333;padding:8px;"><div><span style="color:#F4B400;">[${e.ts}]</span> <span style="color:#4CAF50;">${e.action}</span></div><div style="font-size:0.7rem;">${escapeHtml(e.detail)}</div></div>`; }); document.getElementById('auditLog').innerHTML = html || '<div class="loading">No hay eventos</div>'; } catch(e) { document.getElementById('auditLog').innerHTML = '<div class="loading">Error</div>'; } }
+async function clearAuditLog() { if (!confirm('¿Eliminar auditoría?')) return; try { let res = await fetch('/api/audit/clear', { method: 'POST' }); if (res.ok) { showToast('Auditoría limpiada', 'success'); loadAuditLog(); } else showToast('Error', 'error'); } catch(e) { showToast('Error: ' + e.message, 'error'); } }
+
+// ============================================
+// WEB APPS
+// ============================================
+async function uploadAndRegisterApp() {
+    const appName = document.getElementById('appName').value.trim();
+    if (!appName) {
+        showToast('Ingrese nombre de la aplicación', 'error');
+        return;
+    }
+    
+    if (filesToUpload.length === 0) {
+        showToast('Seleccione una carpeta con archivos primero', 'warning');
+        return;
+    }
+    
+    const statusDiv = document.getElementById('appUploadStatus');
+    statusDiv.style.display = 'block';
+    statusDiv.innerHTML = '<div class="loading">Subiendo archivos y registrando aplicación...<div class="spinner"></div></div>';
+    document.getElementById('registerAppBtn').disabled = true;
+    
+    try {
+        const formData = new FormData();
+        for (const file of filesToUpload) {
+            const relativePath = file.webkitRelativePath || file.name;
+            formData.append('files', file, relativePath);
+        }
+        formData.append('appName', appName);
+        
+        const response = await fetch('/api/apps/register', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.status === 'registered') {
+            statusDiv.innerHTML = `
+                <div style="color: var(--accent-green);">✅ Aplicación "${appName}" registrada exitosamente!</div>
+                <div>🔗 URL: <a href="${result.url}" target="_blank" style="color: var(--primary);">${result.url}</a></div>
+                <div>🆔 Agente: ${result.agent_id}</div>
+                <div>📦 CID: ${result.cid}</div>
+                <div>📁 Archivos subidos: ${result.files}</div>
+            `;
+            showToast(`App "${appName}" registrada exitosamente`, 'success');
+            document.getElementById('appName').value = '';
+            filesToUpload = [];
+            await refreshServerApps();
+            await loadRegisteredApps();
+            await refreshAll();
+        } else {
+            statusDiv.innerHTML = `<div style="color: var(--accent-red);">❌ Error: ${result.error || 'Error desconocido'}</div>`;
+            showToast('Error al registrar la aplicación', 'error');
+        }
+    } catch (error) {
+        console.error('Error en uploadAndRegisterApp:', error);
+        statusDiv.innerHTML = `<div style="color: var(--accent-red);">❌ Error de conexión: ${error.message}</div>`;
+        showToast('Error de conexión con el servidor', 'error');
+    } finally {
+        document.getElementById('registerAppBtn').disabled = false;
+    }
+}
+
+async function refreshServerApps() {
+    let treeDiv = document.getElementById('serverAppsTree');
+    treeDiv.innerHTML = '<div class="loading">Cargando...</div>';
+    selectedServerAppPath = null;
+    document.getElementById('registerServerAppBtn').disabled = true;
+    try {
+        let response = await fetch('/api/apps/list');
+        let apps = await response.json();
+        if (!apps || apps.length === 0) { treeDiv.innerHTML = '<div class="loading">No hay apps</div>'; return; }
+        let html = '<div style="margin-bottom:0.5rem;">📁 Selecciona carpeta:</div>';
+        for (let app of apps) {
+            html += `<div class="file-tree-item" onclick="selectServerApp('${app.name}')"><span class="folder-item">📁</span> ${escapeHtml(app.name)}/</div>`;
+        }
+        treeDiv.innerHTML = html;
+    } catch(e) { treeDiv.innerHTML = '<div class="loading">Error</div>'; }
+}
+function selectServerApp(appName) { selectedServerAppPath = appName; document.getElementById('registerServerAppBtn').disabled = false; document.querySelectorAll('#serverAppsTree .file-tree-item').forEach(i => i.classList.remove('selected')); if (event && event.target) event.target.classList.add('selected'); }
+async function registerSelectedServerApp() {
+    if (!selectedServerAppPath) { showToast('Seleccione app', 'warning'); return; }
+    let statusDiv = document.getElementById('appUploadStatus');
+    statusDiv.style.display = 'block';
+    statusDiv.innerHTML = `<div class="loading">Registrando ${selectedServerAppPath}...</div>`;
+    try {
+        let response = await fetch('/api/apps/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: selectedServerAppPath }) });
+        let result = await response.json();
+        if (response.ok && result.status === 'registered') {
+            statusDiv.innerHTML = `✅ App "${selectedServerAppPath}" registrada\n🔗 URL: <a href="${result.url}" target="_blank">${result.url}</a>`;
+            showToast(`App registrada`, 'success');
+            selectedServerAppPath = null;
+            refreshServerApps();
+            loadRegisteredApps();
+        } else { statusDiv.innerHTML = `❌ Error: ${result.error || 'Error'}`; showToast('Error', 'error'); }
+    } catch(e) { statusDiv.innerHTML = `❌ Error: ${e.message}`; showToast('Error', 'error'); }
+}
+async function loadRegisteredApps() {
+    let listDiv = document.getElementById('registeredAppsList');
+    listDiv.innerHTML = '<div class="loading">Cargando...</div>';
+    try {
+        let agentesRes = await fetch('/api/agentes');
+        let agentes = await agentesRes.json();
+        let dnsRes = await fetch('/api/dns/list');
+        let dnsData = await dnsRes.json();
+        let registeredApps = [];
+        for (let [alias, agentId] of Object.entries(dnsData.nombres || {})) {
+            if (alias.endsWith('.app.ans')) {
+                let appName = alias.replace('.app.ans', '');
+                let agente = agentes[agentId];
+                registeredApps.push({ name: appName, alias: alias, agentId: agentId, rootCid: agente?.root_cid || 'No asignado', url: `/w/${alias}` });
+            }
+        }
+        if (registeredApps.length === 0) { listDiv.innerHTML = '<div class="loading">No hay apps registradas</div>'; return; }
+        let html = '';
+        for (let app of registeredApps) {
+            html += `<div class="app-item"><div><strong>📱 ${escapeHtml(app.name)}</strong><br><span class="cert-detail">🔗 ${escapeHtml(app.alias)}</span><br><span class="cert-detail">📦 RootCID: ${app.rootCid.substring(0,30)}...</span></div><div><a href="${app.url}" target="_blank" class="btn btn-primary btn-sm">🌐 Abrir</a><button class="btn btn-danger btn-sm" onclick="unregisterApp('${app.alias}', '${app.agentId}')">🗑</button></div></div>`;
+        }
+        listDiv.innerHTML = html;
+    } catch(e) { listDiv.innerHTML = '<div class="loading">Error</div>'; }
+}
+async function unregisterApp(alias, agentId) {
+    if (!confirm(`¿Eliminar "${alias}"?`)) return;
+    try { await fetch('/api/dns/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ alias: alias }) }); await fetch('/api/eliminar-agente', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: agentId }) }); showToast(`App eliminada`, 'success'); loadRegisteredApps(); refreshAll(); } catch(e) { showToast('Error', 'error'); } }
+function selectAppFolder() { document.getElementById('appFileInput').click(); }
+document.getElementById('appFileInput').addEventListener('change', (event) => {
+    let files = Array.from(event.target.files);
+    if (files.length === 0) return;
+    filesToUpload = files;
+    let folderName = files[0].webkitRelativePath.split('/')[0];
+    document.getElementById('appName').value = folderName;
+    let statusDiv = document.getElementById('appUploadStatus');
+    statusDiv.style.display = 'block';
+    statusDiv.innerHTML = `<div>📁 ${folderName}<br>📄 Archivos: ${files.length}</div>`;
+    showToast(`${files.length} archivos seleccionados`, 'success');
+});
+let dropArea = document.getElementById('appUploadArea');
+if (dropArea) {
+    dropArea.addEventListener('dragover', (e) => { e.preventDefault(); dropArea.style.borderColor = 'var(--primary)'; });
+    dropArea.addEventListener('dragleave', (e) => { e.preventDefault(); dropArea.style.borderColor = 'rgba(244,180,0,0.3)'; });
+    dropArea.addEventListener('drop', (e) => {
+        e.preventDefault(); dropArea.style.borderColor = 'rgba(244,180,0,0.3)';
+        let items = e.dataTransfer.items; let files = [];
+        let traverseFileTree = (item, path) => {
+            if (item.isFile) {
+                item.file(file => { file.webkitRelativePath = path + file.name; files.push(file); if (files.length === items.length) { filesToUpload = files; let folderName = path.split('/')[0]; document.getElementById('appName').value = folderName; let statusDiv = document.getElementById('appUploadStatus'); statusDiv.style.display = 'block'; statusDiv.innerHTML = `<div>📁 ${folderName}<br>📄 Archivos: ${files.length}</div>`; showToast(`${files.length} archivos seleccionados`, 'success'); } });
+            } else if (item.isDirectory) {
+                let dirReader = item.createReader();
+                dirReader.readEntries(entries => { for (let entry of entries) { traverseFileTree(entry, path + entry.name + '/'); } });
+            }
+        };
+        for (let i = 0; i < items.length; i++) { let entry = items[i].webkitGetAsEntry(); if (entry) traverseFileTree(entry, ''); }
+    });
+}
+
+// ============================================
+// EDITOR VISUAL COMPLETO
+// ============================================
+function dragStart(event) {
+    let type = event.target.dataset.type || event.target.parentElement?.dataset?.type;
+    if (type) { event.dataTransfer.setData("text/plain", JSON.stringify({ type: type, name: event.target.dataset.name || event.target.innerText.trim() })); event.dataTransfer.effectAllowed = "copy"; }
+}
+function dragStartModule(event, moduleId, moduleName) { event.dataTransfer.setData("text/plain", JSON.stringify({ type: 'modulo', id: moduleId, name: moduleName })); event.dataTransfer.effectAllowed = "copy"; }
+function dragStartEntity(event, entityId, entityName) { event.dataTransfer.setData("text/plain", JSON.stringify({ type: 'entidad', id: entityId, name: entityName })); event.dataTransfer.effectAllowed = "copy"; }
+function dragOver(event) { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }
+function dropOnCanvas(event) {
+    event.preventDefault();
+    let rawData = event.dataTransfer.getData("text/plain");
+    if (!rawData) return;
+    try {
+        let data = JSON.parse(rawData);
+        addBlockToCanvas(data.type, data.name, data.id);
+    } catch(e) { addBlockToCanvas(rawData, rawData); }
+}
+function addBlockToCanvas(type, name, extraId) {
+    let names = { 'agente':'Agente','vendedor':'Vendedor','cliente':'Cliente','admin':'Admin','producto':'Producto','venta':'Venta','inventario':'Inventario','empleado':'Empleado','nomina':'Nómina','finanzas':'Finanzas','conexion':'Conexión','sinapsis':'Sinapsis','relacion':'Relación' };
+    let blockId = `block_${Date.now()}_${Math.random().toString(36).substr(2,8)}`;
+    let blockName = name || names[type] || type;
+    canvasBlocks.push({ id: blockId, type: type, name: blockName, externalId: extraId, properties: getDefaultPropertiesForType(type) });
+    renderCanvas();
+    showToast(`Componente "${blockName}" agregado`, 'success');
+}
+function getDefaultPropertiesForType(type) {
+    let defaults = {
+        'agente': { id: '', nombre: '', root_cid: '', balance: 1000 },
+        'vendedor': { id: '', nombre: '', tienda: '', comision: 0.05 },
+        'cliente': { id: '', nombre: '', email: '', telefono: '', direccion: '' },
+        'admin': { id: '', nombre: '', rol: 'admin' },
+        'producto': { id: '', nombre: '', precio: 0, stock: 0, categoria: '' },
+        'venta': { id: '', producto_id: '', cliente_id: '', cantidad: 1, total: 0 },
+        'inventario': { id: '', nombre: '', ubicacion: '', capacidad: 0 },
+        'empleado': { id: '', nombre: '', puesto: '', salario: 0 },
+        'nomina': { id: '', empleado_id: '', periodo: '', monto: 0 },
+        'finanzas': { id: '', tipo: '', concepto: '', monto: 0 },
+        'conexion': { origen: '', destino: '', peso: 0.5 },
+        'sinapsis': { origen: '', destino: '', peso_inicial: 0.5, tasa_aprendizaje: 0.01 },
+        'relacion': { entidad_origen: '', entidad_destino: '', tipo_relacion: 'one-to-many', cardinalidad: '1..*' }
+    };
+    return defaults[type] || { nombre: '', descripcion: '' };
+}
+function renderCanvas() {
+    let canvas = document.getElementById('editorCanvas');
+    if (!canvas) return;
+    if (canvasBlocks.length === 0) { canvas.innerHTML = '<div class="canvas-placeholder" style="text-align:center;padding:2rem;color:var(--text-muted);">Arrastra componentes aquí</div>'; return; }
+    let html = '';
+    canvasBlocks.forEach(block => {
+        let relationBadge = '';
+        if (block.type === 'relacion' && block.properties.tipo_relacion) {
+            let relClass = { 'one-to-one':'relation-one-to-one','one-to-many':'relation-one-to-many','many-to-many':'relation-many-to-many','dependency':'relation-dependency','inheritance':'relation-inheritance' }[block.properties.tipo_relacion] || 'relation-one-to-many';
+            relationBadge = `<span class="relation-badge ${relClass}">${block.properties.tipo_relacion}</span>`;
+        }
+        html += `<div class="canvas-block" data-id="${block.id}" style="background:var(--bg-card);border-left:3px solid var(--primary);border-radius:10px;padding:12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="editBlockProperties('${block.id}')">
+            <div><strong>${getIconForType(block.type)} ${escapeHtml(block.name)}</strong>${relationBadge}<div class="cert-detail">ID: ${block.id.substring(0,20)}...</div></div>
+            <div><button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); removeBlock('${block.id}')">🗑 Eliminar</button></div>
+        </div>`;
+    });
+    canvas.innerHTML = html;
+}
+function getIconForType(type) {
+    let icons = { 'agente':'👤','vendedor':'🛒','cliente':'👥','admin':'👑','producto':'📦','venta':'💰','inventario':'📊','empleado':'👔','nomina':'📈','finanzas':'🏦','conexion':'🔗','sinapsis':'🧠','relacion':'🔀','modulo':'⚙️','entidad':'🔧' };
+    return icons[type] || '📄';
+}
+function editBlockProperties(blockId) {
+    let block = canvasBlocks.find(b => b.id === blockId);
+    if (!block) return;
+    selectedBlockId = blockId;
+    let panel = document.getElementById('propertyPanel');
+    let formDiv = document.getElementById('propertyForm');
+    if (!panel || !formDiv) return;
+    let html = `<div style="margin-bottom:1rem;"><strong>Tipo:</strong> ${block.name}</div><div style="margin-bottom:1rem;"><strong>ID:</strong> ${block.id.substring(0,30)}...</div>`;
+    for (let [key, value] of Object.entries(block.properties)) {
+        html += `<div style="margin-bottom:0.75rem;"><label style="display:block;margin-bottom:0.25rem;color:var(--primary);">${key}:</label><input type="text" id="prop_${key}" value="${escapeHtml(String(value))}" style="width:100%;padding:8px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;color:white;"></div>`;
+    }
+    if (block.type === 'relacion') {
+        html += `<div style="margin-bottom:0.75rem;"><label style="color:var(--primary);">Tipo de Relación:</label>
+            <select id="prop_rel_type" style="width:100%;padding:8px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;color:white;">
+                <option value="one-to-one" ${block.properties.tipo_relacion === 'one-to-one' ? 'selected' : ''}>🔗 Uno a Uno (1:1)</option>
+                <option value="one-to-many" ${block.properties.tipo_relacion === 'one-to-many' ? 'selected' : ''}>📚 Uno a Muchos (1:N)</option>
+                <option value="many-to-many" ${block.properties.tipo_relacion === 'many-to-many' ? 'selected' : ''}>🔄 Muchos a Muchos (N:M)</option>
+                <option value="dependency" ${block.properties.tipo_relacion === 'dependency' ? 'selected' : ''}>⚡ Dependencia</option>
+                <option value="inheritance" ${block.properties.tipo_relacion === 'inheritance' ? 'selected' : ''}>🌳 Herencia</option>
+            </select>
+        </div>`;
+    }
+    formDiv.innerHTML = html;
+    if (block.type === 'relacion') {
+        document.getElementById('prop_rel_type').addEventListener('change', (e) => { block.properties.tipo_relacion = e.target.value; renderCanvas(); });
+    }
+    panel.style.display = 'block';
+}
+function saveProperties() {
+    if (!selectedBlockId) return;
+    let block = canvasBlocks.find(b => b.id === selectedBlockId);
+    if (!block) return;
+    for (let key of Object.keys(block.properties)) {
+        let input = document.getElementById(`prop_${key}`);
+        if (input) {
+            let value = input.value;
+            let numericFields = ['precio','stock','balance','cantidad','total','monto','salario','comision','peso','peso_inicial','tasa_aprendizaje'];
+            if (numericFields.includes(key)) value = parseFloat(value) || 0;
+            block.properties[key] = value;
+        }
+    }
+    if (block.type === 'relacion') {
+        let relTypeSelect = document.getElementById('prop_rel_type');
+        if (relTypeSelect) block.properties.tipo_relacion = relTypeSelect.value;
+    }
+    renderCanvas();
+    showToast('Propiedades guardadas', 'success');
+    closePropertyPanel();
+}
+function closePropertyPanel() { document.getElementById('propertyPanel').style.display = 'none'; selectedBlockId = null; }
+function removeBlock(blockId) { canvasBlocks = canvasBlocks.filter(b => b.id !== blockId); renderCanvas(); if (selectedBlockId === blockId) closePropertyPanel(); showToast('Componente eliminado', 'info'); }
+function clearCanvas() { if (canvasBlocks.length === 0) return; if (confirm('¿Limpiar canvas?')) { canvasBlocks = []; renderCanvas(); closePropertyPanel(); showToast('Canvas limpiado', 'info'); } }
+function generateLispCode() {
+    if (canvasBlocks.length === 0) { showToast('No hay componentes', 'warning'); return; }
+    let lispCode = ';; CÓDIGO GENERADO POR EL EDITOR VISUAL\n\n';
+    canvasBlocks.forEach(block => {
+        lispCode += `;; Componente: ${block.name} (${block.type})\n`;
+        if (block.type === 'agente' || block.type === 'vendedor' || block.type === 'cliente' || block.type === 'admin') {
+            let agentId = block.properties.id || block.properties.nombre?.toLowerCase().replace(/\s/g,'-') || `${block.type}-${Date.now()}`;
+            lispCode += `(crear-agente "${agentId}")\n`;
+            if (block.properties.root_cid) lispCode += `(set-agent-root "${agentId}" "${block.properties.root_cid}")\n`;
+        } else if (block.type === 'producto') {
+            lispCode += `(crear-entidad "Producto" '{"nombre":"${block.properties.nombre}","precio":${block.properties.precio},"stock":${block.properties.stock}}')\n`;
+        } else if (block.type === 'relacion') {
+            lispCode += `(crear-relacion "${block.properties.tipo_relacion}" "${block.properties.entidad_origen}" "${block.properties.entidad_destino}" "${block.properties.cardinalidad}")\n`;
+        } else if (block.type === 'conexion') {
+            lispCode += `(connect-to-neuron "${block.properties.destino}" ${block.properties.peso})\n`;
+        } else if (block.type === 'sinapsis') {
+            lispCode += `(connect-to-neuron "${block.properties.destino}" ${block.properties.peso_inicial})\n`;
+        }
+        lispCode += '\n';
+    });
+    let editor = document.getElementById('lispEditor');
+    if (editor) { editor.value = lispCode; switchTab('sec-lisp'); showToast('Código generado', 'success'); }
+}
+async function deployCanvas() {
+    if (canvasBlocks.length === 0) { showToast('No hay componentes', 'warning'); return; }
+    showToast('🚀 Desplegando...', 'info');
+    let successCount = 0;
+    for (let block of canvasBlocks) {
+        try {
+            if (block.type === 'agente' || block.type === 'vendedor' || block.type === 'cliente' || block.type === 'admin') {
+                let agentId = block.properties.id || block.properties.nombre?.toLowerCase().replace(/\s/g,'-') || `${block.type}-${Date.now()}`;
+                let res = await fetch('/api/crear-agente', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: agentId }) });
+                if (res.ok) successCount++;
+            } else if (block.type === 'producto') {
+                let cmd = `(crear-entidad "Producto" '{"nombre":"${block.properties.nombre}","precio":${block.properties.precio},"stock":${block.properties.stock}}')`;
+                let res = await fetch('/api/lispai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cmd: cmd }) });
+                if (res.ok) successCount++;
+            } else if (block.type === 'relacion') {
+                let cmd = `(crear-relacion "${block.properties.tipo_relacion}" "${block.properties.entidad_origen}" "${block.properties.entidad_destino}" "${block.properties.cardinalidad}")`;
+                let res = await fetch('/api/lispai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cmd: cmd }) });
+                if (res.ok) successCount++;
+            } else if (block.type === 'conexion' || block.type === 'sinapsis') {
+                let res = await fetch('/api/ia/sinapsis/conectar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nodo_destino: block.properties.destino, peso_inicial: block.properties.peso || block.properties.peso_inicial || 0.5 }) });
+                if (res.ok) successCount++;
+            }
+        } catch(e) { console.error(e); }
+    }
+    showToast(`✅ Despliegue: ${successCount} componentes creados`, successCount > 0 ? 'success' : 'error');
+    refreshAll();
+}
+
+// ============================================
+// VISTA PREVIA (PREVIEW)
+// ============================================
+async function showPreview() {
+    let lispCode = document.getElementById('lispEditor')?.value;
+    if (!lispCode || lispCode.trim() === '') {
+        lispCode = generatePreviewCodeFromCanvas();
+    }
+    if (!lispCode || lispCode.trim() === '') {
+        showToast('No hay código para previsualizar', 'warning');
+        return;
+    }
+    let previewPanel = document.getElementById('previewPanel');
+    let previewFrame = document.getElementById('previewFrame');
+    if (!previewPanel || !previewFrame) return;
+    previewPanel.style.display = 'block';
+    previewFrame.srcdoc = '<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#0A0A0A;color:#F4B400;">Generando vista previa...</div>';
+    try {
+        let cmd = `(generar-pagina-web "preview-${Date.now()}")`;
+        let res = await fetch('/api/lispai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cmd: cmd })
+        });
+        let data = await res.json();
+        if (data.resultado && typeof data.resultado === 'string') {
+            let previewCid = data.resultado;
+            let previewRes = await fetch(`/ipfs/${previewCid}`);
+            let html = await previewRes.text();
+            previewFrame.srcdoc = html;
+            showToast('Vista previa actualizada', 'success');
+        } else {
+            previewFrame.srcdoc = '<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#0A0A0A;color:#FF5252;">Error generando preview</div>';
+            showToast('Error generando preview', 'error');
+        }
+    } catch(e) {
+        console.error(e);
+        previewFrame.srcdoc = `<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#0A0A0A;color:#FF5252;">Error: ${e.message}</div>`;
+        showToast('Error: ' + e.message, 'error');
+    }
+}
+function generatePreviewCodeFromCanvas() {
+    if (canvasBlocks.length === 0) return '';
+    let agentId = `app-${Date.now()}`;
+    let lispCode = `(crear-agente "${agentId}")\n`;
+    canvasBlocks.forEach(block => {
+        if (block.type === 'agente' || block.type === 'vendedor' || block.type === 'cliente' || block.type === 'admin') {
+            let id = block.properties.id || block.properties.nombre?.toLowerCase().replace(/\s/g,'-') || `${block.type}-${Date.now()}`;
+            lispCode += `(crear-agente "${id}")\n`;
+        } else if (block.type === 'producto') {
+            lispCode += `(crear-entidad "Producto" '{"nombre":"${block.properties.nombre}","precio":${block.properties.precio},"stock":${block.properties.stock}}')\n`;
+        } else if (block.type === 'relacion') {
+            lispCode += `(crear-relacion "${block.properties.tipo_relacion}" "${block.properties.entidad_origen}" "${block.properties.entidad_destino}" "${block.properties.cardinalidad}")\n`;
+        }
+    });
+    lispCode += `(generar-pagina-web "${agentId}")\n`;
+    return lispCode;
+}
+function refreshPreview() { showPreview(); }
+function closePreviewPanel() { document.getElementById('previewPanel').style.display = 'none'; }
+
+// ============================================
+// FUNCIONES AUXILIARES
+// ============================================
+async function loadCustomModulesAndEntities() {
+    try { let res = await fetch('/api/modulos'); if (res.ok) { let modulos = await res.json(); customModules = modulos; } } catch(e) { console.log('No hay módulos'); }
+    try { let res = await fetch('/api/entidades'); if (res.ok) { let entidades = await res.json(); customEntities = entidades; } } catch(e) { console.log('No hay entidades'); }
+    refreshCustomPalette();
+}
+function refreshCustomPalette() {
+    let modulesDiv = document.getElementById('customModulesList');
+    if (modulesDiv) {
+        if (customModules.length === 0) { modulesDiv.innerHTML = '<div class="cert-detail">No hay módulos personalizados</div>'; }
+        else { let html = ''; customModules.forEach(mod => { html += `<div class="component-block" draggable="true" data-type="modulo" data-module-id="${mod.id}" data-name="${mod.nombre}" ondragstart="dragStartModule(event, '${mod.id}', '${mod.nombre}')"><span>⚙️</span> ${mod.nombre}</div>`; }); modulesDiv.innerHTML = html; }
+    }
+    let entitiesDiv = document.getElementById('customEntitiesList');
+    if (entitiesDiv) {
+        if (customEntities.length === 0) { entitiesDiv.innerHTML = '<div class="cert-detail">No hay entidades personalizadas</div>'; }
+        else { let html = ''; customEntities.forEach(ent => { html += `<div class="component-block" draggable="true" data-type="entidad" data-entity-id="${ent.id}" data-name="${ent.tipo}" ondragstart="dragStartEntity(event, '${ent.id}', '${ent.tipo}')"><span>🔧</span> ${ent.tipo}</div>`; }); entitiesDiv.innerHTML = html; }
+    }
+}
+function openCreateModuleModal() { document.getElementById('createModuleModal').style.display = 'flex'; }
+function closeCreateModuleModal() { document.getElementById('createModuleModal').style.display = 'none'; document.getElementById('newModuleName').value = ''; document.getElementById('newModuleRol').value = ''; document.getElementById('newModuleAtributos').value = ''; }
+async function createCustomModule() {
+    let name = document.getElementById('newModuleName').value.trim();
+    let rol = document.getElementById('newModuleRol').value.trim();
+    let atributosStr = document.getElementById('newModuleAtributos').value.trim();
+    if (!name) { showToast('Nombre requerido', 'error'); return; }
+    let atributos = {};
+    if (atributosStr) { try { atributos = JSON.parse(atributosStr); } catch(e) { showToast('JSON inválido', 'error'); return; } }
+    try {
+        let res = await fetch('/api/modulos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: name, rol: rol || 'personalizado', atributos: atributos, owner: 'editor' }) });
+        if (res.ok) { let nuevoModulo = await res.json(); customModules.push(nuevoModulo); refreshCustomPalette(); closeCreateModuleModal(); showToast(`Módulo "${name}" creado`, 'success'); }
+        else showToast('Error', 'error');
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+function openCreateEntityModal() { document.getElementById('createEntityModal').style.display = 'flex'; }
+function closeCreateEntityModal() { document.getElementById('createEntityModal').style.display = 'none'; document.getElementById('newCustomEntityName').value = ''; document.getElementById('newCustomEntityType').value = ''; document.getElementById('newCustomEntityAtributos').value = ''; document.getElementById('newCustomEntityHereda').value = ''; }
+async function createCustomEntity() {
+    let tipo = document.getElementById('newCustomEntityName').value.trim();
+    let atributosStr = document.getElementById('newCustomEntityAtributos').value.trim();
+    let heredaDe = document.getElementById('newCustomEntityHereda').value.trim();
+    if (!tipo) { showToast('Nombre requerido', 'error'); return; }
+    let atributos = {};
+    if (atributosStr) { try { atributos = JSON.parse(atributosStr); } catch(e) { showToast('JSON inválido', 'error'); return; } }
+    try {
+        let res = await fetch('/api/entidades', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tipo: tipo, atributos: atributos, hereda_de: heredaDe || '', modulo_id: 'editor' }) });
+        if (res.ok) { let nuevaEntidad = await res.json(); customEntities.push(nuevaEntidad); refreshCustomPalette(); closeCreateEntityModal(); showToast(`Entidad "${tipo}" creada`, 'success'); }
+        else showToast('Error', 'error');
+    } catch(e) { showToast('Error: ' + e.message, 'error'); }
+}
+
+// ============================================
+// ENTIDADES Y RELACIONES
+// ============================================
+async function loadEntities() {
+    try {
+        let res = await fetch('/api/entidades');
+        let entidades = await res.json();
+        let selectFrom = document.getElementById('relFromEntity');
+        let selectTo = document.getElementById('relToEntity');
+        if (selectFrom) { selectFrom.innerHTML = '<option value="">Selecciona origen</option>'; entidades.forEach(e => { selectFrom.innerHTML += `<option value="${e.id}">${e.tipo}</option>`; }); }
+        if (selectTo) { selectTo.innerHTML = '<option value="">Selecciona destino</option>'; entidades.forEach(e => { selectTo.innerHTML += `<option value="${e.id}">${e.tipo}</option>`; }); }
+        let html = ''; entidades.forEach(e => { html += `<div class="entity-item"><div><strong>${escapeHtml(e.tipo)}</strong><div class="cert-detail">ID: ${e.id.substring(0,20)}...</div><div class="cert-detail">Atributos: ${Object.keys(e.atributos || {}).join(', ')}</div>${e.hereda_de ? `<div class="cert-detail">Hereda de: ${e.hereda_de}</div>` : ''}</div><div><button class="btn btn-danger btn-sm" onclick="deleteEntity('${e.id}')">Eliminar</button></div></div>`; });
+        document.getElementById('entitiesList').innerHTML = html || '<div class="loading">No hay entidades</div>';
+    } catch(e) { document.getElementById('entitiesList').innerHTML = '<div class="loading">Error</div>'; }
+}
+async function deleteEntity(id) { if (!confirm('¿Eliminar entidad?')) return; try { await fetch(`/api/entidades/${id}`, { method: 'DELETE' }); loadEntities(); showToast('Entidad eliminada', 'success'); } catch(e) { showToast('Error', 'error'); } }
+async function createEntityFromForm() {
+    let nombre = document.getElementById('newEntityName').value.trim();
+    let parent = document.getElementById('newEntityParent').value.trim();
+    let attrsStr = document.getElementById('newEntityAttrs').value.trim();
+    if (!nombre) { showToast('Nombre requerido', 'error'); return; }
+    let atributos = {};
+    if (attrsStr) { try { atributos = JSON.parse(attrsStr); } catch(e) { showToast('JSON inválido', 'error'); return; } }
+    try {
+        let res = await fetch('/api/entidades', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tipo: nombre, atributos: atributos, hereda_de: parent || '', modulo_id: 'form' }) });
+        if (res.ok) { showToast(`Entidad "${nombre}" creada`, 'success'); document.getElementById('newEntityName').value = ''; document.getElementById('newEntityParent').value = ''; document.getElementById('newEntityAttrs').value = ''; loadEntities(); }
+        else showToast('Error', 'error');
+    } catch(e) { showToast('Error', 'error'); }
+}
+async function loadRelations() {
+    try {
+        let res = await fetch('/api/relaciones');
+        let relaciones = await res.json();
+        let entidadesRes = await fetch('/api/entidades');
+        let entidades = await entidadesRes.json();
+        let entMap = {}; entidades.forEach(e => { entMap[e.id] = e.tipo; });
+        let html = ''; relaciones.forEach(r => {
+            let relClass = { 'one-to-one':'relation-one-to-one','one-to-many':'relation-one-to-many','many-to-many':'relation-many-to-many','dependency':'relation-dependency','inheritance':'relation-inheritance' }[r.tipo] || 'relation-one-to-many';
+            html += `<div class="relation-item"><div><strong>${entMap[r.entidad_a] || r.entidad_a} ${r.tipo === 'one-to-one' ? '🔗 1:1' : (r.tipo === 'one-to-many' ? '📚 1:N' : (r.tipo === 'many-to-many' ? '🔄 N:M' : (r.tipo === 'dependency' ? '⚡' : '🌳')))} ${entMap[r.entidad_b] || r.entidad_b}</strong><div class="cert-detail">Cardinalidad: ${r.cardinalidad}</div></div><div><button class="btn btn-danger btn-sm" onclick="deleteRelation('${r.id}')">Eliminar</button></div></div>`;
+        });
+        document.getElementById('relationsList').innerHTML = html || '<div class="loading">No hay relaciones</div>';
+        let diagram = ''; relaciones.forEach(r => { diagram += `${entMap[r.entidad_a] || r.entidad_a} ──${r.tipo === 'one-to-one' ? '1:1' : (r.tipo === 'one-to-many' ? '1:N' : (r.tipo === 'many-to-many' ? 'N:M' : (r.tipo === 'dependency' ? '-->' : '---')))}── ${entMap[r.entidad_b] || r.entidad_b}\n`; });
+        document.getElementById('relationDiagram').innerHTML = diagram || 'No hay relaciones para mostrar';
+    } catch(e) { document.getElementById('relationsList').innerHTML = '<div class="loading">Error</div>'; }
+}
+async function createRelationship() {
+    let entidadA = document.getElementById('relFromEntity').value;
+    let entidadB = document.getElementById('relToEntity').value;
+    let tipo = document.getElementById('relType').value;
+    let cardinalidad = document.getElementById('relCardinalidad').value;
+    if (!entidadA || !entidadB) { showToast('Seleccione entidades', 'error'); return; }
+    try {
+        let res = await fetch('/api/relaciones', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entidad_a: entidadA, entidad_b: entidadB, tipo: tipo, cardinalidad: cardinalidad }) });
+        if (res.ok) { showToast('Relación creada', 'success'); loadRelations(); }
+        else showToast('Error', 'error');
+    } catch(e) { showToast('Error', 'error'); }
+}
+async function deleteRelation(id) { if (!confirm('¿Eliminar relación?')) return; try { await fetch(`/api/relaciones/${id}`, { method: 'DELETE' }); loadRelations(); showToast('Relación eliminada', 'success'); } catch(e) { showToast('Error', 'error'); } }
+
+// ============================================
+// HELP Y UI
+// ============================================
+function switchHelpTab(tabId) {
+    let helpContents = ['intro','agentes','modulos','entidades','relaciones','seguridad','ejemplos'];
+    helpContents.forEach(id => { let el = document.getElementById(`help-${id}`); if (el) el.style.display = 'none'; });
+    let activeEl = document.getElementById(`help-${tabId}`); if (activeEl) activeEl.style.display = 'block';
+    let tabs = document.querySelectorAll('#sec-ayuda .tab'); tabs.forEach(tab => tab.classList.remove('active')); if (event && event.target) event.target.classList.add('active');
+}
+function switchTab(id, el) {
+    document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    let section = document.getElementById(id); if (section) section.classList.add('active');
+    if (el) el.classList.add('active');
+    if (id === 'sec-ipfs') loadIPFSList();
+    if (id === 'sec-agentes') loadAgentes();
+    if (id === 'sec-auditoria') loadAuditLog();
+    if (id === 'sec-dns') loadDNSList();
+    if (id === 'sec-root') loadRootStatus();
+    if (id === 'sec-dapps') loadDapps();
+    if (id === 'sec-ia') { loadNeuronState(); loadSynapses(); }
+    if (id === 'sec-red') refreshNetwork();
+    if (id === 'sec-verificar') loadCertList();
+    if (id === 'sec-webapps') { refreshServerApps(); loadRegisteredApps(); }
+    if (id === 'sec-editor') { loadCustomModulesAndEntities(); renderCanvas(); }
+    if (id === 'sec-entidades') loadEntities();
+    if (id === 'sec-relaciones') loadRelations();
+}
+function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;'); }
+
+// Inicialización
+loadCustomModulesAndEntities();
+</script>
+</body>
+</html>
 
