@@ -38,6 +38,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/multiformats/go-multiaddr"
 	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
 
 	"golang.org/x/crypto/bcrypt"
@@ -1276,6 +1277,34 @@ func (e *LispEvaluator) initBuiltins() {
 		}
 		fmt.Println()
 		return nil
+	}))
+	
+	// connect-to-peer: Conecta este nodo a otro peer usando su multiaddr.
+	e.globalEnv.SetFunction("connect-to-peer", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
+    if len(args) < 1 {
+        return "error: se requiere la multiaddr del peer"
+    }
+    addrStr, ok := args[0].(string)
+    if !ok {
+        return "error: la multiaddr debe ser un string"
+    }
+    // Parsear la multiaddr
+    addr, err := multiaddr.NewMultiaddr(addrStr)
+    if err != nil {
+        return fmt.Sprintf("error al parsear multiaddr: %v", err)
+    }
+    // Obtener la información del peer
+    peerInfo, err := peer.AddrInfoFromP2pAddr(addr)
+    if err != nil {
+        return fmt.Sprintf("error al obtener info del peer: %v", err)
+    }
+    // Intentar conectar
+    ctx, cancel := context.WithTimeout(e.nodo.ctx, 10*time.Second)
+    defer cancel()
+    if err := e.nodo.host.Connect(ctx, *peerInfo); err != nil {
+        return fmt.Sprintf("error al conectar: %v", err)
+    }
+    return fmt.Sprintf("conectado a %s", peerInfo.ID.String())
 	}))
 
 	// Funciones del sistema neuronal
