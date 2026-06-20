@@ -6834,44 +6834,65 @@ func (n *NodoAlset) startHTTPServer(port string) {
 }
 
 func (n *NodoAlset) Init() {
-	n.LoadMasterKey()
-	n.startTime = time.Now().Unix()
-	priv, _, _ := crypto.GenerateKeyPairWithReader(crypto.Ed25519, 2048, rand.Reader)
-	h, _ := libp2p.New(libp2p.Identity(priv), libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
-	n.host = h
-	n.ctx = context.Background()
-	n.blockstore = make(map[string][]byte)
-	n.agentes = make(map[string]*Agente)
-	n.nombres = make(map[string]string)
-	n.pendingInferences = make(map[string]chan InferenceResponse)
-	n.pendingMemoryQueries = make(map[string]chan MemoryResponse)
-	n.hebbianMemory = make(map[string]float64)
-	
-	n.syncManager = n.InitSyncManager()
-	
-	n.CargarEstado()
-	n.neuralState = &NeuralState{
-		MembranePotential: 0,
-		LastSpikeTime:     0,
-		SpikeThreshold:    0.6,
-		LeakRate:          0.01,
-		RefractoryPeriod:  1000000,
-		Synapses:          make(map[string]SynapticWeight),
-		NeuronType:        "input",
-	}
-	n.cargarPesosSinapsis()
-	n.datastore = ds_sync.MutexWrap(datastore.NewMapDatastore())
-	ps, _ := pubsub.NewGossipSub(n.ctx, n.host)
-	n.pubsub = ps
-	n.topic, _ = n.pubsub.Join(AlsetGossipTopic)
-	n.host.SetStreamHandler(AlsetDataExchangeID, n.handleDataExchange)
-	n.kademlia, _ = dht.New(n.ctx, n.host, dht.Mode(dht.ModeServer))
-	go n.kademlia.Bootstrap(n.ctx)
-	n.lisp = NewLispEvaluator(n)
-	mdns.NewMdnsService(n.host, "alset-mesh", &discoveryNotifee{h: n.host}).Start()
-	go n.EscucharGossip()
-	
-	go n.QuickStartup()
+    n.LoadMasterKey()
+    n.startTime = time.Now().Unix()
+    priv, _, err := crypto.GenerateKeyPairWithReader(crypto.Ed25519, 2048, rand.Reader)
+    if err != nil {
+        log.Fatal("Error generando clave privada:", err)
+    }
+    // Crear el host con soporte para relay
+    h, err := libp2p.New(
+        libp2p.Identity(priv),
+        libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"),
+        libp2p.EnableRelayService(), // Habilita el servicio de relay
+        // Opcional: si quieres un puerto fijo, usa "/ip4/0.0.0.0/tcp/4001"
+    )
+    if err != nil {
+        log.Fatal("Error creando el host libp2p:", err)
+    }
+    n.host = h
+    n.ctx = context.Background()
+    n.blockstore = make(map[string][]byte)
+    n.agentes = make(map[string]*Agente)
+    n.nombres = make(map[string]string)
+    n.pendingInferences = make(map[string]chan InferenceResponse)
+    n.pendingMemoryQueries = make(map[string]chan MemoryResponse)
+    n.hebbianMemory = make(map[string]float64)
+
+    n.syncManager = n.InitSyncManager()
+
+    n.CargarEstado()
+    n.neuralState = &NeuralState{
+        MembranePotential: 0,
+        LastSpikeTime:     0,
+        SpikeThreshold:    0.6,
+        LeakRate:          0.01,
+        RefractoryPeriod:  1000000,
+        Synapses:          make(map[string]SynapticWeight),
+        NeuronType:        "input",
+    }
+    n.cargarPesosSinapsis()
+    n.datastore = ds_sync.MutexWrap(datastore.NewMapDatastore())
+    ps, err := pubsub.NewGossipSub(n.ctx, n.host)
+    if err != nil {
+        log.Fatal("Error creando GossipSub:", err)
+    }
+    n.pubsub = ps
+    n.topic, err = n.pubsub.Join(AlsetGossipTopic)
+    if err != nil {
+        log.Fatal("Error uniéndose al tópico:", err)
+    }
+    n.host.SetStreamHandler(AlsetDataExchangeID, n.handleDataExchange)
+    n.kademlia, err = dht.New(n.ctx, n.host, dht.Mode(dht.ModeServer))
+    if err != nil {
+        log.Fatal("Error creando DHT:", err)
+    }
+    go n.kademlia.Bootstrap(n.ctx)
+    n.lisp = NewLispEvaluator(n)
+    mdns.NewMdnsService(n.host, "alset-mesh", &discoveryNotifee{h: n.host}).Start()
+    go n.EscucharGossip()
+
+    go n.QuickStartup()
 }
 
 type discoveryNotifee struct{ h host.Host }
