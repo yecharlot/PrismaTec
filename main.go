@@ -4694,22 +4694,29 @@ func (sm *SyncManager) SaveLastSyncTime() {
 }
 
 func (n *NodoAlset) QuickStartup() {
-	fmt.Println("🚀 Arranque rápido iniciado...")
-	n.ensureStaticFiles()
-	n.CargarEstado()
-	go n.connectToNetwork()
-	go func() {
-		time.Sleep(3 * time.Second)
-		if n.syncManager != nil && n.shouldQuickSync() {
-			n.syncManager.PerformQuickSync()
-		}
-	}()
-	// ---- Iniciar cliente de pulsos ----
-	go n.startPulseClients()
-	fmt.Println("✅ Nodo operativo (sincronización en background)")
-	fmt.Println("🌐 Panel de administración: http://localhost:" + getPort() + "/static/index.html")
-}
+    fmt.Println("🚀 Arranque rápido iniciado...")
+    n.ensureStaticFiles()
+    n.CargarEstado()
+    go n.connectToNetwork()
 
+    go func() {
+        time.Sleep(3 * time.Second)
+        if n.syncManager != nil && n.shouldQuickSync() {
+            n.syncManager.PerformQuickSync()
+        }
+    }()
+
+    // ---- Iniciar cliente de pulsos SOLO si NO estamos en Render ----
+    if os.Getenv("RENDER") == "" {
+        go n.startPulseClients()
+        fmt.Println("⚡ Cliente de pulsos iniciado (modo local)")
+    } else {
+        fmt.Println("⚡ Cliente de pulsos desactivado (nodo en Render, solo actúa como servidor)")
+    }
+
+    fmt.Println("✅ Nodo operativo (sincronización en background)")
+    fmt.Println("🌐 Panel de administración: http://localhost:" + getPort() + "/static/index.html")
+}
 func getPort() string {
 	return "8080"
 }
@@ -7065,7 +7072,12 @@ func main() {
 	fmt.Println("📦 Sistema Híbrido Go + Lisp con IA Distribuida, VC, UTXO, PoH y ZKP")
 	fmt.Println("🧠 Con IA Distribuida: Neuronas, Sinapsis, Inferencia Distribuida y Memoria Distribuida")
 	fmt.Println("⚡ Con sistema de pulsos SSE para comunicación resiliente")
-
+	if os.Getenv("RENDER") != "" {
+        fmt.Println("🟢 Nodo ejecutándose en Render (servidor de pulsos)")
+    } else {
+        fmt.Println("🟢 Nodo ejecutándose localmente (cliente de pulsos)")
+    }
+	
 	port := "8080"
 	if len(os.Args) > 1 {
 		port = os.Args[1]
