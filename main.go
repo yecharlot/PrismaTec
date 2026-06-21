@@ -14,6 +14,7 @@ import (
 	"io"
 	"log"
 	"math"
+	mathrand "math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -23,7 +24,6 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-	mathrand "math/rand"
 	"time"
 
 	"github.com/ipfs/go-cid"
@@ -38,11 +38,15 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/multiformats/go-multiaddr"
 	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
+	"github.com/multiformats/go-multiaddr"
 
 	"golang.org/x/crypto/bcrypt"
 )
+
+// =============================================================================
+// CONSTANTES
+// =============================================================================
 
 const AlsetProtocolID = "/ptec-an/sync/1.0.0"
 const AlsetDataExchangeID = "/ptec-an/data/1.0.0"
@@ -62,6 +66,10 @@ const (
 	MemoryDistributedTopic = "ptec-an-memory-distributed"
 )
 
+// =============================================================================
+// TIPOS ESTRUCTURALES
+// =============================================================================
+
 type Agente struct {
 	ID           string  `json:"id"`
 	RootCID      string  `json:"root_cid"`
@@ -70,11 +78,11 @@ type Agente struct {
 }
 
 type NodoConfig struct {
-	AdminPassHash   string `json:"admin_pass_hash"`
-	LastUpdate      int64  `json:"last_update"`
-	Version         string `json:"version"`
-	AdminPanelCID   string `json:"admin_panel_cid"`
-	IsGenesis       bool   `json:"is_genesis"`
+	AdminPassHash string `json:"admin_pass_hash"`
+	LastUpdate    int64  `json:"last_update"`
+	Version       string `json:"version"`
+	AdminPanelCID string `json:"admin_panel_cid"`
+	IsGenesis     bool   `json:"is_genesis"`
 }
 
 type PoHEvent struct {
@@ -108,13 +116,13 @@ type SynapticWeight struct {
 }
 
 type NeuralState struct {
-	MembranePotential float64                    `json:"membrane_potential"`
-	LastSpikeTime     int64                      `json:"last_spike_time"`
-	SpikeThreshold    float64                    `json:"spike_threshold"`
-	LeakRate          float64                    `json:"leak_rate"`
-	RefractoryPeriod  int64                      `json:"refractory_period"`
+	MembranePotential float64                   `json:"membrane_potential"`
+	LastSpikeTime     int64                     `json:"last_spike_time"`
+	SpikeThreshold    float64                   `json:"spike_threshold"`
+	LeakRate          float64                   `json:"leak_rate"`
+	RefractoryPeriod  int64                     `json:"refractory_period"`
 	Synapses          map[string]SynapticWeight `json:"synapses"`
-	NeuronType        string                     `json:"neuron_type"`
+	NeuronType        string                    `json:"neuron_type"`
 }
 
 type InferenceRequest struct {
@@ -161,11 +169,11 @@ type Modulo struct {
 }
 
 type EntidadProgramatica struct {
-	ID         string                 `json:"id"`
-	Tipo       string                 `json:"tipo"`
-	Atributos  map[string]interface{} `json:"atributos"`
-	HeredaDe   string                 `json:"hereda_de"`
-	ModuloID   string                 `json:"modulo_id"`
+	ID        string                 `json:"id"`
+	Tipo      string                 `json:"tipo"`
+	Atributos map[string]interface{} `json:"atributos"`
+	HeredaDe  string                 `json:"hereda_de"`
+	ModuloID  string                 `json:"modulo_id"`
 }
 
 type RelacionEntidad struct {
@@ -177,13 +185,13 @@ type RelacionEntidad struct {
 }
 
 type TokenAlset struct {
-	Token      string   `json:"token"`
-	AgentID    string   `json:"agent_id"`
-	RootCID    string   `json:"root_cid"`
-	ExpiresAt  int64    `json:"expires_at"`
-	Roles      []string `json:"roles"`
-	Permisos   []string `json:"permisos"`
-	Signature  string   `json:"signature"`
+	Token     string   `json:"token"`
+	AgentID   string   `json:"agent_id"`
+	RootCID   string   `json:"root_cid"`
+	ExpiresAt int64    `json:"expires_at"`
+	Roles     []string `json:"roles"`
+	Permisos  []string `json:"permisos"`
+	Signature string   `json:"signature"`
 }
 
 type UsuarioRoles struct {
@@ -232,11 +240,11 @@ type SyncManager struct {
 }
 
 type SyncProgress struct {
-	Current  int     `json:"current"`
-	Total    int     `json:"total"`
-	Percent  float64 `json:"percent"`
-	Status   string  `json:"status"`
-	Stage    string  `json:"stage"`
+	Current int     `json:"current"`
+	Total   int     `json:"total"`
+	Percent float64 `json:"percent"`
+	Status  string  `json:"status"`
+	Stage   string  `json:"stage"`
 }
 
 var globalSyncProgress = &SyncProgress{
@@ -249,13 +257,10 @@ var globalSyncProgress = &SyncProgress{
 // =============================================================================
 
 type LispValue interface{}
-
 type LispSymbol string
-
 type LispList []LispValue
 
 type LispFunction func(args []LispValue, env *LispEnvironment) LispValue
-
 type LispMacro func(args []LispValue, env *LispEnvironment) LispValue
 
 type LispUserFunction struct {
@@ -661,8 +666,15 @@ func convertStringsToSymbols(expr LispValue) LispValue {
 	}
 }
 
+// =============================================================================
+// FUNCIONES PRIMITIVAS DEL LISP
+// =============================================================================
+
 func (e *LispEvaluator) initBuiltins() {
-	// Operadores aritméticos
+	// =====================================================================
+	// OPERADORES ARITMÉTICOS, LÓGICOS, LISTAS, MATEMÁTICOS, E/S, ETC.
+	// =====================================================================
+
 	e.globalEnv.SetFunction("+", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		sum := 0.0
 		for _, arg := range args {
@@ -712,7 +724,6 @@ func (e *LispEvaluator) initBuiltins() {
 		return result
 	}))
 
-	// Operadores de comparación
 	e.globalEnv.SetFunction("<", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		if len(args) < 2 {
 			return true
@@ -786,7 +797,6 @@ func (e *LispEvaluator) initBuiltins() {
 		return true
 	}))
 
-	// Operadores lógicos
 	e.globalEnv.SetFunction("and", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		for _, arg := range args {
 			val := e.eval(arg, env)
@@ -814,7 +824,6 @@ func (e *LispEvaluator) initBuiltins() {
 		return !isTruthy(e.eval(args[0], env))
 	}))
 
-	// Funciones de listas
 	e.globalEnv.SetFunction("list", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		result := make(LispList, len(args))
 		for i, arg := range args {
@@ -904,11 +913,20 @@ func (e *LispEvaluator) initBuiltins() {
 
 	// Funciones matemáticas
 	mathFuncs := map[string]func(float64) float64{
-		"sin": math.Sin, "cos": math.Cos, "tan": math.Tan,
-		"asin": math.Asin, "acos": math.Acos, "atan": math.Atan,
-		"sinh": math.Sinh, "cosh": math.Cosh, "tanh": math.Tanh,
-		"exp": math.Exp, "sqrt": math.Sqrt, "abs": math.Abs,
-		"floor": math.Floor, "round": math.Round,
+		"sin":   math.Sin,
+		"cos":   math.Cos,
+		"tan":   math.Tan,
+		"asin":  math.Asin,
+		"acos":  math.Acos,
+		"atan":  math.Atan,
+		"sinh":  math.Sinh,
+		"cosh":  math.Cosh,
+		"tanh":  math.Tanh,
+		"exp":   math.Exp,
+		"sqrt":  math.Sqrt,
+		"abs":   math.Abs,
+		"floor": math.Floor,
+		"round": math.Round,
 	}
 	for name, fn := range mathFuncs {
 		f := fn
@@ -920,6 +938,7 @@ func (e *LispEvaluator) initBuiltins() {
 		}))
 	}
 
+	// expt
 	e.globalEnv.SetFunction("expt", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		if len(args) < 2 {
 			return 1.0
@@ -965,7 +984,10 @@ func (e *LispEvaluator) initBuiltins() {
 		return result
 	}))
 
-	// Funciones de verificación de credenciales
+	// =====================================================================
+	// FUNCIONES DE VERIFICACIÓN DE CREDENCIALES (VC, PoH, ZKP)
+	// =====================================================================
+
 	e.globalEnv.SetFunction("sellar-documento", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		if len(args) < 1 {
 			return "error: requiere cid"
@@ -1029,7 +1051,8 @@ func (e *LispEvaluator) initBuiltins() {
 
 		e.nodo.Auditoria("VC_EMITIDO", fmt.Sprintf("Doc: %s | VC: %s", cidOriginal, certCID))
 		e.nodo.AnunciarNuevoBloque(certCID)
-		return certCID	}))
+		return certCID
+	}))
 
 	e.globalEnv.SetFunction("revocar-certificado", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		if len(args) < 2 {
@@ -1053,11 +1076,11 @@ func (e *LispEvaluator) initBuiltins() {
 		}
 
 		revocationTicket := map[string]interface{}{
-			"@context":        "https://www.w3.org/2018/credentials/v1",
-			"id":              fmt.Sprintf("urn:uuid:%s", certCID),
-			"type":            []string{"RevocationList2020Credential"},
-			"issuer":          "did:prism:tec:institutional",
-			"issuanceDate":    fecha,
+			"@context":     "https://www.w3.org/2018/credentials/v1",
+			"id":           fmt.Sprintf("urn:uuid:%s", certCID),
+			"type":         []string{"RevocationList2020Credential"},
+			"issuer":       "did:prism:tec:institutional",
+			"issuanceDate": fecha,
 			"credentialSubject": map[string]interface{}{
 				"id":                fmt.Sprintf("did:prism:%s", certCID[:16]),
 				"revokedCredential": certCID,
@@ -1167,6 +1190,10 @@ func (e *LispEvaluator) initBuiltins() {
 		return fmt.Sprintf("Evento de humanidad registrado (%d total)", len(globalPoH.events))
 	}))
 
+	// =====================================================================
+	// FUNCIONES DE AGENTES, DNS, IPFS, LISP
+	// =====================================================================
+
 	e.globalEnv.SetFunction("crear-agente", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		if len(args) < 1 {
 			return "error: id requerido"
@@ -1185,6 +1212,12 @@ func (e *LispEvaluator) initBuiltins() {
 			e.nodo.Auditoria("AGENTE_CREADO", "ID: "+agentID)
 			e.nodo.PersistirLocamente()
 			e.nodo.SincronizarConPares()
+			// ---- PULSO: emitir evento ----
+			go e.nodo.broadcastPulse("agent_created", map[string]interface{}{
+				"id":   agentID,
+				"root": "",
+				"time": time.Now().Unix(),
+			})
 			return "Agente " + agentID + " creado"
 		}
 		e.nodo.mu.Unlock()
@@ -1205,6 +1238,12 @@ func (e *LispEvaluator) initBuiltins() {
 		e.nodo.mu.Unlock()
 		e.nodo.PersistirLocamente()
 		e.nodo.SincronizarConPares()
+		// ---- PULSO: emitir evento ----
+		go e.nodo.broadcastPulse("root_updated", map[string]interface{}{
+			"id":   agentID,
+			"root": cidStr,
+			"time": time.Now().Unix(),
+		})
 		return "Root actualizado"
 	}))
 
@@ -1220,6 +1259,12 @@ func (e *LispEvaluator) initBuiltins() {
 		e.nodo.Auditoria("DNS_REGISTRO", fmt.Sprintf("Alias: %s -> Agente: %s", alias, agentID))
 		e.nodo.PersistirLocamente()
 		e.nodo.DifundirActualizacionDNS(alias, agentID)
+		// ---- PULSO: emitir evento ----
+		go e.nodo.broadcastPulse("dns_registered", map[string]interface{}{
+			"alias": alias,
+			"agent": agentID,
+			"time":  time.Now().Unix(),
+		})
 		return "OK"
 	}))
 
@@ -1278,36 +1323,39 @@ func (e *LispEvaluator) initBuiltins() {
 		fmt.Println()
 		return nil
 	}))
-	
-	// connect-to-peer: Conecta este nodo a otro peer usando su multiaddr.
+
+	// =====================================================================
+	// CONEXIÓN PEER (connect-to-peer)
+	// =====================================================================
+
 	e.globalEnv.SetFunction("connect-to-peer", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
-    if len(args) < 1 {
-        return "error: se requiere la multiaddr del peer"
-    }
-    addrStr, ok := args[0].(string)
-    if !ok {
-        return "error: la multiaddr debe ser un string"
-    }
-    // Parsear la multiaddr
-    addr, err := multiaddr.NewMultiaddr(addrStr)
-    if err != nil {
-        return fmt.Sprintf("error al parsear multiaddr: %v", err)
-    }
-    // Obtener la información del peer
-    peerInfo, err := peer.AddrInfoFromP2pAddr(addr)
-    if err != nil {
-        return fmt.Sprintf("error al obtener info del peer: %v", err)
-    }
-    // Intentar conectar
-    ctx, cancel := context.WithTimeout(e.nodo.ctx, 10*time.Second)
-    defer cancel()
-    if err := e.nodo.host.Connect(ctx, *peerInfo); err != nil {
-        return fmt.Sprintf("error al conectar: %v", err)
-    }
-    return fmt.Sprintf("conectado a %s", peerInfo.ID.String())
+		if len(args) < 1 {
+			return "error: se requiere la multiaddr del peer"
+		}
+		addrStr, ok := args[0].(string)
+		if !ok {
+			return "error: la multiaddr debe ser un string"
+		}
+		addr, err := multiaddr.NewMultiaddr(addrStr)
+		if err != nil {
+			return fmt.Sprintf("error al parsear multiaddr: %v", err)
+		}
+		peerInfo, err := peer.AddrInfoFromP2pAddr(addr)
+		if err != nil {
+			return fmt.Sprintf("error al obtener info del peer: %v", err)
+		}
+		ctx, cancel := context.WithTimeout(e.nodo.ctx, 10*time.Second)
+		defer cancel()
+		if err := e.nodo.host.Connect(ctx, *peerInfo); err != nil {
+			return fmt.Sprintf("error al conectar: %v", err)
+		}
+		return fmt.Sprintf("conectado a %s", peerInfo.ID.String())
 	}))
 
-	// Funciones del sistema neuronal
+	// =====================================================================
+	// SISTEMA NEURONAL
+	// =====================================================================
+
 	e.globalEnv.SetFunction("neuron-state", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		if e.nodo.neuralState == nil {
 			return "No inicializado"
@@ -1577,7 +1625,10 @@ func (e *LispEvaluator) initBuiltins() {
 			input, output, esperado, error, tasa)
 	}))
 
-	// Funciones especiales de Lisp
+	// =====================================================================
+	// FUNCIONES ESPECIALES DE LISP
+	// =====================================================================
+
 	e.globalEnv.SetFunction("quote", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		if len(args) == 0 {
 			return nil
@@ -1902,7 +1953,7 @@ func (e *LispEvaluator) initBuiltins() {
 	e.globalEnv.SetFunction("cadddr", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		if len(args) < 1 {
 			return nil
-			}
+		}
 		lst := e.eval(args[0], env)
 		if l, ok := lst.(LispList); ok && len(l) >= 4 {
 			return l[3]
@@ -2113,728 +2164,658 @@ func (e *LispEvaluator) initBuiltins() {
 		return nil
 	}))
 
-	// Funciones unificadas
+	// =====================================================================
+	// ZYRION Y PRIMITIVAS DE IA
+	// =====================================================================
+
 	e.registerUnifiedFunctions()
 
-	// Dentro de initBuiltins(), después de las funciones existentes
-e.globalEnv.SetFunction("zyrion", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
-    // Espera una lista como argumento
-    if len(args) == 0 {
-        return float64(0)
-    }
-    list, ok := args[0].(LispList)
-    if !ok {
-        return float64(0)
-    }
-    hasPartial := false
-    sum := 0.0
-    total := 0.0
-    for _, item := range list {
-        var v float64
-        switch val := item.(type) {
-        case float64:
-            v = val
-        case int:
-            v = float64(val)
-        default:
-            v = 0
-        }
-        // Normalizar
-        if v == 0 || v == 1 || v == 2 {
-            // bien
-        } else {
-            v = 0
-        }
-        if v == 2 {
-            hasPartial = true
-        } else {
-            sum += v
-            total++
-        }
-    }
-    if hasPartial {
-        return float64(2)
-    }
-    if total == 0 {
-        return float64(0)
-    }
-    if sum == 0 {
-        return float64(0)
-    }
-    if sum == total {
-        return float64(1)
-    }
-    return float64(2)
-}))
+	e.globalEnv.SetFunction("zyrion", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
+		if len(args) == 0 {
+			return float64(0)
+		}
+		list, ok := args[0].(LispList)
+		if !ok {
+			return float64(0)
+		}
+		hasPartial := false
+		sum := 0.0
+		total := 0.0
+		for _, item := range list {
+			var v float64
+			switch val := item.(type) {
+			case float64:
+				v = val
+			case int:
+				v = float64(val)
+			default:
+				v = 0
+			}
+			if v == 0 || v == 1 || v == 2 {
+			} else {
+				v = 0
+			}
+			if v == 2 {
+				hasPartial = true
+			} else {
+				sum += v
+				total++
+			}
+		}
+		if hasPartial {
+			return float64(2)
+		}
+		if total == 0 {
+			return float64(0)
+		}
+		if sum == 0 {
+			return float64(0)
+		}
+		if sum == total {
+			return float64(1)
+		}
+		return float64(2)
+	}))
 
-e.globalEnv.SetFunction("zyrion-network", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
-    if len(args) < 2 {
-        return "error: se requieren topology y externals"
-    }
-    topology, ok := args[0].(LispList)
-    if !ok {
-        return "error: topology debe ser una lista"
-    }
-    externals, ok := args[1].(LispList)
-    if !ok {
-        return "error: externals debe ser una lista"
-    }
+	e.globalEnv.SetFunction("zyrion-network", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
+		if len(args) < 2 {
+			return "error: se requieren topology y externals"
+		}
+		topology, ok := args[0].(LispList)
+		if !ok {
+			return "error: topology debe ser una lista"
+		}
+		externals, ok := args[1].(LispList)
+		if !ok {
+			return "error: externals debe ser una lista"
+		}
+		extVals := make([]float64, len(externals))
+		for i, v := range externals {
+			f, ok := v.(float64)
+			if !ok {
+				return fmt.Sprintf("error: external[%d] no es número", i)
+			}
+			if f != 0 && f != 1 && f != 2 {
+				f = 0
+			}
+			extVals[i] = f
+		}
+		results := make([]float64, len(topology))
+		for i, topItem := range topology {
+			inputs, ok := topItem.(LispList)
+			if !ok {
+				return fmt.Sprintf("error: topology[%d] no es una lista", i)
+			}
+			var entradas []float64
+			for _, idxVal := range inputs {
+				idx, ok := idxVal.(float64)
+				if !ok {
+					return fmt.Sprintf("error: índice no numérico en topology[%d]", i)
+				}
+				idxInt := int(idx)
+				if idxInt < 0 {
+					extIdx := -idxInt - 1
+					if extIdx < 0 || extIdx >= len(extVals) {
+						return fmt.Sprintf("error: índice externo %d fuera de rango", idxInt)
+					}
+					entradas = append(entradas, extVals[extIdx])
+				} else {
+					if idxInt >= len(results) {
+						return fmt.Sprintf("error: índice interno %d fuera de rango", idxInt)
+					}
+					entradas = append(entradas, results[idxInt])
+				}
+			}
+			zyrionFn, _ := e.globalEnv.LookupFunction("zyrion")
+			if zyrionFn == nil {
+				return "error: función zyrion no encontrada"
+			}
+			inputList := floatSliceToList(entradas)
+			res := e.apply(zyrionFn, []LispValue{inputList}, env)
+			rFloat, ok := res.(float64)
+			if !ok {
+				return fmt.Sprintf("error: zyrion devolvió %T, se esperaba número", res)
+			}
+			results[i] = rFloat
+		}
+		return floatSliceToList(results)
+	}))
 
-    // Convertir externals a []float64
-    extVals := make([]float64, len(externals))
-    for i, v := range externals {
-        f, ok := v.(float64)
-        if !ok {
-            return fmt.Sprintf("error: external[%d] no es número", i)
-        }
-        // Normalizar
-        if f != 0 && f != 1 && f != 2 {
-            f = 0
-        }
-        extVals[i] = f
-    }
+	e.globalEnv.SetFunction("zyrion-network-parallel", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
+		if len(args) < 2 {
+			return "error: se requieren topology y lista-de-externals"
+		}
+		topology, ok := args[0].(LispList)
+		if !ok {
+			return "error: topology debe ser una lista"
+		}
+		externalsList, ok := args[1].(LispList)
+		if !ok {
+			return "error: externals debe ser una lista de listas"
+		}
+		var topo [][]int
+		for _, item := range topology {
+			sub, ok := item.(LispList)
+			if !ok {
+				return fmt.Sprintf("error: elemento de topology no es lista: %v", item)
+			}
+			indices := make([]int, len(sub))
+			for j, idxVal := range sub {
+				idxFloat, ok := idxVal.(float64)
+				if !ok {
+					return fmt.Sprintf("error: índice no numérico en topology: %v", idxVal)
+				}
+				indices[j] = int(idxFloat)
+			}
+			topo = append(topo, indices)
+		}
+		externalSets := make([][]float64, len(externalsList))
+		for i, extList := range externalsList {
+			lst, ok := extList.(LispList)
+			if !ok {
+				return fmt.Sprintf("error: externalSet[%d] no es lista", i)
+			}
+			vals := make([]float64, len(lst))
+			for j, v := range lst {
+				f, ok := v.(float64)
+				if !ok {
+					return fmt.Sprintf("error: external[%d][%d] no es número", i, j)
+				}
+				if f != 0 && f != 1 && f != 2 {
+					f = 0
+				}
+				vals[j] = f
+			}
+			externalSets[i] = vals
+		}
+		evaluateOne := func(externals []float64) []float64 {
+			results := make([]float64, len(topo))
+			for i, node := range topo {
+				var entradas []float64
+				for _, idx := range node {
+					if idx < 0 {
+						extIdx := -idx - 1
+						if extIdx >= len(externals) {
+							entradas = append(entradas, 0)
+						} else {
+							entradas = append(entradas, externals[extIdx])
+						}
+					} else {
+						if idx >= len(results) {
+							entradas = append(entradas, 0)
+						} else {
+							entradas = append(entradas, results[idx])
+						}
+					}
+				}
+				zyrionFn, _ := e.globalEnv.LookupFunction("zyrion")
+				if zyrionFn == nil {
+					hasPartial := false
+					sum := 0.0
+					total := 0.0
+					for _, v := range entradas {
+						if v == 2 {
+							hasPartial = true
+						} else {
+							sum += v
+							total++
+						}
+					}
+					if hasPartial {
+						results[i] = 2
+					} else if total == 0 {
+						results[i] = 0
+					} else if sum == 0 {
+						results[i] = 0
+					} else if sum == total {
+						results[i] = 1
+					} else {
+						results[i] = 2
+					}
+					continue
+				}
+				inputList := make(LispList, len(entradas))
+				for j, v := range entradas {
+					inputList[j] = v
+				}
+				res := e.apply(zyrionFn, []LispValue{inputList}, env)
+				rFloat, ok := res.(float64)
+				if !ok {
+					results[i] = 0
+				} else {
+					results[i] = rFloat
+				}
+			}
+			return results
+		}
+		type result struct {
+			index int
+			out   []float64
+		}
+		resultChan := make(chan result, len(externalSets))
+		var wg sync.WaitGroup
+		for idx, ext := range externalSets {
+			wg.Add(1)
+			go func(i int, extVals []float64) {
+				defer wg.Done()
+				out := evaluateOne(extVals)
+				resultChan <- result{i, out}
+			}(idx, ext)
+		}
+		go func() {
+			wg.Wait()
+			close(resultChan)
+		}()
+		resultsSlice := make([][]float64, len(externalSets))
+		for res := range resultChan {
+			resultsSlice[res.index] = res.out
+		}
+		finalList := make(LispList, len(resultsSlice))
+		for i, row := range resultsSlice {
+			rowList := make(LispList, len(row))
+			for j, v := range row {
+				rowList[j] = v
+			}
+			finalList[i] = rowList
+		}
+		return finalList
+	}))
 
-    results := make([]float64, len(topology))
+	e.globalEnv.SetFunction("expandir-fractal", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
+		if len(args) < 2 {
+			return "error: se requiere topología y niveles (entero)"
+		}
+		topology, ok := args[0].(LispList)
+		if !ok {
+			return "error: topology debe ser una lista"
+		}
+		levelsFloat, ok := args[1].(float64)
+		if !ok {
+			return "error: niveles debe ser un número entero"
+		}
+		levels := int(levelsFloat)
+		if levels < 0 {
+			return "error: niveles debe ser >= 0"
+		}
+		var convert func(LispList) ([][]int, error)
+		convert = func(lst LispList) ([][]int, error) {
+			var result [][]int
+			for _, item := range lst {
+				sub, ok := item.(LispList)
+				if !ok {
+					return nil, fmt.Errorf("elemento no es lista")
+				}
+				var indices []int
+				for _, idxVal := range sub {
+					idxFloat, ok := idxVal.(float64)
+					if !ok {
+						if sym, ok := idxVal.(LispSymbol); ok && sym == "self" {
+							indices = append(indices, -1)
+							continue
+						}
+						return nil, fmt.Errorf("índice no numérico: %v", idxVal)
+					}
+					indices = append(indices, int(idxFloat))
+				}
+				result = append(result, indices)
+			}
+			return result, nil
+		}
+		baseTopo, err := convert(topology)
+		if err != nil {
+			return fmt.Sprintf("error en topología base: %v", err)
+		}
+		var expand func(topo [][]int, depth int) [][]int
+		expand = func(topo [][]int, depth int) [][]int {
+			if depth <= 0 {
+				var result [][]int
+				for _, node := range topo {
+					newIndices := make([]int, 0, len(node))
+					for _, idx := range node {
+						if idx == -1 {
+							continue
+						}
+						newIndices = append(newIndices, idx)
+					}
+					result = append(result, newIndices)
+				}
+				return result
+			}
+			var result [][]int
+			for _, node := range topo {
+				var newIndices []int
+				for _, idx := range node {
+					if idx == -1 {
+						subTopo := expand(baseTopo, depth-1)
+						offset := len(result)
+						result = append(result, subTopo...)
+						for i := 0; i < len(subTopo); i++ {
+							newIndices = append(newIndices, offset+i)
+						}
+					} else {
+						newIndices = append(newIndices, idx)
+					}
+				}
+				if len(newIndices) > 0 {
+					result = append(result, newIndices)
+				}
+			}
+			return result
+		}
+		expanded := expand(baseTopo, levels)
+		resultList := make(LispList, len(expanded))
+		for i, node := range expanded {
+			nodeList := make(LispList, len(node))
+			for j, idx := range node {
+				nodeList[j] = float64(idx)
+			}
+			resultList[i] = nodeList
+		}
+		return resultList
+	}))
 
-    for i, topItem := range topology {
-        inputs, ok := topItem.(LispList)
-        if !ok {
-            return fmt.Sprintf("error: topology[%d] no es una lista", i)
-        }
+	e.globalEnv.SetFunction("contar-zyrions", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
+		if len(args) < 1 {
+			return "error: se requiere topología"
+		}
+		topo, ok := args[0].(LispList)
+		if !ok {
+			return "error: topology debe ser una lista"
+		}
+		count := 0
+		for range topo {
+			count++
+		}
+		return float64(count)
+	}))
 
-        var entradas []float64
-        for _, idxVal := range inputs {
-            idx, ok := idxVal.(float64)
-            if !ok {
-                return fmt.Sprintf("error: índice no numérico en topology[%d]", i)
-            }
-            idxInt := int(idx)
+	e.globalEnv.SetFunction("topologia-aleatoria", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
+		if len(args) < 2 {
+			return "error: se requieren num-nodos y num-entradas-externas"
+		}
+		numNodesFloat, ok := args[0].(float64)
+		if !ok {
+			return "error: num-nodos debe ser número"
+		}
+		numInputsFloat, ok := args[1].(float64)
+		if !ok {
+			return "error: num-entradas debe ser número"
+		}
+		n := int(numNodesFloat)
+		m := int(numInputsFloat)
+		topo := make(LispList, n)
+		for i := 0; i < n; i++ {
+			numConns := 1 + mathrand.Intn(3)
+			conns := make(LispList, numConns)
+			for j := 0; j < numConns; j++ {
+				if mathrand.Float64() < 0.5 && m > 0 {
+					extIdx := -(1 + mathrand.Intn(m))
+					conns[j] = float64(extIdx)
+				} else if i > 0 {
+					prev := mathrand.Intn(i)
+					conns[j] = float64(prev)
+				} else {
+					conns[j] = float64(-1)
+				}
+			}
+			topo[i] = conns
+		}
+		return topo
+	}))
 
-            if idxInt < 0 {
-                // Entrada externa: -1 -> primer externo, -2 -> segundo, etc.
-                extIdx := -idxInt - 1
-                if extIdx < 0 || extIdx >= len(extVals) {
-                    return fmt.Sprintf("error: índice externo %d fuera de rango", idxInt)
-                }
-                entradas = append(entradas, extVals[extIdx])
-            } else {
-                // Salida de un Zyrion anterior (orden topológico)
-                if idxInt >= len(results) {
-                    return fmt.Sprintf("error: índice interno %d fuera de rango", idxInt)
-                }
-                entradas = append(entradas, results[idxInt])
-            }
-        }
+	e.globalEnv.SetFunction("mutar-topologia", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
+		if len(args) < 2 {
+			return "error: se requieren topologia y probabilidad"
+		}
+		topo, ok := args[0].(LispList)
+		if !ok {
+			return "error: topologia debe ser lista"
+		}
+		probFloat, ok := args[1].(float64)
+		if !ok {
+			return "error: probabilidad debe ser número"
+		}
+		prob := probFloat
+		newTopo := make(LispList, len(topo))
+		for i, node := range topo {
+			nodeList, ok := node.(LispList)
+			if !ok {
+				return "error: nodo no es lista"
+			}
+			newConn := make(LispList, len(nodeList))
+			for j, conn := range nodeList {
+				newConn[j] = conn
+				if mathrand.Float64() < prob {
+					if mathrand.Float64() < 0.5 {
+						extIdx := -(1 + mathrand.Intn(3))
+						newConn[j] = float64(extIdx)
+					} else if i > 0 {
+						prev := mathrand.Intn(i)
+						newConn[j] = float64(prev)
+					} else {
+						newConn[j] = float64(-1)
+					}
+				}
+			}
+			newTopo[i] = newConn
+		}
+		return newTopo
+	}))
 
-        // Obtener la función primitiva zyrion
-        zyrionFn, _ := e.globalEnv.LookupFunction("zyrion")
-        if zyrionFn == nil {
-            return "error: función zyrion no encontrada"
-        }
+	e.globalEnv.SetFunction("cruzar-topologias", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
+		if len(args) < 2 {
+			return "error: se requieren topologia1 y topologia2"
+		}
+		topo1, ok := args[0].(LispList)
+		if !ok {
+			return "error: topologia1 no es lista"
+		}
+		topo2, ok := args[1].(LispList)
+		if !ok {
+			return "error: topologia2 no es lista"
+		}
+		minLen := len(topo1)
+		if len(topo2) < minLen {
+			minLen = len(topo2)
+		}
+		if minLen == 0 {
+			return LispList{}
+		}
+		crossoverPoint := mathrand.Intn(minLen)
+		newTopo := make(LispList, minLen)
+		for i := 0; i < minLen; i++ {
+			if i < crossoverPoint {
+				newTopo[i] = topo1[i]
+			} else {
+				newTopo[i] = topo2[i]
+			}
+		}
+		return newTopo
+	}))
 
-        // Crear lista Lisp con las entradas
-        inputList := floatSliceToList(entradas)
-        res := e.apply(zyrionFn, []LispValue{inputList}, env)
+	e.globalEnv.SetFunction("evolucionar-xor", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
+		popSize := 100
+		gens := 200
+		mutProb := 0.2
+		if len(args) >= 1 {
+			if f, ok := args[0].(float64); ok {
+				popSize = int(f)
+			}
+		}
+		if len(args) >= 2 {
+			if f, ok := args[1].(float64); ok {
+				gens = int(f)
+			}
+		}
+		if len(args) >= 3 {
+			if f, ok := args[2].(float64); ok {
+				mutProb = f
+			}
+		}
+		xorInputs := []LispList{
+			{0.0, 0.0},
+			{0.0, 1.0},
+			{1.0, 0.0},
+			{1.0, 1.0},
+		}
+		xorOutputs := []float64{0.0, 1.0, 1.0, 0.0}
+		entradasLisp := make(LispList, len(xorInputs))
+		for i, inp := range xorInputs {
+			entradasLisp[i] = inp
+		}
+		salidasLisp := make(LispList, len(xorOutputs))
+		for i, out := range xorOutputs {
+			salidasLisp[i] = out
+		}
+		randTopoFn, _ := e.globalEnv.LookupFunction("topologia-aleatoria")
+		mutarFn, _ := e.globalEnv.LookupFunction("mutar-topologia")
+		cruzarFn, _ := e.globalEnv.LookupFunction("cruzar-topologias")
+		zyrionNetworkFn, _ := e.globalEnv.LookupFunction("zyrion-network")
+		if randTopoFn == nil || mutarFn == nil || cruzarFn == nil || zyrionNetworkFn == nil {
+			return "error: faltan funciones primitivas"
+		}
+		numNodos := 7
+		poblacion := make([]LispValue, popSize)
+		for i := 0; i < popSize; i++ {
+			poblacion[i] = e.apply(randTopoFn, []LispValue{float64(numNodos), float64(2)}, env)
+		}
+		var mejorTopologia LispValue = nil
+		mejorFitness := -1.0
+		for gen := 0; gen < gens; gen++ {
+			fitnesses := make([]float64, popSize)
+			for i, indiv := range poblacion {
+				maxAciertos := 0.0
+				for outputIdx := 0; outputIdx < numNodos; outputIdx++ {
+					aciertos := 0.0
+					total := 0.0
+					for idx := 0; idx < len(entradasLisp); idx++ {
+						entradas := entradasLisp[idx]
+						esperado := salidasLisp[idx]
+						res := e.apply(zyrionNetworkFn, []LispValue{indiv, entradas}, env)
+						resList, ok := res.(LispList)
+						if !ok || len(resList) <= outputIdx {
+							continue
+						}
+						salida := resList[outputIdx]
+						salidaFloat, ok := salida.(float64)
+						if !ok {
+							continue
+						}
+						esperadoFloat, ok := esperado.(float64)
+						if !ok {
+							continue
+						}
+						if salidaFloat == esperadoFloat {
+							aciertos++
+						}
+						total++
+					}
+					if total > 0 {
+						fit := aciertos / total
+						if fit > maxAciertos {
+							maxAciertos = fit
+						}
+					}
+				}
+				fitnesses[i] = maxAciertos
+			}
+			bestIdx := 0
+			for i := 1; i < popSize; i++ {
+				if fitnesses[i] > fitnesses[bestIdx] {
+					bestIdx = i
+				}
+			}
+			if fitnesses[bestIdx] > mejorFitness {
+				mejorFitness = fitnesses[bestIdx]
+				mejorTopologia = poblacion[bestIdx]
+			}
+			fmt.Printf("Gen %d: mejor fitness = %.4f\n", gen, fitnesses[bestIdx])
+			if mejorFitness >= 0.999 {
+				break
+			}
+			nuevaPoblacion := make([]LispValue, 0, popSize)
+			nuevaPoblacion = append(nuevaPoblacion, poblacion[bestIdx])
+			for len(nuevaPoblacion) < popSize {
+				i1 := mathrand.Intn(popSize)
+				i2 := mathrand.Intn(popSize)
+				padre1 := poblacion[i1]
+				padre2 := poblacion[i2]
+				if fitnesses[i1] < fitnesses[i2] {
+					padre1, padre2 = padre2, padre1
+				}
+				hijo := e.apply(cruzarFn, []LispValue{padre1, padre2}, env)
+				if mathrand.Float64() < mutProb {
+					hijo = e.apply(mutarFn, []LispValue{hijo, mutProb}, env)
+				}
+				nuevaPoblacion = append(nuevaPoblacion, hijo)
+			}
+			poblacion = nuevaPoblacion
+		}
+		if mejorTopologia == nil {
+			return "no se encontró ninguna topología"
+		}
+		return mejorTopologia
+	}))
 
-        rFloat, ok := res.(float64)
-        if !ok {
-            return fmt.Sprintf("error: zyrion devolvió %T, se esperaba número", res)
-        }
-        results[i] = rFloat
-    }
-
-    return floatSliceToList(results)
-}))
-
-e.globalEnv.SetFunction("zyrion-network-parallel", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
-    if len(args) < 2 {
-        return "error: se requieren topology y lista-de-externals"
-    }
-    topology, ok := args[0].(LispList)
-    if !ok {
-        return "error: topology debe ser una lista"
-    }
-    externalsList, ok := args[1].(LispList)
-    if !ok {
-        return "error: externals debe ser una lista de listas"
-    }
-
-    // Convertir topology a [][]int
-    var topo [][]int
-    for _, item := range topology {
-        sub, ok := item.(LispList)
-        if !ok {
-            return fmt.Sprintf("error: elemento de topology no es lista: %v", item)
-        }
-        indices := make([]int, len(sub))
-        for j, idxVal := range sub {
-            idxFloat, ok := idxVal.(float64)
-            if !ok {
-                return fmt.Sprintf("error: índice no numérico en topology: %v", idxVal)
-            }
-            indices[j] = int(idxFloat)
-        }
-        topo = append(topo, indices)
-    }
-
-    // Preparar lista de conjuntos de externals
-    externalSets := make([][]float64, len(externalsList))
-    for i, extList := range externalsList {
-        lst, ok := extList.(LispList)
-        if !ok {
-            return fmt.Sprintf("error: externalSet[%d] no es lista", i)
-        }
-        vals := make([]float64, len(lst))
-        for j, v := range lst {
-            f, ok := v.(float64)
-            if !ok {
-                return fmt.Sprintf("error: external[%d][%d] no es número", i, j)
-            }
-            // Normalizar (solo 0,1,2)
-            if f != 0 && f != 1 && f != 2 {
-                f = 0
-            }
-            vals[j] = f
-        }
-        externalSets[i] = vals
-    }
-
-    // Función que evalúa una red para un conjunto de externals (copia de la lógica de zyrion-network pero en Go)
-    evaluateOne := func(externals []float64) []float64 {
-        results := make([]float64, len(topo))
-        for i, node := range topo {
-            var entradas []float64
-            for _, idx := range node {
-                if idx < 0 {
-                    extIdx := -idx - 1
-                    if extIdx >= len(externals) {
-                        entradas = append(entradas, 0)
-                    } else {
-                        entradas = append(entradas, externals[extIdx])
-                    }
-                } else {
-                    if idx >= len(results) {
-                        entradas = append(entradas, 0)
-                    } else {
-                        entradas = append(entradas, results[idx])
-                    }
-                }
-            }
-            // Llamar a la función primitiva zyrion (necesitamos obtener su valor)
-            zyrionFn, _ := e.globalEnv.LookupFunction("zyrion")
-            if zyrionFn == nil {
-                // fallback: implementar lógica inline
-                hasPartial := false
-                sum := 0.0
-                total := 0.0
-                for _, v := range entradas {
-                    if v == 2 {
-                        hasPartial = true
-                    } else {
-                        sum += v
-                        total++
-                    }
-                }
-                if hasPartial {
-                    results[i] = 2
-                } else if total == 0 {
-                    results[i] = 0
-                } else if sum == 0 {
-                    results[i] = 0
-                } else if sum == total {
-                    results[i] = 1
-                } else {
-                    results[i] = 2
-                }
-                continue
-            }
-            // Construir lista Lisp de entradas
-            inputList := make(LispList, len(entradas))
-            for j, v := range entradas {
-                inputList[j] = v
-            }
-            res := e.apply(zyrionFn, []LispValue{inputList}, env)
-            rFloat, ok := res.(float64)
-            if !ok {
-                results[i] = 0
-            } else {
-                results[i] = rFloat
-            }
-        }
-        return results
-    }
-
-    // Evaluación paralela
-    type result struct {
-        index int
-        out   []float64
-    }
-    resultChan := make(chan result, len(externalSets))
-    var wg sync.WaitGroup
-    for idx, ext := range externalSets {
-        wg.Add(1)
-        go func(i int, extVals []float64) {
-            defer wg.Done()
-            out := evaluateOne(extVals)
-            resultChan <- result{i, out}
-        }(idx, ext)
-    }
-    go func() {
-        wg.Wait()
-        close(resultChan)
-    }()
-
-    // Recoger resultados en orden
-    resultsSlice := make([][]float64, len(externalSets))
-    for res := range resultChan {
-        resultsSlice[res.index] = res.out
-    }
-
-    // Convertir a LispList (lista de listas)
-    finalList := make(LispList, len(resultsSlice))
-    for i, row := range resultsSlice {
-        rowList := make(LispList, len(row))
-        for j, v := range row {
-            rowList[j] = v
-        }
-        finalList[i] = rowList
-    }
-    return finalList
-}))
-
-e.globalEnv.SetFunction("expandir-fractal", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
-    if len(args) < 2 {
-        return "error: se requiere topología y niveles (entero)"
-    }
-    topology, ok := args[0].(LispList)
-    if !ok {
-        return "error: topology debe ser una lista"
-    }
-    levelsFloat, ok := args[1].(float64)
-    if !ok {
-        return "error: niveles debe ser un número entero"
-    }
-    levels := int(levelsFloat)
-    if levels < 0 {
-        return "error: niveles debe ser >= 0"
-    }
-
-    // Convierte una topología Lisp a una representación interna: slice de slices de ints
-    var convert func(LispList) ([][]int, error)
-    convert = func(lst LispList) ([][]int, error) {
-        var result [][]int
-        for _, item := range lst {
-            sub, ok := item.(LispList)
-            if !ok {
-                return nil, fmt.Errorf("elemento no es lista")
-            }
-            var indices []int
-            for _, idxVal := range sub {
-                idxFloat, ok := idxVal.(float64)
-                if !ok {
-                    // Si no es número, puede ser el símbolo "self"
-                    if sym, ok := idxVal.(LispSymbol); ok && sym == "self" {
-                        indices = append(indices, -1) // marcador temporal
-                        continue
-                    }
-                    return nil, fmt.Errorf("índice no numérico: %v", idxVal)
-                }
-                indices = append(indices, int(idxFloat))
-            }
-            result = append(result, indices)
-        }
-        return result, nil
-    }
-
-    baseTopo, err := convert(topology)
-    if err != nil {
-        return fmt.Sprintf("error en topología base: %v", err)
-    }
-
-    // Función de expansión recursiva que devuelve topología plana
-    var expand func(topo [][]int, depth int) [][]int
-    expand = func(topo [][]int, depth int) [][]int {
-        if depth <= 0 {
-            // Reemplazar cualquier -1 (self) por una lista vacía (sin conexiones)
-            var result [][]int
-            for _, node := range topo {
-                newIndices := make([]int, 0, len(node))
-                for _, idx := range node {
-                    if idx == -1 {
-                        // no hacer nada, omitir? en el nivel base self no tiene conexiones
-                        continue
-                    }
-                    newIndices = append(newIndices, idx)
-                }
-                result = append(result, newIndices)
-            }
-            return result
-        }
-        var result [][]int
-        for _, node := range topo {
-            var newIndices []int
-            for _, idx := range node {
-                if idx == -1 {
-                    // Expandir self: insertar todos los nodos de la topología base,
-                    // pero ajustando los índices para que apunten a los nodos añadidos.
-                    // La nueva subred se añadirá al final de la lista de nodos,
-                    // por lo que sus índices internos se desplazan.
-                    subTopo := expand(baseTopo, depth-1)
-                    offset := len(result)
-                    // Añadir los nodos de la subred al resultado
-                    result = append(result, subTopo...)
-                    // Los nuevos índices para este nodo serán los índices de los nodos de la subred
-                    for i := 0; i < len(subTopo); i++ {
-                        newIndices = append(newIndices, offset+i)
-                    }
-                } else {
-                    newIndices = append(newIndices, idx)
-                }
-            }
-            if len(newIndices) > 0 {
-                result = append(result, newIndices)
-            }
-        }
-        return result
-    }
-
-    expanded := expand(baseTopo, levels)
-
-    // Convertir de vuelta a LispList
-    resultList := make(LispList, len(expanded))
-    for i, node := range expanded {
-        nodeList := make(LispList, len(node))
-        for j, idx := range node {
-            nodeList[j] = float64(idx)
-        }
-        resultList[i] = nodeList
-    }
-    return resultList
-}))
-
-e.globalEnv.SetFunction("contar-zyrions", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
-    if len(args) < 1 {
-        return "error: se requiere topología"
-    }
-    topo, ok := args[0].(LispList)
-    if !ok {
-        return "error: topology debe ser una lista"
-    }
-    // Recorre la lista principal y cuenta sus elementos (cada elemento es una lista de conexiones)
-    count := 0
-    for range topo {
-        count++
-    }
-    return float64(count)
-}))
-
-e.globalEnv.SetFunction("topologia-aleatoria", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
-    if len(args) < 2 {
-        return "error: se requieren num-nodos y num-entradas-externas"
-    }
-    numNodesFloat, ok := args[0].(float64)
-    if !ok {
-        return "error: num-nodos debe ser número"
-    }
-    numInputsFloat, ok := args[1].(float64)
-    if !ok {
-        return "error: num-entradas debe ser número"
-    }
-    n := int(numNodesFloat)
-    m := int(numInputsFloat)
-    topo := make(LispList, n)
-    for i := 0; i < n; i++ {
-        // Cada nodo tiene entre 1 y 3 conexiones
-        numConns := 1 + mathrand.Intn(3)
-        conns := make(LispList, numConns)
-        for j := 0; j < numConns; j++ {
-            // 50% probabilidad de conectar a una entrada externa (-1..-m) o a un nodo anterior (0..i-1)
-            if mathrand.Float64() < 0.5 && m > 0 {
-                // entrada externa
-                extIdx := -(1 + mathrand.Intn(m))
-                conns[j] = float64(extIdx)
-            } else if i > 0 {
-                // conexión interna a nodo anterior
-                prev := mathrand.Intn(i)
-                conns[j] = float64(prev)
-            } else {
-                // si es el primer nodo y no hay externos, conectar a externo ficticio -1
-                conns[j] = float64(-1)
-            }
-        }
-        topo[i] = conns
-    }
-    return topo
-}))
-
-e.globalEnv.SetFunction("mutar-topologia", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
-    if len(args) < 2 {
-        return "error: se requieren topologia y probabilidad"
-    }
-    topo, ok := args[0].(LispList)
-    if !ok {
-        return "error: topologia debe ser lista"
-    }
-    probFloat, ok := args[1].(float64)
-    if !ok {
-        return "error: probabilidad debe ser número"
-    }
-    prob := probFloat
-    // Copiar la topología
-    newTopo := make(LispList, len(topo))
-    for i, node := range topo {
-        nodeList, ok := node.(LispList)
-        if !ok {
-            return "error: nodo no es lista"
-        }
-        newConn := make(LispList, len(nodeList))
-        for j, conn := range nodeList {
-            newConn[j] = conn
-            // Mutar con probabilidad prob
-            if mathrand.Float64() < prob {
-                // Cambiar la conexión: puede ser a un externo aleatorio o a un nodo anterior
-                if mathrand.Float64() < 0.5 {
-                    // externo
-                    extIdx := -(1 + mathrand.Intn(3)) // asumiendo hasta 3 entradas externas
-                    newConn[j] = float64(extIdx)
-                } else if i > 0 {
-                    prev := mathrand.Intn(i)
-                    newConn[j] = float64(prev)
-                } else {
-                    newConn[j] = float64(-1)
-                }
-            }
-        }
-        newTopo[i] = newConn
-    }
-    return newTopo
-}))
-
-e.globalEnv.SetFunction("cruzar-topologias", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
-    if len(args) < 2 {
-        return "error: se requieren topologia1 y topologia2"
-    }
-    topo1, ok := args[0].(LispList)
-    if !ok {
-        return "error: topologia1 no es lista"
-    }
-    topo2, ok := args[1].(LispList)
-    if !ok {
-        return "error: topologia2 no es lista"
-    }
-    // Asegurar misma longitud (tomar la menor)
-    minLen := len(topo1)
-    if len(topo2) < minLen {
-        minLen = len(topo2)
-    }
-    if minLen == 0 {
-        return LispList{}
-    }
-    // Punto de cruce aleatorio
-    crossoverPoint := mathrand.Intn(minLen)
-    newTopo := make(LispList, minLen)
-    for i := 0; i < minLen; i++ {
-        if i < crossoverPoint {
-            newTopo[i] = topo1[i]
-        } else {
-            newTopo[i] = topo2[i]
-        }
-    }
-    return newTopo
-}))
-
-e.globalEnv.SetFunction("evolucionar-xor", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
-    popSize := 100
-    gens := 200
-    mutProb := 0.2
-    if len(args) >= 1 {
-        if f, ok := args[0].(float64); ok {
-            popSize = int(f)
-        }
-    }
-    if len(args) >= 2 {
-        if f, ok := args[1].(float64); ok {
-            gens = int(f)
-        }
-    }
-    if len(args) >= 3 {
-        if f, ok := args[2].(float64); ok {
-            mutProb = f
-        }
-    }
-
-    xorInputs := []LispList{
-        {0.0, 0.0},
-        {0.0, 1.0},
-        {1.0, 0.0},
-        {1.0, 1.0},
-    }
-    xorOutputs := []float64{0.0, 1.0, 1.0, 0.0}
-
-    entradasLisp := make(LispList, len(xorInputs))
-    for i, inp := range xorInputs {
-        entradasLisp[i] = inp
-    }
-    salidasLisp := make(LispList, len(xorOutputs))
-    for i, out := range xorOutputs {
-        salidasLisp[i] = out
-    }
-
-    randTopoFn, _ := e.globalEnv.LookupFunction("topologia-aleatoria")
-    mutarFn, _ := e.globalEnv.LookupFunction("mutar-topologia")
-    cruzarFn, _ := e.globalEnv.LookupFunction("cruzar-topologias")
-    zyrionNetworkFn, _ := e.globalEnv.LookupFunction("zyrion-network")
-    if randTopoFn == nil || mutarFn == nil || cruzarFn == nil || zyrionNetworkFn == nil {
-        return "error: faltan funciones primitivas"
-    }
-
-    numNodos := 7
-    poblacion := make([]LispValue, popSize)
-    for i := 0; i < popSize; i++ {
-        poblacion[i] = e.apply(randTopoFn, []LispValue{float64(numNodos), float64(2)}, env)
-    }
-
-    var mejorTopologia LispValue = nil
-    mejorFitness := -1.0
-
-    for gen := 0; gen < gens; gen++ {
-        fitnesses := make([]float64, popSize)
-        for i, indiv := range poblacion {
-            maxAciertos := 0.0
-            for outputIdx := 0; outputIdx < numNodos; outputIdx++ {
-                aciertos := 0.0
-                total := 0.0
-                for idx := 0; idx < len(entradasLisp); idx++ {
-                    entradas := entradasLisp[idx]
-                    esperado := salidasLisp[idx]
-                    res := e.apply(zyrionNetworkFn, []LispValue{indiv, entradas}, env)
-                    resList, ok := res.(LispList)
-                    if !ok || len(resList) <= outputIdx {
-                        continue
-                    }
-                    salida := resList[outputIdx]
-                    salidaFloat, ok := salida.(float64)
-                    if !ok {
-                        continue
-                    }
-                    esperadoFloat, ok := esperado.(float64)
-                    if !ok {
-                        continue
-                    }
-                    if salidaFloat == esperadoFloat {
-                        aciertos++
-                    }
-                    total++
-                }
-                if total > 0 {
-                    fit := aciertos / total
-                    if fit > maxAciertos {
-                        maxAciertos = fit
-                    }
-                }
-            }
-            fitnesses[i] = maxAciertos
-        }
-
-        bestIdx := 0
-        for i := 1; i < popSize; i++ {
-            if fitnesses[i] > fitnesses[bestIdx] {
-                bestIdx = i
-            }
-        }
-        if fitnesses[bestIdx] > mejorFitness {
-            mejorFitness = fitnesses[bestIdx]
-            mejorTopologia = poblacion[bestIdx]
-        }
-        fmt.Printf("Gen %d: mejor fitness = %.4f\n", gen, fitnesses[bestIdx])
-        if mejorFitness >= 0.999 {
-            break
-        }
-
-        nuevaPoblacion := make([]LispValue, 0, popSize)
-        nuevaPoblacion = append(nuevaPoblacion, poblacion[bestIdx])
-        for len(nuevaPoblacion) < popSize {
-            i1 := mathrand.Intn(popSize)
-            i2 := mathrand.Intn(popSize)
-            padre1 := poblacion[i1]
-            padre2 := poblacion[i2]
-            if fitnesses[i1] < fitnesses[i2] {
-                padre1, padre2 = padre2, padre1
-            }
-            hijo := e.apply(cruzarFn, []LispValue{padre1, padre2}, env)
-            if mathrand.Float64() < mutProb {
-                hijo = e.apply(mutarFn, []LispValue{hijo, mutProb}, env)
-            }
-            nuevaPoblacion = append(nuevaPoblacion, hijo)
-        }
-        poblacion = nuevaPoblacion
-    }
-    if mejorTopologia == nil {
-        return "no se encontró ninguna topología"
-    }
-    return mejorTopologia
-}))
-
-e.globalEnv.SetFunction("fitness-topologia", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
-    if len(args) < 3 {
-        return "error: se requieren topologia, lista-entradas, lista-salidas-esperadas"
-    }
-    topo, ok := args[0].(LispList)
-    if !ok {
-        return "error: topologia no es lista"
-    }
-    entradasList, ok := args[1].(LispList)
-    if !ok {
-        return "error: lista-entradas debe ser lista de listas"
-    }
-    esperadosList, ok := args[2].(LispList)
-    if !ok {
-        return "error: lista-salidas-esperadas debe ser lista de números"
-    }
-    if len(entradasList) != len(esperadosList) {
-        return "error: número de casos diferente"
-    }
-
-    // Obtener función zyrion-network (ya debe existir)
-    zyrionNetworkFn, _ := e.globalEnv.LookupFunction("zyrion-network")
-    if zyrionNetworkFn == nil {
-        return "error: falta zyrion-network"
-    }
-
-    aciertos := 0.0
-    total := 0.0
-    for idx := 0; idx < len(entradasList); idx++ {
-        entradas := entradasList[idx]
-        esperadoVal := esperadosList[idx]
-        res := e.apply(zyrionNetworkFn, []LispValue{topo, entradas}, env)
-        resList, ok := res.(LispList)
-        if !ok || len(resList) == 0 {
-            continue
-        }
-        salida := resList[len(resList)-1] // última salida
-        salidaFloat, ok := salida.(float64)
-        if !ok {
-            continue
-        }
-        esperadoFloat, ok := esperadoVal.(float64)
-        if !ok {
-            continue
-        }
-        if salidaFloat == esperadoFloat {
-            aciertos++
-        }
-        total++
-    }
-    if total == 0 {
-        return 0.0
-    }
-    return aciertos / total
-}))
-
+	e.globalEnv.SetFunction("fitness-topologia", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
+		if len(args) < 3 {
+			return "error: se requieren topologia, lista-entradas, lista-salidas-esperadas"
+		}
+		topo, ok := args[0].(LispList)
+		if !ok {
+			return "error: topologia no es lista"
+		}
+		entradasList, ok := args[1].(LispList)
+		if !ok {
+			return "error: lista-entradas debe ser lista de listas"
+		}
+		esperadosList, ok := args[2].(LispList)
+		if !ok {
+			return "error: lista-salidas-esperadas debe ser lista de números"
+		}
+		if len(entradasList) != len(esperadosList) {
+			return "error: número de casos diferente"
+		}
+		zyrionNetworkFn, _ := e.globalEnv.LookupFunction("zyrion-network")
+		if zyrionNetworkFn == nil {
+			return "error: falta zyrion-network"
+		}
+		aciertos := 0.0
+		total := 0.0
+		for idx := 0; idx < len(entradasList); idx++ {
+			entradas := entradasList[idx]
+			esperadoVal := esperadosList[idx]
+			res := e.apply(zyrionNetworkFn, []LispValue{topo, entradas}, env)
+			resList, ok := res.(LispList)
+			if !ok || len(resList) == 0 {
+				continue
+			}
+			salida := resList[len(resList)-1]
+			salidaFloat, ok := salida.(float64)
+			if !ok {
+				continue
+			}
+			esperadoFloat, ok := esperadoVal.(float64)
+			if !ok {
+				continue
+			}
+			if salidaFloat == esperadoFloat {
+				aciertos++
+			}
+			total++
+		}
+		if total == 0 {
+			return 0.0
+		}
+		return aciertos / total
+	}))
 }
 
+// =============================================================================
+// FUNCIONES UNIFICADAS (GENERAR PÁGINA, OBTENER BALANCE, ETC.)
+// =============================================================================
+
 func (e *LispEvaluator) registerUnifiedFunctions() {
-	// Función para generar página web
 	e.globalEnv.SetFunction("generar-pagina-web", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		if len(args) < 1 {
 			return "error: requiere nombre-agente"
@@ -2849,7 +2830,6 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 		return cid
 	}))
 
-	// Función para obtener balance de agente
 	e.globalEnv.SetFunction("get-agent-balance", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		if len(args) < 1 {
 			return 0.0
@@ -2863,7 +2843,6 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 		return 0.0
 	}))
 
-	// Función para listar inventario
 	e.globalEnv.SetFunction("inventario-listar", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		resultado := make(LispList, 0)
 		e.nodo.mu.RLock()
@@ -2874,7 +2853,6 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 		return resultado
 	}))
 
-	// Función para crear relación entre entidades
 	e.globalEnv.SetFunction("crear-relacion", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		if len(args) < 3 {
 			return "error: requiere tipo, origen y destino"
@@ -2886,7 +2864,6 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 		if len(args) >= 4 {
 			cardinalidad = fmt.Sprintf("%v", e.eval(args[3], env))
 		}
-
 		relacionId := generarUUID()
 		relacion := &RelacionEntidad{
 			ID:           relacionId,
@@ -2896,7 +2873,6 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 			Cardinalidad: cardinalidad,
 		}
 		relacionesGlobales[relacionId] = relacion
-
 		e.nodo.mu.Lock()
 		if e.nodo.neuralState == nil {
 			e.nodo.neuralState = &NeuralState{
@@ -2909,12 +2885,10 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 			LastUpdated:    time.Now().Unix(),
 		}
 		e.nodo.mu.Unlock()
-
 		e.nodo.Auditoria("RELACION_CREADA", fmt.Sprintf("%s: %s -> %s (%s)", tipo, origen, destino, cardinalidad))
 		return relacionId
 	}))
 
-	// Función para listar relaciones
 	e.globalEnv.SetFunction("listar-relaciones", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		resultado := make(LispList, 0)
 		for _, rel := range relacionesGlobales {
@@ -2930,7 +2904,6 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 		return resultado
 	}))
 
-	// Función para crear entidad programática
 	e.globalEnv.SetFunction("crear-entidad", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		if len(args) < 2 {
 			return "error: requiere tipo y atributos"
@@ -2941,24 +2914,21 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 		if m, ok := atributosVal.(map[string]interface{}); ok {
 			atributos = m
 		}
-
 		id := generarUUID()
 		entidad := &EntidadProgramatica{
-			ID:         id,
-			Tipo:       tipo,
-			Atributos:  atributos,
-			HeredaDe:   "",
-			ModuloID:   "editor",
+			ID:        id,
+			Tipo:      tipo,
+			Atributos: atributos,
+			HeredaDe:  "",
+			ModuloID:  "editor",
 		}
 		muEntidades.Lock()
 		entidadesGlobales[id] = entidad
 		muEntidades.Unlock()
-
 		e.nodo.Auditoria("ENTIDAD_CREADA", fmt.Sprintf("Tipo: %s | ID: %s", tipo, id))
 		return id
 	}))
 
-	// Función para listar entidades
 	e.globalEnv.SetFunction("listar-entidades", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		resultado := make(LispList, 0)
 		muEntidades.RLock()
@@ -2975,16 +2945,13 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 		return resultado
 	}))
 
-	// Función para crear app desde plantilla
 	e.globalEnv.SetFunction("crear-app-desde-plantilla", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		if len(args) < 2 {
 			return "error: requiere nombre y tipo"
 		}
 		nombre := fmt.Sprintf("%v", e.eval(args[0], env))
 		tipo := fmt.Sprintf("%v", e.eval(args[1], env))
-
 		agentID := fmt.Sprintf("%s-%d", strings.ReplaceAll(strings.ToLower(nombre), " ", "-"), time.Now().Unix())
-
 		e.nodo.mu.Lock()
 		if _, existe := e.nodo.agentes[agentID]; !existe {
 			e.nodo.agentes[agentID] = &Agente{
@@ -2995,22 +2962,22 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 			}
 		}
 		e.nodo.mu.Unlock()
-
 		html := generarHTMLParaPlantilla(nombre, tipo)
 		cid, err := e.nodo.GenerarCID([]byte(html))
 		if err != nil {
 			return fmt.Sprintf("error: %v", err)
 		}
 		e.nodo.SetAgentRoot(agentID, cid)
-
 		alias := strings.ReplaceAll(strings.ToLower(nombre), " ", "-") + ".negocio.ans"
 		e.nodo.nombres[alias] = agentID
-
 		e.nodo.Auditoria("APP_CREADA_DESDE_PLANTILLA", fmt.Sprintf("Nombre: %s | Tipo: %s | URL: /w/%s", nombre, tipo, alias))
-
 		return fmt.Sprintf("✅ App creada: /w/%s", alias)
 	}))
 }
+
+// =============================================================================
+// FUNCIONES AUXILIARES DE EVALUACIÓN LISP
+// =============================================================================
 
 func (e *LispEvaluator) eval(expr LispValue, env *LispEnvironment) LispValue {
 	switch v := expr.(type) {
@@ -3430,15 +3397,23 @@ func generarUUID() string {
 }
 
 func floatSliceToList(vals []float64) LispList {
-    lst := make(LispList, len(vals))
-    for i, v := range vals {
-        lst[i] = v
-    }
-    return lst
+	lst := make(LispList, len(vals))
+	for i, v := range vals {
+		lst[i] = v
+	}
+	return lst
+}
+
+func generarHTMLBase(agenteID string) string {
+	return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>` + agenteID + ` - Alset App</title><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:system-ui;background:#0A0A0A;color:#FFF;}.header{background:#141414;padding:1rem 2rem;border-bottom:2px solid #F4B400;}.container{padding:2rem;max-width:1200px;margin:0 auto;}.card{background:#141414;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;border:1px solid rgba(244,180,0,0.2);}button{background:#F4B400;border:none;padding:0.5rem 1rem;border-radius:8px;cursor:pointer;}</style></head><body><div class="header"><h1>` + agenteID + `</h1></div><div class="container" id="app"><div class="card"><h3>Bienvenido</h3><p>App generada por Alset</p></div></div></body></html>`
+}
+
+func generarHTMLParaPlantilla(nombre string, tipo string) string {
+	return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>` + nombre + ` - Alset App</title><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:system-ui;background:#0A0A0A;color:#FFF;}.header{background:#141414;padding:2rem;text-align:center;border-bottom:3px solid #F4B400;}.header h1{font-size:2rem;}.container{padding:2rem;max-width:1200px;margin:0 auto;}.card{background:#141414;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;border:1px solid rgba(244,180,0,0.2);}button{background:#F4B400;border:none;padding:0.5rem 1rem;border-radius:8px;cursor:pointer;}</style></head><body><div class="header"><h1>` + nombre + `</h1><p>Tu app en Alset Network</p></div><div class="container"><div class="card"><h3>Bienvenido</h3><p>App tipo: ` + tipo + `</p><button onclick="alert('App funcionando')">Probar</button></div></div></body></html>`
 }
 
 // =============================================================================
-// ESTRUCTURAS CORE DEL NODO
+// NODO ALSET – ESTRUCTURA PRINCIPAL
 // =============================================================================
 
 type NodoAlset struct {
@@ -3462,16 +3437,38 @@ type NodoAlset struct {
 	hebbianMemory        map[string]float64
 	startTime            int64
 	syncManager          *SyncManager
+
+	// ---- NUEVO SISTEMA DE PULSOS ----
+	pulseSubscribers   map[*SSESubscriber]bool
+	pulseSubscribersMu sync.RWMutex
+	pulseClients       map[string]*PulseClient
+	pulseClientsMu     sync.RWMutex
+	pulseKnownServers  []string
 }
 
 type BlockInfo struct {
-	CID     string `json:"cid"`
-	Size    int    `json:"size"`
-	Preview string `json:"preview"`
+    CID     string `json:"cid"`
+    Size    int    `json:"size"`
+    Preview string `json:"preview"`
+}
+
+type SSESubscriber struct {
+	ch     chan string
+	ctx    context.Context
+	cancel context.CancelFunc
+}
+
+type PulseClient struct {
+	url       string
+	ctx       context.Context
+	cancel    context.CancelFunc
+	connected bool
+	lastEvent time.Time
+	reconnect chan bool
 }
 
 // =============================================================================
-// MÉTODOS DEL NODO
+// MÉTODOS DEL NODO – EXISTENTES
 // =============================================================================
 
 func (n *NodoAlset) Auditoria(accion string, detalle string) {
@@ -3537,7 +3534,7 @@ func (n *NodoAlset) BuscarContenidoPorCID(cidStr string) ([]byte, error) {
 		return diskData, nil
 	}
 	c, _ := cid.Decode(cidStr)
-	ctx, cancel := context.WithTimeout(n.ctx, time.Second*10)
+	ctx, cancel := context.WithTimeout(n.ctx, 10*time.Second)
 	defer cancel()
 	providers := n.kademlia.FindProvidersAsync(ctx, c, 5)
 	for p := range providers {
@@ -3663,7 +3660,7 @@ func (n *NodoAlset) RegisterApp(appName string) (string, error) {
 }
 
 // =============================================================================
-// MÉTODOS PARA IA DISTRIBUIDA
+// MÉTODOS DE IA DISTRIBUIDA (EXISTENTES)
 // =============================================================================
 
 func (n *NodoAlset) persistirEstadoNeuronal() {
@@ -4070,7 +4067,7 @@ func (n *NodoAlset) sincronizarEstadoNeuronal(update map[string]string, origen p
 }
 
 // =============================================================================
-// NETWORKING & GOSSIP SYNC
+// NETWORKING & GOSSIP SYNC (EXISTENTES)
 // =============================================================================
 
 func (n *NodoAlset) AnunciarNuevoBloque(cidStr string) {
@@ -4131,17 +4128,14 @@ func (n *NodoAlset) handleDataExchange(s network.Stream) {
 	scanner := bufio.NewScanner(s)
 	if scanner.Scan() {
 		line := scanner.Text()
-		
 		if strings.HasPrefix(line, "SYNC_FULL_REQUEST") {
 			n.handleFullSyncRequest(s)
 			return
 		}
-		
 		if strings.HasPrefix(line, "SYNC_QUICK_REQUEST") {
 			n.handleQuickSyncRequest(s)
 			return
 		}
-		
 		cidReq := line
 		n.mu.RLock()
 		data, ok := n.blockstore[cidReq]
@@ -4154,10 +4148,8 @@ func (n *NodoAlset) handleDataExchange(s network.Stream) {
 
 func (n *NodoAlset) handleFullSyncRequest(s network.Stream) {
 	fmt.Println("📡 Recibida solicitud de sincronización completa")
-	
 	var buf bytes.Buffer
 	gz := gzip.NewWriter(&buf)
-	
 	state := struct {
 		Agentes map[string]*Agente `json:"agentes"`
 		Nombres map[string]string  `json:"nombres"`
@@ -4165,34 +4157,29 @@ func (n *NodoAlset) handleFullSyncRequest(s network.Stream) {
 		Agentes: n.agentes,
 		Nombres: n.nombres,
 	}
-	
 	stateJSON, _ := json.Marshal(state)
 	gz.Write(stateJSON)
 	gz.Close()
-	
 	sizeBuf := make([]byte, 8)
 	binary.BigEndian.PutUint64(sizeBuf, uint64(buf.Len()))
 	s.Write(sizeBuf)
 	s.Write(buf.Bytes())
-	
 	fmt.Printf("✅ Estado completo enviado: %d bytes comprimidos\n", buf.Len())
 }
 
 func (n *NodoAlset) handleQuickSyncRequest(s network.Stream) {
 	fmt.Println("⚡ Recibida solicitud de sincronización rápida")
-	
 	response := struct {
-		Agentes      map[string]*Agente   `json:"agentes"`
-		Nombres      map[string]string    `json:"nombres"`
-		RecentBlocks map[string][]byte    `json:"recent_blocks"`
-		NeuralState  *NeuralState         `json:"neural_state"`
+		Agentes      map[string]*Agente `json:"agentes"`
+		Nombres      map[string]string  `json:"nombres"`
+		RecentBlocks map[string][]byte  `json:"recent_blocks"`
+		NeuralState  *NeuralState       `json:"neural_state"`
 	}{
 		Agentes:      n.agentes,
 		Nombres:      n.nombres,
 		NeuralState:  n.neuralState,
 		RecentBlocks: make(map[string][]byte),
 	}
-	
 	count := 0
 	for cid, data := range n.blockstore {
 		if count >= 100 {
@@ -4201,14 +4188,11 @@ func (n *NodoAlset) handleQuickSyncRequest(s network.Stream) {
 		response.RecentBlocks[cid] = data
 		count++
 	}
-	
 	data, _ := json.Marshal(response)
-	
 	var buf bytes.Buffer
 	gz := gzip.NewWriter(&buf)
 	gz.Write(data)
 	gz.Close()
-	
 	sizeBuf := make([]byte, 8)
 	binary.BigEndian.PutUint64(sizeBuf, uint64(buf.Len()))
 	s.Write(sizeBuf)
@@ -4264,7 +4248,7 @@ func (n *NodoAlset) EscucharGossip() {
 }
 
 // =============================================================================
-// ADMIN PANEL DISTRIBUTION
+// ADMIN PANEL DISTRIBUTION (EXISTENTE)
 // =============================================================================
 
 func (n *NodoAlset) getAdminPanelHTML() string {
@@ -4601,8 +4585,6 @@ func (n *NodoAlset) publishAdminPanelCID() {
 		fmt.Println("❌ Error generando CID del panel de administración:", err)
 		return
 	}
-	
-	// Guardar en la configuración del nodo
 	config := NodoConfig{
 		AdminPanelCID: cid,
 		IsGenesis:     true,
@@ -4612,8 +4594,6 @@ func (n *NodoAlset) publishAdminPanelCID() {
 	configBytes, _ := json.Marshal(config)
 	n.GenerarCID(configBytes)
 	os.WriteFile("nodo_config.json", configBytes, 0644)
-	
-	// Anunciar a la red
 	announce := map[string]string{
 		"tipo": "admin_panel_announce",
 		"cid":  cid,
@@ -4622,7 +4602,6 @@ func (n *NodoAlset) publishAdminPanelCID() {
 	if n.topic != nil {
 		n.topic.Publish(n.ctx, announceBytes)
 	}
-	
 	fmt.Println("📢 Panel de administración publicado en IPFS con CID:", cid)
 }
 
@@ -4631,45 +4610,32 @@ func (n *NodoAlset) handleAdminPanelAnnounce(update map[string]string) {
 	if cid == "" {
 		return
 	}
-	
-	// Verificar si ya tenemos el panel
 	panelPath := filepath.Join(StaticDir, "index.html")
 	if _, err := os.Stat(panelPath); err == nil {
 		return
 	}
-	
 	fmt.Println("📥 Descargando panel de administración desde la red...")
-	
-	// Descargar el panel desde IPFS
 	data, err := n.BuscarContenidoPorCID(cid)
 	if err != nil {
 		fmt.Println("❌ Error descargando panel de administración:", err)
 		return
 	}
-	
-	// Guardar en disco
 	os.MkdirAll(StaticDir, 0755)
 	err = os.WriteFile(panelPath, data, 0644)
 	if err != nil {
 		fmt.Println("❌ Error guardando panel de administración:", err)
 		return
 	}
-	
 	fmt.Println("✅ Panel de administración descargado y guardado en:", panelPath)
 }
 
 func (n *NodoAlset) ensureStaticFiles() {
 	os.MkdirAll(StaticDir, 0755)
 	os.MkdirAll(filepath.Join(StaticDir, "apps"), 0755)
-	
 	panelPath := filepath.Join(StaticDir, "index.html")
-	
-	// Verificar si ya existe el panel
 	if _, err := os.Stat(panelPath); err == nil {
 		return
 	}
-	
-	// Verificar si tenemos configuración guardada
 	if configData, err := os.ReadFile("nodo_config.json"); err == nil {
 		var config NodoConfig
 		if json.Unmarshal(configData, &config) == nil && config.AdminPanelCID != "" {
@@ -4682,19 +4648,15 @@ func (n *NodoAlset) ensureStaticFiles() {
 			}
 		}
 	}
-	
-	// Si no hay panel en la red, este nodo es genesis y lo crea
 	fmt.Println("🌟 Nodo genesis: creando panel de administración inicial...")
 	n.publishAdminPanelCID()
-	
-	// Guardar el panel localmente
 	html := n.getAdminPanelHTML()
 	os.WriteFile(panelPath, []byte(html), 0644)
 	fmt.Println("✅ Panel de administración creado en:", panelPath)
 }
 
 // =============================================================================
-// MÉTODOS DE SINCRONIZACIÓN
+// SISTEMA DE SINCRONIZACIÓN (EXISTENTE)
 // =============================================================================
 
 func (n *NodoAlset) InitSyncManager() *SyncManager {
@@ -4703,11 +4665,9 @@ func (n *NodoAlset) InitSyncManager() *SyncManager {
 		AutoSyncDays:   7,
 		MaxQuickBlocks: 100,
 	}
-	
 	if data, err := os.ReadFile("sync_config.json"); err == nil {
 		json.Unmarshal(data, &config)
 	}
-	
 	if data, err := os.ReadFile("last_sync.json"); err == nil {
 		var lastSync struct {
 			Timestamp int64 `json:"timestamp"`
@@ -4715,12 +4675,10 @@ func (n *NodoAlset) InitSyncManager() *SyncManager {
 		json.Unmarshal(data, &lastSync)
 		config.LastSyncTime = lastSync.Timestamp
 	}
-	
 	sm := &SyncManager{
 		nodo:   n,
 		config: config,
 	}
-	
 	n.syncManager = sm
 	return sm
 }
@@ -4737,19 +4695,17 @@ func (sm *SyncManager) SaveLastSyncTime() {
 
 func (n *NodoAlset) QuickStartup() {
 	fmt.Println("🚀 Arranque rápido iniciado...")
-	
 	n.ensureStaticFiles()
 	n.CargarEstado()
-	
 	go n.connectToNetwork()
-	
 	go func() {
 		time.Sleep(3 * time.Second)
 		if n.syncManager != nil && n.shouldQuickSync() {
 			n.syncManager.PerformQuickSync()
 		}
 	}()
-	
+	// ---- Iniciar cliente de pulsos ----
+	go n.startPulseClients()
 	fmt.Println("✅ Nodo operativo (sincronización en background)")
 	fmt.Println("🌐 Panel de administración: http://localhost:" + getPort() + "/static/index.html")
 }
@@ -4762,11 +4718,9 @@ func (n *NodoAlset) shouldQuickSync() bool {
 	if len(n.agentes) == 0 {
 		return true
 	}
-	
 	if n.syncManager.config.LastSyncTime == 0 {
 		return true
 	}
-	
 	daysSinceSync := (time.Now().Unix() - n.syncManager.config.LastSyncTime) / 86400
 	return daysSinceSync > int64(n.syncManager.config.AutoSyncDays)
 }
@@ -4780,23 +4734,18 @@ func (sm *SyncManager) PerformQuickSync() {
 	sm.isSyncing = true
 	sm.mu.Unlock()
 	defer func() { sm.isSyncing = false }()
-	
 	fmt.Println("⚡ Sincronización rápida iniciada...")
-	
 	peers := sm.nodo.host.Network().Peers()
 	if len(peers) == 0 {
 		fmt.Println("⚠️ No hay peers disponibles para sincronizar")
 		return
 	}
-	
 	for _, p := range peers {
 		stream, err := sm.nodo.host.NewStream(sm.nodo.ctx, p, AlsetDataExchangeID)
 		if err != nil {
 			continue
 		}
-		
 		stream.Write([]byte("SYNC_QUICK_REQUEST\n"))
-		
 		sizeBuf := make([]byte, 8)
 		_, err = io.ReadFull(stream, sizeBuf)
 		if err != nil {
@@ -4804,28 +4753,22 @@ func (sm *SyncManager) PerformQuickSync() {
 			continue
 		}
 		size := binary.BigEndian.Uint64(sizeBuf)
-		
 		data := make([]byte, size)
 		_, err = io.ReadFull(stream, data)
 		stream.Close()
-		
 		if err != nil {
 			continue
 		}
-		
 		gz, _ := gzip.NewReader(bytes.NewReader(data))
 		decompressed, _ := io.ReadAll(gz)
 		gz.Close()
-		
 		var response struct {
-			Agentes      map[string]*Agente   `json:"agentes"`
-			Nombres      map[string]string    `json:"nombres"`
-			RecentBlocks map[string][]byte    `json:"recent_blocks"`
-			NeuralState  *NeuralState         `json:"neural_state"`
+			Agentes      map[string]*Agente `json:"agentes"`
+			Nombres      map[string]string  `json:"nombres"`
+			RecentBlocks map[string][]byte  `json:"recent_blocks"`
+			NeuralState  *NeuralState       `json:"neural_state"`
 		}
-		
 		json.Unmarshal(decompressed, &response)
-		
 		sm.nodo.mu.Lock()
 		for k, v := range response.Agentes {
 			if _, exists := sm.nodo.agentes[k]; !exists {
@@ -4847,11 +4790,9 @@ func (sm *SyncManager) PerformQuickSync() {
 			sm.nodo.neuralState = response.NeuralState
 		}
 		sm.nodo.mu.Unlock()
-		
 		sm.nodo.PersistirLocamente()
 		sm.SaveLastSyncTime()
-		
-		fmt.Printf("✅ Sincronización rápida completada: %d agentes, %d bloques\n", 
+		fmt.Printf("✅ Sincronización rápida completada: %d agentes, %d bloques\n",
 			len(response.Agentes), len(response.RecentBlocks))
 		return
 	}
@@ -4866,26 +4807,20 @@ func (sm *SyncManager) PerformFullSync(ctx context.Context, progressCallback fun
 	sm.isSyncing = true
 	sm.mu.Unlock()
 	defer func() { sm.isSyncing = false }()
-	
 	fmt.Println("🔄 Sincronización completa iniciada...")
-	
 	if progressCallback != nil {
 		progressCallback(0.1)
 	}
-	
 	peers := sm.nodo.host.Network().Peers()
 	if len(peers) == 0 {
 		return fmt.Errorf("no hay peers disponibles para sincronizar")
 	}
-	
 	for _, p := range peers {
 		stream, err := sm.nodo.host.NewStream(ctx, p, AlsetDataExchangeID)
 		if err != nil {
 			continue
 		}
-		
 		stream.Write([]byte("SYNC_FULL_REQUEST\n"))
-		
 		sizeBuf := make([]byte, 8)
 		_, err = io.ReadFull(stream, sizeBuf)
 		if err != nil {
@@ -4893,30 +4828,23 @@ func (sm *SyncManager) PerformFullSync(ctx context.Context, progressCallback fun
 			continue
 		}
 		size := binary.BigEndian.Uint64(sizeBuf)
-		
 		data := make([]byte, size)
 		_, err = io.ReadFull(stream, data)
 		stream.Close()
-		
 		if err != nil {
 			continue
 		}
-		
 		gz, _ := gzip.NewReader(bytes.NewReader(data))
 		decompressed, _ := io.ReadAll(gz)
 		gz.Close()
-		
 		var fullState struct {
 			Agentes map[string]*Agente `json:"agentes"`
 			Nombres map[string]string  `json:"nombres"`
 		}
-		
 		json.Unmarshal(decompressed, &fullState)
-		
 		if progressCallback != nil {
 			progressCallback(0.5)
 		}
-		
 		sm.nodo.mu.Lock()
 		for k, v := range fullState.Agentes {
 			sm.nodo.agentes[k] = v
@@ -4925,19 +4853,15 @@ func (sm *SyncManager) PerformFullSync(ctx context.Context, progressCallback fun
 			sm.nodo.nombres[k] = v
 		}
 		sm.nodo.mu.Unlock()
-		
 		if progressCallback != nil {
 			progressCallback(1.0)
 		}
-		
 		sm.nodo.PersistirLocamente()
 		sm.SaveLastSyncTime()
-		
-		fmt.Printf("✅ Sincronización completa: %d agentes, %d nombres\n", 
+		fmt.Printf("✅ Sincronización completa: %d agentes, %d nombres\n",
 			len(fullState.Agentes), len(fullState.Nombres))
 		return nil
 	}
-	
 	return fmt.Errorf("no se pudo completar la sincronización con ningún peer")
 }
 
@@ -4947,7 +4871,7 @@ func (n *NodoAlset) connectToNetwork() {
 }
 
 // =============================================================================
-// HANDLERS DE MODULOS, ENTIDADES Y SEGURIDAD
+// HANDLERS DE MÓDULOS, ENTIDADES, SEGURIDAD (EXISTENTES)
 // =============================================================================
 
 func (n *NodoAlset) crearModulo(w http.ResponseWriter, r *http.Request) {
@@ -5061,11 +4985,11 @@ func (n *NodoAlset) crearEntidad(w http.ResponseWriter, r *http.Request) {
 	}
 	id := generarUUID()
 	entidad := &EntidadProgramatica{
-		ID:         id,
-		Tipo:       req.Tipo,
-		Atributos:  atributosFinales,
-		HeredaDe:   req.HeredaDe,
-		ModuloID:   req.ModuloID,
+		ID:        id,
+		Tipo:      req.Tipo,
+		Atributos: atributosFinales,
+		HeredaDe:  req.HeredaDe,
+		ModuloID:  req.ModuloID,
 	}
 	muEntidades.Lock()
 	entidadesGlobales[id] = entidad
@@ -5324,16 +5248,8 @@ func (n *NodoAlset) SetAgentRoot(agentID string, rootCID string) {
 	}
 }
 
-func generarHTMLBase(agenteID string) string {
-	return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>" + agenteID + " - Alset App</title><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:system-ui;background:#0A0A0A;color:#FFF;}.header{background:#141414;padding:1rem 2rem;border-bottom:2px solid #F4B400;}.container{padding:2rem;max-width:1200px;margin:0 auto;}.card{background:#141414;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;border:1px solid rgba(244,180,0,0.2);}button{background:#F4B400;border:none;padding:0.5rem 1rem;border-radius:8px;cursor:pointer;}</style></head><body><div class=\"header\"><h1>" + agenteID + "</h1></div><div class=\"container\" id=\"app\"><div class=\"card\"><h3>Bienvenido</h3><p>App generada por Alset</p></div></div></body></html>"
-}
-
-func generarHTMLParaPlantilla(nombre string, tipo string) string {
-	return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>" + nombre + " - Alset App</title><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:system-ui;background:#0A0A0A;color:#FFF;}.header{background:#141414;padding:2rem;text-align:center;border-bottom:3px solid #F4B400;}.header h1{font-size:2rem;}.container{padding:2rem;max-width:1200px;margin:0 auto;}.card{background:#141414;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;border:1px solid rgba(244,180,0,0.2);}button{background:#F4B400;border:none;padding:0.5rem 1rem;border-radius:8px;cursor:pointer;}</style></head><body><div class=\"header\"><h1>" + nombre + "</h1><p>Tu app en Alset Network</p></div><div class=\"container\"><div class=\"card\"><h3>Bienvenido</h3><p>App tipo: " + tipo + "</p><button onclick=\"alert('App funcionando')\">Probar</button></div></div></body></html>"
-}
-
 // =============================================================================
-// HANDLERS DE SINCRONIZACIÓN HTTP
+// HANDLERS DE SINCRONIZACIÓN HTTP (EXISTENTES)
 // =============================================================================
 
 func (n *NodoAlset) handleSyncStatus(w http.ResponseWriter, r *http.Request) {
@@ -5343,10 +5259,8 @@ func (n *NodoAlset) handleSyncStatus(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	
 	n.syncManager.mu.RLock()
 	defer n.syncManager.mu.RUnlock()
-	
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":         "idle",
 		"is_syncing":     n.syncManager.isSyncing,
@@ -5365,22 +5279,18 @@ func (n *NodoAlset) handleSyncFull(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Método no permitido", 405)
 		return
 	}
-	
 	if n.syncManager == nil {
 		http.Error(w, "Sync manager no inicializado", 500)
 		return
 	}
-	
 	go func() {
 		globalSyncProgress.Status = "syncing"
 		globalSyncProgress.Stage = "full_sync"
-		
 		err := n.syncManager.PerformFullSync(context.Background(), func(progress float64) {
 			globalSyncProgress.Percent = progress
 			globalSyncProgress.Current = int(progress * 100)
 			globalSyncProgress.Total = 100
 		})
-		
 		if err != nil {
 			globalSyncProgress.Status = "error"
 			globalSyncProgress.Stage = err.Error()
@@ -5389,7 +5299,6 @@ func (n *NodoAlset) handleSyncFull(w http.ResponseWriter, r *http.Request) {
 			globalSyncProgress.Stage = "completed"
 		}
 	}()
-	
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":  "sync_started",
 		"message": "Sincronización completa iniciada en background",
@@ -5401,14 +5310,11 @@ func (n *NodoAlset) handleSyncQuick(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Método no permitido", 405)
 		return
 	}
-	
 	if n.syncManager == nil {
 		http.Error(w, "Sync manager no inicializado", 500)
 		return
 	}
-	
 	go n.syncManager.PerformQuickSync()
-	
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":  "sync_started",
 		"message": "Sincronización rápida iniciada",
@@ -5420,18 +5326,15 @@ func (n *NodoAlset) handleSyncConfig(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Método no permitido", 405)
 		return
 	}
-	
 	var config struct {
 		Mode           string `json:"mode"`
 		AutoSyncDays   int    `json:"auto_sync_days"`
 		MaxQuickBlocks int    `json:"max_quick_blocks"`
 	}
-	
 	if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
 		http.Error(w, "JSON inválido", 400)
 		return
 	}
-	
 	if n.syncManager != nil {
 		switch config.Mode {
 		case "quick":
@@ -5441,17 +5344,14 @@ func (n *NodoAlset) handleSyncConfig(w http.ResponseWriter, r *http.Request) {
 		case "incremental":
 			n.syncManager.config.Mode = SyncModeIncremental
 		}
-		
 		if config.AutoSyncDays > 0 {
 			n.syncManager.config.AutoSyncDays = config.AutoSyncDays
 		}
 		if config.MaxQuickBlocks > 0 {
 			n.syncManager.config.MaxQuickBlocks = config.MaxQuickBlocks
 		}
-		
 		n.syncManager.SaveConfig()
 	}
-	
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"status": "configured",
 		"config": config,
@@ -5459,7 +5359,7 @@ func (n *NodoAlset) handleSyncConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 // =============================================================================
-// HANDLERS HTTP ADICIONALES
+// HANDLERS HTTP ADICIONALES (EXISTENTES)
 // =============================================================================
 
 func (n *NodoAlset) handlePoHEvent(w http.ResponseWriter, r *http.Request) {
@@ -5501,9 +5401,9 @@ func (n *NodoAlset) handlePoHProof(w http.ResponseWriter, r *http.Request) {
 	proofCID, _ := n.GenerarCID(proofBytes)
 	globalPoH.events = []PoHEvent{}
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"proof_cid":    proofCID,
-		"session":      proof.SessionID,
-		"events":       len(proof.Events),
+		"proof_cid": proofCID,
+		"session":   proof.SessionID,
+		"events":    len(proof.Events),
 	})
 }
 
@@ -5615,7 +5515,6 @@ func (n *NodoAlset) handleAppsRegister(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	
 	if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
 		err := r.ParseMultipartForm(50 << 20)
 		if err != nil {
@@ -5704,7 +5603,6 @@ func (n *NodoAlset) handleAppsRegister(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	
 	var req struct {
 		Name string `json:"name"`
 	}
@@ -5716,29 +5614,23 @@ func (n *NodoAlset) handleAppsRegister(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "App name required", 400)
 		return
 	}
-	
 	appPath := filepath.Join(StaticDir, "apps", req.Name)
 	if _, err := os.Stat(appPath); os.IsNotExist(err) {
 		http.Error(w, "App folder not found: "+req.Name, 404)
 		return
 	}
-	
 	cid, err := n.IpfsAddDirectory(appPath)
 	if err != nil {
 		http.Error(w, "Error uploading to IPFS: "+err.Error(), 500)
 		return
 	}
-	
 	appID := fmt.Sprintf("app-%s-%d", req.Name, time.Now().Unix())
 	createCmd := fmt.Sprintf(`(crear-agente "%s")`, appID)
 	n.lisp.Eval(createCmd)
-	
 	setRootCmd := fmt.Sprintf(`(set-agent-root "%s" "%s")`, appID, cid)
 	n.lisp.Eval(setRootCmd)
-	
 	registerCmd := fmt.Sprintf(`(register-name "%s.app.ans" "%s")`, req.Name, appID)
 	n.lisp.Eval(registerCmd)
-	
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":   "registered",
 		"name":     req.Name,
@@ -5926,11 +5818,11 @@ func (n *NodoAlset) handlePrismRevocar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	revocationTicket := map[string]interface{}{
-		"@context":        "https://www.w3.org/2018/credentials/v1",
-		"id":              fmt.Sprintf("urn:uuid:%s", req.CID),
-		"type":            []string{"RevocationList2020Credential"},
-		"issuer":          "did:prism:tec:institutional",
-		"issuanceDate":    fecha,
+		"@context":     "https://www.w3.org/2018/credentials/v1",
+		"id":           fmt.Sprintf("urn:uuid:%s", req.CID),
+		"type":         []string{"RevocationList2020Credential"},
+		"issuer":       "did:prism:tec:institutional",
+		"issuanceDate": fecha,
 		"credentialSubject": map[string]interface{}{
 			"id":                fmt.Sprintf("did:prism:%s", req.CID[:16]),
 			"revokedCredential": req.CID,
@@ -6030,16 +5922,179 @@ func (n *NodoAlset) handleAdminLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 // =============================================================================
-// SERVIDOR HTTP
+// SERVICIO DE PULSOS – NUEVO
+// =============================================================================
+
+func (n *NodoAlset) broadcastPulse(eventType string, data interface{}) {
+	payload, _ := json.Marshal(data)
+	msg := fmt.Sprintf("event: %s\ndata: %s\n\n", eventType, string(payload))
+
+	n.pulseSubscribersMu.RLock()
+	defer n.pulseSubscribersMu.RUnlock()
+	for sub := range n.pulseSubscribers {
+		select {
+		case sub.ch <- msg:
+		default:
+			// canal lleno, omitir
+		}
+	}
+}
+
+func (n *NodoAlset) startPulseClients() {
+	knownServers := []string{
+		"https://prismatec.onrender.com/api/pulse",
+		// Aquí puedes añadir más URLs de otros nodos
+	}
+	for _, url := range knownServers {
+		go n.runPulseClient(url)
+	}
+}
+
+func (n *NodoAlset) runPulseClient(url string) {
+	n.pulseClientsMu.Lock()
+	if _, exists := n.pulseClients[url]; exists {
+		n.pulseClientsMu.Unlock()
+		return
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	client := &PulseClient{
+		url:       url,
+		ctx:       ctx,
+		cancel:    cancel,
+		reconnect: make(chan bool, 1),
+	}
+	n.pulseClients[url] = client
+	n.pulseClientsMu.Unlock()
+
+	defer func() {
+		n.pulseClientsMu.Lock()
+		delete(n.pulseClients, url)
+		n.pulseClientsMu.Unlock()
+		cancel()
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			err := n.connectAndListen(client)
+			if err != nil {
+				log.Printf("Pulse client %s: %v, reconectando en 5s", url, err)
+				time.Sleep(5 * time.Second)
+			}
+		}
+	}
+}
+
+func (n *NodoAlset) connectAndListen(client *PulseClient) error {
+	req, err := http.NewRequestWithContext(client.ctx, "GET", client.url, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Accept", "text/event-stream")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("status: %s", resp.Status)
+	}
+
+	client.connected = true
+	defer func() { client.connected = false }()
+
+	reader := bufio.NewReader(resp.Body)
+	var eventType string
+	var dataBuffer strings.Builder
+
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			return err
+		}
+		line = strings.TrimSpace(line)
+		if line == "" {
+			if dataBuffer.Len() > 0 {
+				n.processPulseEvent(eventType, dataBuffer.String())
+				dataBuffer.Reset()
+			}
+			continue
+		}
+		if strings.HasPrefix(line, "event: ") {
+			eventType = strings.TrimPrefix(line, "event: ")
+		} else if strings.HasPrefix(line, "data: ") {
+			dataBuffer.WriteString(strings.TrimPrefix(line, "data: "))
+		} else {
+			dataBuffer.WriteString(line)
+		}
+	}
+}
+
+func (n *NodoAlset) processPulseEvent(eventType string, data string) {
+	var payload map[string]interface{}
+	if err := json.Unmarshal([]byte(data), &payload); err != nil {
+		return
+	}
+
+	switch eventType {
+	case "agent_created":
+		id, _ := payload["id"].(string)
+		n.mu.Lock()
+		if _, exists := n.agentes[id]; !exists {
+			n.agentes[id] = &Agente{
+				ID:           id,
+				RootCID:      "",
+				UltimaActual: time.Now().Unix(),
+				BalanceUTXO:  0,
+			}
+			fmt.Printf("📥 Agente %s recibido por pulso\n", id)
+		}
+		n.mu.Unlock()
+	case "root_updated":
+		id, _ := payload["id"].(string)
+		root, _ := payload["root"].(string)
+		n.mu.Lock()
+		if a, exists := n.agentes[id]; exists {
+			a.RootCID = root
+			a.UltimaActual = time.Now().Unix()
+		}
+		n.mu.Unlock()
+	case "dns_registered":
+		alias, _ := payload["alias"].(string)
+		agent, _ := payload["agent"].(string)
+		n.mu.Lock()
+		n.nombres[alias] = agent
+		n.mu.Unlock()
+		fmt.Printf("📥 DNS %s -> %s recibido por pulso\n", alias, agent)
+	case "neural_spike":
+		// opcional: propagar spikes entre nodos
+		go n.procesarSpikeNeuronal(convertMapToStringMap(payload), peer.ID("pulse"))
+	}
+}
+
+func convertMapToStringMap(m map[string]interface{}) map[string]string {
+	res := make(map[string]string)
+	for k, v := range m {
+		res[k] = fmt.Sprintf("%v", v)
+	}
+	return res
+}
+
+// =============================================================================
+// SERVIDOR HTTP – INCLUYE /api/pulse
 // =============================================================================
 
 func (n *NodoAlset) startHTTPServer(port string) {
 	mux := http.NewServeMux()
-	
+
 	n.ensureStaticFiles()
-	
+
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(StaticDir))))
-	
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			http.Redirect(w, r, "/static/index.html", http.StatusFound)
@@ -6047,7 +6102,7 @@ func (n *NodoAlset) startHTTPServer(port string) {
 		}
 		http.FileServer(http.Dir(".")).ServeHTTP(w, r)
 	})
-	
+
 	mux.HandleFunc("/w/", func(w http.ResponseWriter, r *http.Request) {
 		parts := strings.Split(r.URL.Path, "/")
 		if len(parts) < 3 {
@@ -6079,7 +6134,7 @@ func (n *NodoAlset) startHTTPServer(port string) {
 		w.Header().Set("Content-Type", "text/html")
 		w.Write(data)
 	})
-	
+
 	mux.HandleFunc("/apps/", func(w http.ResponseWriter, r *http.Request) {
 		filePath := strings.TrimPrefix(r.URL.Path, "/apps/")
 		fullPath := filepath.Join(StaticDir, "apps", filePath)
@@ -6102,8 +6157,67 @@ func (n *NodoAlset) startHTTPServer(port string) {
 		}
 		http.Error(w, "Archivo no encontrado", 404)
 	})
-	
-	// API endpoints
+
+	// ---- PULSO: endpoint SSE ----
+	mux.HandleFunc("/api/pulse", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			http.Error(w, "SSE not supported", 500)
+			return
+		}
+
+		ctx, cancel := context.WithCancel(r.Context())
+		sub := &SSESubscriber{
+			ch:     make(chan string, 10),
+			ctx:    ctx,
+			cancel: cancel,
+		}
+
+		n.pulseSubscribersMu.Lock()
+		n.pulseSubscribers[sub] = true
+		n.pulseSubscribersMu.Unlock()
+
+		defer func() {
+			n.pulseSubscribersMu.Lock()
+			delete(n.pulseSubscribers, sub)
+			n.pulseSubscribersMu.Unlock()
+			close(sub.ch)
+			cancel()
+		}()
+
+		state := map[string]interface{}{
+			"node_id": n.host.ID().String(),
+			"agents":  len(n.agentes),
+			"blocks":  len(n.blockstore),
+			"time":    time.Now().Unix(),
+		}
+		stateJSON, _ := json.Marshal(state)
+		fmt.Fprintf(w, "event: connected\ndata: %s\n\n", stateJSON)
+		flusher.Flush()
+
+		ticker := time.NewTicker(15 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case msg := <-sub.ch:
+				fmt.Fprint(w, msg)
+				flusher.Flush()
+			case <-ticker.C:
+				fmt.Fprintf(w, "event: ping\ndata: {}\n\n")
+				flusher.Flush()
+			case <-ctx.Done():
+				return
+			}
+		}
+	})
+
+	// ---- RESTO DE ENDPOINTS (copiados del original) ----
 	mux.HandleFunc("/api/ipfs/list", func(w http.ResponseWriter, r *http.Request) {
 		n.mu.RLock()
 		defer n.mu.RUnlock()
@@ -6121,7 +6235,7 @@ func (n *NodoAlset) startHTTPServer(port string) {
 		}
 		json.NewEncoder(w).Encode(blocks)
 	})
-	
+
 	mux.HandleFunc("/api/network/peers", n.handleNetworkPeers)
 	mux.HandleFunc("/api/dns/list", n.handleDNSList)
 	mux.HandleFunc("/api/dns/resolve", n.handleDNSResolve)
@@ -6148,7 +6262,7 @@ func (n *NodoAlset) startHTTPServer(port string) {
 		defer n.mu.RUnlock()
 		json.NewEncoder(w).Encode(n.agentes)
 	})
-	
+
 	mux.HandleFunc("/api/ipfs/fetch", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Método no permitido", 405)
@@ -6173,7 +6287,7 @@ func (n *NodoAlset) startHTTPServer(port string) {
 			"size": len(data),
 		})
 	})
-	
+
 	mux.HandleFunc("/api/audit/log", n.handleAuditLog)
 	mux.HandleFunc("/api/crear-agente", func(w http.ResponseWriter, r *http.Request) {
 		pub, _, err := ed25519.GenerateKey(rand.Reader)
@@ -6194,10 +6308,15 @@ func (n *NodoAlset) startHTTPServer(port string) {
 		n.Auditoria("AGENTE_REGISTRADO_HTTP", fmt.Sprintf("ID: %s | InitBalance: %f", id, balanceInicial))
 		n.PersistirLocamente()
 		go n.SincronizarConPares()
+		go n.broadcastPulse("agent_created", map[string]interface{}{
+			"id":   id,
+			"root": "",
+			"time": time.Now().Unix(),
+		})
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(nuevoAgente)
 	})
-	
+
 	mux.HandleFunc("/api/eliminar-agente", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" && r.Method != "DELETE" {
 			http.Error(w, "Método no permitido", 405)
@@ -6227,13 +6346,18 @@ func (n *NodoAlset) startHTTPServer(port string) {
 			fmt.Printf("⚠️ Error guardando estado: %v\n", err)
 		}
 		go n.SincronizarConPares()
+		go n.broadcastPulse("agent_deleted", map[string]interface{}{
+			"id":   req.ID,
+			"time": time.Now().Unix(),
+		})
 		fmt.Printf("🗑️ Agente eliminado: %s\n", req.ID)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"status":  "deleted",
 			"id":      req.ID,
 			"message": "Agente eliminado correctamente",
 		})
-	})	
+	})
+
 	mux.HandleFunc("/api/modificar-agente", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" && r.Method != "PUT" {
 			http.Error(w, "Método no permitido", 405)
@@ -6264,6 +6388,12 @@ func (n *NodoAlset) startHTTPServer(port string) {
 			agent.UltimaActual = time.Now().Unix()
 			n.Auditoria("AGENTE_MODIFICADO", fmt.Sprintf("ID: %s | Balance: %.2f | RootCID: %s", req.ID, req.BalanceUTXO, req.RootCID))
 			n.PersistirLocamente()
+			go n.broadcastPulse("agent_updated", map[string]interface{}{
+				"id":      req.ID,
+				"balance": req.BalanceUTXO,
+				"root":    req.RootCID,
+				"time":    time.Now().Unix(),
+			})
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"status": "updated",
 				"agent":  agent,
@@ -6271,7 +6401,8 @@ func (n *NodoAlset) startHTTPServer(port string) {
 		} else {
 			http.Error(w, "Agente no encontrado", 404)
 		}
-	})	
+	})
+
 	mux.HandleFunc("/api/debug/estado", n.handleDebugEstado)
 	mux.HandleFunc("/api/prism/verificar", n.handlePrismVerificar)
 	mux.HandleFunc("/api/prism/revocar", n.handlePrismRevocar)
@@ -6283,11 +6414,13 @@ func (n *NodoAlset) startHTTPServer(port string) {
 		cidStr, _ := n.GenerarCID(body)
 		n.AnunciarNuevoBloque(cidStr)
 		json.NewEncoder(w).Encode(map[string]string{"cid": cidStr})
-	})	
+	})
+
 	mux.HandleFunc("/api/ipfs/delete", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" && r.Method != "DELETE" {
 			http.Error(w, "Método no permitido", 405)
-			return		}
+			return
+		}
 		var req struct {
 			CID string `json:"cid"`
 		}
@@ -6315,7 +6448,8 @@ func (n *NodoAlset) startHTTPServer(port string) {
 		} else {
 			http.Error(w, "Bloque no encontrado", 404)
 		}
-	})	
+	})
+
 	mux.HandleFunc("/api/ipfs/get", func(w http.ResponseWriter, r *http.Request) {
 		data, err := n.BuscarContenidoPorCID(r.URL.Query().Get("cid"))
 		if err != nil {
@@ -6323,7 +6457,8 @@ func (n *NodoAlset) startHTTPServer(port string) {
 			return
 		}
 		w.Write(data)
-	})	
+	})
+
 	mux.HandleFunc("/api/ipfs/clear", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" && r.Method != "DELETE" {
 			http.Error(w, "Método no permitido", 405)
@@ -6350,7 +6485,8 @@ func (n *NodoAlset) startHTTPServer(port string) {
 			"status":         "cleared",
 			"blocks_deleted": count,
 		})
-	})	
+	})
+
 	mux.HandleFunc("/api/apps/register", n.handleAppsRegister)
 	mux.HandleFunc("/api/apps/list", n.handleAppsList)
 	mux.HandleFunc("/api/lispai", func(w http.ResponseWriter, r *http.Request) {
@@ -6364,14 +6500,15 @@ func (n *NodoAlset) startHTTPServer(port string) {
 			return
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{"resultado": res})
-	})	
+	})
+
 	mux.HandleFunc("/api/poh/event", n.handlePoHEvent)
 	mux.HandleFunc("/api/poh/proof", n.handlePoHProof)
 	mux.HandleFunc("/api/sync/status", n.handleSyncStatus)
 	mux.HandleFunc("/api/sync/full", n.handleSyncFull)
 	mux.HandleFunc("/api/sync/quick", n.handleSyncQuick)
 	mux.HandleFunc("/api/sync/config", n.handleSyncConfig)
-	
+
 	// IA endpoints
 	mux.HandleFunc("/api/ia/configurar", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
@@ -6422,7 +6559,7 @@ func (n *NodoAlset) startHTTPServer(port string) {
 			http.Error(w, "Timeout", 500)
 		}
 	})
-	
+
 	mux.HandleFunc("/api/ia/inferir", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Método no permitido", 405)
@@ -6472,16 +6609,16 @@ func (n *NodoAlset) startHTTPServer(port string) {
 			}
 		}()
 	})
-	
+
 	mux.HandleFunc("/api/ia/aprender", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Método no permitido", 405)
 			return
 		}
 		var req struct {
-			Entrada        []float64 `json:"entrada"`
-			SalidaEsperada []float64 `json:"salida_esperada"`
-			TasaAprendizaje float64  `json:"tasa_aprendizaje"`
+			Entrada         []float64 `json:"entrada"`
+			SalidaEsperada  []float64 `json:"salida_esperada"`
+			TasaAprendizaje float64   `json:"tasa_aprendizaje"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "JSON inválido", 400)
@@ -6510,7 +6647,7 @@ func (n *NodoAlset) startHTTPServer(port string) {
 			"tasa":   tasa,
 		})
 	})
-	
+
 	mux.HandleFunc("/api/ia/memoria/buscar", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Método no permitido", 405)
@@ -6548,7 +6685,7 @@ func (n *NodoAlset) startHTTPServer(port string) {
 			"count":   len(resultados),
 		})
 	})
-	
+
 	mux.HandleFunc("/api/ia/topologia", func(w http.ResponseWriter, r *http.Request) {
 		peers := n.host.Network().Peers()
 		vecinosInfo := []map[string]interface{}{}
@@ -6589,7 +6726,7 @@ func (n *NodoAlset) startHTTPServer(port string) {
 			"peers":       vecinosInfo,
 		})
 	})
-	
+
 	mux.HandleFunc("/api/ia/estado", func(w http.ResponseWriter, r *http.Request) {
 		n.mu.RLock()
 		defer n.mu.RUnlock()
@@ -6619,7 +6756,7 @@ func (n *NodoAlset) startHTTPServer(port string) {
 			"synapses":           sinapsisList,
 		})
 	})
-	
+
 	mux.HandleFunc("/api/ia/metricas", func(w http.ResponseWriter, r *http.Request) {
 		n.mu.RLock()
 		defer n.mu.RUnlock()
@@ -6648,7 +6785,7 @@ func (n *NodoAlset) startHTTPServer(port string) {
 			"uptime":                     time.Now().Unix() - n.startTime,
 		})
 	})
-	
+
 	mux.HandleFunc("/api/ia/sinapsis/conectar", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Método no permitido", 405)
@@ -6716,7 +6853,7 @@ func (n *NodoAlset) startHTTPServer(port string) {
 			http.Error(w, "Timeout", 500)
 		}
 	})
-	
+
 	mux.HandleFunc("/api/ia/sinapsis/clear", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" && r.Method != "DELETE" {
 			http.Error(w, "Método no permitido", 405)
@@ -6739,7 +6876,8 @@ func (n *NodoAlset) startHTTPServer(port string) {
 				"synapses_removed": 0,
 			})
 		}
-	})	
+	})
+
 	// Módulos, entidades y seguridad endpoints
 	mux.HandleFunc("/api/modulos", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -6762,7 +6900,8 @@ func (n *NodoAlset) startHTTPServer(port string) {
 		default:
 			http.Error(w, "Método no permitido", 405)
 		}
-	})	
+	})
+
 	mux.HandleFunc("/api/entidades", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
@@ -6784,7 +6923,8 @@ func (n *NodoAlset) startHTTPServer(port string) {
 		default:
 			http.Error(w, "Método no permitido", 405)
 		}
-	})	
+	})
+
 	mux.HandleFunc("/api/relaciones", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
@@ -6794,7 +6934,8 @@ func (n *NodoAlset) startHTTPServer(port string) {
 		default:
 			http.Error(w, "Método no permitido", 405)
 		}
-	})	
+	})
+
 	mux.HandleFunc("/api/auth/token", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "POST":
@@ -6811,7 +6952,8 @@ func (n *NodoAlset) startHTTPServer(port string) {
 		default:
 			http.Error(w, "Método no permitido", 405)
 		}
-	})	
+	})
+
 	mux.HandleFunc("/api/roles", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "POST":
@@ -6828,71 +6970,78 @@ func (n *NodoAlset) startHTTPServer(port string) {
 			http.Error(w, "Método no permitido", 405)
 		}
 	})
-	
-	fmt.Printf("🚀 Prisma Tec API activa en puerto %s\n", port)
+
+	fmt.Printf("🚀 Prisma Tec API activa en puerto %s (incluye /api/pulse)\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
 }
 
+// =============================================================================
+// INICIALIZACIÓN DEL NODO (MODIFICADA)
+// =============================================================================
+
 func (n *NodoAlset) Init() {
-    n.LoadMasterKey()
-    n.startTime = time.Now().Unix()
-    priv, _, err := crypto.GenerateKeyPairWithReader(crypto.Ed25519, 2048, rand.Reader)
-    if err != nil {
-        log.Fatal("Error generando clave privada:", err)
-    }
-    // Crear el host con soporte para relay
-    h, err := libp2p.New(
-        libp2p.Identity(priv),
-        libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"),
-        libp2p.EnableRelayService(), // Habilita el servicio de relay
-        // Opcional: si quieres un puerto fijo, usa "/ip4/0.0.0.0/tcp/4001"
-    )
-    if err != nil {
-        log.Fatal("Error creando el host libp2p:", err)
-    }
-    n.host = h
-    n.ctx = context.Background()
-    n.blockstore = make(map[string][]byte)
-    n.agentes = make(map[string]*Agente)
-    n.nombres = make(map[string]string)
-    n.pendingInferences = make(map[string]chan InferenceResponse)
-    n.pendingMemoryQueries = make(map[string]chan MemoryResponse)
-    n.hebbianMemory = make(map[string]float64)
+	n.LoadMasterKey()
+	n.startTime = time.Now().Unix()
+	priv, _, err := crypto.GenerateKeyPairWithReader(crypto.Ed25519, 2048, rand.Reader)
+	if err != nil {
+		log.Fatal("Error generando clave privada:", err)
+	}
+	// Habilitar relay y usar puerto fijo opcional
+	h, err := libp2p.New(
+		libp2p.Identity(priv),
+		libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"),
+		libp2p.EnableRelayService(),
+	)
+	if err != nil {
+		log.Fatal("Error creando el host libp2p:", err)
+	}
+	n.host = h
+	n.ctx = context.Background()
+	n.blockstore = make(map[string][]byte)
+	n.agentes = make(map[string]*Agente)
+	n.nombres = make(map[string]string)
+	n.pendingInferences = make(map[string]chan InferenceResponse)
+	n.pendingMemoryQueries = make(map[string]chan MemoryResponse)
+	n.hebbianMemory = make(map[string]float64)
 
-    n.syncManager = n.InitSyncManager()
+	// Inicializar pulse
+	n.pulseSubscribers = make(map[*SSESubscriber]bool)
+	n.pulseClients = make(map[string]*PulseClient)
 
-    n.CargarEstado()
-    n.neuralState = &NeuralState{
-        MembranePotential: 0,
-        LastSpikeTime:     0,
-        SpikeThreshold:    0.6,
-        LeakRate:          0.01,
-        RefractoryPeriod:  1000000,
-        Synapses:          make(map[string]SynapticWeight),
-        NeuronType:        "input",
-    }
-    n.cargarPesosSinapsis()
-    n.datastore = ds_sync.MutexWrap(datastore.NewMapDatastore())
-    ps, err := pubsub.NewGossipSub(n.ctx, n.host)
-    if err != nil {
-        log.Fatal("Error creando GossipSub:", err)
-    }
-    n.pubsub = ps
-    n.topic, err = n.pubsub.Join(AlsetGossipTopic)
-    if err != nil {
-        log.Fatal("Error uniéndose al tópico:", err)
-    }
-    n.host.SetStreamHandler(AlsetDataExchangeID, n.handleDataExchange)
-    n.kademlia, err = dht.New(n.ctx, n.host, dht.Mode(dht.ModeServer))
-    if err != nil {
-        log.Fatal("Error creando DHT:", err)
-    }
-    go n.kademlia.Bootstrap(n.ctx)
-    n.lisp = NewLispEvaluator(n)
-    mdns.NewMdnsService(n.host, "alset-mesh", &discoveryNotifee{h: n.host}).Start()
-    go n.EscucharGossip()
+	n.syncManager = n.InitSyncManager()
 
-    go n.QuickStartup()
+	n.CargarEstado()
+	n.neuralState = &NeuralState{
+		MembranePotential: 0,
+		LastSpikeTime:     0,
+		SpikeThreshold:    0.6,
+		LeakRate:          0.01,
+		RefractoryPeriod:  1000000,
+		Synapses:          make(map[string]SynapticWeight),
+		NeuronType:        "input",
+	}
+	n.cargarPesosSinapsis()
+	n.datastore = ds_sync.MutexWrap(datastore.NewMapDatastore())
+	ps, err := pubsub.NewGossipSub(n.ctx, n.host)
+	if err != nil {
+		log.Fatal("Error creando GossipSub:", err)
+	}
+	n.pubsub = ps
+	n.topic, err = n.pubsub.Join(AlsetGossipTopic)
+	if err != nil {
+		log.Fatal("Error uniéndose al tópico:", err)
+	}
+	n.host.SetStreamHandler(AlsetDataExchangeID, n.handleDataExchange)
+	n.kademlia, err = dht.New(n.ctx, n.host, dht.Mode(dht.ModeServer))
+	if err != nil {
+		log.Fatal("Error creando DHT:", err)
+	}
+	go n.kademlia.Bootstrap(n.ctx)
+	n.lisp = NewLispEvaluator(n)
+	mdns.NewMdnsService(n.host, "alset-mesh", &discoveryNotifee{h: n.host}).Start()
+	go n.EscucharGossip()
+
+	go n.QuickStartup()
 }
 
 type discoveryNotifee struct{ h host.Host }
@@ -6901,10 +7050,15 @@ func (d *discoveryNotifee) HandlePeerFound(pi peer.AddrInfo) {
 	d.h.Connect(context.Background(), pi)
 }
 
+// =============================================================================
+// MAIN
+// =============================================================================
+
 func main() {
 	fmt.Println("🌐 PRISM@.TEC ALSET NET (P.TEC-AN) v4.0")
 	fmt.Println("📦 Sistema Híbrido Go + Lisp con IA Distribuida, VC, UTXO, PoH y ZKP")
 	fmt.Println("🧠 Con IA Distribuida: Neuronas, Sinapsis, Inferencia Distribuida y Memoria Distribuida")
+	fmt.Println("⚡ Con sistema de pulsos SSE para comunicación resiliente")
 
 	port := "8080"
 	if len(os.Args) > 1 {
@@ -6918,7 +7072,7 @@ func main() {
 		pendingMemoryQueries: make(map[string]chan MemoryResponse),
 		hebbianMemory:        make(map[string]float64),
 	}
-	
+
 	mathrand.Seed(time.Now().UnixNano())
 	nodo.Init()
 	nodo.Auditoria("SISTEMA_START", fmt.Sprintf("Nodo Online en puerto %s", port))
