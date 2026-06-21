@@ -5941,6 +5941,13 @@ func (n *NodoAlset) broadcastPulse(eventType string, data interface{}) {
 }
 
 func (n *NodoAlset) startPulseClients() {
+	// Si estamos en Render, no nos conectamos a nosotros mismos ni a otros servidores (por ahora)
+	if os.Getenv("RENDER") != "" {
+		// En Render solo actuamos como servidor de pulsos, no como cliente
+		return
+	}
+
+	// Si no estamos en Render (es decir, estamos en un nodo local), conectamos a los servidores de pulsos conocidos
 	knownServers := []string{
 		"https://prismatec.onrender.com/api/pulse",
 		// Aquí puedes añadir más URLs de otros nodos
@@ -5949,7 +5956,6 @@ func (n *NodoAlset) startPulseClients() {
 		go n.runPulseClient(url)
 	}
 }
-
 func (n *NodoAlset) runPulseClient(url string) {
 	n.pulseClientsMu.Lock()
 	if _, exists := n.pulseClients[url]; exists {
