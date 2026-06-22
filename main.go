@@ -6226,6 +6226,32 @@ case "request_block":
     } else {
         log.Printf("⚠️ Bloque %s solicitado pero no encontrado en el servidor", cid)
     }
+
+
+   case "state_announce":
+    cid, _ := payload["cid"].(string)
+    if cid == "" { return }
+    data, err := n.BuscarContenidoPorCID(cid)
+    if err != nil { return }
+    var remoteState struct {
+        Agentes map[string]*Agente `json:"agentes"`
+        Nombres map[string]string  `json:"nombres"`
+    }
+    json.Unmarshal(data, &remoteState)
+    n.mu.Lock()
+    for k, v := range remoteState.Agentes {
+        if local, ok := n.agentes[k]; !ok || v.UltimaActual > local.UltimaActual {
+            n.agentes[k] = v
+        }
+    }
+    for k, v := range remoteState.Nombres {
+        if _, ok := n.nombres[k]; !ok {
+            n.nombres[k] = v
+        }
+    }
+    n.mu.Unlock()
+    n.PersistirLocamente()
+		
     // ============================================================
     // EVENTOS NEURONALES (SPIKES, SINAPSIS, ESTADO)
     // ============================================================
@@ -7223,6 +7249,23 @@ func (n *NodoAlset) startHTTPServer(port string) {
 
 	fmt.Printf("🚀 Prisma Tec API activa en puerto %s (incluye /api/pulse)\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
+}
+
+// En algún lugar de tu nodo (ej. en QuickStartup o en un goroutine)
+func (n *NodoAlset) publishStateSnapshot() {
+    state := struct {
+        Agentes map[string]*Agente `json:"agentes"`
+        Nombres map[string]string  `json:"nombres"`
+    }{
+        Agentes: n.agentes,
+        Nombres: n.nombres,
+    }
+    data, _ := json.Marshal(state)
+    cid, _ := n.GenerarCID(data)
+    n.broadcastPulse("state_announce", map[string]interface{}{
+        "cid": cid,
+        "node": n.host.ID().String(),
+    })
 }
 
 // =============================================================================
