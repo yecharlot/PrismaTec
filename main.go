@@ -6207,7 +6207,25 @@ func (n *NodoAlset) processPulseEvent(eventType string, data string) {
         // En una red puramente de pulsos, deberíamos tener un mecanismo para pedir el bloque.
         // Por ahora, lo dejamos así y confiamos en que el bloque llegue con los datos.
         // Si no, se puede implementar un evento "request_block" para solicitarlo.
-
+case "request_block":
+    cid, _ := payload["cid"].(string)
+    if cid == "" {
+        return
+    }
+    // Buscar el bloque en el blockstore del servidor
+    n.mu.RLock()
+    blockData, exists := n.blockstore[cid]
+    n.mu.RUnlock()
+    if exists {
+        b64 := base64.StdEncoding.EncodeToString(blockData)
+        n.broadcastPulse("new_block", map[string]interface{}{
+            "cid":  cid,
+            "data": b64,
+        })
+        log.Printf("📤 Bloque %s enviado en respuesta a request_block", cid)
+    } else {
+        log.Printf("⚠️ Bloque %s solicitado pero no encontrado en el servidor", cid)
+    }
     // ============================================================
     // EVENTOS NEURONALES (SPIKES, SINAPSIS, ESTADO)
     // ============================================================
