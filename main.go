@@ -4072,11 +4072,33 @@ func (n *NodoAlset) sincronizarEstadoNeuronal(update map[string]string, origen p
 // =============================================================================
 
 func (n *NodoAlset) AnunciarNuevoBloque(cidStr string) {
-	update := map[string]string{"tipo": "new_block", "cid": cidStr}
-	data, _ := json.Marshal(update)
-	if n.topic != nil {
-		n.topic.Publish(n.ctx, data)
-	}
+    // 1. Publicar en gossip (opcional, lo dejamos por compatibilidad)
+    update := map[string]string{"tipo": "new_block", "cid": cidStr}
+    data, _ := json.Marshal(update)
+    if n.topic != nil {
+        n.topic.Publish(n.ctx, data)
+    }
+
+    // 2. Emitir por pulsos (HTTP)
+    n.mu.RLock()
+    blockData, exists := n.blockstore[cidStr]
+    n.mu.RUnlock()
+
+    if exists {
+        // Codificar el bloque en base64 para transmitirlo
+        b64 := base64.StdEncoding.EncodeToString(blockData)
+        n.broadcastPulse("new_block", map[string]interface{}{
+            "cid":  cidStr,
+            "data": b64,
+        })
+        log.Printf("📤 Bloque %s emitido por pulso (%d bytes)", cidStr, len(blockData))
+    } else {
+        // Si no tenemos el bloque localmente (caso raro), solo anunciamos el CID
+        n.broadcastPulse("new_block", map[string]interface{}{
+            "cid": cidStr,
+        })
+        log.Printf("📤 Anuncio de bloque %s (sin datos) emitido por pulso", cidStr)
+    }
 }
 
 func (n *NodoAlset) SincronizarConPares() {
