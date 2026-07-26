@@ -6795,6 +6795,32 @@ func (n *NodoAlset) startHTTPServer(port string) {
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(map[string]string{"status": "emitted"})
 	})
+
+	// En startHTTPServer(), después de otros endpoints
+mux.HandleFunc("/api/sync/github", func(w http.ResponseWriter, r *http.Request) {
+    if r.Method != "POST" {
+        http.Error(w, "Method not allowed", 405)
+        return
+    }
+    if n.github == nil {
+        http.Error(w, "GitHub persistence not configured", 400)
+        return
+    }
+    if err := n.CargarDesdeGitHub(); err != nil {
+        http.Error(w, "Error loading from GitHub: "+err.Error(), 500)
+        return
+    }
+    if err := n.PersistirEnGitHub(); err != nil {
+        http.Error(w, "Error saving to GitHub: "+err.Error(), 500)
+        return
+    }
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "status":  "synced",
+        "message": "Sincronización con GitHub completada",
+        "agents":  len(n.agentes),
+        "blocks":  len(n.blockstore),
+    })
+})
 	
 	// ---- RESTO DE ENDPOINTS (copiados del original) ----
 	mux.HandleFunc("/api/ipfs/list", func(w http.ResponseWriter, r *http.Request) {
