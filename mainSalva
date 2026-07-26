@@ -69,6 +69,161 @@ const (
 )
 
 // =============================================================================
+// GITHUB PERSISTENCE
+// =============================================================================
+
+type GitHubPersistence struct {
+	Owner     string
+	Repo      string
+	Path      string
+	Token     string
+	Branch    string
+	commitSHA string
+	mu        sync.Mutex
+}
+
+func NewGitHubPersistence(owner, repo, path, token string) *GitHubPersistence {
+	return &GitHubPersistence{
+		Owner:  owner,
+		Repo:   repo,
+		Path:   path,
+		Token:  token,
+		Branch: "main",
+	}
+}
+
+func (g *GitHubPersistence) Save(data []byte, filename string) (string, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	content := base64.StdEncoding.EncodeToString(data)
+	existingSHA, _ := g.getFileSHA(filename)
+
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/%s/%s", g.Owner, g.Repo, g.Path, filename)
+
+	payload := map[string]interface{}{
+		"message": fmt.Sprintf("Update %s at %s", filename, time.Now().Format(time.RFC3339)),
+		"content": content,
+		"branch":  g.Branch,
+	}
+
+	if existingSHA != "" {
+		payload["sha"] = existingSHA
+	}
+
+	jsonPayload, _ := json.Marshal(payload)
+
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", "token "+g.Token)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 && resp.StatusCode != 201 {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("GitHub API error %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+
+	if content, ok := result["content"].(map[string]interface{}); ok {
+		if sha, ok := content["sha"].(string); ok {
+			g.commitSHA = sha
+			return sha, nil
+		}
+	}
+
+	return "", nil
+}
+
+func (g *GitHubPersistence) Load(filename string) ([]byte, error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/%s/%s", g.Owner, g.Repo, g.Path, filename)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "token "+g.Token)
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 404 {
+		return nil, nil
+	}
+
+	if resp.StatusCode != 200 {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("GitHub API error %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+
+	if content, ok := result["content"].(string); ok {
+		decoded, err := base64.StdEncoding.DecodeString(content)
+		if err != nil {
+			return nil, err
+		}
+		return decoded, nil
+	}
+
+	return nil, fmt.Errorf("no content found")
+}
+
+func (g *GitHubPersistence) getFileSHA(filename string) (string, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/%s/%s", g.Owner, g.Repo, g.Path, filename)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Authorization", "token "+g.Token)
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 404 {
+		return "", nil
+	}
+
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("error getting file SHA")
+	}
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+
+	if sha, ok := result["sha"].(string); ok {
+		return sha, nil
+	}
+
+	return "", nil
+}
+
+// =============================================================================
 // TIPOS ESTRUCTURALES
 // =============================================================================
 
@@ -3440,12 +3595,15 @@ type NodoAlset struct {
 	startTime            int64
 	syncManager          *SyncManager
 
-	// ---- NUEVO SISTEMA DE PULSOS ----
+		// ---- NUEVO SISTEMA DE PULSOS ----
 	pulseSubscribers   map[*SSESubscriber]bool
 	pulseSubscribersMu sync.RWMutex
 	pulseClients       map[string]*PulseClient
 	pulseClientsMu     sync.RWMutex
 	pulseKnownServers  []string
+
+	// ---- GITHUB PERSISTENCE ----
+	github *GitHubPersistence
 }
 
 type BlockInfo struct {
@@ -3566,9 +3724,40 @@ func (n *NodoAlset) PersistirLocamente() {
 	dAn, _ := json.MarshalIndent(n.nombres, "", "  ")
 	_ = os.WriteFile("alset_names.json", dAn, 0644)
 	n.persistirEstadoNeuronal()
+	// Guardar en GitHub si está configurado
+	if n.github != nil {
+		go func() {
+			if err := n.PersistirEnGitHub(); err != nil {
+				log.Printf("⚠️ Error guardando en GitHub: %v", err)
+			}
+		}()
+	}
+
 }
 
 func (n *NodoAlset) CargarEstado() {
+	// Intentar cargar desde GitHub primero
+	if n.github != nil {
+		if err := n.CargarDesdeGitHub(); err == nil {
+			fmt.Println("📂 Estado cargado desde GitHub")
+			// También cargar bloques locales que puedan faltar
+			files, _ := os.ReadDir(BlocksDir)
+			n.mu.Lock()
+			for _, f := range files {
+				if !f.IsDir() {
+					if _, ok := n.blockstore[f.Name()]; !ok {
+						if d, err := os.ReadFile(filepath.Join(BlocksDir, f.Name())); err == nil {
+							n.blockstore[f.Name()] = d
+						}
+					}
+				}
+			}
+			n.mu.Unlock()
+			return
+		}
+	}
+
+	// Fallback a archivos locales
 	if d, err := os.ReadFile("alset_state.json"); err == nil {
 		n.mu.Lock()
 		_ = json.Unmarshal(d, &n.agentes)
@@ -3590,6 +3779,119 @@ func (n *NodoAlset) CargarEstado() {
 	}
 	n.mu.Unlock()
 	fmt.Printf("📂 Alset Engine: %d agentes, %d nombres y %d bloques en RAM.\n", len(n.agentes), len(n.nombres), len(n.blockstore))
+}
+
+// =============================================================================
+// PERSISTENCIA EN GITHUB
+// =============================================================================
+
+func (n *NodoAlset) PersistirEnGitHub() error {
+	if n.github == nil {
+		return nil
+	}
+
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+
+	// Guardar agentes
+	agentesData, _ := json.MarshalIndent(n.agentes, "", "  ")
+	if _, err := n.github.Save(agentesData, "alset_state.json"); err != nil {
+		return fmt.Errorf("error saving agents: %v", err)
+	}
+
+	// Guardar nombres DNS
+	nombresData, _ := json.MarshalIndent(n.nombres, "", "  ")
+	if _, err := n.github.Save(nombresData, "alset_names.json"); err != nil {
+		return fmt.Errorf("error saving names: %v", err)
+	}
+
+	// Guardar estado neuronal
+	if n.neuralState != nil {
+		neuralData, _ := json.MarshalIndent(n.neuralState, "", "  ")
+		if _, err := n.github.Save(neuralData, "neural_state.json"); err != nil {
+			return fmt.Errorf("error saving neural state: %v", err)
+		}
+	}
+
+	// Guardar blocks
+	blocksData, _ := json.Marshal(n.blockstore)
+	if _, err := n.github.Save(blocksData, "blocks.json"); err != nil {
+		return fmt.Errorf("error saving blocks: %v", err)
+	}
+
+	n.Auditoria("PERSISTENCIA_GITHUB", "Estado guardado exitosamente")
+	return nil
+}
+
+func (n *NodoAlset) CargarDesdeGitHub() error {
+	if n.github == nil {
+		return nil
+	}
+
+	// Cargar agentes
+	if data, err := n.github.Load("alset_state.json"); err == nil && data != nil {
+		var agentes map[string]*Agente
+		if err := json.Unmarshal(data, &agentes); err == nil {
+			n.mu.Lock()
+			for k, v := range agentes {
+				if existing, ok := n.agentes[k]; !ok || v.UltimaActual > existing.UltimaActual {
+					n.agentes[k] = v
+				}
+			}
+			n.mu.Unlock()
+		}
+	}
+
+	// Cargar nombres DNS
+	if data, err := n.github.Load("alset_names.json"); err == nil && data != nil {
+		var nombres map[string]string
+		if err := json.Unmarshal(data, &nombres); err == nil {
+			n.mu.Lock()
+			for k, v := range nombres {
+				if _, ok := n.nombres[k]; !ok {
+					n.nombres[k] = v
+				}
+			}
+			n.mu.Unlock()
+		}
+	}
+
+	// Cargar estado neuronal
+	if data, err := n.github.Load("neural_state.json"); err == nil && data != nil {
+		var neural NeuralState
+		if err := json.Unmarshal(data, &neural); err == nil {
+			n.mu.Lock()
+			if n.neuralState == nil {
+				n.neuralState = &neural
+			} else {
+				// Actualizar sinapsis
+				for target, syn := range neural.Synapses {
+					if existing, ok := n.neuralState.Synapses[target]; !ok || syn.LastUpdated > existing.LastUpdated {
+						n.neuralState.Synapses[target] = syn
+					}
+				}
+			}
+			n.mu.Unlock()
+		}
+	}
+
+	// Cargar blocks
+	if data, err := n.github.Load("blocks.json"); err == nil && data != nil {
+		var blocks map[string][]byte
+		if err := json.Unmarshal(data, &blocks); err == nil {
+			n.mu.Lock()
+			for k, v := range blocks {
+				if _, ok := n.blockstore[k]; !ok {
+					n.blockstore[k] = v
+					os.WriteFile(filepath.Join(BlocksDir, k), v, 0644)
+				}
+			}
+			n.mu.Unlock()
+		}
+	}
+
+	n.Auditoria("PERSISTENCIA_GITHUB", "Estado cargado exitosamente")
+	return nil
 }
 
 func (n *NodoAlset) IpfsAddDirectory(dirPath string) (string, error) {
@@ -7370,6 +7672,22 @@ func main() {
 		pendingInferences:    make(map[string]chan InferenceResponse),
 		pendingMemoryQueries: make(map[string]chan MemoryResponse),
 		hebbianMemory:        make(map[string]float64),
+	}
+
+	// Configurar GitHub Persistence
+	githubToken := os.Getenv("GITHUB_TOKEN")
+	githubOwner := os.Getenv("GITHUB_OWNER")
+	githubRepo := os.Getenv("GITHUB_REPO")
+
+	if githubToken != "" && githubOwner != "" && githubRepo != "" {
+		nodo.github = NewGitHubPersistence(githubOwner, githubRepo, "alset_data", githubToken)
+		fmt.Println("✅ GitHub persistence configurado correctamente")
+		fmt.Printf("   Repo: %s/%s\n", githubOwner, githubRepo)
+	} else {
+		fmt.Println("ℹ️ GitHub persistence NO configurado (opcional)")
+		if os.Getenv("RENDER") == "" {
+			fmt.Println("   Para configurar: GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO")
+		}
 	}
 
 	mathrand.Seed(time.Now().UnixNano())
