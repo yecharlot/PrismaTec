@@ -798,7 +798,6 @@ func (e *LispEvaluator) Eval(code string) (LispValue, error) {
 	return e.eval(expanded, e.globalEnv), nil
 }
 
-// eval es el método privado de evaluación
 func (e *LispEvaluator) eval(expr LispValue, env *LispEnvironment) LispValue {
 	switch v := expr.(type) {
 	case nil:
@@ -1108,8 +1107,132 @@ func cleanMacroExpansion(expr LispValue) LispValue {
 	}
 }
 
+func canonicalizeJSON(data interface{}) ([]byte, error) {
+	buffer := &bytes.Buffer{}
+	enc := json.NewEncoder(buffer)
+	enc.SetEscapeHTML(false)
+	if err := encodeCanonical(buffer, data); err != nil {
+		return nil, err
+	}
+	return buffer.Bytes(), nil
+}
+
+func encodeCanonical(w *bytes.Buffer, v interface{}) error {
+	switch val := v.(type) {
+	case map[string]interface{}:
+		w.WriteByte('{')
+		keys := make([]string, 0, len(val))
+		for k := range val {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for i, k := range keys {
+			if i > 0 {
+				w.WriteByte(',')
+			}
+			keyBytes, _ := json.Marshal(k)
+			w.Write(keyBytes)
+			w.WriteByte(':')
+			if err := encodeCanonical(w, val[k]); err != nil {
+				return err
+			}
+		}
+		w.WriteByte('}')
+	case []interface{}:
+		w.WriteByte('[')
+		for i, item := range val {
+			if i > 0 {
+				w.WriteByte(',')
+			}
+			if err := encodeCanonical(w, item); err != nil {
+				return err
+			}
+		}
+		w.WriteByte(']')
+	case string:
+		b, _ := json.Marshal(val)
+		w.Write(b)
+	case float64:
+		w.WriteString(strconv.FormatFloat(val, 'f', -1, 64))
+	case bool:
+		if val {
+			w.WriteString("true")
+		} else {
+			w.WriteString("false")
+		}
+	case nil:
+		w.WriteString("null")
+	default:
+		b, err := json.Marshal(val)
+		if err != nil {
+			return err
+		}
+		w.Write(b)
+	}
+	return nil
+}
+
+func toFloat(v LispValue) float64 {
+	switch val := v.(type) {
+	case float64:
+		return val
+	case int:
+		return float64(val)
+	case string:
+		if f, err := strconv.ParseFloat(val, 64); err == nil {
+			return f
+		}
+		return 0
+	default:
+		return 0
+	}
+}
+
+func isTruthy(v LispValue) bool {
+	if v == nil {
+		return false
+	}
+	if b, ok := v.(bool); ok {
+		return b
+	}
+	if f, ok := v.(float64); ok {
+		return f != 0
+	}
+	if s, ok := v.(string); ok {
+		return s != ""
+	}
+	if _, ok := v.(LispList); ok {
+		return true
+	}
+	return true
+}
+
+func equalValue(a, b LispValue) bool {
+	return fmt.Sprintf("%v", a) == fmt.Sprintf("%v", b)
+}
+
+func generarUUID() string {
+	return hex.EncodeToString([]byte(time.Now().String()))[:16]
+}
+
+func floatSliceToList(vals []float64) LispList {
+	lst := make(LispList, len(vals))
+	for i, v := range vals {
+		lst[i] = v
+	}
+	return lst
+}
+
+func generarHTMLBase(agenteID string) string {
+	return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>` + agenteID + ` - Alset App</title><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:system-ui;background:#0A0A0A;color:#FFF;}.header{background:#141414;padding:1rem 2rem;border-bottom:2px solid #F4B400;}.container{padding:2rem;max-width:1200px;margin:0 auto;}.card{background:#141414;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;border:1px solid rgba(244,180,0,0.2);}button{background:#F4B400;border:none;padding:0.5rem 1rem;border-radius:8px;cursor:pointer;}</style></head><body><div class="header"><h1>` + agenteID + `</h1></div><div class="container" id="app"><div class="card"><h3>Bienvenido</h3><p>App generada por Alset</p></div></div></body></html>`
+}
+
+func generarHTMLParaPlantilla(nombre string, tipo string) string {
+	return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>` + nombre + ` - Alset App</title><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:system-ui;background:#0A0A0A;color:#FFF;}.header{background:#141414;padding:2rem;text-align:center;border-bottom:3px solid #F4B400;}.header h1{font-size:2rem;}.container{padding:2rem;max-width:1200px;margin:0 auto;}.card{background:#141414;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;border:1px solid rgba(244,180,0,0.2);}button{background:#F4B400;border:none;padding:0.5rem 1rem;border-radius:8px;cursor:pointer;}</style></head><body><div class="header"><h1>` + nombre + `</h1><p>Tu app en Alset Network</p></div><div class="container"><div class="card"><h3>Bienvenido</h3><p>App tipo: ` + tipo + `</p><button onclick="alert('App funcionando')">Probar</button></div></div></body></html>`
+}
+
 // =============================================================================
-// FUNCIONES PRIMITIVAS DEL LISP (RESUMIDAS PARA RENDER)
+// FUNCIONES PRIMITIVAS DEL LISP
 // =============================================================================
 
 func (e *LispEvaluator) initBuiltins() {
@@ -1481,134 +1604,6 @@ func (e *LispEvaluator) initBuiltins() {
 }
 
 // =============================================================================
-// FUNCIONES AUXILIARES
-// =============================================================================
-
-func toFloat(v LispValue) float64 {
-	switch val := v.(type) {
-	case float64:
-		return val
-	case int:
-		return float64(val)
-	case string:
-		if f, err := strconv.ParseFloat(val, 64); err == nil {
-			return f
-		}
-		return 0
-	default:
-		return 0
-	}
-}
-
-func isTruthy(v LispValue) bool {
-	if v == nil {
-		return false
-	}
-	if b, ok := v.(bool); ok {
-		return b
-	}
-	if f, ok := v.(float64); ok {
-		return f != 0
-	}
-	if s, ok := v.(string); ok {
-		return s != ""
-	}
-	if _, ok := v.(LispList); ok {
-		return true
-	}
-	return true
-}
-
-func equalValue(a, b LispValue) bool {
-	return fmt.Sprintf("%v", a) == fmt.Sprintf("%v", b)
-}
-
-func generarUUID() string {
-	return hex.EncodeToString([]byte(time.Now().String()))[:16]
-}
-
-func floatSliceToList(vals []float64) LispList {
-	lst := make(LispList, len(vals))
-	for i, v := range vals {
-		lst[i] = v
-	}
-	return lst
-}
-
-func generarHTMLBase(agenteID string) string {
-	return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>` + agenteID + ` - Alset App</title><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:system-ui;background:#0A0A0A;color:#FFF;}.header{background:#141414;padding:1rem 2rem;border-bottom:2px solid #F4B400;}.container{padding:2rem;max-width:1200px;margin:0 auto;}.card{background:#141414;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;border:1px solid rgba(244,180,0,0.2);}button{background:#F4B400;border:none;padding:0.5rem 1rem;border-radius:8px;cursor:pointer;}</style></head><body><div class="header"><h1>` + agenteID + `</h1></div><div class="container" id="app"><div class="card"><h3>Bienvenido</h3><p>App generada por Alset</p></div></div></body></html>`
-}
-
-func generarHTMLParaPlantilla(nombre string, tipo string) string {
-	return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>` + nombre + ` - Alset App</title><style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:system-ui;background:#0A0A0A;color:#FFF;}.header{background:#141414;padding:2rem;text-align:center;border-bottom:3px solid #F4B400;}.header h1{font-size:2rem;}.container{padding:2rem;max-width:1200px;margin:0 auto;}.card{background:#141414;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;border:1px solid rgba(244,180,0,0.2);}button{background:#F4B400;border:none;padding:0.5rem 1rem;border-radius:8px;cursor:pointer;}</style></head><body><div class="header"><h1>` + nombre + `</h1><p>Tu app en Alset Network</p></div><div class="container"><div class="card"><h3>Bienvenido</h3><p>App tipo: ` + tipo + `</p><button onclick="alert('App funcionando')">Probar</button></div></div></body></html>`
-}
-
-func canonicalizeJSON(data interface{}) ([]byte, error) {
-	buffer := &bytes.Buffer{}
-	enc := json.NewEncoder(buffer)
-	enc.SetEscapeHTML(false)
-	if err := encodeCanonical(buffer, data); err != nil {
-		return nil, err
-	}
-	return buffer.Bytes(), nil
-}
-
-func encodeCanonical(w *bytes.Buffer, v interface{}) error {
-	switch val := v.(type) {
-	case map[string]interface{}:
-		w.WriteByte('{')
-		keys := make([]string, 0, len(val))
-		for k := range val {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		for i, k := range keys {
-			if i > 0 {
-				w.WriteByte(',')
-			}
-			keyBytes, _ := json.Marshal(k)
-			w.Write(keyBytes)
-			w.WriteByte(':')
-			if err := encodeCanonical(w, val[k]); err != nil {
-				return err
-			}
-		}
-		w.WriteByte('}')
-	case []interface{}:
-		w.WriteByte('[')
-		for i, item := range val {
-			if i > 0 {
-				w.WriteByte(',')
-			}
-			if err := encodeCanonical(w, item); err != nil {
-				return err
-			}
-		}
-		w.WriteByte(']')
-	case string:
-		b, _ := json.Marshal(val)
-		w.Write(b)
-	case float64:
-		w.WriteString(strconv.FormatFloat(val, 'f', -1, 64))
-	case bool:
-		if val {
-			w.WriteString("true")
-		} else {
-			w.WriteString("false")
-		}
-	case nil:
-		w.WriteString("null")
-	default:
-		b, err := json.Marshal(val)
-		if err != nil {
-			return err
-		}
-		w.Write(b)
-	}
-	return nil
-}
-
-// =============================================================================
 // SSESubscriber Y PulseClient
 // =============================================================================
 
@@ -1752,7 +1747,6 @@ func (n *NodoAlset) PersistirLocamente() {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 
-	// Persistencia local
 	dAg, _ := json.MarshalIndent(n.agentes, "", "  ")
 	_ = os.WriteFile("alset_state.json", dAg, 0644)
 
@@ -1761,7 +1755,6 @@ func (n *NodoAlset) PersistirLocamente() {
 
 	n.persistirEstadoNeuronal()
 
-	// Persistencia en GitHub (si está configurado)
 	if n.github != nil {
 		go func() {
 			if err := n.PersistirEnGitHub(); err != nil {
@@ -1776,19 +1769,16 @@ func (n *NodoAlset) PersistirEnGitHub() error {
 		return fmt.Errorf("GitHub persistence not configured")
 	}
 
-	// Guardar agentes
 	agentesData, _ := json.MarshalIndent(n.agentes, "", "  ")
 	if _, err := n.github.Save(agentesData, "alset_state.json"); err != nil {
 		return fmt.Errorf("error saving agents: %v", err)
 	}
 
-	// Guardar nombres DNS
 	nombresData, _ := json.MarshalIndent(n.nombres, "", "  ")
 	if _, err := n.github.Save(nombresData, "alset_names.json"); err != nil {
 		return fmt.Errorf("error saving names: %v", err)
 	}
 
-	// Guardar estado neuronal
 	if n.neuralState != nil {
 		neuralData, _ := json.MarshalIndent(n.neuralState, "", "  ")
 		if _, err := n.github.Save(neuralData, "neural_state.json"); err != nil {
@@ -1796,7 +1786,6 @@ func (n *NodoAlset) PersistirEnGitHub() error {
 		}
 	}
 
-	// Guardar blocks
 	blocksData, _ := json.Marshal(n.blockstore)
 	if _, err := n.github.Save(blocksData, "blocks.json"); err != nil {
 		return fmt.Errorf("error saving blocks: %v", err)
@@ -1811,7 +1800,6 @@ func (n *NodoAlset) CargarDesdeGitHub() error {
 		return fmt.Errorf("GitHub persistence not configured")
 	}
 
-	// Cargar agentes
 	if data, err := n.github.Load("alset_state.json"); err == nil && data != nil {
 		var agentes map[string]*Agente
 		if err := json.Unmarshal(data, &agentes); err == nil {
@@ -1823,7 +1811,6 @@ func (n *NodoAlset) CargarDesdeGitHub() error {
 		}
 	}
 
-	// Cargar nombres DNS
 	if data, err := n.github.Load("alset_names.json"); err == nil && data != nil {
 		var nombres map[string]string
 		if err := json.Unmarshal(data, &nombres); err == nil {
@@ -1835,7 +1822,6 @@ func (n *NodoAlset) CargarDesdeGitHub() error {
 		}
 	}
 
-	// Cargar estado neuronal
 	if data, err := n.github.Load("neural_state.json"); err == nil && data != nil {
 		var neural NeuralState
 		if err := json.Unmarshal(data, &neural); err == nil {
@@ -1845,7 +1831,6 @@ func (n *NodoAlset) CargarDesdeGitHub() error {
 		}
 	}
 
-	// Cargar blocks
 	if data, err := n.github.Load("blocks.json"); err == nil && data != nil {
 		var blocks map[string][]byte
 		if err := json.Unmarshal(data, &blocks); err == nil {
@@ -1863,7 +1848,6 @@ func (n *NodoAlset) CargarDesdeGitHub() error {
 }
 
 func (n *NodoAlset) CargarEstado() {
-	// Primero cargar desde GitHub si está configurado
 	if n.github != nil {
 		if err := n.CargarDesdeGitHub(); err == nil {
 			fmt.Println("📂 Estado cargado desde GitHub")
@@ -1871,7 +1855,6 @@ func (n *NodoAlset) CargarEstado() {
 		}
 	}
 
-	// Fallback a archivos locales
 	if d, err := os.ReadFile("alset_state.json"); err == nil {
 		n.mu.Lock()
 		_ = json.Unmarshal(d, &n.agentes)
@@ -2004,7 +1987,9 @@ func (n *NodoAlset) RegisterApp(appName string) (string, error) {
 
 // =============================================================================
 // MÉTODOS DE IA DISTRIBUIDA
-// =============================================================================func (n *NodoAlset) puedeProcesarInferencia(input []float64) bool {
+// =============================================================================
+
+func (n *NodoAlset) puedeProcesarInferencia(input []float64) bool {
 	return n.neuralState != nil && n.neuralState.NeuronType == "input"
 }
 
@@ -2383,14 +2368,12 @@ func (n *NodoAlset) sincronizarEstadoNeuronal(update map[string]string, origen p
 // =============================================================================
 
 func (n *NodoAlset) AnunciarNuevoBloque(cidStr string) {
-	// 1. Publicar en gossip
 	update := map[string]string{"tipo": "new_block", "cid": cidStr}
 	data, _ := json.Marshal(update)
 	if n.topic != nil {
 		n.topic.Publish(n.ctx, data)
 	}
 
-	// 2. Emitir por pulsos (HTTP)
 	n.mu.RLock()
 	blockData, exists := n.blockstore[cidStr]
 	n.mu.RUnlock()
@@ -2538,7 +2521,6 @@ func (n *NodoAlset) startPulseClients() {
 	if os.Getenv("RENDER") != "" {
 		return
 	}
-	// Para nodos locales (no usamos en Render)
 }
 
 func (n *NodoAlset) processPulseEvent(eventType string, data string) {
@@ -2927,15 +2909,6 @@ func (n *NodoAlset) handleAdminLogin(w http.ResponseWriter, r *http.Request) {
 // SYNC MANAGER
 // =============================================================================
 
-type SyncManager struct {
-	nodo         *NodoAlset
-	config       SyncConfig
-	isSyncing    bool
-	syncProgress float64
-	syncCancel   context.CancelFunc
-	mu           sync.RWMutex
-}
-
 func (n *NodoAlset) InitSyncManager() *SyncManager {
 	config := SyncConfig{
 		Mode:           SyncModeQuick,
@@ -2966,7 +2939,6 @@ func (sm *SyncManager) PerformQuickSync() {
 	peers := sm.nodo.host.Network().Peers()
 	if len(peers) == 0 {
 		fmt.Println("⚠️ No hay peers disponibles para sincronizar")
-		// Intentar cargar desde GitHub
 		if sm.nodo.github != nil {
 			sm.nodo.CargarDesdeGitHub()
 		}
@@ -3046,7 +3018,6 @@ func (sm *SyncManager) PerformFullSync(ctx context.Context, progressCallback fun
 	}
 	peers := sm.nodo.host.Network().Peers()
 	if len(peers) == 0 {
-		// Intentar cargar desde GitHub
 		if sm.nodo.github != nil {
 			sm.nodo.CargarDesdeGitHub()
 			if progressCallback != nil {
@@ -3151,13 +3122,10 @@ func (n *NodoAlset) Init() {
 	n.pulseSubscribers = make(map[*SSESubscriber]bool)
 	n.pulseClients = make(map[string]*PulseClient)
 
-	// Inicializar sync manager
 	n.syncManager = n.InitSyncManager()
 
-	// Cargar estado
 	n.CargarEstado()
 
-	// Inicializar estado neuronal
 	n.neuralState = &NeuralState{
 		MembranePotential: 0,
 		LastSpikeTime:     0,
@@ -3169,7 +3137,6 @@ func (n *NodoAlset) Init() {
 	}
 	n.cargarPesosSinapsis()
 
-	// Configurar datastore y pubsub
 	n.datastore = ds_sync.MutexWrap(datastore.NewMapDatastore())
 	ps, err := pubsub.NewGossipSub(n.ctx, n.host)
 	if err != nil {
@@ -3181,26 +3148,20 @@ func (n *NodoAlset) Init() {
 		log.Fatal("Error uniéndose al tópico:", err)
 	}
 
-	// Configurar handlers
 	n.host.SetStreamHandler(AlsetDataExchangeID, n.handleDataExchange)
 
-	// Inicializar DHT
 	n.kademlia, err = dht.New(n.ctx, n.host, dht.Mode(dht.ModeServer))
 	if err != nil {
 		log.Fatal("Error creando DHT:", err)
 	}
 	go n.kademlia.Bootstrap(n.ctx)
 
-	// Inicializar Lisp
 	n.lisp = NewLispEvaluator(n)
 
-	// Descubrimiento mDNS
 	mdns.NewMdnsService(n.host, "alset-mesh", &discoveryNotifee{h: n.host}).Start()
 
-	// Iniciar gossip
 	go n.EscucharGossip()
 
-	// Sincronización inicial
 	go func() {
 		time.Sleep(3 * time.Second)
 		if n.shouldQuickSync() {
@@ -3208,7 +3169,6 @@ func (n *NodoAlset) Init() {
 		}
 	}()
 
-	// Sincronización periódica con GitHub (cada 30 segundos)
 	if n.github != nil {
 		go func() {
 			ticker := time.NewTicker(30 * time.Second)
@@ -3240,7 +3200,6 @@ func (d *discoveryNotifee) HandlePeerFound(pi peer.AddrInfo) {
 func (n *NodoAlset) startHTTPServer(port string) {
 	mux := http.NewServeMux()
 
-	// Static files
 	os.MkdirAll(StaticDir, 0755)
 	os.MkdirAll(filepath.Join(StaticDir, "apps"), 0755)
 
@@ -3254,7 +3213,6 @@ func (n *NodoAlset) startHTTPServer(port string) {
 		http.FileServer(http.Dir(".")).ServeHTTP(w, r)
 	})
 
-	// Apps
 	mux.HandleFunc("/w/", func(w http.ResponseWriter, r *http.Request) {
 		parts := strings.Split(r.URL.Path, "/")
 		if len(parts) < 3 {
@@ -3460,7 +3418,6 @@ func (n *NodoAlset) startHTTPServer(port string) {
 
 	mux.HandleFunc("/api/admin/login", n.handleAdminLogin)
 
-	// IPFS endpoints
 	mux.HandleFunc("/api/ipfs/list", func(w http.ResponseWriter, r *http.Request) {
 		n.mu.RLock()
 		defer n.mu.RUnlock()
@@ -3511,7 +3468,6 @@ func (n *NodoAlset) startHTTPServer(port string) {
 		})
 	})
 
-	// Lisp AI
 	mux.HandleFunc("/api/lispai", func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
 			Cmd string `json:"cmd"`
@@ -3525,7 +3481,6 @@ func (n *NodoAlset) startHTTPServer(port string) {
 		json.NewEncoder(w).Encode(map[string]interface{}{"resultado": res})
 	})
 
-	// PoH
 	mux.HandleFunc("/api/poh/event", func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
@@ -3562,7 +3517,6 @@ func main() {
 		hebbianMemory:        make(map[string]float64),
 	}
 
-	// Configurar GitHub Persistence
 	githubToken := os.Getenv("GITHUB_TOKEN")
 	githubOwner := os.Getenv("GITHUB_OWNER")
 	githubRepo := os.Getenv("GITHUB_REPO")
@@ -3579,7 +3533,6 @@ func main() {
 	mathrand.Seed(time.Now().UnixNano())
 	nodo.Init()
 
-	// Cargar estado inicial desde GitHub si está configurado
 	if nodo.github != nil {
 		if err := nodo.CargarDesdeGitHub(); err != nil {
 			fmt.Printf("⚠️ Error cargando estado inicial desde GitHub: %v\n", err)
