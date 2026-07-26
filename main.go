@@ -6796,7 +6796,69 @@ func (n *NodoAlset) startHTTPServer(port string) {
     json.NewEncoder(w).Encode(map[string]string{"status": "emitted"})
 	})
 
-	// En startHTTPServer(), después de otros endpoints
+	// =============================================================================
+// ENDPOINTS DE GITHUB SYNC
+// =============================================================================
+
+// Guardar estado en GitHub
+mux.HandleFunc("/api/sync/github/save", func(w http.ResponseWriter, r *http.Request) {
+    if r.Method != "POST" {
+        http.Error(w, "Method not allowed", 405)
+        return
+    }
+    if n.github == nil {
+        http.Error(w, "GitHub persistence not configured", 400)
+        return
+    }
+    
+    n.mu.RLock()
+    agentsCount := len(n.agentes)
+    blocksCount := len(n.blockstore)
+    n.mu.RUnlock()
+    
+    if err := n.PersistirEnGitHub(); err != nil {
+        http.Error(w, "Error saving to GitHub: "+err.Error(), 500)
+        return
+    }
+    
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "status":  "saved",
+        "agents":  agentsCount,
+        "blocks":  blocksCount,
+        "message": "Estado guardado en GitHub correctamente",
+    })
+})
+
+// Cargar estado desde GitHub
+mux.HandleFunc("/api/sync/github/load", func(w http.ResponseWriter, r *http.Request) {
+    if r.Method != "POST" {
+        http.Error(w, "Method not allowed", 405)
+        return
+    }
+    if n.github == nil {
+        http.Error(w, "GitHub persistence not configured", 400)
+        return
+    }
+    
+    if err := n.CargarDesdeGitHub(); err != nil {
+        http.Error(w, "Error loading from GitHub: "+err.Error(), 500)
+        return
+    }
+    
+    n.mu.RLock()
+    agentsCount := len(n.agentes)
+    blocksCount := len(n.blockstore)
+    n.mu.RUnlock()
+    
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "status":  "loaded",
+        "agents":  agentsCount,
+        "blocks":  blocksCount,
+        "message": "Estado cargado desde GitHub correctamente",
+    })
+})
+
+// Sincronización completa (guardar + cargar)
 mux.HandleFunc("/api/sync/github", func(w http.ResponseWriter, r *http.Request) {
     if r.Method != "POST" {
         http.Error(w, "Method not allowed", 405)
@@ -6806,19 +6868,56 @@ mux.HandleFunc("/api/sync/github", func(w http.ResponseWriter, r *http.Request) 
         http.Error(w, "GitHub persistence not configured", 400)
         return
     }
+    
+    // Primero cargar
     if err := n.CargarDesdeGitHub(); err != nil {
         http.Error(w, "Error loading from GitHub: "+err.Error(), 500)
         return
     }
+    
+    // Luego guardar
     if err := n.PersistirEnGitHub(); err != nil {
         http.Error(w, "Error saving to GitHub: "+err.Error(), 500)
         return
     }
+    
+    n.mu.RLock()
+    agentsCount := len(n.agentes)
+    blocksCount := len(n.blockstore)
+    n.mu.RUnlock()
+    
     json.NewEncoder(w).Encode(map[string]interface{}{
         "status":  "synced",
+        "agents":  agentsCount,
+        "blocks":  blocksCount,
         "message": "Sincronización con GitHub completada",
-        "agents":  len(n.agentes),
-        "blocks":  len(n.blockstore),
+    })
+})
+
+// Verificar estado de GitHub
+mux.HandleFunc("/api/sync/github/status", func(w http.ResponseWriter, r *http.Request) {
+    if n.github == nil {
+        json.NewEncoder(w).Encode(map[string]interface{}{
+            "configured": false,
+            "message":    "GitHub persistence not configured",
+        })
+        return
+    }
+    
+    n.mu.RLock()
+    agentsCount := len(n.agentes)
+    blocksCount := len(n.blockstore)
+    n.mu.RUnlock()
+    
+    json.NewEncoder(w).Encode(map[string]interface{}{
+        "configured":  true,
+        "owner":       n.github.Owner,
+        "repo":        n.github.Repo,
+        "path":        n.github.Path,
+        "agents":      agentsCount,
+        "blocks":      blocksCount,
+        "branch":      n.github.Branch,
+        "last_commit": n.github.commitSHA,
     })
 })
 	
