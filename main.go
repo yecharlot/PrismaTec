@@ -117,7 +117,8 @@ func (g *GitHubPersistence) Save(data []byte, filename string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("Authorization", "token "+g.Token)
+	//req.Header.Set("Authorization", "token "+g.Token)
+	req.Header.Set("Authorization", "Bearer "+g.Token)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{Timeout: 30 * time.Second}
