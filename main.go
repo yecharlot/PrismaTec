@@ -93,57 +93,90 @@ func NewGitHubPersistence(owner, repo, path, token string) *GitHubPersistence {
 }
 
 func (g *GitHubPersistence) Save(data []byte, filename string) (string, error) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
+    g.mu.Lock()
+    defer g.mu.Unlock()
 
-	content := base64.StdEncoding.EncodeToString(data)
-	existingSHA, _ := g.getFileSHA(filename)
+    content := base64.StdEncoding.EncodeToString(data)
+    existingSHA, _ := g.getFileSHA(filename)
 
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/%s/%s", g.Owner, g.Repo, g.Path, filename)
+    url := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/%s/%s", 
+        g.Owner, g.Repo, g.Path, filename)
 
-	payload := map[string]interface{}{
-		"message": fmt.Sprintf("Update %s at %s", filename, time.Now().Format(time.RFC3339)),
-		"content": content,
-		"branch":  g.Branch,
-	}
+    payload := map[string]interface{}{
+        "message": fmt.Sprintf("Update %s at %s", filename, time.Now().Format(time.RFC3339)),
+        "content": content,
+        "branch":  g.Branch,
+    }
 
-	if existingSHA != "" {
-		payload["sha"] = existingSHA
-	}
+    if existingSHA != "" {
+        payload["sha"] = existingSHA
+    }
 
-	jsonPayload, _ := json.Marshal(payload)
+    jsonPayload, err := json.Marshal(payload)
+    if err != nil {
+        return "", err
+    }
 
-	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonPayload))
-	if err != nil {
-		return "", err
-	}
-	//req.Header.Set("Authorization", "token "+g.Token)
-	req.Header.Set("Authorization", "Bearer "+g.Token)
-	req.Header.Set("Content-Type", "application/json")
+    // DEBUG: Loggear lo que estamos enviando
+    fmt.Printf("📤 Enviando a GitHub: %s\n", url)
+    fmt.Printf("📤 Token (primeros 20): %s...\n", g.Token[:20])
+    fmt.Printf("📤 Token length: %d\n", len(g.Token))
+    fmt.Printf("📤 Filename: %s\n", filename)
+    fmt.Printf("📤 Data size: %d bytes\n", len(data))
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
+    req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonPayload))
+    if err != nil {
+        return "", err
+    }
 
-	if resp.StatusCode != 200 && resp.StatusCode != 201 {
-		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("GitHub API error %d: %s", resp.StatusCode, string(body))
-	}
+    // 🔥 CORRECCIÓN: Usar el formato correcto para el token
+    // Para Fine-grained tokens (github_pat_) usar "Bearer"
+    // Para Classic tokens (ghp_) usar "token"
+    var authHeader string
+    if strings.HasPrefix(g.Token, "github_pat_") {
+        authHeader = "Bearer " + g.Token
+    } else {
+        authHeader = "token " + g.Token
+    }
+    
+    req.Header.Set("Authorization", authHeader)
+    req.Header.Set("Content-Type", "application/json")
+    req.Header.Set("User-Agent", "PrismaTec-Alset/4.0")
+    req.Header.Set("Accept", "application/vnd.github.v3+json")
 
-	var result map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&result)
+    fmt.Printf("📤 Authorization: %s...\n", authHeader[:30])
 
-	if content, ok := result["content"].(map[string]interface{}); ok {
-		if sha, ok := content["sha"].(string); ok {
-			g.commitSHA = sha
-			return sha, nil
-		}
-	}
+    client := &http.Client{Timeout: 30 * time.Second}
+    resp, err := client.Do(req)
+    if err != nil {
+        fmt.Printf("❌ Error en solicitud: %v\n", err)
+        return "", err
+    }
+    defer resp.Body.Close()
 
-	return "", nil
+    body, _ := io.ReadAll(resp.Body)
+    
+    fmt.Printf("📬 Respuesta: %d %s\n", resp.StatusCode, resp.Status)
+    fmt.Printf("📬 Body: %s\n", string(body))
+
+    if resp.StatusCode != 200 && resp.StatusCode != 201 {
+        return "", fmt.Errorf("GitHub API error %d: %s", resp.StatusCode, string(body))
+    }
+
+    var result map[string]interface{}
+    if err := json.Unmarshal(body, &result); err != nil {
+        return "", err
+    }
+
+    if content, ok := result["content"].(map[string]interface{}); ok {
+        if sha, ok := content["sha"].(string); ok {
+            g.commitSHA = sha
+            fmt.Printf("✅ Archivo guardado: %s (SHA: %s)\n", filename, sha)
+            return sha, nil
+        }
+    }
+
+    return "", nil
 }
 
 func (g *GitHubPersistence) Load(filename string) ([]byte, error) {
