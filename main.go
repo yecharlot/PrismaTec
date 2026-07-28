@@ -7861,21 +7861,34 @@ func main() {
 	nodo.Init()
 	
 	// Configurar GitHub Persistence
-	githubToken := os.Getenv("GITHUB_TOKEN")
-	githubOwner := os.Getenv("GITHUB_OWNER")
-	githubRepo := os.Getenv("GITHUB_REPO")
-
-	if githubToken != "" && githubOwner != "" && githubRepo != "" {
-		nodo.github = NewGitHubPersistence(githubOwner, githubRepo, "alset_data", githubToken)
-		fmt.Println("✅ GitHub persistence configurado correctamente")
-		fmt.Printf("   Repo: %s/%s\n", githubOwner, githubRepo)
-	} else {
-		fmt.Println("ℹ️ GitHub persistence NO configurado (opcional)")
-		if os.Getenv("RENDER") == "" {
-			fmt.Println("   Para configurar: GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO")
-		}
-	}
-
+	githubToken := "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"
+    githubOwner := "yecharlot"
+    githubRepo := "PrismaTec"
+    
+    // También intentar desde variables de entorno (por si acaso)
+    envToken := os.Getenv("GITHUB_TOKEN")
+    if len(envToken) > 20 {
+        fmt.Println("📌 Usando token desde variables de entorno")
+        githubToken = envToken
+    } else {
+        fmt.Println("⚠️ Token de entorno no válido, usando hardcodeado")
+        fmt.Printf("   Token hardcodeado: %s... (length: %d)\n", githubToken[:20], len(githubToken))
+    }
+    
+    // Limpiar token por si acaso
+    githubToken = strings.TrimSpace(githubToken)
+    githubToken = strings.ReplaceAll(githubToken, "\n", "")
+    githubToken = strings.ReplaceAll(githubToken, "\r", "")
+    
+    fmt.Printf("🔍 Token final: %s... (length: %d)\n", githubToken[:20], len(githubToken))
+    
+    if githubToken != "" && len(githubToken) > 20 {
+        nodo.github = NewGitHubPersistence(githubOwner, githubRepo, "alset_data", githubToken)
+        fmt.Println("✅ GitHub persistence configurado correctamente")
+    } else {
+        fmt.Println("❌ Error: Token de GitHub inválido")
+    }
+	
 	nodo.Auditoria("SISTEMA_START", fmt.Sprintf("Nodo Online en puerto %s", port))
 	go nodo.startHTTPServer(port)
 
