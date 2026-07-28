@@ -2322,6 +2322,30 @@ func (e *LispEvaluator) initBuiltins() {
 		return nil
 	}))
 
+	// En LispEvaluator.initBuiltins(), agrega:
+e.globalEnv.SetFunction("getenv", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
+    if len(args) < 1 {
+        return "error: getenv requiere un nombre de variable"
+    }
+    varName := fmt.Sprintf("%v", e.eval(args[0], env))
+    val := os.Getenv(varName)
+    if val == "" {
+        return nil // o return "" para cadena vacía
+    }
+    return val
+}))
+
+// También agrega setenv para completar
+e.globalEnv.SetFunction("setenv", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
+    if len(args) < 2 {
+        return "error: setenv requiere nombre y valor"
+    }
+    varName := fmt.Sprintf("%v", e.eval(args[0], env))
+    varValue := fmt.Sprintf("%v", e.eval(args[1], env))
+    os.Setenv(varName, varValue)
+    return "ok"
+}))
+	
 	// =====================================================================
 	// ZYRION Y PRIMITIVAS DE IA
 	// =====================================================================
