@@ -7833,16 +7833,21 @@ func (d *discoveryNotifee) HandlePeerFound(pi peer.AddrInfo) {
 // MAIN
 // =============================================================================
 
+// =============================================================================
+// MAIN
+// =============================================================================
+
 func main() {
 	fmt.Println("🌐 PRISM@.TEC ALSET NET (P.TEC-AN) v4.0")
 	fmt.Println("📦 Sistema Híbrido Go + Lisp con IA Distribuida, VC, UTXO, PoH y ZKP")
 	fmt.Println("🧠 Con IA Distribuida: Neuronas, Sinapsis, Inferencia Distribuida y Memoria Distribuida")
 	fmt.Println("⚡ Con sistema de pulsos SSE para comunicación resiliente")
+	
 	if os.Getenv("RENDER") != "" {
-        fmt.Println("🟢 Nodo ejecutándose en Render (servidor de pulsos)")
-    } else {
-        fmt.Println("🟢 Nodo ejecutándose localmente (cliente de pulsos)")
-    }
+		fmt.Println("🟢 Nodo ejecutándose en Render (servidor de pulsos)")
+	} else {
+		fmt.Println("🟢 Nodo ejecutándose localmente (cliente de pulsos)")
+	}
 	
 	port := "8080"
 	if len(os.Args) > 1 {
@@ -7857,38 +7862,74 @@ func main() {
 		hebbianMemory:        make(map[string]float64),
 	}
 
+	// ============================================================
+	// CONFIGURACIÓN DE GITHUB PERSISTENCE
+	// ============================================================
+	
+	// 1. Intentar desde variables de entorno
+	githubToken := os.Getenv("GITHUB_TOKEN")
+	githubOwner := os.Getenv("GITHUB_OWNER")
+	githubRepo := os.Getenv("GITHUB_REPO")
+	
+	fmt.Printf("🔍 Variables de entorno:\n")
+	fmt.Printf("   GITHUB_TOKEN: %s... (length: %d)\n", 
+		func() string {
+			if len(githubToken) > 10 {
+				return githubToken[:10]
+			}
+			return githubToken
+		}(), len(githubToken))
+	fmt.Printf("   GITHUB_OWNER: %s\n", githubOwner)
+	fmt.Printf("   GITHUB_REPO: %s\n", githubRepo)
+	
+	// 2. Si las variables de entorno no son válidas, intentar desde archivo
+	if len(githubToken) < 20 {
+		fmt.Println("⚠️ Token de entorno inválido o vacío, intentando desde archivo github_config.json...")
+		
+		if data, err := os.ReadFile("github_config.json"); err == nil {
+			var config map[string]string
+			if err := json.Unmarshal(data, &config); err == nil {
+				if token, ok := config["token"]; ok && len(token) > 20 {
+					githubToken = token
+					githubOwner = config["owner"]
+					githubRepo = config["repo"]
+					fmt.Println("✅ Configuración de GitHub cargada desde github_config.json")
+				} else {
+					fmt.Println("⚠️ Archivo github_config.json encontrado pero token inválido")
+				}
+			} else {
+				fmt.Printf("⚠️ Error parseando github_config.json: %v\n", err)
+			}
+		} else {
+			fmt.Printf("⚠️ No se pudo leer github_config.json: %v\n", err)
+		}
+	}
+	
+	// 3. Limpiar el token
+	githubToken = strings.TrimSpace(githubToken)
+	githubToken = strings.ReplaceAll(githubToken, "\n", "")
+	githubToken = strings.ReplaceAll(githubToken, "\r", "")
+	githubToken = strings.ReplaceAll(githubToken, "\t", "")
+	githubToken = strings.ReplaceAll(githubToken, " ", "")
+	
+	// 4. Verificar token final
+	if len(githubToken) >= 20 {
+		fmt.Printf("✅ Token final válido: %s... (length: %d)\n", githubToken[:20], len(githubToken))
+		fmt.Printf("   Owner: %s\n", githubOwner)
+		fmt.Printf("   Repo: %s\n", githubRepo)
+		
+		nodo.github = NewGitHubPersistence(githubOwner, githubRepo, "alset_data", githubToken)
+		fmt.Println("✅ GitHub persistence configurado correctamente")
+	} else {
+		fmt.Printf("❌ Token inválido: length %d (debe ser al menos 20)\n", len(githubToken))
+		fmt.Println("   GitHub persistence NO configurado")
+		fmt.Println("   Puedes configurar manualmente:")
+		fmt.Println("   1. Variables de entorno: GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO")
+		fmt.Println("   2. Archivo github_config.json en el directorio raíz")
+	}
+
 	mathrand.Seed(time.Now().UnixNano())
 	nodo.Init()
-	
-	// Configurar GitHub Persistence
-	githubToken := "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"
-    githubOwner := "yecharlot"
-    githubRepo := "PrismaTec"
-    
-    // También intentar desde variables de entorno (por si acaso)
-    envToken := os.Getenv("GITHUB_TOKEN")
-    if len(envToken) > 20 {
-        fmt.Println("📌 Usando token desde variables de entorno")
-        githubToken = envToken
-    } else {
-        fmt.Println("⚠️ Token de entorno no válido, usando hardcodeado")
-        fmt.Printf("   Token hardcodeado: %s... (length: %d)\n", githubToken[:20], len(githubToken))
-    }
-    
-    // Limpiar token por si acaso
-    githubToken = strings.TrimSpace(githubToken)
-    githubToken = strings.ReplaceAll(githubToken, "\n", "")
-    githubToken = strings.ReplaceAll(githubToken, "\r", "")
-    
-    fmt.Printf("🔍 Token final: %s... (length: %d)\n", githubToken[:20], len(githubToken))
-    
-    if githubToken != "" && len(githubToken) > 20 {
-        nodo.github = NewGitHubPersistence(githubOwner, githubRepo, "alset_data", githubToken)
-        fmt.Println("✅ GitHub persistence configurado correctamente")
-    } else {
-        fmt.Println("❌ Error: Token de GitHub inválido")
-    }
-	
 	nodo.Auditoria("SISTEMA_START", fmt.Sprintf("Nodo Online en puerto %s", port))
 	go nodo.startHTTPServer(port)
 
