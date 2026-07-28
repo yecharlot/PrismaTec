@@ -7800,6 +7800,9 @@ func main() {
 		hebbianMemory:        make(map[string]float64),
 	}
 
+	mathrand.Seed(time.Now().UnixNano())
+	nodo.Init()
+	
 	// Configurar GitHub Persistence
 	githubToken := os.Getenv("GITHUB_TOKEN")
 	githubOwner := os.Getenv("GITHUB_OWNER")
@@ -7816,8 +7819,6 @@ func main() {
 		}
 	}
 
-	mathrand.Seed(time.Now().UnixNano())
-	nodo.Init()
 	nodo.Auditoria("SISTEMA_START", fmt.Sprintf("Nodo Online en puerto %s", port))
 	go nodo.startHTTPServer(port)
 
