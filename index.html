@@ -1,1 +1,1479 @@
 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Alset Sales Hub - Revoluciona tus ventas</title>
+    
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+    
+    <style>
+        /* ============================================================
+           CSS COMPLETO - ESTILOS MODERNOS Y COLORIDOS
+           ============================================================ */
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #6C63FF;
+            --primary-light: #8B83FF;
+            --primary-dark: #4A42D9;
+            --secondary: #FF6B6B;
+            --accent: #FFD93D;
+            --accent2: #6BCB77;
+            --gradient1: linear-gradient(135deg, #6C63FF 0%, #4A42D9 100%);
+            --gradient2: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+            --gradient3: linear-gradient(135deg, #6BCB77 0%, #4ECB71 100%);
+            --gradient4: linear-gradient(135deg, #FFD93D 0%, #FF6B6B 100%);
+            --dark: #1A1A2E;
+            --dark2: #16213E;
+            --dark3: #0F3460;
+            --light: #FFFFFF;
+            --gray: #F0F0F5;
+            --gray2: #E8E8F0;
+            --text-dark: #1A1A2E;
+            --text-light: #6B6B8A;
+            --shadow: 0 20px 60px rgba(108, 99, 255, 0.15);
+            --shadow2: 0 10px 30px rgba(0,0,0,0.08);
+            --border-radius: 20px;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--light);
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+        
+        /* ============================================================
+           NAVBAR
+           ============================================================ */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 1rem 2rem;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(108,99,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar.scrolled {
+            box-shadow: 0 4px 30px rgba(0,0,0,0.1);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            text-decoration: none;
+        }
+        
+        .logo i {
+            font-size: 2rem;
+            background: var(--gradient1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .logo span {
+            color: var(--text-dark);
+        }
+        
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            list-style: none;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 500;
+            transition: color 0.3s ease;
+            font-size: 0.95rem;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+        
+        .btn-nav {
+            background: var(--gradient1);
+            color: white !important;
+            padding: 0.6rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600 !important;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .btn-nav:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(108,99,255,0.3);
+        }
+        
+        .menu-toggle {
+            display: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-dark);
+        }
+        
+        /* ============================================================
+           HERO SECTION
+           ============================================================ */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 6rem 2rem 4rem;
+            background: linear-gradient(135deg, #F8F7FF 0%, #EEF0FF 50%, #F5F0FF 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -30%;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(108,99,255,0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -20%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255,107,107,0.06) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        
+        .hero-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero-text h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+        }
+        
+        .hero-text h1 .highlight {
+            background: var(--gradient1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .hero-text h1 .highlight2 {
+            background: var(--gradient2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .hero-text p {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            line-height: 1.8;
+            margin-bottom: 2.5rem;
+            max-width: 500px;
+        }
+        
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn-primary {
+            background: var(--gradient1);
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(108,99,255,0.35);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-dark);
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            border: 2px solid var(--gray2);
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        
+        /* Hero Image */
+        .hero-image {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .hero-image .mockup {
+            width: 100%;
+            max-width: 500px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            background: white;
+            padding: 1.5rem;
+            border: 1px solid rgba(108,99,255,0.1);
+        }
+        
+        .floating-badge {
+            position: absolute;
+            background: white;
+            padding: 1rem 1.5rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow2);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .floating-badge.top-right {
+            top: -20px;
+            right: -20px;
+            animation-delay: 0.5s;
+        }
+        
+        .floating-badge.bottom-left {
+            bottom: -10px;
+            left: -30px;
+            animation-delay: 1s;
+        }
+        
+        .floating-badge i {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+        
+        .floating-badge .badge-text {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .floating-badge .badge-sub {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        /* Stats */
+        .hero-stats {
+            display: flex;
+            gap: 3rem;
+            margin-top: 2.5rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(108,99,255,0.1);
+        }
+        
+        .hero-stats .stat {
+            text-align: center;
+        }
+        
+        .hero-stats .stat .number {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        
+        .hero-stats .stat .label {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+        
+        /* ============================================================
+           CLIENTS / LOGOS SECTION
+           ============================================================ */
+        .clients {
+            padding: 3rem 2rem;
+            background: white;
+            text-align: center;
+            border-top: 1px solid var(--gray);
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        .clients p {
+            color: var(--text-light);
+            font-weight: 500;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .clients-grid {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .clients-grid .client-logo {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-light);
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+        
+        .clients-grid .client-logo:hover {
+            opacity: 1;
+        }
+        
+        .clients-grid .client-logo i {
+            margin-right: 0.5rem;
+            font-size: 1.5rem;
+        }
+        
+        /* ============================================================
+           FEATURES SECTION
+           ============================================================ */
+        .features {
+            padding: 5rem 2rem;
+            background: var(--gray);
+        }
+        
+        .section-header {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 4rem;
+        }
+        
+        .section-header .tag {
+            display: inline-block;
+            background: rgba(108,99,255,0.1);
+            color: var(--primary);
+            padding: 0.3rem 1rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .section-header h2 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+        
+        .section-header p {
+            color: var(--text-light);
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+        
+        .features-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow2);
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(108,99,255,0.2);
+            box-shadow: var(--shadow);
+        }
+        
+        .feature-card .icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .feature-card .icon.purple {
+            background: rgba(108,99,255,0.1);
+            color: var(--primary);
+        }
+        
+        .feature-card .icon.orange {
+            background: rgba(255,107,107,0.1);
+            color: var(--secondary);
+        }
+        
+        .feature-card .icon.green {
+            background: rgba(107,203,119,0.1);
+            color: var(--accent2);
+        }
+        
+        .feature-card .icon.yellow {
+            background: rgba(255,217,61,0.1);
+            color: #FFB800;
+        }
+        
+        .feature-card .icon.pink {
+            background: rgba(255,107,107,0.1);
+            color: #FF6B8A;
+        }
+        
+        .feature-card .icon.blue {
+            background: rgba(108,99,255,0.1);
+            color: #4A90D9;
+        }
+        
+        .feature-card h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+        
+        .feature-card p {
+            color: var(--text-light);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        
+        /* ============================================================
+           HOW IT WORKS
+           ============================================================ */
+        .how-it-works {
+            padding: 5rem 2rem;
+            background: white;
+        }
+        
+        .steps {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            position: relative;
+        }
+        
+        .steps::before {
+            content: '';
+            position: absolute;
+            top: 40px;
+            left: 15%;
+            right: 15%;
+            height: 3px;
+            background: var(--gradient1);
+            opacity: 0.3;
+        }
+        
+        .step {
+            text-align: center;
+            position: relative;
+        }
+        
+        .step .step-number {
+            width: 60px;
+            height: 60px;
+            background: var(--gradient1);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin: 0 auto 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .step h4 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .step p {
+            color: var(--text-light);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        
+        /* ============================================================
+           BENEFITS / PRICING
+           ============================================================ */
+        .pricing {
+            padding: 5rem 2rem;
+            background: var(--dark);
+            color: white;
+        }
+        
+        .pricing .section-header h2 {
+            color: white;
+        }
+        
+        .pricing .section-header p {
+            color: rgba(255,255,255,0.7);
+        }
+        
+        .pricing-grid {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+        
+        .pricing-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: var(--border-radius);
+            padding: 2.5rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .pricing-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(108,99,255,0.3);
+            background: rgba(255,255,255,0.08);
+        }
+        
+        .pricing-card.popular {
+            border-color: var(--primary);
+            background: rgba(108,99,255,0.1);
+        }
+        
+        .pricing-card .plan-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--primary-light);
+            margin-bottom: 0.5rem;
+        }
+        
+        .pricing-card .price {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+        
+        .pricing-card .price span {
+            font-size: 1rem;
+            font-weight: 400;
+            color: rgba(255,255,255,0.6);
+        }
+        
+        .pricing-card .description {
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+        
+        .pricing-card ul {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+        
+        .pricing-card ul li {
+            padding: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: rgba(255,255,255,0.8);
+            font-size: 0.95rem;
+        }
+        
+        .pricing-card ul li i {
+            color: var(--accent2);
+            font-size: 1rem;
+        }
+        
+        .pricing-card .btn-primary {
+            width: 100%;
+            justify-content: center;
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        
+        .pricing-card .btn-primary:hover {
+            background: var(--gradient1);
+            color: white;
+        }
+        
+        .pricing-card.popular .btn-primary {
+            background: var(--gradient1);
+        }
+        
+        .popular-badge {
+            display: inline-block;
+            background: var(--gradient2);
+            color: white;
+            padding: 0.2rem 1rem;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* ============================================================
+           TESTIMONIALS
+           ============================================================ */
+        .testimonials {
+            padding: 5rem 2rem;
+            background: var(--gray);
+        }
+        
+        .testimonials-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+        
+        .testimonial-card {
+            background: white;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow2);
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .testimonial-card:hover {
+            border-color: rgba(108,99,255,0.2);
+        }
+        
+        .testimonial-card .stars {
+            color: var(--accent);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        
+        .testimonial-card blockquote {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: var(--text-dark);
+            margin-bottom: 1.5rem;
+            font-style: italic;
+        }
+        
+        .testimonial-card .author {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .testimonial-card .author .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--gradient1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        
+        .testimonial-card .author .info .name {
+            font-weight: 600;
+        }
+        
+        .testimonial-card .author .info .role {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+        
+        /* ============================================================
+           CTA SECTION
+           ============================================================ */
+        .cta {
+            padding: 5rem 2rem;
+            background: var(--gradient1);
+            color: white;
+            text-align: center;
+        }
+        
+        .cta h2 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+        
+        .cta p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto 2.5rem;
+        }
+        
+        .cta .btn-primary {
+            background: white;
+            color: var(--primary);
+            font-size: 1.1rem;
+            padding: 1rem 3rem;
+        }
+        
+        .cta .btn-primary:hover {
+            background: var(--dark);
+            color: white;
+        }
+        
+        /* ============================================================
+           FOOTER
+           ============================================================ */
+        .footer {
+            background: var(--dark);
+            color: rgba(255,255,255,0.7);
+            padding: 3rem 2rem 1.5rem;
+        }
+        
+        .footer-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .footer .logo {
+            color: white;
+            margin-bottom: 1rem;
+        }
+        
+        .footer .logo span {
+            color: white;
+        }
+        
+        .footer p {
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+        
+        .footer h5 {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+        
+        .footer ul {
+            list-style: none;
+        }
+        
+        .footer ul li {
+            margin-bottom: 0.75rem;
+        }
+        
+        .footer ul li a {
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .footer ul li a:hover {
+            color: white;
+        }
+        
+        .footer-bottom {
+            max-width: 1200px;
+            margin: 1.5rem auto 0;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+        
+        /* ============================================================
+           RESPONSIVE
+           ============================================================ */
+        @media (max-width: 992px) {
+            .hero-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            
+            .hero-text p {
+                margin: 0 auto 2rem;
+            }
+            
+            .hero-buttons {
+                justify-content: center;
+            }
+            
+            .hero-stats {
+                justify-content: center;
+            }
+            
+            .hero-image .mockup {
+                max-width: 400px;
+            }
+            
+            .floating-badge.top-right {
+                top: 10px;
+                right: 10px;
+            }
+            
+            .floating-badge.bottom-left {
+                bottom: 10px;
+                left: 10px;
+            }
+            
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .pricing-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .testimonials-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 2rem;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                flex-direction: column;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: white;
+                padding: 2rem;
+                box-shadow: var(--shadow);
+                gap: 1rem;
+            }
+            
+            .nav-links.active {
+                display: flex;
+            }
+            
+            .menu-toggle {
+                display: block;
+            }
+            
+            .hero {
+                padding: 5rem 1.5rem 3rem;
+            }
+            
+            .hero-text h1 {
+                font-size: 2.5rem;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .testimonials-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .steps {
+                grid-template-columns: 1fr;
+            }
+            
+            .steps::before {
+                display: none;
+            }
+            
+            .footer-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .hero-stats {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .floating-badge {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ============================================================
+    NAVBAR
+    ============================================================ -->
+    <nav class="navbar" id="navbar">
+        <a href="#" class="logo">
+            <i class="fas fa-rocket"></i>
+            Alset<span>Sales</span>
+        </a>
+        
+        <ul class="nav-links" id="navLinks">
+            <li><a href="#features">Características</a></li>
+            <li><a href="#how-it-works">Cómo Funciona</a></li>
+            <li><a href="#pricing">Planes</a></li>
+            <li><a href="#testimonials">Testimonios</a></li>
+            <li><a href="#cta" class="btn-nav">Empezar Ahora</a></li>
+        </ul>
+        
+        <div class="menu-toggle" id="menuToggle">
+            <i class="fas fa-bars"></i>
+        </div>
+    </nav>
+    
+    <!-- ============================================================
+    HERO SECTION
+    ============================================================ -->
+    <section class="hero" id="hero">
+        <div class="hero-content">
+            <div class="hero-text">
+                <div style="display:inline-block; background:rgba(108,99,255,0.1); color:var(--primary); padding:0.3rem 1.2rem; border-radius:50px; font-size:0.8rem; font-weight:600; margin-bottom:1.5rem;">
+                    🚀 Revoluciona tu negocio
+                </div>
+                <h1>
+                    Gestiona tus ventas<br>
+                    <span class="highlight">desde WhatsApp</span><br>
+                    y <span class="highlight2">aumenta tus ingresos</span>
+                </h1>
+                <p>
+                    La plataforma que conecta a dueños, gestores y clientes en un solo lugar. 
+                    Crea ofertas, asigna a tus gestores y haz seguimiento de cada venta 
+                    de manera automática y sencilla.
+                </p>
+                
+                <div class="hero-buttons">
+                    <a href="#cta" class="btn-primary">
+                        <i class="fas fa-rocket"></i> Empezar Ahora
+                    </a>
+                    <a href="#features" class="btn-secondary">
+                        <i class="fas fa-play-circle"></i> Ver Demo
+                    </a>
+                </div>
+                
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="number">500+</div>
+                        <div class="label">Negocios confían</div>
+                    </div>
+                    <div class="stat">
+                        <div class="number">1,200+</div>
+                        <div class="label">Gestores activos</div>
+                    </div>
+                    <div class="stat">
+                        <div class="number">50K+</div>
+                        <div class="label">Ventas gestionadas</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hero-image">
+                <div class="mockup" style="background:linear-gradient(135deg, #F8F7FF, #EEF0FF);">
+                    <div style="background:white; border-radius:16px; padding:1.5rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                            <div style="display:flex; gap:0.5rem;">
+                                <span style="width:12px; height:12px; border-radius:50%; background:#FF6B6B;"></span>
+                                <span style="width:12px; height:12px; border-radius:50%; background:#FFD93D;"></span>
+                                <span style="width:12px; height:12px; border-radius:50%; background:#6BCB77;"></span>
+                            </div>
+                            <span style="font-size:0.8rem; color:var(--text-light);">Panel de Gestión</span>
+                        </div>
+                        
+                        <!-- Mockup Content -->
+                        <div style="background:var(--gray); border-radius:12px; padding:1rem; margin-bottom:1rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div style="font-weight:600; font-size:0.9rem;">📢 Ofertas del día</div>
+                                    <div style="font-size:0.8rem; color:var(--text-light);">4 nuevas ofertas asignadas</div>
+                                </div>
+                                <span style="background:var(--primary); color:white; padding:0.2rem 0.8rem; border-radius:50px; font-size:0.7rem; font-weight:600;">+12%</span>
+                            </div>
+                        </div>
+                        
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem;">
+                            <div style="background:white; border-radius:10px; padding:0.75rem; border:1px solid var(--gray);">
+                                <div style="font-size:1.5rem; font-weight:700; color:var(--primary);">$1,234</div>
+                                <div style="font-size:0.7rem; color:var(--text-light);">Ventas hoy</div>
+                            </div>
+                            <div style="background:white; border-radius:10px; padding:0.75rem; border:1px solid var(--gray);">
+                                <div style="font-size:1.5rem; font-weight:700; color:var(--accent2);">45</div>
+                                <div style="font-size:0.7rem; color:var(--text-light);">Clientes nuevos</div>
+                            </div>
+                        </div>
+                        
+                        <div style="display:flex; gap:0.75rem;">
+                            <div style="flex:1; background:var(--gradient1); color:white; padding:0.6rem; border-radius:10px; text-align:center; font-size:0.8rem; font-weight:600;">
+                                <i class="fas fa-plus-circle"></i> Crear Oferta
+                            </div>
+                            <div style="flex:1; background:var(--gray2); padding:0.6rem; border-radius:10px; text-align:center; font-size:0.8rem; font-weight:600;">
+                                <i class="fas fa-users"></i> Gestores
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="floating-badge top-right">
+                    <i class="fas fa-bolt" style="color:var(--accent);"></i>
+                    <div>
+                        <div class="badge-text">+87% más ventas</div>
+                        <div class="badge-sub">en el primer mes</div>
+                    </div>
+                </div>
+                
+                <div class="floating-badge bottom-left">
+                    <i class="fas fa-whatsapp" style="color:#25D366;"></i>
+                    <div>
+                        <div class="badge-text">WhatsApp integrado</div>
+                        <div class="badge-sub">Comunicación automática</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ============================================================
+    CLIENTS SECTION
+    ============================================================ -->
+    <section class="clients">
+        <p>Confían en nosotros negocios de todo tipo</p>
+        <div class="clients-grid">
+            <span class="client-logo"><i class="fas fa-store"></i> Tiendas</span>
+            <span class="client-logo"><i class="fas fa-utensils"></i> Gastronomía</span>
+            <span class="client-logo"><i class="fas fa-tshirt"></i> Moda</span>
+            <span class="client-logo"><i class="fas fa-tools"></i> Servicios</span>
+            <span class="client-logo"><i class="fas fa-couch"></i> Hogar</span>
+            <span class="client-logo"><i class="fas fa-gem"></i> Lujo</span>
+        </div>
+    </section>
+    
+    <!-- ============================================================
+    FEATURES SECTION
+    ============================================================ -->
+    <section class="features" id="features">
+        <div class="section-header">
+            <span class="tag">CARACTERÍSTICAS</span>
+            <h2>Todo lo que necesitas para <span style="color:var(--primary);">gestionar tus ventas</span></h2>
+            <p>Una plataforma completa que conecta a dueños, gestores y clientes en un ecosistema automatizado.</p>
+        </div>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="icon purple"><i class="fas fa-crown"></i></div>
+                <h3>Panel del Dueño</h3>
+                <p>Crea ofertas, asigna a tus gestores y recibe reportes detallados de cada venta. Control total en tiempo real.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="icon orange"><i class="fas fa-user-tie"></i></div>
+                <h3>Panel del Gestor</h3>
+                <p>Recibe ofertas automáticamente, compártelas con tus clientes y registra ventas con solo unos clics.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="icon green"><i class="fas fa-mobile-alt"></i></div>
+                <h3>WhatsApp Integrado</h3>
+                <p>Envía y recibe ofertas directamente desde WhatsApp. Sin aplicaciones adicionales, simple y efectivo.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="icon yellow"><i class="fas fa-chart-line"></i></div>
+                <h3>Reportes Automáticos</h3>
+                <p>Visualiza ventas por gestor, productos más vendidos, y tendencias. Datos claros para tomar decisiones.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="icon pink"><i class="fas fa-gift"></i></div>
+                <h3>Gestión de Ofertas</h3>
+                <p>Crea promociones personalizadas, define descuentos y establece fechas de vigencia. Todo desde un panel.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="icon blue"><i class="fas fa-shield-alt"></i></div>
+                <h3>Tecnología Alset</h3>
+                <p>Seguridad y transparencia con tecnología blockchain. Tus datos protegidos y verificables.</p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ============================================================
+    HOW IT WORKS
+    ============================================================ -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="section-header">
+            <span class="tag">CÓMO FUNCIONA</span>
+            <h2>Tres pasos para <span style="color:var(--secondary);">revolucionar tus ventas</span></h2>
+            <p>Un sistema simple que transforma la forma en que gestionas tu fuerza de ventas</p>
+        </div>
+        
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h4>📋 Crea tu Oferta</h4>
+                <p>El dueño diseña promociones personalizadas, define precios y establece metas desde un panel intuitivo.</p>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">2</div>
+                <h4>📲 Comparte con Gestores</h4>
+                <p>La oferta se asigna automáticamente a los gestores y se envía por WhatsApp para que la compartan con sus clientes.</p>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">3</div>
+                <h4>💰 Registra Ventas</h4>
+                <p>Los gestores cierran ventas, el sistema registra cada transacción y el dueño recibe reportes en tiempo real.</p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ============================================================
+    PRICING SECTION
+    ============================================================ -->
+    <section class="pricing" id="pricing">
+        <div class="section-header">
+            <span class="tag" style="background:rgba(255,255,255,0.1); color:var(--primary-light);">PLANES</span>
+            <h2>Elige el plan <span style="color:var(--accent);">perfecto</span> para tu negocio</h2>
+            <p>Sin compromisos, cancela cuando quieras. Todos los planes incluyen soporte 24/7.</p>
+        </div>
+        
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <div class="plan-name">Básico</div>
+                <div class="price">$9 <span>/mes</span></div>
+                <div class="description">Perfecto para negocios que empiezan</div>
+                <ul>
+                    <li><i class="fas fa-check-circle"></i> Hasta 3 gestores</li>
+                    <li><i class="fas fa-check-circle"></i> Creación de ofertas</li>
+                    <li><i class="fas fa-check-circle"></i> WhatsApp integrado</li>
+                    <li><i class="fas fa-check-circle"></i> Reportes básicos</li>
+                </ul>
+                <a href="#cta" class="btn-primary">Comenzar</a>
+            </div>
+            
+            <div class="pricing-card popular">
+                <div class="popular-badge">⭐ Más popular</div>
+                <div class="plan-name">Profesional</div>
+                <div class="price">$25 <span>/mes</span></div>
+                <div class="description">Para negocios en crecimiento</div>
+                <ul>
+                    <li><i class="fas fa-check-circle"></i> Hasta 10 gestores</li>
+                    <li><i class="fas fa-check-circle"></i> Ofertas ilimitadas</li>
+                    <li><i class="fas fa-check-circle"></i> WhatsApp + Facebook</li>
+                    <li><i class="fas fa-check-circle"></i> Reportes avanzados</li>
+                    <li><i class="fas fa-check-circle"></i> Automatización de ventas</li>
+                </ul>
+                <a href="#cta" class="btn-primary">Comenzar</a>
+            </div>
+            
+            <div class="pricing-card">
+                <div class="plan-name">Empresarial</div>
+                <div class="price">$50 <span>/mes</span></div>
+                <div class="description">Para grandes equipos de ventas</div>
+                <ul>
+                    <li><i class="fas fa-check-circle"></i> Gestores ilimitados</li>
+                    <li><i class="fas fa-check-circle"></i> Ofertas personalizadas</li>
+                    <li><i class="fas fa-check-circle"></i> Todos los canales</li>
+                    <li><i class="fas fa-check-circle"></i> Reportes en tiempo real</li>
+                    <li><i class="fas fa-check-circle"></i> Soporte prioritario 24/7</li>
+                    <li><i class="fas fa-check-circle"></i> API personalizada</li>
+                </ul>
+                <a href="#cta" class="btn-primary">Comenzar</a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ============================================================
+    TESTIMONIALS
+    ============================================================ -->
+    <section class="testimonials" id="testimonials">
+        <div class="section-header">
+            <span class="tag">TESTIMONIOS</span>
+            <h2>Lo que dicen <span style="color:var(--secondary);">nuestros clientes</span></h2>
+            <p>Historias reales de negocios que transformaron sus ventas con Alset Sales Hub</p>
+        </div>
+        
+        <div class="testimonials-grid">
+            <div class="testimonial-card">
+                <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                <blockquote>"Increíble herramienta. Mis gestores ahora están más organizados y las ventas han aumentado un 40% en solo un mes."</blockquote>
+                <div class="author">
+                    <div class="avatar">M</div>
+                    <div class="info">
+                        <div class="name">María González</div>
+                        <div class="role">Dueña de Tienda de Moda</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="testimonial-card">
+                <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                <blockquote>"La integración con WhatsApp es perfecta. Mis gestores no tuvieron que aprender nada nuevo, simplemente empezaron a vender más."</blockquote>
+                <div class="author">
+                    <div class="avatar" style="background:var(--gradient2);">C</div>
+                    <div class="info">
+                        <div class="name">Carlos Pérez</div>
+                        <div class="role">Restaurante "El Buen Sazón"</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="testimonial-card">
+                <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                <blockquote>"El panel de control me permite ver exactamente qué está vendiendo cada gestor. Tomar decisiones nunca fue tan fácil."</blockquote>
+                <div class="author">
+                    <div class="avatar" style="background:var(--gradient3);">L</div>
+                    <div class="info">
+                        <div class="name">Laura Fernández</div>
+                        <div class="role">Gerente de Ventas</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- ============================================================
+    CTA SECTION
+    ============================================================ -->
+    <section class="cta" id="cta">
+        <div style="max-width:800px; margin:0 auto;">
+            <h2>🚀 ¿Listo para <span style="color:var(--accent);">revolucionar</span> tus ventas?</h2>
+            <p>Únete a cientos de negocios que ya están transformando su gestión de ventas con Alset Sales Hub.</p>
+            <a href="#" class="btn-primary">
+                <i class="fas fa-rocket"></i> Comenzar Prueba Gratis
+            </a>
+            <div style="margin-top:1.5rem; font-size:0.9rem; opacity:0.8;">
+                <i class="fas fa-check-circle"></i> Sin tarjeta de crédito &nbsp;&nbsp;
+                <i class="fas fa-check-circle"></i> Configuración en 5 minutos
+            </div>
+        </div>
+    </section>
+    
+    <!-- ============================================================
+    FOOTER
+    ============================================================ -->
+    <footer class="footer">
+        <div class="footer-grid">
+            <div>
+                <a href="#" class="logo">
+                    <i class="fas fa-rocket"></i>
+                    Alset<span>Sales</span>
+                </a>
+                <p style="max-width:300px;">
+                    La plataforma que conecta a dueños, gestores y clientes 
+                    para revolucionar la gestión de ventas en Cuba.
+                </p>
+                <div style="display:flex; gap:1rem; margin-top:1.5rem;">
+                    <a href="#" style="color:rgba(255,255,255,0.5); font-size:1.2rem;"><i class="fab fa-whatsapp"></i></a>
+                    <a href="#" style="color:rgba(255,255,255,0.5); font-size:1.2rem;"><i class="fab fa-facebook"></i></a>
+                    <a href="#" style="color:rgba(255,255,255,0.5); font-size:1.2rem;"><i class="fab fa-instagram"></i></a>
+                    <a href="#" style="color:rgba(255,255,255,0.5); font-size:1.2rem;"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+            
+            <div>
+                <h5>Producto</h5>
+                <ul>
+                    <li><a href="#features">Características</a></li>
+                    <li><a href="#pricing">Planes</a></li>
+                    <li><a href="#">Integraciones</a></li>
+                    <li><a href="#">Actualizaciones</a></li>
+                </ul>
+            </div>
+            
+            <div>
+                <h5>Recursos</h5>
+                <ul>
+                    <li><a href="#">Documentación</a></li>
+                    <li><a href="#">Soporte</a></li>
+                    <li><a href="#">Blog</a></li>
+                    <li><a href="#">Comunidad</a></li>
+                </ul>
+            </div>
+            
+            <div>
+                <h5>Contacto</h5>
+                <ul>
+                    <li><a href="#"><i class="fas fa-envelope"></i> info@alset-sales.com</a></li>
+                    <li><a href="#"><i class="fas fa-phone"></i> +53 5XXX XXXX</a></li>
+                    <li><a href="#"><i class="fas fa-map-marker-alt"></i> La Habana, Cuba</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2024 Alset Sales Hub. Todos los derechos reservados. Tecnología Alset.</p>
+        </div>
+    </footer>
+    
+    <!-- ============================================================
+    JAVASCRIPT
+    ============================================================ -->
+    <script>
+        // ============================================================
+        // NAVBAR SCROLL EFFECT
+        // ============================================================
+        window.addEventListener('scroll', function() {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+        
+        // ============================================================
+        // MOBILE MENU TOGGLE
+        // ============================================================
+        const menuToggle = document.getElementById('menuToggle');
+        const navLinks = document.getElementById('navLinks');
+        
+        menuToggle.addEventListener('click', function() {
+            navLinks.classList.toggle('active');
+            this.querySelector('i').classList.toggle('fa-bars');
+            this.querySelector('i').classList.toggle('fa-times');
+        });
+        
+        // ============================================================
+        // SMOOTH SCROLL
+        // ============================================================
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+                // Cerrar menú móvil
+                navLinks.classList.remove('active');
+                const icon = menuToggle.querySelector('i');
+                icon.classList.add('fa-bars');
+                icon.classList.remove('fa-times');
+            });
+        });
+        
+        // ============================================================
+        // ANIMATED COUNTERS
+        // ============================================================
+        const observerOptions = {
+            threshold: 0.5,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const counters = entry.target.querySelectorAll('.number');
+                    counters.forEach(counter => {
+                        const text = counter.textContent;
+                        const num = parseInt(text.replace(/[^0-9]/g, ''));
+                        if (!isNaN(num)) {
+                            let current = 0;
+                            const increment = Math.ceil(num / 30);
+                            const interval = setInterval(() => {
+                                current += increment;
+                                if (current >= num) {
+                                    counter.textContent = text.replace(/\d+/, num);
+                                    clearInterval(interval);
+                                } else {
+                                    counter.textContent = text.replace(/\d+/, current);
+                                }
+                            }, 30);
+                        }
+                    });
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+        
+        const heroStats = document.querySelector('.hero-stats');
+        if (heroStats) {
+            observer.observe(heroStats);
+        }
+        
+        // ============================================================
+        // CONSOLE WELCOME
+        // ============================================================
+        console.log('%c🚀 Alset Sales Hub', 'font-size: 24px; font-weight: bold; color: #6C63FF;');
+        console.log('%cRevoluciona tus ventas con Alset', 'font-size: 14px; color: #6B6B8A;');
+        console.log('%c📧 info@alset-sales.com', 'font-size: 12px; color: #6B6B8A;');
+    </script>
+</body>
+</html>
