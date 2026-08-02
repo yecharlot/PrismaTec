@@ -50,8 +50,8 @@ Ahora existe una capa abstracta (`internal/persistence`):
 
 | Backend   | Activación                                      | Descripción                     |
 |-----------|--------------------------------------------------|---------------------------------|
-| **Local** | Por defecto                                      | Archivos en `alset_data/`       |
-| **Supabase** | `SUPABASE_URL` + `SUPABASE_SERVICE_KEY`        | Tabla `alset_kv` (key/value)    |
+| **Local** | Sin variables Supabase                           | Archivos en `alset_data/`       |
+| **Supabase** | `SUPABASE_URL` + `SUPABASE_SERVICE_KEY`        | Tablas `alset_agents`, `alset_blocks`, `alset_neural_state`, `alset_kv` |
 
 ### Preparación de Supabase (siguiente paso)
 
