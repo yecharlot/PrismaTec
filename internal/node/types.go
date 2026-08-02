@@ -3,14 +3,12 @@ package node
 import (
 	"context"
 	"sync"
+
+	"redalset/internal/agents"
+	"redalset/internal/neural"
 )
 
-type Agente struct {
-	ID           string  `json:"id"`
-	RootCID      string  `json:"root_cid"`
-	UltimaActual int64   `json:"ultima_actualizacion"`
-	BalanceUTXO  float64 `json:"balance_utxo"`
-}
+type Agente = agents.Agente
 
 type NodoConfig struct {
 	AdminPassHash string `json:"admin_pass_hash"`
@@ -43,50 +41,17 @@ var globalPoH = struct {
 	events:    []PoHEvent{},
 }
 
-type SynapticWeight struct {
-	TargetNeuronID  string  `json:"target_neuron_id"`
-	Weight          float64 `json:"weight"`
-	LastUpdated     int64   `json:"last_updated"`
-	SuccessfulFires int64   `json:"successful_fires"`
-}
+type SynapticWeight = neural.SynapticWeight
 
-type NeuralState struct {
-	MembranePotential float64                   `json:"membrane_potential"`
-	LastSpikeTime     int64                     `json:"last_spike_time"`
-	SpikeThreshold    float64                   `json:"spike_threshold"`
-	LeakRate          float64                   `json:"leak_rate"`
-	RefractoryPeriod  int64                     `json:"refractory_period"`
-	Synapses          map[string]SynapticWeight `json:"synapses"`
-	NeuronType        string                    `json:"neuron_type"`
-}
+type NeuralState = neural.NeuralState
 
-type InferenceRequest struct {
-	RequestID    string    `json:"request_id"`
-	InputData    []float64 `json:"input_data"`
-	OriginNodeID string    `json:"origin_node_id"`
-	TTL          int       `json:"ttl"`
-}
+type InferenceRequest = neural.InferenceRequest
 
-type InferenceResponse struct {
-	RequestID      string    `json:"request_id"`
-	OutputData     []float64 `json:"output_data"`
-	ProcessingNode string    `json:"processing_node"`
-	ProcessingTime int64     `json:"processing_time"`
-}
+type InferenceResponse = neural.InferenceResponse
 
-type MemoryQuery struct {
-	QueryID    string `json:"query_id"`
-	Content    string `json:"content"`
-	OriginNode string `json:"origin_node"`
-	TTL        int    `json:"ttl"`
-}
+type MemoryQuery = neural.MemoryQuery
 
-type MemoryResponse struct {
-	QueryID       string   `json:"query_id"`
-	Results       []string `json:"results"`
-	Contents      []string `json:"contents"`
-	ResponderNode string   `json:"responder_node"`
-}
+type MemoryResponse = neural.MemoryResponse
 
 // =============================================================================
 // EXTENSIONES: MÓDULOS, ENTIDADES, SEGURIDAD
