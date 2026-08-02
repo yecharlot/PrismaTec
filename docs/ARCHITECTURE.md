@@ -1,47 +1,40 @@
-# Arquitectura de PrismaTec / Alset (P.TEC-AN v4.0)
+# Arquitectura Alset (P.TEC-AN v4.0)
 
-## Persistencia (Supabase)
-
-Proyecto Supabase: **Alset** (`uysvbxawytsegxcufdds`)
-
-| Tabla | Uso |
-|-------|-----|
-| `alset_agents` | Un registro por agente (`id`, `data` jsonb) |
-| `alset_blocks` | Un registro por CID (`cid`, `data` bytea/base64, `size`) |
-| `alset_neural_state` | Estado neuronal (`id` default `main`, `state` jsonb) |
-| `alset_kv` | Key/value genérico (nombres DNS, backup de estado) |
-
-Variables de entorno:
+## Layout del código
 
 ```
-SUPABASE_URL=https://uysvbxawytsegxcufdds.supabase.co
-SUPABASE_SERVICE_KEY=<secret>
-```
-
-## Estructura del repositorio
-
-```
-cmd/prisma-tec/          → entrypoint
+cmd/prisma-tec/main.go          Entrypoint
 internal/
-  node/                  → núcleo (aún denso; extracción incremental)
-  persistence/           → Store, Local, Supabase (tablas estructuradas)
-  lisp/ neural/ pulse/   → (próximas extracciones)
-  agents/ blocks/ p2p/ sync/ httpapi/ config/
+  node/
+    node.go       Núcleo NodoAlset, Init, P2P, sync, persistencia, Run
+    types.go      Agente, NeuralState, Módulos, Sync, etc.
+    lisp.go       Motor Lisp completo
+    pulse.go      Clientes/servidor de pulsos SSE
+    http.go       startHTTPServer y handlers HTTP
+  persistence/    Store + Local + Supabase (tablas estructuradas)
 docs/
 static/
 ```
 
-## Flujo de persistencia
+## Persistencia Supabase (proyecto Alset)
 
-1. **Arranque** → `CargarEstado()`  
-   - agentes desde `alset_agents`  
-   - blocks desde `alset_blocks`  
-   - neural desde `alset_neural_state`  
-   - nombres desde `alset_kv`
+| Tabla | Contenido |
+|-------|-----------|
+| alset_agents | Un row por agente |
+| alset_blocks | Un row por CID |
+| alset_neural_state | Estado neural |
+| alset_kv | Nombres DNS + backups |
 
-2. **Durante uso / shutdown** → `PersistirLocamente()`  
-   - escribe en las cuatro tablas anteriores
+Env: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`
 
-## Local vs Relay
+## Modos
 
-Detectado con `RENDER`. En Render solo actúa como servidor de pulsos SSE.
+- **Local** (`RENDER` vacío): cliente de pulsos + servidor
+- **Relay** (`RENDER` definido): solo servidor de pulsos
+
+## Roadmap de extracción a paquetes independientes
+
+1. ✅ Monolito → varios archivos en `internal/node`
+2. ✅ Persistencia pluggable + tablas estructuradas
+3. ⏳ `internal/lisp` como paquete propio (interfaz NodeBackend)
+4. ⏳ `internal/pulse`, `internal/httpapi`, `internal/neural`, `internal/p2p`
