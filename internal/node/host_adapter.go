@@ -119,3 +119,14 @@ func (n *NodoAlset) PeerID() string {
 	}
 	return n.host.ID().String()
 }
+
+func (n *NodoAlset) ListBlocks() map[string][]byte {
+	if n.blockstore == nil {
+		return map[string][]byte{}
+	}
+	out := make(map[string][]byte, len(n.blockstore))
+	for k, v := range n.blockstore {
+		out[k] = v
+	}
+	return out
+}

@@ -46,4 +46,5 @@ type Host interface {
 
 	GetBlock(cid string) ([]byte, bool)
 	PutBlock(cid string, data []byte)
+	ListBlocks() map[string][]byte
 }

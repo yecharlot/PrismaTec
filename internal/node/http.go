@@ -1,6 +1,7 @@
 package node
 
 import (
+	"redalset/internal/lisp"
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
@@ -1146,7 +1147,7 @@ func (n *NodoAlset) Init() {
 		log.Fatal("Error creando DHT:", err)
 	}
 	go n.kademlia.Bootstrap(n.ctx)
-	n.lisp = NewLispEvaluator(n)
+	n.lisp = lisp.NewEvaluator(n)
 	mdns.NewMdnsService(n.host, "alset-mesh", &discoveryNotifee{h: n.host}).Start()
 	go n.EscucharGossip()
 

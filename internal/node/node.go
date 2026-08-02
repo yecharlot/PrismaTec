@@ -39,6 +39,9 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
+	"redalset/internal/agents"
+	"redalset/internal/poh"
+	"redalset/internal/lisp"
 	"redalset/internal/persistence"
 )
 
@@ -76,7 +79,7 @@ type NodoAlset struct {
 	ctx                  context.Context
 	agentes              map[string]*Agente
 	mu                   sync.RWMutex
-	lisp                 *LispEvaluator
+	lisp                 *lisp.Evaluator
 	kademlia             *dht.IpfsDHT
 	pubsub               *pubsub.PubSub
 	topic                *pubsub.Topic
@@ -1682,18 +1685,18 @@ func (n *NodoAlset) crearModulo(w http.ResponseWriter, r *http.Request) {
 		Owner:      req.Owner,
 		CreatedAt:  time.Now().Unix(),
 	}
-	muModulos.Lock()
-	modulosGlobales[id] = modulo
-	muModulos.Unlock()
+	agents.Global.MuModulos.Lock()
+	agents.Global.Modulos[id] = modulo
+	agents.Global.MuModulos.Unlock()
 	n.Auditoria("MODULO_CREADO", fmt.Sprintf("ID: %s | Nombre: %s", id, req.Nombre))
 	json.NewEncoder(w).Encode(modulo)
 }
 
 func (n *NodoAlset) listarModulos(w http.ResponseWriter, r *http.Request) {
-	muModulos.RLock()
-	defer muModulos.RUnlock()
-	lista := make([]*Modulo, 0, len(modulosGlobales))
-	for _, m := range modulosGlobales {
+	agents.Global.MuModulos.RLock()
+	defer agents.Global.MuModulos.RUnlock()
+	lista := make([]*Modulo, 0, len(agents.Global.Modulos))
+	for _, m := range agents.Global.Modulos {
 		lista = append(lista, m)
 	}
 	json.NewEncoder(w).Encode(lista)
@@ -1701,9 +1704,9 @@ func (n *NodoAlset) listarModulos(w http.ResponseWriter, r *http.Request) {
 
 func (n *NodoAlset) obtenerModulo(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/api/modulos/")
-	muModulos.RLock()
-	modulo, exists := modulosGlobales[id]
-	muModulos.RUnlock()
+	agents.Global.MuModulos.RLock()
+	modulo, exists := agents.Global.Modulos[id]
+	agents.Global.MuModulos.RUnlock()
 	if !exists {
 		http.Error(w, "Módulo no encontrado", 404)
 		return
@@ -1718,9 +1721,9 @@ func (n *NodoAlset) actualizarModulo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "JSON inválido", 400)
 		return
 	}
-	muModulos.Lock()
-	defer muModulos.Unlock()
-	modulo, exists := modulosGlobales[id]
+	agents.Global.MuModulos.Lock()
+	defer agents.Global.MuModulos.Unlock()
+	modulo, exists := agents.Global.Modulos[id]
 	if !exists {
 		http.Error(w, "Módulo no encontrado", 404)
 		return
@@ -1739,9 +1742,9 @@ func (n *NodoAlset) actualizarModulo(w http.ResponseWriter, r *http.Request) {
 
 func (n *NodoAlset) eliminarModulo(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/api/modulos/")
-	muModulos.Lock()
-	delete(modulosGlobales, id)
-	muModulos.Unlock()
+	agents.Global.MuModulos.Lock()
+	delete(agents.Global.Modulos, id)
+	agents.Global.MuModulos.Unlock()
 	n.Auditoria("MODULO_ELIMINADO", id)
 	json.NewEncoder(w).Encode(map[string]string{"status": "deleted"})
 }
@@ -1759,13 +1762,13 @@ func (n *NodoAlset) crearEntidad(w http.ResponseWriter, r *http.Request) {
 	}
 	atributosFinales := make(map[string]interface{})
 	if req.HeredaDe != "" {
-		muEntidades.RLock()
-		if padre, exists := entidadesGlobales[req.HeredaDe]; exists {
+		agents.Global.MuEntidades.RLock()
+		if padre, exists := agents.Global.Entidades[req.HeredaDe]; exists {
 			for k, v := range padre.Atributos {
 				atributosFinales[k] = v
 			}
 		}
-		muEntidades.RUnlock()
+		agents.Global.MuEntidades.RUnlock()
 	}
 	for k, v := range req.Atributos {
 		atributosFinales[k] = v
@@ -1778,18 +1781,18 @@ func (n *NodoAlset) crearEntidad(w http.ResponseWriter, r *http.Request) {
 		HeredaDe:  req.HeredaDe,
 		ModuloID:  req.ModuloID,
 	}
-	muEntidades.Lock()
-	entidadesGlobales[id] = entidad
-	muEntidades.Unlock()
+	agents.Global.MuEntidades.Lock()
+	agents.Global.Entidades[id] = entidad
+	agents.Global.MuEntidades.Unlock()
 	n.Auditoria("ENTIDAD_CREADA", fmt.Sprintf("Tipo: %s | ID: %s", req.Tipo, id))
 	json.NewEncoder(w).Encode(entidad)
 }
 
 func (n *NodoAlset) listarEntidades(w http.ResponseWriter, r *http.Request) {
-	muEntidades.RLock()
-	defer muEntidades.RUnlock()
-	lista := make([]*EntidadProgramatica, 0, len(entidadesGlobales))
-	for _, e := range entidadesGlobales {
+	agents.Global.MuEntidades.RLock()
+	defer agents.Global.MuEntidades.RUnlock()
+	lista := make([]*EntidadProgramatica, 0, len(agents.Global.Entidades))
+	for _, e := range agents.Global.Entidades {
 		lista = append(lista, e)
 	}
 	json.NewEncoder(w).Encode(lista)
@@ -1797,9 +1800,9 @@ func (n *NodoAlset) listarEntidades(w http.ResponseWriter, r *http.Request) {
 
 func (n *NodoAlset) obtenerEntidad(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/api/entidades/")
-	muEntidades.RLock()
-	entidad, exists := entidadesGlobales[id]
-	muEntidades.RUnlock()
+	agents.Global.MuEntidades.RLock()
+	entidad, exists := agents.Global.Entidades[id]
+	agents.Global.MuEntidades.RUnlock()
 	if !exists {
 		http.Error(w, "Entidad no encontrada", 404)
 		return
@@ -1826,13 +1829,13 @@ func (n *NodoAlset) crearRelacion(w http.ResponseWriter, r *http.Request) {
 		Tipo:         req.Tipo,
 		Cardinalidad: req.Cardinalidad,
 	}
-	relacionesGlobales[id] = relacion
+	agents.Global.Relaciones[id] = relacion
 	json.NewEncoder(w).Encode(relacion)
 }
 
 func (n *NodoAlset) listarRelaciones(w http.ResponseWriter, r *http.Request) {
-	lista := make([]*RelacionEntidad, 0, len(relacionesGlobales))
-	for _, rel := range relacionesGlobales {
+	lista := make([]*RelacionEntidad, 0, len(agents.Global.Relaciones))
+	for _, rel := range agents.Global.Relaciones {
 		lista = append(lista, rel)
 	}
 	json.NewEncoder(w).Encode(lista)
@@ -1842,7 +1845,7 @@ func (n *NodoAlset) obtenerRelacionesDeEntidad(w http.ResponseWriter, r *http.Re
 	entidadID := strings.TrimPrefix(r.URL.Path, "/api/entidades/")
 	entidadID = strings.TrimSuffix(entidadID, "/relaciones")
 	var resultado []*RelacionEntidad
-	for _, rel := range relacionesGlobales {
+	for _, rel := range agents.Global.Relaciones {
 		if rel.EntidadA == entidadID || rel.EntidadB == entidadID {
 			resultado = append(resultado, rel)
 		}
@@ -1868,9 +1871,9 @@ func (n *NodoAlset) generarTokenAlset(agentID string, roles []string, duracionHo
 		Permisos:  n.rolesAPermisos(roles),
 		Signature: signature,
 	}
-	muTokens.Lock()
-	tokensActivos[tokenID] = token
-	muTokens.Unlock()
+	agents.Global.MuTokens.Lock()
+	agents.Global.Tokens[tokenID] = token
+	agents.Global.MuTokens.Unlock()
 	return token, nil
 }
 
@@ -1905,16 +1908,16 @@ func (n *NodoAlset) rolesAPermisos(roles []string) []string {
 }
 
 func (n *NodoAlset) validarToken(tokenString string) (*TokenAlset, error) {
-	muTokens.RLock()
-	token, exists := tokensActivos[tokenString]
-	muTokens.RUnlock()
+	agents.Global.MuTokens.RLock()
+	token, exists := agents.Global.Tokens[tokenString]
+	agents.Global.MuTokens.RUnlock()
 	if !exists {
 		return nil, fmt.Errorf("token inválido")
 	}
 	if time.Now().Unix() > token.ExpiresAt {
-		muTokens.Lock()
-		delete(tokensActivos, tokenString)
-		muTokens.Unlock()
+		agents.Global.MuTokens.Lock()
+		delete(agents.Global.Tokens, tokenString)
+		agents.Global.MuTokens.Unlock()
 		return nil, fmt.Errorf("token expirado")
 	}
 	payload := fmt.Sprintf("%s|%s|%d|%s", token.Token, token.AgentID, token.ExpiresAt, strings.Join(token.Roles, ","))
@@ -1958,7 +1961,7 @@ func (n *NodoAlset) asignarRol(w http.ResponseWriter, r *http.Request) {
 	}
 	rolesData, _ := json.Marshal(usuarioRoles)
 	cid, _ := n.GenerarCID(rolesData)
-	rolesGlobales[req.AgentID] = req.Roles
+	agents.Global.Roles[req.AgentID] = req.Roles
 	n.Auditoria("ROL_ASIGNADO", fmt.Sprintf("Agente: %s | Roles: %v", req.AgentID, req.Roles))
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"status": "ok",
@@ -1968,7 +1971,7 @@ func (n *NodoAlset) asignarRol(w http.ResponseWriter, r *http.Request) {
 
 func (n *NodoAlset) obtenerRoles(w http.ResponseWriter, r *http.Request) {
 	agentID := strings.TrimPrefix(r.URL.Path, "/api/roles/")
-	roles, exists := rolesGlobales[agentID]
+	roles, exists := agents.Global.Roles[agentID]
 	if !exists {
 		json.NewEncoder(w).Encode([]string{})
 		return
@@ -2020,9 +2023,9 @@ func (n *NodoAlset) revocarTokenEndpoint(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "JSON inválido", 400)
 		return
 	}
-	muTokens.Lock()
-	delete(tokensActivos, req.Token)
-	muTokens.Unlock()
+	agents.Global.MuTokens.Lock()
+	delete(agents.Global.Tokens, req.Token)
+	agents.Global.MuTokens.Unlock()
 	json.NewEncoder(w).Encode(map[string]string{"status": "revocado"})
 }
 
@@ -2155,38 +2158,38 @@ func (n *NodoAlset) handlePoHEvent(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid event data", 400)
 		return
 	}
-	globalPoH.Lock()
-	if globalPoH.sessionID == "" {
-		globalPoH.sessionID = hex.EncodeToString([]byte(time.Now().String()))[:16]
+	poh.Global.Lock()
+	if poh.Global.SessionID() == "" {
+		poh.Global.SetSessionID(hex.EncodeToString([]byte(time.Now().String()))[:16])
 	}
 	event.Timestamp = time.Now().Unix()
-	globalPoH.events = append(globalPoH.events, event)
-	globalPoH.Unlock()
+	poh.Global.Append(event)
+	poh.Global.Unlock()
 	json.NewEncoder(w).Encode(map[string]string{"status": "event_received"})
 }
 
 func (n *NodoAlset) handlePoHProof(w http.ResponseWriter, r *http.Request) {
-	globalPoH.Lock()
-	defer globalPoH.Unlock()
-	if len(globalPoH.events) == 0 {
+	poh.Global.Lock()
+	defer poh.Global.Unlock()
+	if len(poh.Global.Events()) == 0 {
 		http.Error(w, "No events collected", 400)
 		return
 	}
 	var eventsData []byte
-	for _, ev := range globalPoH.events {
+	for _, ev := range poh.Global.Events() {
 		evData, _ := json.Marshal(ev)
 		eventsData = append(eventsData, evData...)
 	}
 	hash := make([]byte, 32)
 	copy(hash, eventsData[:32])
 	proof := HumanityProof{
-		SessionID: globalPoH.sessionID,
-		Events:    globalPoH.events,
+		SessionID: poh.Global.SessionID(),
+		Events:    poh.Global.Events(),
 		FinalSig:  hex.EncodeToString(hash),
 	}
 	proofBytes, _ := json.Marshal(proof)
 	proofCID, _ := n.GenerarCID(proofBytes)
-	globalPoH.events = []PoHEvent{}
+	poh.Global.ClearEvents()
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"proof_cid": proofCID,
 		"session":   proof.SessionID,
