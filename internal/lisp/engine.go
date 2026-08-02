@@ -1,8 +1,6 @@
-package node
+package lisp
 
 import (
-	"redalset/internal/agents"
-	"redalset/internal/poh"
 	"bytes"
 	"context"
 	"encoding/hex"
@@ -11,14 +9,19 @@ import (
 	"math"
 	mathrand "math/rand"
 	"os"
-	"sort"
 	"strconv"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
+
+	"redalset/internal/agents"
+	"redalset/internal/neural"
+	"redalset/internal/nodeiface"
+	"redalset/internal/poh"
 )
 
 type LispValue interface{}
@@ -281,22 +284,22 @@ func (p *LispParser) parseAtom(tok string) (LispValue, error) {
 // EVALUADOR LISP
 // =============================================================================
 
-type LispEvaluator struct {
+type Evaluator struct {
 	globalEnv *LispEnvironment
-	nodo      *NodoAlset
+	host      nodeiface.Host
 	mu        sync.RWMutex
 }
 
-func NewLispEvaluator(nodo *NodoAlset) *LispEvaluator {
-	eval := &LispEvaluator{
+func NewEvaluator(host nodeiface.Host) *Evaluator {
+	eval := &Evaluator{
 		globalEnv: NewLispEnvironment(nil),
-		nodo:      nodo,
+		host:      host,
 	}
 	eval.initBuiltins()
 	return eval
 }
 
-func (e *LispEvaluator) expandQuasiquote(expr LispValue, env *LispEnvironment) LispValue {
+func (e *Evaluator) expandQuasiquote(expr LispValue, env *LispEnvironment) LispValue {
 	switch v := expr.(type) {
 	case LispList:
 		if len(v) > 0 {
@@ -323,7 +326,7 @@ func (e *LispEvaluator) expandQuasiquote(expr LispValue, env *LispEnvironment) L
 	}
 }
 
-func (e *LispEvaluator) macroexpand1(form LispValue, env *LispEnvironment) LispValue {
+func (e *Evaluator) macroexpand1(form LispValue, env *LispEnvironment) LispValue {
 	if list, ok := form.(LispList); ok && len(list) > 0 {
 		if sym, ok := list[0].(LispSymbol); ok {
 			if macro, ok := env.LookupFunction(sym); ok {
@@ -336,7 +339,7 @@ func (e *LispEvaluator) macroexpand1(form LispValue, env *LispEnvironment) LispV
 	return form
 }
 
-func (e *LispEvaluator) macroexpand(form LispValue, env *LispEnvironment) LispValue {
+func (e *Evaluator) macroexpand(form LispValue, env *LispEnvironment) LispValue {
 	expanded := e.macroexpand1(form, env)
 	if expanded == form {
 		return expanded
@@ -344,7 +347,7 @@ func (e *LispEvaluator) macroexpand(form LispValue, env *LispEnvironment) LispVa
 	return e.macroexpand(expanded, env)
 }
 
-func (e *LispEvaluator) expandMacros(expr LispValue, env *LispEnvironment) LispValue {
+func (e *Evaluator) expandMacros(expr LispValue, env *LispEnvironment) LispValue {
 	list, ok := expr.(LispList)
 	if !ok || len(list) == 0 {
 		return expr
@@ -394,7 +397,7 @@ func (e *LispEvaluator) expandMacros(expr LispValue, env *LispEnvironment) LispV
 	return result
 }
 
-func (e *LispEvaluator) Eval(code string) (LispValue, error) {
+func (e *Evaluator) Eval(code string) (LispValue, error) {
 	parser := NewLispParser(code)
 	expr, err := parser.Parse()
 	if err != nil {
@@ -404,7 +407,7 @@ func (e *LispEvaluator) Eval(code string) (LispValue, error) {
 	return e.eval(expanded, e.globalEnv), nil
 }
 
-func (e *LispEvaluator) ExpandDebug(code string) (LispValue, error) {
+func (e *Evaluator) ExpandDebug(code string) (LispValue, error) {
 	parser := NewLispParser(code)
 	expr, err := parser.Parse()
 	if err != nil {
@@ -435,7 +438,7 @@ func convertStringsToSymbols(expr LispValue) LispValue {
 // FUNCIONES PRIMITIVAS DEL LISP
 // =============================================================================
 
-func (e *LispEvaluator) initBuiltins() {
+func (e *Evaluator) initBuiltins() {
 	// =====================================================================
 	// OPERADORES ARITMÉTICOS, LÓGICOS, LISTAS, MATEMÁTICOS, E/S, ETC.
 	// =====================================================================
@@ -789,7 +792,7 @@ func (e *LispEvaluator) initBuiltins() {
 			return fmt.Sprintf("error_canonicalize: %v", err)
 		}
 
-		firmaBytes, err := e.nodo.masterPrivKey.Sign(canonicalBytes)
+		firmaBytes, err := e.host.Sign(canonicalBytes)
 		if err != nil {
 			return fmt.Sprintf("error_firma: %v", err)
 		}
@@ -809,13 +812,13 @@ func (e *LispEvaluator) initBuiltins() {
 			return fmt.Sprintf("error_final: %v", err)
 		}
 
-		certCID, err := e.nodo.GenerarCID(finalVCBytes)
+		certCID, err := e.host.GenerarCID(finalVCBytes)
 		if err != nil {
 			return fmt.Sprintf("error_cid: %v", err)
 		}
 
-		e.nodo.Auditoria("VC_EMITIDO", fmt.Sprintf("Doc: %s | VC: %s", cidOriginal, certCID))
-		e.nodo.AnunciarNuevoBloque(certCID)
+		e.host.Auditoria("VC_EMITIDO", fmt.Sprintf("Doc: %s | VC: %s", cidOriginal, certCID))
+		e.host.AnunciarNuevoBloque(certCID)
 		return certCID
 	}))
 
@@ -823,10 +826,10 @@ func (e *LispEvaluator) initBuiltins() {
 		if len(args) < 2 {
 			return "error: requiere cid y motivo"
 		}
-		if e.nodo.topic == nil {
+		if false {
 			return "error: el nodo no está unido al tópico de la red"
 		}
-		if e.nodo.masterPrivKey == nil {
+		if !e.host.HasMasterKey() {
 			return "error: clave maestra no cargada"
 		}
 
@@ -835,7 +838,7 @@ func (e *LispEvaluator) initBuiltins() {
 		fecha := time.Now().Format(time.RFC3339)
 
 		mensaje := fmt.Sprintf("REVOKE|%s|%s", certCID, fecha)
-		firma, err := e.nodo.masterPrivKey.Sign([]byte(mensaje))
+		firma, err := e.host.Sign([]byte(mensaje))
 		if err != nil {
 			return "error_firma: " + err.Error()
 		}
@@ -862,12 +865,12 @@ func (e *LispEvaluator) initBuiltins() {
 		}
 
 		data, _ := json.Marshal(revocationTicket)
-		revCID, _ := e.nodo.GenerarCID(data)
-		e.nodo.Auditoria("VC_REVOCADO", fmt.Sprintf("VC: %s | Motivo: %s", certCID, motivo))
+		revCID, _ := e.host.GenerarCID(data)
+		e.host.Auditoria("VC_REVOCADO", fmt.Sprintf("VC: %s | Motivo: %s", certCID, motivo))
 
 		update := map[string]string{"tipo": "revocacion_update", "cid": revCID}
 		msg, _ := json.Marshal(update)
-		if err := e.nodo.topic.Publish(e.nodo.ctx, msg); err != nil {
+		if err := e.host.PublishTopic(msg); err != nil {
 			return "error_difusion: " + err.Error()
 		}
 		return revCID
@@ -908,14 +911,14 @@ func (e *LispEvaluator) initBuiltins() {
 		hash := make([]byte, 32)
 		copy(hash, eventsData[:32])
 
-		proof := HumanityProof{
+		proof := poh.Proof{
 			SessionID: poh.Global.SessionID(),
 			Events:    poh.Global.Events(),
 			FinalSig:  hex.EncodeToString(hash),
 		}
 
 		proofBytes, _ := json.Marshal(proof)
-		proofCID, _ := e.nodo.GenerarCID(proofBytes)
+		proofCID, _ := e.host.GenerarCID(proofBytes)
 
 		poh.Global.ClearEvents()
 
@@ -944,7 +947,7 @@ func (e *LispEvaluator) initBuiltins() {
 			metadata = fmt.Sprintf("%v", e.eval(args[1], env))
 		}
 
-		event := PoHEvent{
+		event := poh.Event{
 			Timestamp: time.Now().Unix(),
 			EventType: eventType,
 			Metadata:  metadata,
@@ -965,27 +968,27 @@ func (e *LispEvaluator) initBuiltins() {
 		}
 		agentID := strings.Trim(fmt.Sprintf("%v", e.eval(args[0], env)), "\"")
 
-		e.nodo.mu.Lock()
-		if _, existe := e.nodo.agentes[agentID]; !existe {
-			e.nodo.agentes[agentID] = &Agente{
+		e.host.Lock()
+		if _, existe := e.host.GetAgent(agentID); !existe {
+			e.host.PutAgent(&agents.Agente{
 				ID:           agentID,
 				RootCID:      "",
 				UltimaActual: time.Now().Unix(),
 				BalanceUTXO:  1000.0,
-			}
-			e.nodo.mu.Unlock()
-			e.nodo.Auditoria("AGENTE_CREADO", "ID: "+agentID)
-			e.nodo.PersistirLocamente()
-			e.nodo.SincronizarConPares()
+			})
+			e.host.Unlock()
+			e.host.Auditoria("AGENTE_CREADO", "ID: "+agentID)
+			e.host.PersistirLocamente()
+			e.host.SincronizarConPares()
 			// ---- PULSO: emitir evento ----
-			go e.nodo.broadcastPulse("agent_created", map[string]interface{}{
+			go e.host.BroadcastPulse("agent_created", map[string]interface{}{
 				"id":   agentID,
 				"root": "",
 				"time": time.Now().Unix(),
 			})
 			return "Agente " + agentID + " creado"
 		}
-		e.nodo.mu.Unlock()
+		e.host.Unlock()
 		return "error: ya existe"
 	}))
 
@@ -995,16 +998,17 @@ func (e *LispEvaluator) initBuiltins() {
 		}
 		agentID := strings.Trim(fmt.Sprintf("%v", e.eval(args[0], env)), "\"")
 		cidStr := strings.Trim(fmt.Sprintf("%v", e.eval(args[1], env)), "\"")
-		e.nodo.mu.Lock()
-		if a, ok := e.nodo.agentes[agentID]; ok {
+		e.host.Lock()
+		if a, ok := e.host.GetAgent(agentID); ok {
 			a.RootCID = cidStr
 			a.UltimaActual = time.Now().Unix()
+			e.host.PutAgent(a)
 		}
-		e.nodo.mu.Unlock()
-		e.nodo.PersistirLocamente()
-		e.nodo.SincronizarConPares()
+		e.host.Unlock()
+		e.host.PersistirLocamente()
+		e.host.SincronizarConPares()
 		// ---- PULSO: emitir evento ----
-		go e.nodo.broadcastPulse("root_updated", map[string]interface{}{
+		go e.host.BroadcastPulse("root_updated", map[string]interface{}{
 			"id":   agentID,
 			"root": cidStr,
 			"time": time.Now().Unix(),
@@ -1018,14 +1022,14 @@ func (e *LispEvaluator) initBuiltins() {
 		}
 		alias := fmt.Sprintf("%v", e.eval(args[0], env))
 		agentID := fmt.Sprintf("%v", e.eval(args[1], env))
-		e.nodo.mu.Lock()
-		e.nodo.nombres[alias] = agentID
-		e.nodo.mu.Unlock()
-		e.nodo.Auditoria("DNS_REGISTRO", fmt.Sprintf("Alias: %s -> Agente: %s", alias, agentID))
-		e.nodo.PersistirLocamente()
-		e.nodo.DifundirActualizacionDNS(alias, agentID)
+		e.host.Lock()
+		e.host.SetNombre(alias, agentID)
+		e.host.Unlock()
+		e.host.Auditoria("DNS_REGISTRO", fmt.Sprintf("Alias: %s -> Agente: %s", alias, agentID))
+		e.host.PersistirLocamente()
+		e.host.DifundirActualizacionDNS(alias, agentID)
 		// ---- PULSO: emitir evento ----
-		go e.nodo.broadcastPulse("dns_registered", map[string]interface{}{
+		go e.host.BroadcastPulse("dns_registered", map[string]interface{}{
 			"alias": alias,
 			"agent": agentID,
 			"time":  time.Now().Unix(),
@@ -1038,8 +1042,8 @@ func (e *LispEvaluator) initBuiltins() {
 			return "error"
 		}
 		data := []byte(fmt.Sprintf("%v", e.eval(args[0], env)))
-		cidStr, _ := e.nodo.GenerarCID(data)
-		e.nodo.AnunciarNuevoBloque(cidStr)
+		cidStr, _ := e.host.GenerarCID(data)
+		e.host.AnunciarNuevoBloque(cidStr)
 		return cidStr
 	}))
 
@@ -1047,7 +1051,7 @@ func (e *LispEvaluator) initBuiltins() {
 		if len(args) < 1 {
 			return "error"
 		}
-		data, _ := e.nodo.BuscarContenidoPorCID(fmt.Sprintf("%v", e.eval(args[0], env)))
+		data, _ := e.host.BuscarContenidoPorCID(fmt.Sprintf("%v", e.eval(args[0], env)))
 		return string(data)
 	}))
 
@@ -1109,9 +1113,9 @@ func (e *LispEvaluator) initBuiltins() {
 		if err != nil {
 			return fmt.Sprintf("error al obtener info del peer: %v", err)
 		}
-		ctx, cancel := context.WithTimeout(e.nodo.ctx, 10*time.Second)
+		ctx, cancel := context.WithTimeout(e.host.Ctx(), 10*time.Second)
 		defer cancel()
-		if err := e.nodo.host.Connect(ctx, *peerInfo); err != nil {
+		if err := e.host.ConnectPeer(ctx, *peerInfo); err != nil {
 			return fmt.Sprintf("error al conectar: %v", err)
 		}
 		return fmt.Sprintf("conectado a %s", peerInfo.ID.String())
@@ -1122,37 +1126,37 @@ func (e *LispEvaluator) initBuiltins() {
 	// =====================================================================
 
 	e.globalEnv.SetFunction("neuron-state", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
-		if e.nodo.neuralState == nil {
+		if e.host.GetNeural() == nil {
 			return "No inicializado"
 		}
 		return fmt.Sprintf("Membrane:%.4f Threshold:%.4f LeakRate:%.4f Type:%s Synapses:%d LastSpike:%d",
-			e.nodo.neuralState.MembranePotential,
-			e.nodo.neuralState.SpikeThreshold,
-			e.nodo.neuralState.LeakRate,
-			e.nodo.neuralState.NeuronType,
-			len(e.nodo.neuralState.Synapses),
-			e.nodo.neuralState.LastSpikeTime)
+			e.host.GetNeural().MembranePotential,
+			e.host.GetNeural().SpikeThreshold,
+			e.host.GetNeural().LeakRate,
+			e.host.GetNeural().NeuronType,
+			len(e.host.GetNeural().Synapses),
+			e.host.GetNeural().LastSpikeTime)
 	}))
 
 	e.globalEnv.SetFunction("neuron-stats", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
-		if e.nodo.neuralState == nil {
+		if e.host.GetNeural() == nil {
 			return "No inicializado"
 		}
 		avgWeight := 0.0
 		totalFires := int64(0)
-		for _, s := range e.nodo.neuralState.Synapses {
+		for _, s := range e.host.GetNeural().Synapses {
 			avgWeight += s.Weight
 			totalFires += s.SuccessfulFires
 		}
-		if len(e.nodo.neuralState.Synapses) > 0 {
-			avgWeight /= float64(len(e.nodo.neuralState.Synapses))
+		if len(e.host.GetNeural().Synapses) > 0 {
+			avgWeight /= float64(len(e.host.GetNeural().Synapses))
 		}
 		return fmt.Sprintf("Type:%s Membrane:%.4f Threshold:%.4f Leak:%.4f Synapses:%d AvgWeight:%.4f TotalSpikes:%d",
-			e.nodo.neuralState.NeuronType,
-			e.nodo.neuralState.MembranePotential,
-			e.nodo.neuralState.SpikeThreshold,
-			e.nodo.neuralState.LeakRate,
-			len(e.nodo.neuralState.Synapses),
+			e.host.GetNeural().NeuronType,
+			e.host.GetNeural().MembranePotential,
+			e.host.GetNeural().SpikeThreshold,
+			e.host.GetNeural().LeakRate,
+			len(e.host.GetNeural().Synapses),
 			avgWeight,
 			totalFires)
 	}))
@@ -1170,11 +1174,11 @@ func (e *LispEvaluator) initBuiltins() {
 			return 0.0
 		}
 		input := toFloat(args[0])
-		if e.nodo.neuralState == nil {
+		if e.host.GetNeural() == nil {
 			return input
 		}
 		potencial := input
-		for _, syn := range e.nodo.neuralState.Synapses {
+		for _, syn := range e.host.GetNeural().Synapses {
 			potencial += syn.Weight * 0.1
 		}
 		return 1.0 / (1.0 + math.Exp(-potencial))
@@ -1196,39 +1200,39 @@ func (e *LispEvaluator) initBuiltins() {
 			initialWeight = 1
 		}
 
-		e.nodo.mu.Lock()
-		if e.nodo.neuralState == nil {
-			e.nodo.neuralState = &NeuralState{
-				Synapses: make(map[string]SynapticWeight),
+		e.host.Lock()
+		if e.host.GetNeural() == nil {
+			ns := e.host.EnsureNeural(); *ns = neural.NeuralState{
+				Synapses: make(map[string]neural.SynapticWeight),
 			}
 		}
-		e.nodo.neuralState.Synapses[target] = SynapticWeight{
+		e.host.GetNeural().Synapses[target] = neural.SynapticWeight{
 			TargetNeuronID: target,
 			Weight:         initialWeight,
 			LastUpdated:    time.Now().Unix(),
 		}
-		e.nodo.mu.Unlock()
+		e.host.Unlock()
 
 		update := map[string]string{
 			"tipo":          "synaptic_update",
-			"neuronas_pre":  e.nodo.host.ID().String(),
+			"neuronas_pre":  e.host.PeerID(),
 			"neuronas_post": target,
 			"exito":         "true",
 			"peso":          fmt.Sprintf("%f", initialWeight),
 		}
-		if data, err := json.Marshal(update); err == nil && e.nodo.topic != nil {
-			go e.nodo.topic.Publish(e.nodo.ctx, data)
+		if data, err := json.Marshal(update); err == nil && true {
+			go e.host.PublishTopic(data)
 		}
 
 		return fmt.Sprintf("Conectado a %s con peso %.2f", target, initialWeight)
 	}))
 
 	e.globalEnv.SetFunction("list-synapses", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
-		if e.nodo.neuralState == nil || len(e.nodo.neuralState.Synapses) == 0 {
+		if e.host.GetNeural() == nil || len(e.host.GetNeural().Synapses) == 0 {
 			return "No hay sinapsis"
 		}
 		result := "Sinapsis:\n"
-		for target, syn := range e.nodo.neuralState.Synapses {
+		for target, syn := range e.host.GetNeural().Synapses {
 			result += fmt.Sprintf("  -> %s : peso=%.4f (spikes=%d)\n", target, syn.Weight, syn.SuccessfulFires)
 		}
 		return result
@@ -1251,22 +1255,22 @@ func (e *LispEvaluator) initBuiltins() {
 		if dataStr == "" {
 			return "error: datos vacíos"
 		}
-		cidStr, err := e.nodo.GenerarCID([]byte(dataStr))
+		cidStr, err := e.host.GenerarCID([]byte(dataStr))
 		if err != nil {
 			return fmt.Sprintf("error al generar CID: %v", err)
 		}
-		e.nodo.Auditoria("MEMORIA_GUARDADA", fmt.Sprintf("CID: %s | Data: %s", cidStr, dataStr))
+		e.host.Auditoria("MEMORIA_GUARDADA", fmt.Sprintf("CID: %s | Data: %s", cidStr, dataStr))
 		go func() {
-			if e.nodo.topic != nil {
+			if true {
 				msg := map[string]string{
 					"tipo":    "memory_distributed",
 					"cid":     cidStr,
 					"content": dataStr,
-					"origin":  e.nodo.host.ID().String(),
+					"origin":  e.host.PeerID(),
 					"ttl":     "3",
 				}
 				if data, err := json.Marshal(msg); err == nil {
-					e.nodo.topic.Publish(e.nodo.ctx, data)
+					e.host.PublishTopic(data)
 				}
 			}
 		}()
@@ -1290,9 +1294,9 @@ func (e *LispEvaluator) initBuiltins() {
 		if query == "" {
 			return "error: consulta vacía"
 		}
-		e.nodo.mu.RLock()
-		defer e.nodo.mu.RUnlock()
-		for cid, data := range e.nodo.blockstore {
+		e.host.RLock()
+		defer e.host.RUnlock()
+		for cid, data := range e.host.ListBlocks() {
 			dataStr := string(data)
 			if strings.Contains(strings.ToLower(dataStr), strings.ToLower(query)) ||
 				strings.Contains(strings.ToLower(cid), strings.ToLower(query)) {
@@ -1317,12 +1321,12 @@ func (e *LispEvaluator) initBuiltins() {
 		if tasa > 1 {
 			tasa = 0.1
 		}
-		e.nodo.mu.Lock()
-		defer e.nodo.mu.Unlock()
-		if e.nodo.neuralState == nil {
+		e.host.Lock()
+		defer e.host.Unlock()
+		if e.host.GetNeural() == nil {
 			return "error: neurona no inicializada"
 		}
-		if syn, ok := e.nodo.neuralState.Synapses[target]; ok {
+		if syn, ok := e.host.GetNeural().Synapses[target]; ok {
 			oldWeight := syn.Weight
 			newWeight := oldWeight + tasa*(1-oldWeight)
 			if newWeight > 1 {
@@ -1331,17 +1335,17 @@ func (e *LispEvaluator) initBuiltins() {
 			syn.Weight = newWeight
 			syn.SuccessfulFires++
 			syn.LastUpdated = time.Now().Unix()
-			e.nodo.neuralState.Synapses[target] = syn
+			e.host.GetNeural().Synapses[target] = syn
 			go func() {
 				update := map[string]string{
 					"tipo":             "synaptic_update",
-					"neuronas_pre":     e.nodo.host.ID().String(),
+					"neuronas_pre":     e.host.PeerID(),
 					"neuronas_post":    target,
 					"exito":            "true",
 					"tasa_aprendizaje": fmt.Sprintf("%f", tasa),
 				}
-				if data, err := json.Marshal(update); err == nil && e.nodo.topic != nil {
-					e.nodo.topic.Publish(e.nodo.ctx, data)
+				if data, err := json.Marshal(update); err == nil && true {
+					e.host.PublishTopic(data)
 				}
 			}()
 			return fmt.Sprintf("Hebbian update: %.4f -> %.4f", oldWeight, newWeight)
@@ -1361,17 +1365,17 @@ func (e *LispEvaluator) initBuiltins() {
 		if weight > 1 {
 			weight = 1
 		}
-		e.nodo.mu.Lock()
-		defer e.nodo.mu.Unlock()
-		if e.nodo.neuralState == nil {
+		e.host.Lock()
+		defer e.host.Unlock()
+		if e.host.GetNeural() == nil {
 			return "error: neurona no inicializada"
 		}
-		if syn, ok := e.nodo.neuralState.Synapses[target]; ok {
+		if syn, ok := e.host.GetNeural().Synapses[target]; ok {
 			oldWeight := syn.Weight
 			syn.Weight = weight
 			syn.LastUpdated = time.Now().Unix()
-			e.nodo.neuralState.Synapses[target] = syn
-			go e.nodo.persistirEstadoNeuronal()
+			e.host.GetNeural().Synapses[target] = syn
+			go e.host.PersistirEstadoNeuronal()
 			return fmt.Sprintf("Peso actualizado: %.4f -> %.4f", oldWeight, weight)
 		}
 		return fmt.Sprintf("Sinapsis no encontrada: %s", target)
@@ -1929,7 +1933,7 @@ func (e *LispEvaluator) initBuiltins() {
 		return nil
 	}))
 
-	// En LispEvaluator.initBuiltins(), agrega:
+	// En Evaluator.initBuiltins(), agrega:
 	e.globalEnv.SetFunction("getenv", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		if len(args) < 1 {
 			return "error: getenv requiere un nombre de variable"
@@ -2604,18 +2608,18 @@ func (e *LispEvaluator) initBuiltins() {
 // FUNCIONES UNIFICADAS (GENERAR PÁGINA, OBTENER BALANCE, ETC.)
 // =============================================================================
 
-func (e *LispEvaluator) registerUnifiedFunctions() {
+func (e *Evaluator) registerUnifiedFunctions() {
 	e.globalEnv.SetFunction("generar-pagina-web", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		if len(args) < 1 {
 			return "error: requiere nombre-agente"
 		}
 		agenteID := fmt.Sprintf("%v", e.eval(args[0], env))
 		html := generarHTMLBase(agenteID)
-		cid, err := e.nodo.GenerarCID([]byte(html))
+		cid, err := e.host.GenerarCID([]byte(html))
 		if err != nil {
 			return fmt.Sprintf("error: %v", err)
 		}
-		e.nodo.SetAgentRoot(agenteID, cid)
+		e.host.SetAgentRoot(agenteID, cid)
 		return cid
 	}))
 
@@ -2624,9 +2628,9 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 			return 0.0
 		}
 		agentID := fmt.Sprintf("%v", e.eval(args[0], env))
-		e.nodo.mu.RLock()
-		defer e.nodo.mu.RUnlock()
-		if a, ok := e.nodo.agentes[agentID]; ok {
+		e.host.RLock()
+		defer e.host.RUnlock()
+		if a, ok := e.host.GetAgent(agentID); ok {
 			return a.BalanceUTXO
 		}
 		return 0.0
@@ -2634,9 +2638,9 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 
 	e.globalEnv.SetFunction("inventario-listar", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		resultado := make(LispList, 0)
-		e.nodo.mu.RLock()
-		defer e.nodo.mu.RUnlock()
-		for cid := range e.nodo.blockstore {
+		e.host.RLock()
+		defer e.host.RUnlock()
+		for cid := range e.host.ListBlocks() {
 			resultado = append(resultado, cid)
 		}
 		return resultado
@@ -2654,7 +2658,7 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 			cardinalidad = fmt.Sprintf("%v", e.eval(args[3], env))
 		}
 		relacionId := generarUUID()
-		relacion := &RelacionEntidad{
+		relacion := &agents.RelacionEntidad{
 			ID:           relacionId,
 			EntidadA:     origen,
 			EntidadB:     destino,
@@ -2662,19 +2666,19 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 			Cardinalidad: cardinalidad,
 		}
 		agents.Global.Relaciones[relacionId] = relacion
-		e.nodo.mu.Lock()
-		if e.nodo.neuralState == nil {
-			e.nodo.neuralState = &NeuralState{
-				Synapses: make(map[string]SynapticWeight),
+		e.host.Lock()
+		if e.host.GetNeural() == nil {
+			ns := e.host.EnsureNeural(); *ns = neural.NeuralState{
+				Synapses: make(map[string]neural.SynapticWeight),
 			}
 		}
-		e.nodo.neuralState.Synapses[destino] = SynapticWeight{
+		e.host.GetNeural().Synapses[destino] = neural.SynapticWeight{
 			TargetNeuronID: destino,
 			Weight:         0.5,
 			LastUpdated:    time.Now().Unix(),
 		}
-		e.nodo.mu.Unlock()
-		e.nodo.Auditoria("RELACION_CREADA", fmt.Sprintf("%s: %s -> %s (%s)", tipo, origen, destino, cardinalidad))
+		e.host.Unlock()
+		e.host.Auditoria("RELACION_CREADA", fmt.Sprintf("%s: %s -> %s (%s)", tipo, origen, destino, cardinalidad))
 		return relacionId
 	}))
 
@@ -2704,7 +2708,7 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 			atributos = m
 		}
 		id := generarUUID()
-		entidad := &EntidadProgramatica{
+		entidad := &agents.EntidadProgramatica{
 			ID:        id,
 			Tipo:      tipo,
 			Atributos: atributos,
@@ -2714,7 +2718,7 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 		agents.Global.MuEntidades.Lock()
 		agents.Global.Entidades[id] = entidad
 		agents.Global.MuEntidades.Unlock()
-		e.nodo.Auditoria("ENTIDAD_CREADA", fmt.Sprintf("Tipo: %s | ID: %s", tipo, id))
+		e.host.Auditoria("ENTIDAD_CREADA", fmt.Sprintf("Tipo: %s | ID: %s", tipo, id))
 		return id
 	}))
 
@@ -2741,25 +2745,25 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 		nombre := fmt.Sprintf("%v", e.eval(args[0], env))
 		tipo := fmt.Sprintf("%v", e.eval(args[1], env))
 		agentID := fmt.Sprintf("%s-%d", strings.ReplaceAll(strings.ToLower(nombre), " ", "-"), time.Now().Unix())
-		e.nodo.mu.Lock()
-		if _, existe := e.nodo.agentes[agentID]; !existe {
-			e.nodo.agentes[agentID] = &Agente{
+		e.host.Lock()
+		if _, existe := e.host.GetAgent(agentID); !existe {
+			e.host.PutAgent(&agents.Agente{
 				ID:           agentID,
 				RootCID:      "",
 				UltimaActual: time.Now().Unix(),
 				BalanceUTXO:  1000.0,
-			}
+			})
 		}
-		e.nodo.mu.Unlock()
+		e.host.Unlock()
 		html := generarHTMLParaPlantilla(nombre, tipo)
-		cid, err := e.nodo.GenerarCID([]byte(html))
+		cid, err := e.host.GenerarCID([]byte(html))
 		if err != nil {
 			return fmt.Sprintf("error: %v", err)
 		}
-		e.nodo.SetAgentRoot(agentID, cid)
+		e.host.SetAgentRoot(agentID, cid)
 		alias := strings.ReplaceAll(strings.ToLower(nombre), " ", "-") + ".negocio.ans"
-		e.nodo.nombres[alias] = agentID
-		e.nodo.Auditoria("APP_CREADA_DESDE_PLANTILLA", fmt.Sprintf("Nombre: %s | Tipo: %s | URL: /w/%s", nombre, tipo, alias))
+		e.host.SetNombre(alias, agentID)
+		e.host.Auditoria("APP_CREADA_DESDE_PLANTILLA", fmt.Sprintf("Nombre: %s | Tipo: %s | URL: /w/%s", nombre, tipo, alias))
 		return fmt.Sprintf("✅ App creada: /w/%s", alias)
 	}))
 }
@@ -2768,7 +2772,7 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 // FUNCIONES AUXILIARES DE EVALUACIÓN LISP
 // =============================================================================
 
-func (e *LispEvaluator) eval(expr LispValue, env *LispEnvironment) LispValue {
+func (e *Evaluator) eval(expr LispValue, env *LispEnvironment) LispValue {
 	switch v := expr.(type) {
 	case nil:
 		return nil
@@ -2846,7 +2850,7 @@ func (e *LispEvaluator) eval(expr LispValue, env *LispEnvironment) LispValue {
 	}
 }
 
-func (e *LispEvaluator) evalList(list LispList, env *LispEnvironment) LispValue {
+func (e *Evaluator) evalList(list LispList, env *LispEnvironment) LispValue {
 	result := make(LispList, len(list))
 	for i, item := range list {
 		result[i] = e.eval(item, env)
@@ -2854,7 +2858,7 @@ func (e *LispEvaluator) evalList(list LispList, env *LispEnvironment) LispValue 
 	return result
 }
 
-func (e *LispEvaluator) evalSpecialLet(list LispList, env *LispEnvironment) LispValue {
+func (e *Evaluator) evalSpecialLet(list LispList, env *LispEnvironment) LispValue {
 	if len(list) < 3 {
 		return nil
 	}
@@ -2878,7 +2882,7 @@ func (e *LispEvaluator) evalSpecialLet(list LispList, env *LispEnvironment) Lisp
 	return result
 }
 
-func (e *LispEvaluator) evalSpecialLambda(list LispList, env *LispEnvironment) LispValue {
+func (e *Evaluator) evalSpecialLambda(list LispList, env *LispEnvironment) LispValue {
 	if len(list) < 3 {
 		return "error: lambda requiere parámetros y cuerpo"
 	}
@@ -2899,7 +2903,7 @@ func (e *LispEvaluator) evalSpecialLambda(list LispList, env *LispEnvironment) L
 	}
 }
 
-func (e *LispEvaluator) evalSpecialDefmacro(list LispList, env *LispEnvironment) LispValue {
+func (e *Evaluator) evalSpecialDefmacro(list LispList, env *LispEnvironment) LispValue {
 	if len(list) < 4 {
 		return "error: defmacro requiere (nombre parámetros cuerpo)"
 	}
@@ -2988,7 +2992,7 @@ func fixExpansion(expr LispValue) LispValue {
 	}
 }
 
-func (e *LispEvaluator) evalSpecialDefun(list LispList, env *LispEnvironment) LispValue {
+func (e *Evaluator) evalSpecialDefun(list LispList, env *LispEnvironment) LispValue {
 	if len(list) < 4 {
 		return "error: defun requiere nombre, parámetros y cuerpo"
 	}
@@ -3015,7 +3019,7 @@ func (e *LispEvaluator) evalSpecialDefun(list LispList, env *LispEnvironment) Li
 	return funcName
 }
 
-func (e *LispEvaluator) apply(fn LispValue, args []LispValue, env *LispEnvironment) LispValue {
+func (e *Evaluator) apply(fn LispValue, args []LispValue, env *LispEnvironment) LispValue {
 	switch f := fn.(type) {
 	case LispFunction:
 		return f(args, env)
@@ -3038,7 +3042,7 @@ func (e *LispEvaluator) apply(fn LispValue, args []LispValue, env *LispEnvironme
 	}
 }
 
-func (e *LispEvaluator) evalSpecialLetStar(list LispList, env *LispEnvironment) LispValue {
+func (e *Evaluator) evalSpecialLetStar(list LispList, env *LispEnvironment) LispValue {
 	if len(list) < 3 {
 		return nil
 	}

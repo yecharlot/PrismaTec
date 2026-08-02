@@ -41,6 +41,7 @@ import (
 
 	"redalset/internal/agents"
 	"redalset/internal/poh"
+	"redalset/internal/lisp"
 	"redalset/internal/persistence"
 )
 
@@ -78,7 +79,7 @@ type NodoAlset struct {
 	ctx                  context.Context
 	agentes              map[string]*Agente
 	mu                   sync.RWMutex
-	lisp                 *LispEvaluator
+	lisp                 *lisp.Evaluator
 	kademlia             *dht.IpfsDHT
 	pubsub               *pubsub.PubSub
 	topic                *pubsub.Topic
