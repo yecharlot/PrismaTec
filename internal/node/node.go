@@ -3593,7 +3593,6 @@ func (n *NodoAlset) PersistirLocamente() {
 
 	ctx := context.Background()
 	if n.store == nil {
-		// Fallback de emergencia a disco
 		dAg, _ := json.MarshalIndent(n.agentes, "", "  ")
 		_ = os.WriteFile("alset_data/alset_state.json", dAg, 0644)
 		dAn, _ := json.MarshalIndent(n.nombres, "", "  ")
@@ -3602,25 +3601,40 @@ func (n *NodoAlset) PersistirLocamente() {
 		return
 	}
 
-	if dAg, err := json.MarshalIndent(n.agentes, "", "  "); err == nil {
-		if err := n.store.Save(ctx, persistence.KeyState, dAg); err != nil {
-			log.Printf("⚠️ Error guardando estado: %v", err)
+	// Agentes → alset_agents (uno por fila)
+	agentBlobs := make(map[string][]byte, len(n.agentes))
+	for id, ag := range n.agentes {
+		if b, err := json.Marshal(ag); err == nil {
+			agentBlobs[id] = b
 		}
 	}
-	if dAn, err := json.MarshalIndent(n.nombres, "", "  "); err == nil {
+	if err := n.store.SaveAgents(ctx, agentBlobs); err != nil {
+		log.Printf("⚠️ Error guardando agentes: %v", err)
+	}
+	// Backup KV del mapa completo (compatibilidad)
+	if dAg, err := json.Marshal(n.agentes); err == nil {
+		_ = n.store.Save(ctx, persistence.KeyState, dAg)
+	}
+
+	// Nombres → alset_kv
+	if dAn, err := json.Marshal(n.nombres); err == nil {
 		if err := n.store.Save(ctx, persistence.KeyNames, dAn); err != nil {
 			log.Printf("⚠️ Error guardando nombres: %v", err)
 		}
 	}
+
+	// Neural → alset_neural_state
 	if n.neuralState != nil {
-		if dN, err := json.MarshalIndent(n.neuralState, "", "  "); err == nil {
-			if err := n.store.Save(ctx, persistence.KeyNeuralState, dN); err != nil {
+		if dN, err := json.Marshal(n.neuralState); err == nil {
+			if err := n.store.SaveNeuralState(ctx, "main", dN); err != nil {
 				log.Printf("⚠️ Error guardando neural state: %v", err)
 			}
 		}
 	}
-	if dB, err := json.Marshal(n.blockstore); err == nil {
-		if err := n.store.Save(ctx, persistence.KeyBlocks, dB); err != nil {
+
+	// Blocks → alset_blocks
+	if len(n.blockstore) > 0 {
+		if err := n.store.SaveBlocks(ctx, n.blockstore); err != nil {
 			log.Printf("⚠️ Error guardando blocks: %v", err)
 		}
 	}
@@ -3630,17 +3644,33 @@ func (n *NodoAlset) CargarEstado() {
 	ctx := context.Background()
 
 	if n.store != nil {
-		if d, err := n.store.Load(ctx, persistence.KeyState); err == nil && d != nil {
+		// Agentes desde tabla estructurada
+		if blobs, err := n.store.LoadAgents(ctx); err == nil && len(blobs) > 0 {
+			n.mu.Lock()
+			if n.agentes == nil {
+				n.agentes = make(map[string]*Agente)
+			}
+			for id, raw := range blobs {
+				var ag Agente
+				if json.Unmarshal(raw, &ag) == nil {
+					n.agentes[id] = &ag
+				}
+			}
+			n.mu.Unlock()
+		} else if d, err := n.store.Load(ctx, persistence.KeyState); err == nil && d != nil {
+			// Fallback legacy KV
 			n.mu.Lock()
 			_ = json.Unmarshal(d, &n.agentes)
 			n.mu.Unlock()
 		}
+
 		if d, err := n.store.Load(ctx, persistence.KeyNames); err == nil && d != nil {
 			n.mu.Lock()
 			_ = json.Unmarshal(d, &n.nombres)
 			n.mu.Unlock()
 		}
-		if d, err := n.store.Load(ctx, persistence.KeyNeuralState); err == nil && d != nil {
+
+		if d, err := n.store.LoadNeuralState(ctx, "main"); err == nil && d != nil {
 			n.mu.Lock()
 			if n.neuralState == nil {
 				n.neuralState = &NeuralState{}
@@ -3648,14 +3678,15 @@ func (n *NodoAlset) CargarEstado() {
 			_ = json.Unmarshal(d, n.neuralState)
 			n.mu.Unlock()
 		}
-		if d, err := n.store.Load(ctx, persistence.KeyBlocks); err == nil && d != nil {
+
+		if blocks, err := n.store.LoadBlocks(ctx); err == nil && len(blocks) > 0 {
 			n.mu.Lock()
-			_ = json.Unmarshal(d, &n.blockstore)
+			n.blockstore = blocks
 			n.mu.Unlock()
 		}
 	}
 
-	// Fallback / complement: archivos locales de bloques individuales
+	// Complemento: bloques en disco local
 	files, _ := os.ReadDir(BlocksDir)
 	n.mu.Lock()
 	if n.blockstore == nil {
