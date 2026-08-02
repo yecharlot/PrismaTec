@@ -44,6 +44,8 @@ import (
 	"github.com/multiformats/go-multiaddr"
 
 	"golang.org/x/crypto/bcrypt"
+
+	"redalset/internal/persistence"
 )
 
 // =============================================================================
@@ -3471,6 +3473,8 @@ type NodoAlset struct {
 	pulseClientsMu     sync.RWMutex
 	pulseKnownServers  []string
 
+	// Persistencia pluggable (Local o Supabase)
+	store persistence.Store
 }
 
 type BlockInfo struct {
@@ -3586,61 +3590,83 @@ func (n *NodoAlset) BuscarContenidoPorCID(cidStr string) ([]byte, error) {
 func (n *NodoAlset) PersistirLocamente() {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
-	dAg, _ := json.MarshalIndent(n.agentes, "", "  ")
-	_ = os.WriteFile("alset_state.json", dAg, 0644)
-	dAn, _ := json.MarshalIndent(n.nombres, "", "  ")
-	_ = os.WriteFile("alset_names.json", dAn, 0644)
-	n.persistirEstadoNeuronal()
-	// Guardar en GitHub si está configurado
-	if false { // GitHub persistence removed
-		go func() {
-			if err := n.PersistirEnGitHub(); err != nil {
-				log.Printf("⚠️ Error guardando en GitHub: %v", err)
-			}
-		}()
+
+	ctx := context.Background()
+	if n.store == nil {
+		// Fallback de emergencia a disco
+		dAg, _ := json.MarshalIndent(n.agentes, "", "  ")
+		_ = os.WriteFile("alset_data/alset_state.json", dAg, 0644)
+		dAn, _ := json.MarshalIndent(n.nombres, "", "  ")
+		_ = os.WriteFile("alset_data/alset_names.json", dAn, 0644)
+		n.persistirEstadoNeuronal()
+		return
 	}
 
+	if dAg, err := json.MarshalIndent(n.agentes, "", "  "); err == nil {
+		if err := n.store.Save(ctx, persistence.KeyState, dAg); err != nil {
+			log.Printf("⚠️ Error guardando estado: %v", err)
+		}
+	}
+	if dAn, err := json.MarshalIndent(n.nombres, "", "  "); err == nil {
+		if err := n.store.Save(ctx, persistence.KeyNames, dAn); err != nil {
+			log.Printf("⚠️ Error guardando nombres: %v", err)
+		}
+	}
+	if n.neuralState != nil {
+		if dN, err := json.MarshalIndent(n.neuralState, "", "  "); err == nil {
+			if err := n.store.Save(ctx, persistence.KeyNeuralState, dN); err != nil {
+				log.Printf("⚠️ Error guardando neural state: %v", err)
+			}
+		}
+	}
+	if dB, err := json.Marshal(n.blockstore); err == nil {
+		if err := n.store.Save(ctx, persistence.KeyBlocks, dB); err != nil {
+			log.Printf("⚠️ Error guardando blocks: %v", err)
+		}
+	}
 }
 
 func (n *NodoAlset) CargarEstado() {
-	// Intentar cargar desde GitHub primero
-	if false { // GitHub persistence removed
-		if err := n.CargarDesdeGitHub(); err == nil {
-			fmt.Println("📂 Estado cargado desde GitHub")
-			// También cargar bloques locales que puedan faltar
-			files, _ := os.ReadDir(BlocksDir)
+	ctx := context.Background()
+
+	if n.store != nil {
+		if d, err := n.store.Load(ctx, persistence.KeyState); err == nil && d != nil {
 			n.mu.Lock()
-			for _, f := range files {
-				if !f.IsDir() {
-					if _, ok := n.blockstore[f.Name()]; !ok {
-						if d, err := os.ReadFile(filepath.Join(BlocksDir, f.Name())); err == nil {
-							n.blockstore[f.Name()] = d
-						}
-					}
-				}
-			}
+			_ = json.Unmarshal(d, &n.agentes)
 			n.mu.Unlock()
-			return
+		}
+		if d, err := n.store.Load(ctx, persistence.KeyNames); err == nil && d != nil {
+			n.mu.Lock()
+			_ = json.Unmarshal(d, &n.nombres)
+			n.mu.Unlock()
+		}
+		if d, err := n.store.Load(ctx, persistence.KeyNeuralState); err == nil && d != nil {
+			n.mu.Lock()
+			if n.neuralState == nil {
+				n.neuralState = &NeuralState{}
+			}
+			_ = json.Unmarshal(d, n.neuralState)
+			n.mu.Unlock()
+		}
+		if d, err := n.store.Load(ctx, persistence.KeyBlocks); err == nil && d != nil {
+			n.mu.Lock()
+			_ = json.Unmarshal(d, &n.blockstore)
+			n.mu.Unlock()
 		}
 	}
 
-	// Fallback a archivos locales
-	if d, err := os.ReadFile("alset_state.json"); err == nil {
-		n.mu.Lock()
-		_ = json.Unmarshal(d, &n.agentes)
-		n.mu.Unlock()
-	}
-	if d, err := os.ReadFile("alset_names.json"); err == nil {
-		n.mu.Lock()
-		_ = json.Unmarshal(d, &n.nombres)
-		n.mu.Unlock()
-	}
+	// Fallback / complement: archivos locales de bloques individuales
 	files, _ := os.ReadDir(BlocksDir)
 	n.mu.Lock()
+	if n.blockstore == nil {
+		n.blockstore = make(map[string][]byte)
+	}
 	for _, f := range files {
 		if !f.IsDir() {
-			if d, err := os.ReadFile(filepath.Join(BlocksDir, f.Name())); err == nil {
-				n.blockstore[f.Name()] = d
+			if _, ok := n.blockstore[f.Name()]; !ok {
+				if d, err := os.ReadFile(filepath.Join(BlocksDir, f.Name())); err == nil {
+					n.blockstore[f.Name()] = d
+				}
 			}
 		}
 	}
@@ -7565,11 +7591,17 @@ func Run(port string) {
 		pendingInferences:    make(map[string]chan InferenceResponse),
 		pendingMemoryQueries: make(map[string]chan MemoryResponse),
 		hebbianMemory:        make(map[string]float64),
+		blockstore:           make(map[string][]byte),
+		nombres:              make(map[string]string),
 	}
 
-	// Persistencia: ahora se gestiona a través de internal/persistence
-	// (Local por defecto, Supabase cuando hay variables de entorno)
-	// El campo github se elimina en esta versión.
+	// Inicializar persistencia (Supabase si hay credenciales, sino Local)
+	store, err := persistence.NewFromEnv("alset_data")
+	if err != nil {
+		log.Printf("⚠️ Error inicializando persistencia: %v – usando solo disco de emergencia", err)
+	} else {
+		nodo.store = store
+	}
 
 	mathrand.Seed(time.Now().UnixNano())
 	nodo.Init()
