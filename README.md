@@ -66,16 +66,23 @@ create table if not exists alset_kv (
 );
 ```
 
-3. Configura las variables de entorno (en Render o local):
+3. Configura las variables de entorno (en Render o local).  
+   Si no las defines, el nodo usa por defecto el proyecto **Alset** ya configurado.
 
 ```bash
-export SUPABASE_URL="https://xxxx.supabase.co"
-export SUPABASE_SERVICE_KEY="eyJhbGciOiJI..."
+export SUPABASE_URL="https://uysvbxawytsegxcufdds.supabase.co"
+export SUPABASE_SERVICE_KEY="<tu_secret_key>"   # service/secret key (nunca la subas al repo)
 # opcional:
 export SUPABASE_TABLE="alset_kv"
 ```
 
 4. El nodo detectará automáticamente Supabase y lo usará.
+
+**Tablas preparadas en el proyecto Alset:**
+- `alset_kv` (principal)
+- `alset_agents`
+- `alset_blocks`
+- `alset_neural_state`
 
 ## Cómo ejecutar
 

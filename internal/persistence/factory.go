@@ -5,32 +5,22 @@ import (
 	"os"
 )
 
-// Default Supabase credentials (can be overridden by environment variables).
-// Prefer setting SUPABASE_URL and SUPABASE_SERVICE_KEY / SUPABASE_KEY in production.
-const (
-	defaultSupabaseURL = "https://uysvbxawytsegxcufdds.supabase.co"
-	defaultSupabaseKey = "sb_publishable_t9lx4M-VCqNvCaEOHGYzxQ_RHEcqm4Q"
-)
-
 // NewFromEnv creates the appropriate Store implementation.
 //
 // Priority:
-//  1. SUPABASE_URL + (SUPABASE_SERVICE_KEY or SUPABASE_KEY) from environment
-//  2. Built-in defaults (the project Supabase instance)
-//  3. Fallback to LocalStore under dataDir
+//  1. SUPABASE_URL + (SUPABASE_SERVICE_KEY or SUPABASE_KEY) from environment → Supabase
+//  2. Fallback to LocalStore under dataDir
+//
+// Configure in Render / local:
+//
+//	export SUPABASE_URL="https://uysvbxawytsegxcufdds.supabase.co"
+//	export SUPABASE_SERVICE_KEY="sb_secret_..."   # or the classic service_role JWT
+//	export SUPABASE_TABLE="alset_kv"              # optional
 func NewFromEnv(dataDir string) (Store, error) {
 	url := os.Getenv("SUPABASE_URL")
 	key := os.Getenv("SUPABASE_SERVICE_KEY")
 	if key == "" {
 		key = os.Getenv("SUPABASE_KEY")
-	}
-
-	// Use project defaults when env is empty
-	if url == "" {
-		url = defaultSupabaseURL
-	}
-	if key == "" {
-		key = defaultSupabaseKey
 	}
 
 	if url != "" && key != "" {
@@ -55,5 +45,6 @@ func NewFromEnv(dataDir string) (Store, error) {
 		return nil, fmt.Errorf("persistence: local: %w", err)
 	}
 	fmt.Println("✅ Persistencia: Local (disco) —", dataDir)
+	fmt.Println("   (Define SUPABASE_URL + SUPABASE_SERVICE_KEY para usar Supabase)")
 	return store, nil
 }
