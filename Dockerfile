@@ -1,12 +1,13 @@
-# Etapa 1: Compilación
+# Build stage
 FROM golang:1.26-alpine AS builder
+RUN apk --no-cache add git ca-certificates
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
-COPY main.go .
-RUN go build -o PrismaTec main.go
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o PrismaTec ./cmd/prisma-tec
 
-# Etapa 2: Imagen ligera para producción
+# Runtime stage
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 WORKDIR /root/
