@@ -1,5 +1,5 @@
 
-package main
+package node
 
 import (
 	"bufio"
@@ -70,195 +70,6 @@ const (
 
 // =============================================================================
 // GITHUB PERSISTENCE
-// =============================================================================
-
-type GitHubPersistence struct {
-	Owner     string
-	Repo      string
-	Path      string
-	Token     string
-	Branch    string
-	commitSHA string
-	mu        sync.Mutex
-}
-
-func NewGitHubPersistence(owner, repo, path, token string) *GitHubPersistence {
-	return &GitHubPersistence{
-		Owner:  owner,
-		Repo:   repo,
-		Path:   path,
-		Token:  token,
-		Branch: "main",
-	}
-}
-
-func (g *GitHubPersistence) Save(data []byte, filename string) (string, error) {
-    g.mu.Lock()
-    defer g.mu.Unlock()
-
-    content := base64.StdEncoding.EncodeToString(data)
-    existingSHA, _ := g.getFileSHA(filename)
-
-    url := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/%s/%s", 
-        g.Owner, g.Repo, g.Path, filename)
-
-    payload := map[string]interface{}{
-        "message": fmt.Sprintf("Update %s at %s", filename, time.Now().Format(time.RFC3339)),
-        "content": content,
-        "branch":  g.Branch,
-    }
-
-    if existingSHA != "" {
-        payload["sha"] = existingSHA
-    }
-
-    jsonPayload, err := json.Marshal(payload)
-    if err != nil {
-        return "", err
-    }
-
-    // DEBUG: Loggear lo que estamos enviando
-    fmt.Printf("📤 Enviando a GitHub: %s\n", url)
-    fmt.Printf("📤 Token (primeros 20): %s...\n", g.Token[:20])
-    fmt.Printf("📤 Token length: %d\n", len(g.Token))
-    fmt.Printf("📤 Filename: %s\n", filename)
-    fmt.Printf("📤 Data size: %d bytes\n", len(data))
-
-    req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonPayload))
-    if err != nil {
-        return "", err
-    }
-
-    // 🔥 CORRECCIÓN: Usar el formato correcto para el token
-    // Para Fine-grained tokens (github_pat_) usar "Bearer"
-    // Para Classic tokens (ghp_) usar "token"
-    var authHeader string
-    if strings.HasPrefix(g.Token, "github_pat_") {
-        authHeader = "Bearer " + g.Token
-    } else {
-        authHeader = "token " + g.Token
-    }
-    
-    req.Header.Set("Authorization", authHeader)
-    req.Header.Set("Content-Type", "application/json")
-    req.Header.Set("User-Agent", "PrismaTec-Alset/4.0")
-    req.Header.Set("Accept", "application/vnd.github.v3+json")
-
-    fmt.Printf("📤 Authorization: %s...\n", authHeader[:30])
-
-    client := &http.Client{Timeout: 30 * time.Second}
-    resp, err := client.Do(req)
-    if err != nil {
-        fmt.Printf("❌ Error en solicitud: %v\n", err)
-        return "", err
-    }
-    defer resp.Body.Close()
-
-    body, _ := io.ReadAll(resp.Body)
-    
-    fmt.Printf("📬 Respuesta: %d %s\n", resp.StatusCode, resp.Status)
-    fmt.Printf("📬 Body: %s\n", string(body))
-
-    if resp.StatusCode != 200 && resp.StatusCode != 201 {
-        return "", fmt.Errorf("GitHub API error %d: %s", resp.StatusCode, string(body))
-    }
-
-    var result map[string]interface{}
-    if err := json.Unmarshal(body, &result); err != nil {
-        return "", err
-    }
-
-    if content, ok := result["content"].(map[string]interface{}); ok {
-        if sha, ok := content["sha"].(string); ok {
-            g.commitSHA = sha
-            fmt.Printf("✅ Archivo guardado: %s (SHA: %s)\n", filename, sha)
-            return sha, nil
-        }
-    }
-
-    return "", nil
-}
-
-func (g *GitHubPersistence) Load(filename string) ([]byte, error) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/%s/%s", g.Owner, g.Repo, g.Path, filename)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", "token "+g.Token)
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == 404 {
-		return nil, nil
-	}
-
-	if resp.StatusCode != 200 {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("GitHub API error %d: %s", resp.StatusCode, string(body))
-	}
-
-	var result map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&result)
-
-	if content, ok := result["content"].(string); ok {
-		decoded, err := base64.StdEncoding.DecodeString(content)
-		if err != nil {
-			return nil, err
-		}
-		return decoded, nil
-	}
-
-	return nil, fmt.Errorf("no content found")
-}
-
-func (g *GitHubPersistence) getFileSHA(filename string) (string, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/%s/%s", g.Owner, g.Repo, g.Path, filename)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Authorization", "token "+g.Token)
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == 404 {
-		return "", nil
-	}
-
-	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("error getting file SHA")
-	}
-
-	var result map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&result)
-
-	if sha, ok := result["sha"].(string); ok {
-		return sha, nil
-	}
-
-	return "", nil
-}
-
-// =============================================================================
-// TIPOS ESTRUCTURALES
 // =============================================================================
 
 type Agente struct {
@@ -3660,8 +3471,6 @@ type NodoAlset struct {
 	pulseClientsMu     sync.RWMutex
 	pulseKnownServers  []string
 
-	// ---- GITHUB PERSISTENCE ----
-	github *GitHubPersistence
 }
 
 type BlockInfo struct {
@@ -3783,7 +3592,7 @@ func (n *NodoAlset) PersistirLocamente() {
 	_ = os.WriteFile("alset_names.json", dAn, 0644)
 	n.persistirEstadoNeuronal()
 	// Guardar en GitHub si está configurado
-	if n.github != nil {
+	if false { // GitHub persistence removed
 		go func() {
 			if err := n.PersistirEnGitHub(); err != nil {
 				log.Printf("⚠️ Error guardando en GitHub: %v", err)
@@ -3795,7 +3604,7 @@ func (n *NodoAlset) PersistirLocamente() {
 
 func (n *NodoAlset) CargarEstado() {
 	// Intentar cargar desde GitHub primero
-	if n.github != nil {
+	if false { // GitHub persistence removed
 		if err := n.CargarDesdeGitHub(); err == nil {
 			fmt.Println("📂 Estado cargado desde GitHub")
 			// También cargar bloques locales que puedan faltar
@@ -3844,111 +3653,14 @@ func (n *NodoAlset) CargarEstado() {
 // =============================================================================
 
 func (n *NodoAlset) PersistirEnGitHub() error {
-	if n.github == nil {
-		return nil
-	}
-
-	n.mu.RLock()
-	defer n.mu.RUnlock()
-
-	// Guardar agentes
-	agentesData, _ := json.MarshalIndent(n.agentes, "", "  ")
-	if _, err := n.github.Save(agentesData, "alset_state.json"); err != nil {
-		return fmt.Errorf("error saving agents: %v", err)
-	}
-
-	// Guardar nombres DNS
-	nombresData, _ := json.MarshalIndent(n.nombres, "", "  ")
-	if _, err := n.github.Save(nombresData, "alset_names.json"); err != nil {
-		return fmt.Errorf("error saving names: %v", err)
-	}
-
-	// Guardar estado neuronal
-	if n.neuralState != nil {
-		neuralData, _ := json.MarshalIndent(n.neuralState, "", "  ")
-		if _, err := n.github.Save(neuralData, "neural_state.json"); err != nil {
-			return fmt.Errorf("error saving neural state: %v", err)
-		}
-	}
-
-	// Guardar blocks
-	blocksData, _ := json.Marshal(n.blockstore)
-	if _, err := n.github.Save(blocksData, "blocks.json"); err != nil {
-		return fmt.Errorf("error saving blocks: %v", err)
-	}
-
-	n.Auditoria("PERSISTENCIA_GITHUB", "Estado guardado exitosamente")
+	// GitHub persistence has been removed.
+	// Use the new internal/persistence layer (Local or Supabase) instead.
 	return nil
 }
 
 func (n *NodoAlset) CargarDesdeGitHub() error {
-	if n.github == nil {
-		return nil
-	}
-
-	// Cargar agentes
-	if data, err := n.github.Load("alset_state.json"); err == nil && data != nil {
-		var agentes map[string]*Agente
-		if err := json.Unmarshal(data, &agentes); err == nil {
-			n.mu.Lock()
-			for k, v := range agentes {
-				if existing, ok := n.agentes[k]; !ok || v.UltimaActual > existing.UltimaActual {
-					n.agentes[k] = v
-				}
-			}
-			n.mu.Unlock()
-		}
-	}
-
-	// Cargar nombres DNS
-	if data, err := n.github.Load("alset_names.json"); err == nil && data != nil {
-		var nombres map[string]string
-		if err := json.Unmarshal(data, &nombres); err == nil {
-			n.mu.Lock()
-			for k, v := range nombres {
-				if _, ok := n.nombres[k]; !ok {
-					n.nombres[k] = v
-				}
-			}
-			n.mu.Unlock()
-		}
-	}
-
-	// Cargar estado neuronal
-	if data, err := n.github.Load("neural_state.json"); err == nil && data != nil {
-		var neural NeuralState
-		if err := json.Unmarshal(data, &neural); err == nil {
-			n.mu.Lock()
-			if n.neuralState == nil {
-				n.neuralState = &neural
-			} else {
-				// Actualizar sinapsis
-				for target, syn := range neural.Synapses {
-					if existing, ok := n.neuralState.Synapses[target]; !ok || syn.LastUpdated > existing.LastUpdated {
-						n.neuralState.Synapses[target] = syn
-					}
-				}
-			}
-			n.mu.Unlock()
-		}
-	}
-
-	// Cargar blocks
-	if data, err := n.github.Load("blocks.json"); err == nil && data != nil {
-		var blocks map[string][]byte
-		if err := json.Unmarshal(data, &blocks); err == nil {
-			n.mu.Lock()
-			for k, v := range blocks {
-				if _, ok := n.blockstore[k]; !ok {
-					n.blockstore[k] = v
-					os.WriteFile(filepath.Join(BlocksDir, k), v, 0644)
-				}
-			}
-			n.mu.Unlock()
-		}
-	}
-
-	n.Auditoria("PERSISTENCIA_GITHUB", "Estado cargado exitosamente")
+	// GitHub persistence has been removed.
+	// Use the new internal/persistence layer (Local or Supabase) instead.
 	return nil
 }
 
@@ -6864,7 +6576,7 @@ mux.HandleFunc("/api/sync/github/save", func(w http.ResponseWriter, r *http.Requ
         http.Error(w, "Method not allowed", 405)
         return
     }
-    if n.github == nil {
+    if true { // GitHub persistence removed
         http.Error(w, "GitHub persistence not configured", 400)
         return
     }
@@ -6893,7 +6605,7 @@ mux.HandleFunc("/api/sync/github/load", func(w http.ResponseWriter, r *http.Requ
         http.Error(w, "Method not allowed", 405)
         return
     }
-    if n.github == nil {
+    if true { // GitHub persistence removed
         http.Error(w, "GitHub persistence not configured", 400)
         return
     }
@@ -6922,7 +6634,7 @@ mux.HandleFunc("/api/sync/github", func(w http.ResponseWriter, r *http.Request) 
         http.Error(w, "Method not allowed", 405)
         return
     }
-    if n.github == nil {
+    if true { // GitHub persistence removed
         http.Error(w, "GitHub persistence not configured", 400)
         return
     }
@@ -6954,7 +6666,7 @@ mux.HandleFunc("/api/sync/github", func(w http.ResponseWriter, r *http.Request) 
 
 // Verificar estado de GitHub
 mux.HandleFunc("/api/sync/github/status", func(w http.ResponseWriter, r *http.Request) {
-    if n.github == nil {
+    if true { // GitHub persistence removed
         json.NewEncoder(w).Encode(map[string]interface{}{
             "configured": false,
             "message":    "GitHub persistence not configured",
@@ -6968,14 +6680,11 @@ mux.HandleFunc("/api/sync/github/status", func(w http.ResponseWriter, r *http.Re
     n.mu.RUnlock()
     
     json.NewEncoder(w).Encode(map[string]interface{}{
-        "configured":  true,
-        "owner":       n.github.Owner,
-        "repo":        n.github.Repo,
-        "path":        n.github.Path,
+        "configured":  false,
+        "backend":     "local_or_supabase",
+        "message":     "GitHub persistence has been removed. Use SUPABASE_URL / SUPABASE_SERVICE_KEY or local disk.",
         "agents":      agentsCount,
         "blocks":      blocksCount,
-        "branch":      n.github.Branch,
-        "last_commit": n.github.commitSHA,
     })
 })
 	
@@ -7829,15 +7538,12 @@ func (d *discoveryNotifee) HandlePeerFound(pi peer.AddrInfo) {
 	d.h.Connect(context.Background(), pi)
 }
 
-// =============================================================================
-// MAIN
-// =============================================================================
 
 // =============================================================================
-// MAIN
+// RUN – punto de entrada del nodo (llamado desde cmd/prisma-tec)
 // =============================================================================
 
-func main() {
+func Run(port string) {
 	fmt.Println("🌐 PRISM@.TEC ALSET NET (P.TEC-AN) v4.0")
 	fmt.Println("📦 Sistema Híbrido Go + Lisp con IA Distribuida, VC, UTXO, PoH y ZKP")
 	fmt.Println("🧠 Con IA Distribuida: Neuronas, Sinapsis, Inferencia Distribuida y Memoria Distribuida")
@@ -7849,9 +7555,8 @@ func main() {
 		fmt.Println("🟢 Nodo ejecutándose localmente (cliente de pulsos)")
 	}
 	
-	port := "8080"
-	if len(os.Args) > 1 {
-		port = os.Args[1]
+	if port == "" {
+		port = "8080"
 	}
 
 	nodo := &NodoAlset{
@@ -7862,71 +7567,9 @@ func main() {
 		hebbianMemory:        make(map[string]float64),
 	}
 
-	// ============================================================
-	// CONFIGURACIÓN DE GITHUB PERSISTENCE
-	// ============================================================
-	
-	// 1. Intentar desde variables de entorno
-	githubToken := os.Getenv("GITHUB_TOKEN")
-	githubOwner := os.Getenv("GITHUB_OWNER")
-	githubRepo := os.Getenv("GITHUB_REPO")
-	
-	fmt.Printf("🔍 Variables de entorno:\n")
-	fmt.Printf("   GITHUB_TOKEN: %s... (length: %d)\n", 
-		func() string {
-			if len(githubToken) > 10 {
-				return githubToken[:10]
-			}
-			return githubToken
-		}(), len(githubToken))
-	fmt.Printf("   GITHUB_OWNER: %s\n", githubOwner)
-	fmt.Printf("   GITHUB_REPO: %s\n", githubRepo)
-	
-	// 2. Si las variables de entorno no son válidas, intentar desde archivo
-	if len(githubToken) < 20 {
-		fmt.Println("⚠️ Token de entorno inválido o vacío, intentando desde archivo github_config.json...")
-		
-		if data, err := os.ReadFile("github_config.json"); err == nil {
-			var config map[string]string
-			if err := json.Unmarshal(data, &config); err == nil {
-				if token, ok := config["token"]; ok && len(token) > 20 {
-					githubToken = token
-					githubOwner = config["owner"]
-					githubRepo = config["repo"]
-					fmt.Println("✅ Configuración de GitHub cargada desde github_config.json")
-				} else {
-					fmt.Println("⚠️ Archivo github_config.json encontrado pero token inválido")
-				}
-			} else {
-				fmt.Printf("⚠️ Error parseando github_config.json: %v\n", err)
-			}
-		} else {
-			fmt.Printf("⚠️ No se pudo leer github_config.json: %v\n", err)
-		}
-	}
-	
-	// 3. Limpiar el token
-	githubToken = strings.TrimSpace(githubToken)
-	githubToken = strings.ReplaceAll(githubToken, "\n", "")
-	githubToken = strings.ReplaceAll(githubToken, "\r", "")
-	githubToken = strings.ReplaceAll(githubToken, "\t", "")
-	githubToken = strings.ReplaceAll(githubToken, " ", "")
-	
-	// 4. Verificar token final
-	if len(githubToken) >= 20 {
-		fmt.Printf("✅ Token final válido: %s... (length: %d)\n", githubToken[:20], len(githubToken))
-		fmt.Printf("   Owner: %s\n", githubOwner)
-		fmt.Printf("   Repo: %s\n", githubRepo)
-		
-		nodo.github = NewGitHubPersistence(githubOwner, githubRepo, "alset_data", githubToken)
-		fmt.Println("✅ GitHub persistence configurado correctamente")
-	} else {
-		fmt.Printf("❌ Token inválido: length %d (debe ser al menos 20)\n", len(githubToken))
-		fmt.Println("   GitHub persistence NO configurado")
-		fmt.Println("   Puedes configurar manualmente:")
-		fmt.Println("   1. Variables de entorno: GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO")
-		fmt.Println("   2. Archivo github_config.json en el directorio raíz")
-	}
+	// Persistencia: ahora se gestiona a través de internal/persistence
+	// (Local por defecto, Supabase cuando hay variables de entorno)
+	// El campo github se elimina en esta versión.
 
 	mathrand.Seed(time.Now().UnixNano())
 	nodo.Init()
