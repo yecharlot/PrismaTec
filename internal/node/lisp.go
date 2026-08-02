@@ -1,6 +1,8 @@
 package node
 
 import (
+	"redalset/internal/agents"
+	"redalset/internal/poh"
 	"bytes"
 	"context"
 	"encoding/hex"
@@ -890,15 +892,15 @@ func (e *LispEvaluator) initBuiltins() {
 	}))
 
 	e.globalEnv.SetFunction("humanity-proof", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
-		globalPoH.Lock()
-		defer globalPoH.Unlock()
+		poh.Global.Lock()
+		defer poh.Global.Unlock()
 
-		if len(globalPoH.events) == 0 {
+		if len(poh.Global.Events()) == 0 {
 			return "No hay suficientes eventos de humanidad registrados"
 		}
 
 		var eventsData []byte
-		for _, ev := range globalPoH.events {
+		for _, ev := range poh.Global.Events() {
 			evData, _ := json.Marshal(ev)
 			eventsData = append(eventsData, evData...)
 		}
@@ -907,15 +909,15 @@ func (e *LispEvaluator) initBuiltins() {
 		copy(hash, eventsData[:32])
 
 		proof := HumanityProof{
-			SessionID: globalPoH.sessionID,
-			Events:    globalPoH.events,
+			SessionID: poh.Global.SessionID(),
+			Events:    poh.Global.Events(),
 			FinalSig:  hex.EncodeToString(hash),
 		}
 
 		proofBytes, _ := json.Marshal(proof)
 		proofCID, _ := e.nodo.GenerarCID(proofBytes)
 
-		globalPoH.events = []PoHEvent{}
+		poh.Global.ClearEvents()
 
 		return map[string]interface{}{
 			"status":       "prueba_humanidad_generada",
@@ -926,11 +928,11 @@ func (e *LispEvaluator) initBuiltins() {
 	}))
 
 	e.globalEnv.SetFunction("emitir-sello-humanidad", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
-		globalPoH.Lock()
-		defer globalPoH.Unlock()
+		poh.Global.Lock()
+		defer poh.Global.Unlock()
 
-		if globalPoH.sessionID == "" {
-			globalPoH.sessionID = hex.EncodeToString([]byte(time.Now().String()))[:16]
+		if poh.Global.SessionID() == "" {
+			poh.Global.SetSessionID(hex.EncodeToString([]byte(time.Now().String()))[:16])
 		}
 
 		eventType := "custom"
@@ -948,9 +950,9 @@ func (e *LispEvaluator) initBuiltins() {
 			Metadata:  metadata,
 		}
 
-		globalPoH.events = append(globalPoH.events, event)
+		poh.Global.Append(event)
 
-		return fmt.Sprintf("Evento de humanidad registrado (%d total)", len(globalPoH.events))
+		return fmt.Sprintf("Evento de humanidad registrado (%d total)", len(poh.Global.Events()))
 	}))
 
 	// =====================================================================
@@ -2659,7 +2661,7 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 			Tipo:         tipo,
 			Cardinalidad: cardinalidad,
 		}
-		relacionesGlobales[relacionId] = relacion
+		agents.Global.Relaciones[relacionId] = relacion
 		e.nodo.mu.Lock()
 		if e.nodo.neuralState == nil {
 			e.nodo.neuralState = &NeuralState{
@@ -2678,7 +2680,7 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 
 	e.globalEnv.SetFunction("listar-relaciones", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		resultado := make(LispList, 0)
-		for _, rel := range relacionesGlobales {
+		for _, rel := range agents.Global.Relaciones {
 			relData := map[string]interface{}{
 				"id":           rel.ID,
 				"tipo":         rel.Tipo,
@@ -2709,18 +2711,18 @@ func (e *LispEvaluator) registerUnifiedFunctions() {
 			HeredaDe:  "",
 			ModuloID:  "editor",
 		}
-		muEntidades.Lock()
-		entidadesGlobales[id] = entidad
-		muEntidades.Unlock()
+		agents.Global.MuEntidades.Lock()
+		agents.Global.Entidades[id] = entidad
+		agents.Global.MuEntidades.Unlock()
 		e.nodo.Auditoria("ENTIDAD_CREADA", fmt.Sprintf("Tipo: %s | ID: %s", tipo, id))
 		return id
 	}))
 
 	e.globalEnv.SetFunction("listar-entidades", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		resultado := make(LispList, 0)
-		muEntidades.RLock()
-		defer muEntidades.RUnlock()
-		for _, ent := range entidadesGlobales {
+		agents.Global.MuEntidades.RLock()
+		defer agents.Global.MuEntidades.RUnlock()
+		for _, ent := range agents.Global.Entidades {
 			entData := map[string]interface{}{
 				"id":        ent.ID,
 				"tipo":      ent.Tipo,
