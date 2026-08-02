@@ -38,3 +38,22 @@ Env: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`
 2. ✅ Persistencia pluggable + tablas estructuradas
 3. ⏳ `internal/lisp` como paquete propio (interfaz NodeBackend)
 4. ⏳ `internal/pulse`, `internal/httpapi`, `internal/neural`, `internal/p2p`
+
+## Capa nodeiface (extracción futura de Lisp/HTTP)
+
+`internal/nodeiface.Host` define la superficie que el motor Lisp y otros paquetes
+necesitan del nodo. `*NodoAlset` implementa esos métodos en `host_adapter.go`.
+
+Lisp permanece en `internal/node/lisp.go` porque usa globals de módulos/entidades/PoH
+compartidos. La extracción total requiere mover también esos globals a paquetes propios.
+
+## Mapa de archivos del nodo
+
+| Archivo | Rol |
+|---------|-----|
+| node.go | Núcleo P2P, sync, persistencia, Run |
+| types.go | Tipos + aliases a agents/neural |
+| lisp.go | Motor Lisp |
+| pulse.go | Pulsos SSE |
+| http.go | HTTP API |
+| host_adapter.go | Implementación de nodeiface.Host |
