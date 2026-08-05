@@ -311,15 +311,28 @@ go test ./... -v -count=1
 
 Qué cubren hoy:
 
-| Paquete | Qué se verifica |
-|---------|-----------------|
-| `persistence` | Guardar/cargar/borrar en disco, agentes, bloques y estado neural |
-| `poh` | Sesión, eventos y reset del almacén de humanidad |
-| `agents` | Registro de módulos, tokens y roles |
-| `lisp` | Tokenizado, parseo, entorno y evaluación aritmética básica |
-| `node` | UUID y JSON canónico (orden estable de claves) |
+| Paquete | Tipo | Qué se verifica |
+|---------|------|-----------------|
+| `persistence` | unitario + integración | Disco local (KV, agentes, bloques, neural); Supabase si hay variables de entorno |
+| `poh` | unitario | Sesión, eventos y reset |
+| `agents` | unitario | Registro de módulos, tokens y roles |
+| `lisp` | unitario | Tokenizado, parseo, entorno y aritmética (host simulado) |
+| `node` | unitario + integración | Helpers; API HTTP (`/api/crear-agente`, listado, peers); persistir y recargar estado |
 
-Los tests de Lisp usan un *host* simulado: no levantan red ni HTTP. Sirven para validar el intérprete sin depender de libp2p ni de Supabase.
+### Tests de integración
+
+```bash
+# HTTP + persistencia local (siempre)
+go test ./internal/node/ -run Integration -count=1
+go test ./internal/persistence/ -run Integration -count=1
+
+# Supabase (solo si configuraste las variables)
+export SUPABASE_URL="https://….supabase.co"
+export SUPABASE_SERVICE_KEY="…"
+go test ./internal/persistence/ -run Supabase -count=1 -v
+```
+
+Los de integración HTTP no levantan libp2p: montan el mux real del nodo con un almacén en disco temporal. Así se valida crear agente, listarlo y que quede guardado, sin depender de la red P2P.
 
 
 ## Licencia

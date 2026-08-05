@@ -29,7 +29,9 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
 )
 
-func (n *NodoAlset) startHTTPServer(port string) {
+// buildHTTPHandler registers all HTTP routes and returns the handler.
+// Used by startHTTPServer and by integration tests.
+func (n *NodoAlset) buildHTTPHandler() http.Handler {
 	mux := http.NewServeMux()
 
 	n.ensureStaticFiles()
@@ -1064,6 +1066,11 @@ func (n *NodoAlset) startHTTPServer(port string) {
 		}
 	})
 
+	return mux
+}
+
+func (n *NodoAlset) startHTTPServer(port string) {
+	mux := n.buildHTTPHandler()
 	fmt.Printf("🚀 Prisma Tec API activa en puerto %s (incluye /api/pulse)\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
 }

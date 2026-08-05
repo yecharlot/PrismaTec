@@ -148,3 +148,8 @@ Los tests viven junto al código (`*_test.go`). Priorizan paquetes sin red:
 - `internal/node` — helpers puros
 
 Comando habitual: `go test ./...`
+
+Integración:
+
+- `internal/node` — mux HTTP real vía `buildHTTPHandler` + `httptest` (crear/listar agentes, peers, recarga de estado)
+- `internal/persistence` — ciclo completo en disco; Supabase opcional si hay `SUPABASE_URL` y `SUPABASE_SERVICE_KEY`
