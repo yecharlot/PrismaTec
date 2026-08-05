@@ -281,6 +281,47 @@ docker run -p 8080:8080 \
 
 ---
 
+
+
+## Tests
+
+El repositorio incluye tests unitarios en los paquetes de dominio y en el motor Lisp.
+
+### Ejecutar todos los tests
+
+```bash
+go test ./...
+```
+
+### Solo un paquete
+
+```bash
+go test ./internal/persistence/
+go test ./internal/lisp/
+go test ./internal/poh/
+go test ./internal/agents/
+go test ./internal/node/
+```
+
+### Con más detalle
+
+```bash
+go test ./... -v -count=1
+```
+
+Qué cubren hoy:
+
+| Paquete | Qué se verifica |
+|---------|-----------------|
+| `persistence` | Guardar/cargar/borrar en disco, agentes, bloques y estado neural |
+| `poh` | Sesión, eventos y reset del almacén de humanidad |
+| `agents` | Registro de módulos, tokens y roles |
+| `lisp` | Tokenizado, parseo, entorno y evaluación aritmética básica |
+| `node` | UUID y JSON canónico (orden estable de claves) |
+
+Los tests de Lisp usan un *host* simulado: no levantan red ni HTTP. Sirven para validar el intérprete sin depender de libp2p ni de Supabase.
+
+
 ## Licencia
 
 Por definir por el autor del repositorio.

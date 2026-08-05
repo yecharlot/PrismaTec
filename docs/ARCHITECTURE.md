@@ -136,3 +136,15 @@ Pendiente de mover sin cambiar comportamiento:
 - Sync manager → `sync`
 
 Se hace por pasos para no mezclar refactors grandes con cambios de comportamiento.
+
+
+## Tests unitarios
+
+Los tests viven junto al código (`*_test.go`). Priorizan paquetes sin red:
+
+- `internal/persistence` — disco local
+- `internal/poh`, `internal/agents` — estado de dominio
+- `internal/lisp` — parser y eval con un Host de prueba
+- `internal/node` — helpers puros
+
+Comando habitual: `go test ./...`
