@@ -28,6 +28,14 @@ func (s *LocalStore) path(key string) string {
 	return filepath.Join(s.dir, key)
 }
 
+func (s *LocalStore) readFile(path string) ([]byte, error) {
+	data, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+	return data, err
+}
+
 func (s *LocalStore) Save(_ context.Context, key string, data []byte) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -41,11 +49,7 @@ func (s *LocalStore) Save(_ context.Context, key string, data []byte) error {
 func (s *LocalStore) Load(_ context.Context, key string) ([]byte, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	data, err := os.ReadFile(s.path(key))
-	if os.IsNotExist(err) {
-		return nil, nil
-	}
-	return data, err
+	return s.readFile(s.path(key))
 }
 
 func (s *LocalStore) Delete(_ context.Context, key string) error {
@@ -67,7 +71,6 @@ func (s *LocalStore) SaveAgents(_ context.Context, agents map[string][]byte) err
 			return err
 		}
 	}
-	// Also keep a full snapshot for compatibility
 	all, _ := json.MarshalIndent(agents, "", "  ")
 	return os.WriteFile(s.path(KeyState), all, 0o644)
 }
@@ -79,8 +82,7 @@ func (s *LocalStore) LoadAgents(_ context.Context) (map[string][]byte, error) {
 	dir := filepath.Join(s.dir, "agents")
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		// fallback to single blob
-		if data, err2 := os.ReadFile(s.path(KeyState)); err2 == nil && data != nil {
+		if data, err2 := s.readFile(s.path(KeyState)); err2 == nil && data != nil {
 			var m map[string]json.RawMessage
 			if json.Unmarshal(data, &m) == nil {
 				for k, v := range m {
@@ -114,8 +116,10 @@ func (s *LocalStore) SaveBlock(_ context.Context, cid string, data []byte) error
 }
 
 func (s *LocalStore) SaveBlocks(ctx context.Context, blocks map[string][]byte) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	for cid, data := range blocks {
-		if err := s.SaveBlock(ctx, cid, data); err != nil {
+		if err := os.WriteFile(filepath.Join(s.dir, "blocks", cid), data, 0o644); err != nil {
 			return err
 		}
 	}
@@ -158,12 +162,15 @@ func (s *LocalStore) LoadNeuralState(_ context.Context, id string) ([]byte, erro
 	if id == "" {
 		id = "main"
 	}
-	data, err := os.ReadFile(s.path("neural_"+id+".json"))
-	if os.IsNotExist(err) {
-		// legacy key
-		return s.Load(context.Background(), KeyNeuralState)
+	data, err := s.readFile(s.path("neural_" + id + ".json"))
+	if err != nil {
+		return nil, err
 	}
-	return data, err
+	if data != nil {
+		return data, nil
+	}
+	// legacy key
+	return s.readFile(s.path(KeyNeuralState))
 }
 
 func (s *LocalStore) Close() error { return nil }

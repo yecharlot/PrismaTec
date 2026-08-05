@@ -139,11 +139,15 @@ func (n *NodoAlset) Auditoria(accion string, detalle string) {
 		Detail    string `json:"detail"`
 		NodeID    string `json:"node_id"`
 	}
+	nodeID := "local"
+	if n.host != nil {
+		nodeID = n.host.ID().String()
+	}
 	line := AuditLine{
 		Timestamp: time.Now().Format(time.RFC3339),
 		Action:    accion,
 		Detail:    detalle,
-		NodeID:    n.host.ID().String(),
+		NodeID:    nodeID,
 	}
 	data, _ := json.Marshal(line)
 	f, _ := os.OpenFile("audit.jsonl", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -2255,6 +2259,11 @@ func (n *NodoAlset) handleDNSDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (n *NodoAlset) handleNetworkPeers(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if n.host == nil {
+		json.NewEncoder(w).Encode([]interface{}{})
+		return
+	}
 	peers := n.host.Network().Peers()
 	peerInfo := make([]map[string]interface{}, 0, len(peers))
 	for _, p := range peers {
