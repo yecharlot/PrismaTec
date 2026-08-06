@@ -130,3 +130,10 @@ func (n *NodoAlset) ListBlocks() map[string][]byte {
 	}
 	return out
 }
+
+func (n *NodoAlset) PeerCount() int {
+	if n.host == nil {
+		return 0
+	}
+	return len(n.host.Network().Peers())
+}

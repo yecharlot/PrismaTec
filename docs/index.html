@@ -602,6 +602,7 @@
       <div class="nav-links">
         <a class="hide-sm" href="#que-es">Qué es</a>
         <a class="hide-sm" href="#capacidades">Capacidades</a>
+        <a class="hide-sm" href="#lispai">LispAI</a>
         <a class="hide-sm" href="#modos">Modos</a>
         <a class="hide-sm" href="https://github.com/yecharlot/PrismaTec/blob/main/docs/ARCHITECTURE.md">Arquitectura</a>
         <a class="btn btn-primary" href="https://github.com/yecharlot/PrismaTec">Ver en GitHub</a>
@@ -706,6 +707,44 @@
           <p>Disco local por defecto. Supabase opcional con tablas separadas para agentes, bloques y estado neural.</p>
         </article>
       </div>
+    </section>
+
+    
+    <section id="lispai">
+      <h2 class="section-title reveal">LispAI, Zyrion y modelos en el borde</h2>
+      <p class="section-lead reveal reveal-delay-1">
+        Cada nodo ejecuta un intérprete Lisp por API. Encima van la lógica ternaria Zyrion
+        y capas que se guardan como agentes con CID — automatización, reglas y prototipos
+        de modelos sin salir de la red.
+      </p>
+      <div class="grid">
+        <article class="card reveal reveal-delay-1">
+          <div class="card-icon">λ</div>
+          <h3>API /api/lispai</h3>
+          <p>POST con <code>{"cmd":"(…)"}</code>. Agentes, DNS, CID, saldo y scripts en el mismo runtime.</p>
+        </article>
+        <article class="card reveal reveal-delay-2">
+          <div class="card-icon">⬡</div>
+          <h3>Zyrion 0 · 1 · 2</h3>
+          <p>Puertas ternarias y redes por topología. El estado parcial (2) modela incertidumbre, no solo sí/no.</p>
+        </article>
+        <article class="card reveal reveal-delay-3">
+          <div class="card-icon">◈</div>
+          <h3>Capas y embeddings</h3>
+          <p><code>embedding</code>, <code>crear-capa-lineal</code>, <code>inferir</code>, <code>entrenar-hebbiano</code>: modelos ligeros anclados a agentes.</p>
+        </article>
+        <article class="card reveal reveal-delay-1">
+          <div class="card-icon">📦</div>
+          <h3>Apps en la malla</h3>
+          <p>Registro multipart en <code>/api/apps/register</code> y apertura en <code>/w/nombre.app.ans</code>.</p>
+        </article>
+      </div>
+      <div class="code-bar reveal" style="display:block;text-align:left;margin-top:1.5rem;">
+        <code>curl -s -X POST …/api/lispai -H "Content-Type: application/json" -d '{"cmd":"(similitud \"red\" \"red\")"}'</code>
+      </div>
+      <p class="section-lead reveal" style="margin-top:1rem;">
+        Detalle de formas y límites: documentación LispAI en el repositorio (<code>docs/LISPAI.md</code>).
+      </p>
     </section>
 
     <section>

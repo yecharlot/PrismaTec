@@ -161,3 +161,13 @@ Integración:
 
 - `internal/node` — mux HTTP real vía `buildHTTPHandler` + `httptest` (crear/listar agentes, peers, recarga de estado)
 - `internal/persistence` — ciclo completo en disco; Supabase opcional si hay `SUPABASE_URL` y `SUPABASE_SERVICE_KEY`
+
+## Lisp power layer
+
+`internal/lisp/power.go` registra builtins recuperados de salvas históricas del nodo:
+
+- red y economía: `host-id`, `net-peers`, `set-agent-balance`, `get-agent-root`
+- ternario: `embedding`, `ternarizar`, `desternarizar`, `similitud`
+- modelos: `crear-capa-lineal`, `crear-modelo`, `inferir`, `entrenar-hebbiano`
+
+Documentación de uso: [LISPAI.md](LISPAI.md)
