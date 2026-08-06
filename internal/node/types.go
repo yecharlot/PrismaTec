@@ -71,4 +71,3 @@ var globalSyncProgress = &SyncProgress{
 	Status: "idle",
 	Stage:  "none",
 }
-
