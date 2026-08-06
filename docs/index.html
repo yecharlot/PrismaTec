@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Alset — Red peer-to-peer en Go</title>
+  <meta name="description" content="Alset (P.TEC-AN v4.0) es una red descentralizada escrita en Go: nodos libp2p, motor Lisp, IA distribuida, pulsos SSE y persistencia en Supabase." />
+  <meta property="og:title" content="Alset — Red peer-to-peer en Go" />
+  <meta property="og:description" content="Nodos locales y relay, Lisp embebido, IA distribuida y API HTTP. Código abierto." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://yecharlot.github.io/PrismaTec/" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b0c10;
+      --bg2: #12141c;
+      --card: #161822;
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #e8eaef;
+      --muted: #9aa3b5;
+      --accent: #f4b400;
+      --accent2: #5b8def;
+      --ok: #3dd68c;
+      --radius: 14px;
+      --max: 1080px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(244, 180, 0, 0.12), transparent 50%),
+        radial-gradient(ellipse 60% 40% at 90% 10%, rgba(91, 141, 239, 0.1), transparent 45%),
+        radial-gradient(ellipse 50% 30% at 50% 100%, rgba(61, 214, 140, 0.06), transparent 40%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    /* Nav */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-weight: 700;
+      font-size: 1.15rem;
+      text-decoration: none;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .logo-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--accent), #e89a00);
+      display: grid;
+      place-items: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #111;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      padding: 0.4rem 0.75rem;
+      border-radius: 8px;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .nav-links a:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.55rem 1.1rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #111;
+      box-shadow: 0 4px 20px rgba(244, 180, 0, 0.25);
+    }
+
+    .btn-primary:hover { box-shadow: 0 6px 28px rgba(244, 180, 0, 0.35); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.15); }
+
+    /* Hero */
+    .hero {
+      padding: 4.5rem 0 3.5rem;
+      text-align: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 999px;
+      background: rgba(244, 180, 0, 0.1);
+      border: 1px solid rgba(244, 180, 0, 0.25);
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      letter-spacing: 0.02em;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.2rem, 5vw, 3.4rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+      max-width: 16ch;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hero h1 span {
+      background: linear-gradient(120deg, var(--accent), #ffe08a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 1.15rem;
+      max-width: 38rem;
+      margin: 0 auto 2rem;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 2.5rem;
+    }
+
+    .code-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.85rem;
+      color: var(--muted);
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    .code-bar code { color: var(--text); white-space: nowrap; }
+
+    .copy-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      font-family: inherit;
+      flex-shrink: 0;
+    }
+
+    .copy-btn:hover { color: var(--text); }
+
+    /* Sections */
+    section { padding: 3rem 0; }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .section-lead {
+      color: var(--muted);
+      margin-bottom: 2rem;
+      max-width: 36rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.35rem 1.4rem;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .card:hover {
+      border-color: rgba(244, 180, 0, 0.25);
+      transform: translateY(-2px);
+    }
+
+    .card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      font-size: 1.15rem;
+      margin-bottom: 0.9rem;
+      background: rgba(244, 180, 0, 0.1);
+    }
+
+    .card h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      letter-spacing: -0.01em;
+    }
+
+    .card p {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    /* Modes */
+    .modes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 640px) {
+      .modes { grid-template-columns: 1fr; }
+      .nav-links .hide-sm { display: none; }
+    }
+
+    .mode-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+    }
+
+    .mode-card h3 {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+    }
+
+    .pill {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.15rem 0.45rem;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .pill-local { background: rgba(61, 214, 140, 0.15); color: var(--ok); }
+    .pill-relay { background: rgba(91, 141, 239, 0.15); color: var(--accent2); }
+
+    .mode-card ul {
+      margin-top: 0.75rem;
+      padding-left: 1.1rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .mode-card li { margin-bottom: 0.3rem; }
+
+    /* Stack */
+    .stack {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .tag {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.78rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: 8px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    /* CTA */
+    .cta {
+      margin: 2rem 0 4rem;
+      padding: 2.5rem 2rem;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(244, 180, 0, 0.12), rgba(91, 141, 239, 0.08));
+      border: 1px solid rgba(244, 180, 0, 0.2);
+      text-align: center;
+    }
+
+    .cta h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .cta p {
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+
+    .cta-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    footer a { color: var(--muted); text-decoration: none; }
+    footer a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav>
+      <a class="logo" href="#">
+        <span class="logo-mark">A</span>
+        Alset
+      </a>
+      <div class="nav-links">
+        <a class="hide-sm" href="#que-es">Qué es</a>
+        <a class="hide-sm" href="#capacidades">Capacidades</a>
+        <a class="hide-sm" href="#modos">Modos</a>
+        <a class="hide-sm" href="https://github.com/yecharlot/PrismaTec/blob/main/docs/ARCHITECTURE.md">Arquitectura</a>
+        <a class="btn btn-primary" href="https://github.com/yecharlot/PrismaTec">Ver en GitHub</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div class="badge">P.TEC-AN v4.0 · código abierto</div>
+      <h1>Red peer-to-peer <span>lista para nodos reales</span></h1>
+      <p>
+        Alset convierte cualquier máquina en un nodo de la red:
+        habla con otros peers, guarda estado, evalúa Lisp y participa
+        en una capa ligera de IA distribuida.
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="https://github.com/yecharlot/PrismaTec">
+          Repositorio
+        </a>
+        <a class="btn btn-ghost" href="https://prismatec.onrender.com">
+          Nodo relay en vivo
+        </a>
+      </div>
+      <div class="code-bar">
+        <code id="clone-cmd">git clone https://github.com/yecharlot/PrismaTec.git && cd PrismaTec && go run ./cmd/prisma-tec</code>
+        <button class="copy-btn" type="button" onclick="copyClone()">Copiar</button>
+      </div>
+    </header>
+
+    <section id="que-es">
+      <h2 class="section-title">Una sola base de código, dos modos</h2>
+      <p class="section-lead">
+        El mismo binario sirve en un portátil o en la nube.
+        El comportamiento lo decide una variable de entorno.
+      </p>
+      <div class="modes" id="modos">
+        <div class="mode-card">
+          <h3><span class="pill pill-local">Local</span> Nodo completo</h3>
+          <p style="color:var(--muted);font-size:0.92rem;">Sin <code style="color:var(--accent)">RENDER</code></p>
+          <ul>
+            <li>API HTTP y panel de administración</li>
+            <li>Cliente de pulsos SSE</li>
+            <li>Conexión a la malla libp2p</li>
+            <li>Persistencia en disco o Supabase</li>
+          </ul>
+        </div>
+        <div class="mode-card">
+          <h3><span class="pill pill-relay">Relay</span> Punto de sincronización</h3>
+          <p style="color:var(--muted);font-size:0.92rem;">Con <code style="color:var(--accent2)">RENDER</code> definida</p>
+          <ul>
+            <li>Servidor de pulsos SSE</li>
+            <li>API y sincronización de estado</li>
+            <li>Sin cliente de pulsos (evita bucles)</li>
+            <li>Ideal en Render u otros hosts</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="capacidades">
+      <h2 class="section-title">Qué incluye</h2>
+      <p class="section-lead">Piezas pensadas para operar juntas, no como demos aislados.</p>
+      <div class="grid">
+        <article class="card">
+          <div class="card-icon">🔗</div>
+          <h3>Red libp2p</h3>
+          <p>DHT, GossipSub y streams entre pares. Identificadores de contenido estilo IPFS sin depender de un daemon aparte.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon">λ</div>
+          <h3>Motor Lisp</h3>
+          <p>Intérprete embebido para scripts y automatización. Habla con el nodo a través de una interfaz clara, no de globals sueltos.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon">⚡</div>
+          <h3>Pulsos SSE</h3>
+          <p>Eventos en tiempo real entre nodos locales y relays. Útil cuando la malla P2P no alcanza o hay NAT de por medio.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon">🧠</div>
+          <h3>IA distribuida</h3>
+          <p>Estado neuronal, sinapsis y memoria ligera que puede propagarse entre nodos. Orientada a experimentación, no a modelos gigantes.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon">📦</div>
+          <h3>Agentes y bloques</h3>
+          <p>Registro de agentes, CIDs y nombres DNS internos. API HTTP para crear, listar y sincronizar estado.</p>
+        </article>
+        <article class="card">
+          <div class="card-icon">🗄️</div>
+          <h3>Persistencia</h3>
+          <p>Disco local por defecto. Supabase opcional con tablas separadas para agentes, bloques y estado neural.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="section-title">Stack</h2>
+      <p class="section-lead">Tecnologías que verás en el código y en el despliegue.</p>
+      <div class="stack">
+        <span class="tag">Go 1.26</span>
+        <span class="tag">libp2p</span>
+        <span class="tag">GossipSub</span>
+        <span class="tag">CID / multihash</span>
+        <span class="tag">Lisp embebido</span>
+        <span class="tag">SSE</span>
+        <span class="tag">Supabase</span>
+        <span class="tag">Render</span>
+        <span class="tag">Docker</span>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="section-title">Probar la API</h2>
+      <p class="section-lead">Con el nodo en marcha (local o relay):</p>
+      <div class="code-bar" style="display:block;text-align:left;margin-bottom:0.75rem;">
+        <code>curl -X POST https://prismatec.onrender.com/api/crear-agente</code>
+      </div>
+      <div class="code-bar" style="display:block;text-align:left;">
+        <code>curl https://prismatec.onrender.com/api/agentes/</code>
+      </div>
+    </section>
+
+    <div class="cta">
+      <h2>Contribuye o levanta tu propio nodo</h2>
+      <p>El código está en GitHub. README y arquitectura explican arranque, tests y estructura de paquetes.</p>
+      <div class="cta-actions">
+        <a class="btn btn-primary" href="https://github.com/yecharlot/PrismaTec">Abrir repositorio</a>
+        <a class="btn btn-ghost" href="https://github.com/yecharlot/PrismaTec/blob/main/README.md">Leer el README</a>
+        <a class="btn btn-ghost" href="https://github.com/yecharlot/PrismaTec/blob/main/docs/ARCHITECTURE.md">Arquitectura</a>
+      </div>
+    </div>
+
+    <footer>
+      <span>Alset · PrismaTec · P.TEC-AN v4.0</span>
+      <span>
+        <a href="https://github.com/yecharlot/PrismaTec">GitHub</a>
+        ·
+        <a href="https://prismatec.onrender.com">Relay</a>
+      </span>
+    </footer>
+  </div>
+
+  <script>
+    function copyClone() {
+      const text = document.getElementById("clone-cmd").textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector(".copy-btn");
+        const prev = btn.textContent;
+        btn.textContent = "Copiado";
+        setTimeout(() => { btn.textContent = prev; }, 1500);
+      });
+    }
+  </script>
+</body>
+</html>
