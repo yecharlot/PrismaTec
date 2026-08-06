@@ -96,3 +96,52 @@ func TestPower_CrearCapaYModelo(t *testing.T) {
 		t.Fatalf("crear-modelo = %v", got)
 	}
 }
+
+func TestEvaluarZyrion_BasicReject(t *testing.T) {
+	e := NewEvaluator(&mockHost{})
+	// Both inputs high continuous → ternary 2 → take salida 2
+	cmd := `(evaluar-zyrion
+		(quote (NODO :entradas (A B) :salidas ((0 RECHAZO) (1 MANUAL) (2 APROBADO))))
+		(quote (A 0.9 B 0.8)))`
+	got, err := e.Eval(cmd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// A=0.9→2, B=0.8→2 → zyrion all 2 → 2 → APROBADO
+	if got != "APROBADO" {
+		t.Fatalf("got %#v want APROBADO", got)
+	}
+}
+
+func TestEvaluarZyrion_AllZero(t *testing.T) {
+	e := NewEvaluator(&mockHost{})
+	cmd := `(evaluar-zyrion
+		(quote (N :entradas (X Y) :salidas ((0 BLOQUEO) (1 OK) (2 RARO))))
+		(quote (X 0.1 Y 0.1)))`
+	got, err := e.Eval(cmd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "BLOQUEO" {
+		t.Fatalf("got %#v want BLOQUEO", got)
+	}
+}
+
+func TestEvaluarZyrion_Nested(t *testing.T) {
+	e := NewEvaluator(&mockHost{})
+	cmd := `(evaluar-zyrion
+		(quote (PADRE :entradas (A B) :salidas (
+			(0 RECHAZO)
+			(1 MANUAL)
+			(2 (HIJO :entradas (C) :salidas ((0 BAJO) (1 MEDIO) (2 ALTO)))))))
+		(quote (A 0.9 B 0.9 C 0.2)))`
+	got, err := e.Eval(cmd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Parent → 2, child C=0.2→0 → BAJO
+	if got != "BAJO" {
+		t.Fatalf("nested got %#v want BAJO", got)
+	}
+}
+

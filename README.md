@@ -322,6 +322,8 @@ Incluye agentes, CID, DNS, **Zyrion** (lógica 0/1/2), embeddings y modelos tern
 
 Guía completa: [docs/LISPAI.md](docs/LISPAI.md)
 
+Auth, módulos y API v2: [docs/API_AUTH_MODULES_V2.md](docs/API_AUTH_MODULES_V2.md)
+
 ```bash
 curl -s -X POST http://localhost:8080/api/lispai \
   -H "Content-Type: application/json" \
@@ -382,6 +384,8 @@ El nodo evalúa Lisp por HTTP (`POST /api/lispai` con `{"cmd":"..."}`).
 Incluye agentes, CID, DNS, **Zyrion** (lógica 0/1/2), embeddings y modelos ternarios por capas.
 
 Guía completa: [docs/LISPAI.md](docs/LISPAI.md)
+
+Auth, módulos y API v2: [docs/API_AUTH_MODULES_V2.md](docs/API_AUTH_MODULES_V2.md)
 
 ```bash
 curl -s -X POST http://localhost:8080/api/lispai \
