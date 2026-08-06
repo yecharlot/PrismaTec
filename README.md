@@ -1,17 +1,25 @@
 # Alset (P.TEC-AN v4.0)
 
-Alset es una red peer-to-peer escrita en Go. Cada máquina que ejecuta el binario se convierte en un **nodo**: puede guardar datos, hablar con otros nodos, evaluar scripts Lisp y participar en una capa ligera de IA distribuida.
+Red peer-to-peer en Go: nodos libp2p, agentes, apps por CID, **LispAI**, lógica ternaria **Zyrion**, modelos ligeros, auth, módulos y **API v2**.
 
-Hay dos formas de correr el mismo programa:
-
-| Modo | Cuándo se activa | Qué hace |
-|------|------------------|----------|
-| **Local** | No existe la variable `RENDER` | Nodo completo: sirve la API, se conecta a la red y actúa como cliente de pulsos |
-| **Relay** | Existe `RENDER` (típico en Render.com) | Solo actúa como servidor de pulsos y punto de sincronización |
-
-No hace falta compilar dos binarios distintos. El comportamiento se decide al arrancar.
+| Recurso | Enlace |
+|---------|--------|
+| **Guía completa** | [docs/GUIA.md](docs/GUIA.md) |
+| LispAI y Zyrion | [docs/LISPAI.md](docs/LISPAI.md) |
+| Auth, módulos, API v2 | [docs/API_AUTH_MODULES_V2.md](docs/API_AUTH_MODULES_V2.md) |
+| Arquitectura | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Landing | https://yecharlot.github.io/PrismaTec/ |
+| Relay en vivo | https://prismatec.onrender.com |
+| API v2 info | https://prismatec.onrender.com/api/v2/info |
 
 ---
+
+## Modos
+
+| Modo | Activación | Rol |
+|------|------------|-----|
+| **Local** | Sin `RENDER` | Nodo completo (API, pulsos cliente, red) |
+| **Relay** | Con `RENDER` | Servidor de pulsos y sincronización |
 
 ## Qué necesitas para empezar
 
