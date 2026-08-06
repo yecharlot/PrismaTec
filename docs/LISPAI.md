@@ -128,3 +128,25 @@ Dataset de autoencoder:
 - El entrenamiento Hebbiano es exploración de topología, no backprop.
 - Reiniciar el proceso borra `defun`/`setq` en RAM; persiste lo anclado a agentes/CID.
 
+
+## evaluar-zyrion (DSL de decisión)
+
+Topologías legibles con `:entradas` y `:salidas`. Los valores del entorno en continuo se mapean a ternario: `<0.33→0`, `<0.66→1`, resto `→2`.
+
+```lisp
+(evaluar-zyrion
+  (quote (CONTRATO
+    :entradas (PagoRecibido EntregablesVerificados)
+    :salidas (
+      (0 ANULACION)
+      (1 (DISPUTA :entradas (MargenTiempo)
+           :salidas ((0 PENALIZACION) (1 STANDBY) (2 INVOCAR_RED_NEURONAL))))
+      (2 LIQUIDAR))))
+  (quote (PagoRecibido 1.0 EntregablesVerificados 0.3 MargenTiempo 0.9
+          Valor_Continuous_Neural 0.75)))
+```
+
+- La salida del nodo es el resultado de `(zyrion entradas-ternarias)`.
+- Una salida puede ser una **etiqueta** o un **subnodo** con la misma forma.
+- `INVOCAR_RED_NEURONAL` usa `Valor_Continuous_Neural` del entorno o `local-inference`.
+

@@ -586,6 +586,8 @@ func (n *NodoAlset) httpHandlers() httpapi.Handlers {
 		}
 	}
 
+	n.registerAPIv2(h.Extra)
+
 	return h
 }
 
