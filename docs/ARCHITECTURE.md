@@ -132,7 +132,8 @@ El paquete `node` ya no es un solo archivo: `init`, `p2p`, `persist`, `neural_op
 
 Ya extraído a paquetes:
 
-- `httpapi` — registro de **todas** las rutas (`Mount` + `MountCore`); el nodo solo implementa handlers
+- `httpapi` — registro de rutas + handlers de dominio vía `Backend` (agentes, bloques, DNS, Lisp, IA básica)
+- Rutas restantes (pulse SSE, admin, módulos, prism) siguen como HandlerFuncs del nodo montadas por `Mount`
 - `pulse` — transporte SSE
 - `sync` — tipos de sincronización
 

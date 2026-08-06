@@ -181,6 +181,9 @@ func (n *NodoAlset) BuscarContenidoPorCID(cidStr string) ([]byte, error) {
 		n.mu.Unlock()
 		return diskData, nil
 	}
+	if n.kademlia == nil || n.host == nil {
+		return nil, fmt.Errorf("no encontrado")
+	}
 	c, _ := cid.Decode(cidStr)
 	ctx, cancel := context.WithTimeout(n.ctx, 10*time.Second)
 	defer cancel()
