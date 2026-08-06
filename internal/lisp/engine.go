@@ -1962,6 +1962,7 @@ func (e *Evaluator) initBuiltins() {
 	// =====================================================================
 
 	e.registerUnifiedFunctions()
+	e.registerPowerBuiltins()
 
 	e.globalEnv.SetFunction("zyrion", LispFunction(func(args []LispValue, env *LispEnvironment) LispValue {
 		if len(args) == 0 {

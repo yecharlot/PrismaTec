@@ -40,6 +40,7 @@ type Host interface {
 	Ctx() context.Context
 	ConnectPeer(ctx context.Context, pi peer.AddrInfo) error
 	PeerID() string
+	PeerCount() int
 
 	GetNeural() *neural.NeuralState
 	EnsureNeural() *neural.NeuralState

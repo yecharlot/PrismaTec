@@ -20,7 +20,7 @@ func (b *httpAPIBackend) CreateAgent() (*httpapi.Agent, error) {
 		return nil, fmt.Errorf("generando llave: %w", err)
 	}
 	id := hex.EncodeToString(pub[:8])
-	ag := &Agente{ID: id, BalanceUTXO: 0, UltimaActual: time.Now().Unix()}
+	ag := &Agente{ID: id, BalanceUTXO: 1000.0, UltimaActual: time.Now().Unix()}
 	b.n.mu.Lock()
 	b.n.agentes[id] = ag
 	b.n.mu.Unlock()

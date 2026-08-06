@@ -39,6 +39,7 @@ func (m *mockHost) PublishTopic([]byte) error                       { return nil
 func (m *mockHost) Ctx() context.Context                            { return context.Background() }
 func (m *mockHost) ConnectPeer(context.Context, peer.AddrInfo) error { return nil }
 func (m *mockHost) PeerID() string                                  { return "peer-test" }
+func (m *mockHost) PeerCount() int                                    { return 0 }
 func (m *mockHost) GetNeural() *neural.NeuralState                  { return nil }
 func (m *mockHost) EnsureNeural() *neural.NeuralState {
 	return &neural.NeuralState{Synapses: map[string]neural.SynapticWeight{}}

@@ -313,6 +313,21 @@ Hay una landing en [`docs/index.html`](docs/index.html) pensada para **GitHub Pa
 2. Source: branch `main`, folder `/docs`
 3. La web quedará en `https://yecharlot.github.io/PrismaTec/`
 
+
+## LispAI (intérprete embebido)
+
+El nodo evalúa Lisp por HTTP (`POST /api/lispai` con `{"cmd":"..."}`).
+
+Incluye agentes, CID, DNS, **Zyrion** (lógica 0/1/2), embeddings y modelos ternarios por capas.
+
+Guía completa: [docs/LISPAI.md](docs/LISPAI.md)
+
+```bash
+curl -s -X POST http://localhost:8080/api/lispai \
+  -H "Content-Type: application/json" \
+  -d '{"cmd":"(zyrion (list 1 1 0))"}'
+```
+
 ## Tests
 
 El repositorio incluye tests unitarios en los paquetes de dominio y en el motor Lisp.
@@ -358,6 +373,21 @@ Hay una landing en [`docs/index.html`](docs/index.html) pensada para **GitHub Pa
 1. En el repo: **Settings → Pages**
 2. Source: branch `main`, folder `/docs`
 3. La web quedará en `https://yecharlot.github.io/PrismaTec/`
+
+
+## LispAI (intérprete embebido)
+
+El nodo evalúa Lisp por HTTP (`POST /api/lispai` con `{"cmd":"..."}`).
+
+Incluye agentes, CID, DNS, **Zyrion** (lógica 0/1/2), embeddings y modelos ternarios por capas.
+
+Guía completa: [docs/LISPAI.md](docs/LISPAI.md)
+
+```bash
+curl -s -X POST http://localhost:8080/api/lispai \
+  -H "Content-Type: application/json" \
+  -d '{"cmd":"(zyrion (list 1 1 0))"}'
+```
 
 ## Tests de integración
 

@@ -36,6 +36,7 @@ func (n *NodoAlset) Init() {
 		libp2p.Identity(priv),
 		libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"),
 		libp2p.EnableRelayService(),
+		libp2p.EnableNATService(),
 	)
 	if err != nil {
 		log.Fatal("Error creando el host libp2p:", err)
