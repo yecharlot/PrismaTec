@@ -1,19 +1,18 @@
 package node
 
 import (
-	"bufio"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/libp2p/go-libp2p/core/peer"
+
+	"redalset/internal/pulse"
 )
 
 func (n *NodoAlset) startPulseClients() {
@@ -24,10 +23,7 @@ func (n *NodoAlset) startPulseClients() {
 	}
 
 	// Si no estamos en Render (es decir, estamos en un nodo local), conectamos a los servidores de pulsos conocidos
-	knownServers := []string{
-		"https://prismatec.onrender.com/api/pulse",
-		// Aquí puedes añadir más URLs de otros nodos
-	}
+	knownServers := pulse.DefaultServers
 	for _, url := range knownServers {
 		go n.runPulseClient(url)
 	}
@@ -70,50 +66,9 @@ func (n *NodoAlset) runPulseClient(url string) {
 }
 
 func (n *NodoAlset) connectAndListen(client *PulseClient) error {
-	req, err := http.NewRequestWithContext(client.ctx, "GET", client.url, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Accept", "text/event-stream")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("status: %s", resp.Status)
-	}
-
 	client.connected = true
 	defer func() { client.connected = false }()
-
-	reader := bufio.NewReader(resp.Body)
-	var eventType string
-	var dataBuffer strings.Builder
-
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			return err
-		}
-		line = strings.TrimSpace(line)
-		if line == "" {
-			if dataBuffer.Len() > 0 {
-				n.processPulseEvent(eventType, dataBuffer.String())
-				dataBuffer.Reset()
-			}
-			continue
-		}
-		if strings.HasPrefix(line, "event: ") {
-			eventType = strings.TrimPrefix(line, "event: ")
-		} else if strings.HasPrefix(line, "data: ") {
-			dataBuffer.WriteString(strings.TrimPrefix(line, "data: "))
-		} else {
-			dataBuffer.WriteString(line)
-		}
-	}
+	return pulse.ListenSSE(client.ctx, client.url, n.processPulseEvent)
 }
 
 // processPulseEvent maneja los eventos entrantes desde el servidor de pulsos (SSE).

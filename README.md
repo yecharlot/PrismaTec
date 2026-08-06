@@ -136,9 +136,21 @@ Tablas en Supabase:
 
 Tipos del sistema de pulsos (SSE). La lógica de conexión sigue en `node/pulse.go`; este paquete concentra las estructuras para poder reutilizarlas.
 
-### Carpetas aún vacías (`blocks`, `config`, `httpapi`, `p2p`, `sync`)
+### `internal/httpapi`
 
-Reservadas para seguir separando responsabilidades sin romper lo que ya funciona. No hace falta tocarlas para usar el nodo hoy.
+API HTTP estable (`/api/crear-agente`, agentes, bloques, peers, DNS). El nodo implementa `Backend` y monta las rutas con `MountCore`.
+
+### `internal/pulse`
+
+Transporte SSE (`ListenSSE`, `FormatSSE`) y servidores conocidos. La lógica de negocio de cada evento sigue en el nodo.
+
+### `internal/sync`
+
+Tipos de modo, configuración y progreso de sincronización.
+
+### Carpetas reservadas (`blocks`, `p2p`)
+
+Siguiente nivel de extracción (helpers de bloques y setup libp2p puro).
 
 ---
 

@@ -1,10 +1,8 @@
 package node
 
 import (
+	"redalset/internal/httpapi"
 	"context"
-	"crypto/ed25519"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -25,6 +23,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 	n.ensureStaticFiles()
 
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(StaticDir))))
+
+	// Core JSON API (package httpapi)
+	httpapi.MountCore(mux, &httpAPIBackend{n: n})
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
@@ -301,50 +302,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 	})
 
 	// ---- RESTO DE ENDPOINTS (copiados del original) ----
-	mux.HandleFunc("/api/ipfs/list", func(w http.ResponseWriter, r *http.Request) {
-		n.mu.RLock()
-		defer n.mu.RUnlock()
-		blocks := make([]BlockInfo, 0, len(n.blockstore))
-		for cid, data := range n.blockstore {
-			preview := string(data)
-			if len(preview) > 100 {
-				preview = preview[:100] + "..."
-			}
-			blocks = append(blocks, BlockInfo{
-				CID:     cid,
-				Size:    len(data),
-				Preview: preview,
-			})
-		}
-		json.NewEncoder(w).Encode(blocks)
-	})
 
-	mux.HandleFunc("/api/network/peers", n.handleNetworkPeers)
-	mux.HandleFunc("/api/dns/list", n.handleDNSList)
 	mux.HandleFunc("/api/dns/resolve", n.handleDNSResolve)
 	mux.HandleFunc("/api/dns/delete", n.handleDNSDelete)
-	mux.HandleFunc("/api/agentes/", func(w http.ResponseWriter, r *http.Request) {
-		path := strings.TrimPrefix(r.URL.Path, "/api/agentes/")
-		if strings.HasSuffix(path, "/root") {
-			id := strings.TrimSuffix(path, "/root")
-			n.mu.RLock()
-			agent, exists := n.agentes[id]
-			n.mu.RUnlock()
-			if !exists {
-				http.Error(w, "Agente no encontrado", 404)
-				return
-			}
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"agent_id":   id,
-				"root_cid":   agent.RootCID,
-				"updated_at": agent.UltimaActual,
-			})
-			return
-		}
-		n.mu.RLock()
-		defer n.mu.RUnlock()
-		json.NewEncoder(w).Encode(n.agentes)
-	})
 
 	mux.HandleFunc("/api/ipfs/fetch", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
@@ -372,33 +332,6 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 	})
 
 	mux.HandleFunc("/api/audit/log", n.handleAuditLog)
-	mux.HandleFunc("/api/crear-agente", func(w http.ResponseWriter, r *http.Request) {
-		pub, _, err := ed25519.GenerateKey(rand.Reader)
-		if err != nil {
-			http.Error(w, "Error generando llave", 500)
-			return
-		}
-		id := hex.EncodeToString(pub[:8])
-		balanceInicial := 0.0
-		nuevoAgente := &Agente{
-			ID:           id,
-			BalanceUTXO:  balanceInicial,
-			UltimaActual: time.Now().Unix(),
-		}
-		n.mu.Lock()
-		n.agentes[id] = nuevoAgente
-		n.mu.Unlock()
-		n.Auditoria("AGENTE_REGISTRADO_HTTP", fmt.Sprintf("ID: %s | InitBalance: %f", id, balanceInicial))
-		n.PersistirLocamente()
-		go n.SincronizarConPares()
-		go n.broadcastPulse("agent_created", map[string]interface{}{
-			"id":   id,
-			"root": "",
-			"time": time.Now().Unix(),
-		})
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(nuevoAgente)
-	})
 
 	mux.HandleFunc("/api/eliminar-agente", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" && r.Method != "DELETE" {
