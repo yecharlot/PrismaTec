@@ -7,6 +7,7 @@ import (
 	"redalset/internal/agents"
 	"redalset/internal/neural"
 	"redalset/internal/poh"
+	syncpkg "redalset/internal/sync"
 )
 
 // Domain aliases
@@ -35,21 +36,17 @@ type NodoConfig struct {
 	IsGenesis     bool   `json:"is_genesis"`
 }
 
-type SyncMode int
+type SyncMode = syncpkg.Mode
+type SyncConfig = syncpkg.Config
+type SyncProgress = syncpkg.Progress
 
 const (
-	SyncModeQuick       SyncMode = 1
-	SyncModeFull        SyncMode = 2
-	SyncModeIncremental SyncMode = 3
+	SyncModeQuick       = syncpkg.ModeQuick
+	SyncModeFull        = syncpkg.ModeFull
+	SyncModeIncremental = syncpkg.ModeIncremental
 )
 
-type SyncConfig struct {
-	Mode           SyncMode `json:"mode"`
-	LastSyncTime   int64    `json:"last_sync_time"`
-	AutoSyncDays   int      `json:"auto_sync_days"`
-	MaxQuickBlocks int      `json:"max_quick_blocks"`
-}
-
+// SyncManager keeps a back-reference to the node (not portable to syncpkg alone).
 type SyncManager struct {
 	nodo         *NodoAlset
 	config       SyncConfig
@@ -59,15 +56,4 @@ type SyncManager struct {
 	mu           sync.RWMutex
 }
 
-type SyncProgress struct {
-	Current int     `json:"current"`
-	Total   int     `json:"total"`
-	Percent float64 `json:"percent"`
-	Status  string  `json:"status"`
-	Stage   string  `json:"stage"`
-}
-
-var globalSyncProgress = &SyncProgress{
-	Status: "idle",
-	Stage:  "none",
-}
+var globalSyncProgress = syncpkg.NewProgress()

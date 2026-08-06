@@ -1,6 +1,7 @@
 package node
 
 import (
+	"redalset/internal/pulse"
 	"context"
 	"crypto/ed25519"
 	"encoding/hex"
@@ -1077,7 +1078,7 @@ func (n *NodoAlset) handleAdminLogin(w http.ResponseWriter, r *http.Request) {
 
 func (n *NodoAlset) broadcastPulse(eventType string, data interface{}) {
 	payload, _ := json.Marshal(data)
-	msg := fmt.Sprintf("event: %s\ndata: %s\n\n", eventType, string(payload))
+	msg := pulse.FormatSSE(eventType, payload)
 
 	n.pulseSubscribersMu.RLock()
 	defer n.pulseSubscribersMu.RUnlock()
