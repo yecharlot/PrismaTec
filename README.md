@@ -303,6 +303,16 @@ docker run -p 8080:8080 \
 
 
 
+
+
+## Página del proyecto
+
+Hay una landing en [`docs/index.html`](docs/index.html) pensada para **GitHub Pages**:
+
+1. En el repo: **Settings → Pages**
+2. Source: branch `main`, folder `/docs`
+3. La web quedará en `https://yecharlot.github.io/PrismaTec/`
+
 ## Tests
 
 El repositorio incluye tests unitarios en los paquetes de dominio y en el motor Lisp.
@@ -339,7 +349,17 @@ Qué cubren hoy:
 | `lisp` | unitario | Tokenizado, parseo, entorno y aritmética (host simulado) |
 | `node` | unitario + integración | Helpers; API HTTP (`/api/crear-agente`, listado, peers); persistir y recargar estado |
 
-### Tests de integración
+#
+
+## Página del proyecto
+
+Hay una landing en [`docs/index.html`](docs/index.html) pensada para **GitHub Pages**:
+
+1. En el repo: **Settings → Pages**
+2. Source: branch `main`, folder `/docs`
+3. La web quedará en `https://yecharlot.github.io/PrismaTec/`
+
+## Tests de integración
 
 ```bash
 # HTTP + persistencia local (siempre)
