@@ -1,3 +1,5 @@
+Documentación de uso orientada a personas: [GUIA.md](GUIA.md).
+
 # Arquitectura de Alset
 
 Este documento describe cómo encajan las piezas del sistema. Está pensado para quien va a tocar el código o a operar un nodo en producción.

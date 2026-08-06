@@ -3,991 +3,278 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Alset — Red peer-to-peer en Go</title>
-  <meta name="description" content="Alset (P.TEC-AN v4.0) es una red descentralizada escrita en Go: nodos libp2p, motor Lisp, IA distribuida, pulsos SSE y persistencia en Supabase." />
+  <title>Alset — Red peer-to-peer, LispAI y Zyrion</title>
+  <meta name="description" content="Alset (P.TEC-AN v4.0): nodos libp2p, agentes, apps por CID, Lisp embebido, lógica ternaria Zyrion, API v2 y persistencia Supabase." />
   <meta property="og:title" content="Alset — Red peer-to-peer en Go" />
-  <meta property="og:description" content="Nodos locales y relay, Lisp embebido, IA distribuida y API HTTP. Código abierto." />
-  <meta property="og:type" content="website" />
+  <meta property="og:description" content="Nodos locales y relay, LispAI, Zyrion, modelos ligeros, auth y API v2. Código abierto." />
   <meta property="og:url" content="https://yecharlot.github.io/PrismaTec/" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0b0c10;
-      --bg2: #12141c;
-      --card: #161822;
-      --border: rgba(255, 255, 255, 0.08);
-      --text: #e8eaef;
-      --muted: #9aa3b5;
-      --accent: #f4b400;
-      --accent2: #5b8def;
-      --ok: #3dd68c;
-      --radius: 14px;
-      --max: 1080px;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    html { scroll-behavior: smooth; }
-
-    body {
-      font-family: "DM Sans", system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(244, 180, 0, 0.12), transparent 50%),
-        radial-gradient(ellipse 60% 40% at 90% 10%, rgba(91, 141, 239, 0.1), transparent 45%),
-        radial-gradient(ellipse 50% 30% at 50% 100%, rgba(61, 214, 140, 0.06), transparent 40%);
-      pointer-events: none;
-      z-index: 0;
-      animation: ambientShift 18s ease-in-out infinite alternate;
-    }
-
-    @keyframes ambientShift {
-      0% { opacity: 1; filter: hue-rotate(0deg); }
-      100% { opacity: 0.85; filter: hue-rotate(12deg); }
-    }
-
-    .wrap {
-      position: relative;
-      z-index: 1;
-      max-width: var(--max);
-      margin: 0 auto;
-      padding: 0 1.5rem;
-    }
-
-    /* Reveal on scroll */
-    .reveal {
-      opacity: 0;
-      transform: translateY(28px);
-      transition: opacity 0.7s ease, transform 0.7s ease;
-    }
-    .reveal.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    .reveal-delay-1 { transition-delay: 0.1s; }
-    .reveal-delay-2 { transition-delay: 0.2s; }
-    .reveal-delay-3 { transition-delay: 0.3s; }
-    .reveal-delay-4 { transition-delay: 0.35s; }
-
-    /* Nav */
-    nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 1.25rem 0;
-      border-bottom: 1px solid var(--border);
-      animation: fadeDown 0.6s ease both;
-    }
-
-    @keyframes fadeDown {
-      from { opacity: 0; transform: translateY(-12px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 0.65rem;
-      font-weight: 700;
-      font-size: 1.15rem;
-      text-decoration: none;
-      color: var(--text);
-      letter-spacing: -0.02em;
-    }
-
-    .logo-mark {
-      width: 32px;
-      height: 32px;
-      border-radius: 9px;
-      background: linear-gradient(135deg, var(--accent), #e89a00);
-      display: grid;
-      place-items: center;
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: #111;
-      position: relative;
-      animation: logoPulse 2.8s ease-in-out infinite;
-    }
-
-    .logo-mark::after {
-      content: "";
-      position: absolute;
-      inset: -4px;
-      border-radius: 12px;
-      border: 1px solid rgba(244, 180, 0, 0.45);
-      animation: ringOut 2.8s ease-out infinite;
-      pointer-events: none;
-    }
-
-    @keyframes logoPulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(244, 180, 0, 0.35); }
-      50% { box-shadow: 0 0 16px 2px rgba(244, 180, 0, 0.25); }
-    }
-
-    @keyframes ringOut {
-      0% { transform: scale(0.9); opacity: 0.8; }
-      100% { transform: scale(1.45); opacity: 0; }
-    }
-
-    .nav-links {
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .nav-links a {
-      color: var(--muted);
-      text-decoration: none;
-      font-size: 0.9rem;
-      font-weight: 500;
-      padding: 0.4rem 0.75rem;
-      border-radius: 8px;
-      transition: color 0.15s, background 0.15s;
-    }
-
-    .nav-links a:hover { color: var(--text); background: rgba(255,255,255,0.04); }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.55rem 1.1rem;
-      border-radius: 10px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      text-decoration: none;
-      transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
-      border: none;
-      cursor: pointer;
-    }
-
-    .btn:hover { transform: translateY(-1px); }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #111;
-      box-shadow: 0 4px 20px rgba(244, 180, 0, 0.25);
-    }
-
-    .btn-primary:hover { box-shadow: 0 6px 28px rgba(244, 180, 0, 0.35); }
-
-    .btn-ghost {
-      background: transparent;
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-
-    .btn-ghost:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.15); }
-
-    /* Hero */
-    .hero {
-      padding: 3rem 0 2.5rem;
-      text-align: center;
-      position: relative;
-    }
-
-    .mesh-wrap {
-      position: relative;
-      width: 100%;
-      max-width: 640px;
-      height: 220px;
-      margin: 0 auto 1.5rem;
-      animation: fadeUp 0.9s ease 0.15s both;
-    }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    #mesh {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.3rem 0.75rem;
-      border-radius: 999px;
-      background: rgba(244, 180, 0, 0.1);
-      border: 1px solid rgba(244, 180, 0, 0.25);
-      color: var(--accent);
-      font-size: 0.8rem;
-      font-weight: 600;
-      margin-bottom: 1.25rem;
-      letter-spacing: 0.02em;
-      animation: fadeUp 0.7s ease 0.25s both;
-    }
-
-    .badge .dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--ok);
-      box-shadow: 0 0 0 0 rgba(61, 214, 140, 0.5);
-      animation: liveDot 1.8s ease-out infinite;
-    }
-
-    @keyframes liveDot {
-      0% { box-shadow: 0 0 0 0 rgba(61, 214, 140, 0.55); }
-      70% { box-shadow: 0 0 0 8px rgba(61, 214, 140, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(61, 214, 140, 0); }
-    }
-
-    .hero h1 {
-      font-size: clamp(2.2rem, 5vw, 3.4rem);
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      line-height: 1.15;
-      margin-bottom: 1rem;
-      max-width: 16ch;
-      margin-left: auto;
-      margin-right: auto;
-      animation: fadeUp 0.75s ease 0.35s both;
-    }
-
-    .hero h1 span {
-      background: linear-gradient(120deg, var(--accent), #ffe08a 40%, var(--accent2));
-      background-size: 200% auto;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: shimmer 5s linear infinite;
-    }
-
-    @keyframes shimmer {
-      to { background-position: 200% center; }
-    }
-
-    .hero p {
-      color: var(--muted);
-      font-size: 1.15rem;
-      max-width: 38rem;
-      margin: 0 auto 2rem;
-      animation: fadeUp 0.75s ease 0.45s both;
-    }
-
-    .hero-actions {
-      display: flex;
-      gap: 0.75rem;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-bottom: 2rem;
-      animation: fadeUp 0.75s ease 0.55s both;
-    }
-
-    .code-bar {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.75rem;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 0.75rem 1rem;
-      font-family: "JetBrains Mono", monospace;
-      font-size: 0.85rem;
-      color: var(--muted);
-      max-width: 100%;
-      overflow-x: auto;
-      animation: fadeUp 0.75s ease 0.65s both;
-    }
-
-    .code-bar code { color: var(--text); white-space: nowrap; }
-
-    .copy-btn {
-      background: rgba(255,255,255,0.06);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      border-radius: 6px;
-      padding: 0.25rem 0.5rem;
-      font-size: 0.75rem;
-      cursor: pointer;
-      font-family: inherit;
-      flex-shrink: 0;
-      transition: color 0.15s, background 0.15s;
-    }
-
-    .copy-btn:hover { color: var(--text); background: rgba(255,255,255,0.1); }
-
-    /* Architecture strip */
-    .arch-flow {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin: 2.5rem 0 1rem;
-      padding: 1.25rem;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-    }
-
-    .arch-node {
-      padding: 0.55rem 0.9rem;
-      border-radius: 10px;
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      font-size: 0.82rem;
-      font-weight: 600;
-      font-family: "JetBrains Mono", monospace;
-      position: relative;
-      transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
-    }
-
-    .arch-node:hover {
-      transform: translateY(-3px);
-      border-color: rgba(244, 180, 0, 0.4);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-    }
-
-    .arch-node.active {
-      border-color: rgba(244, 180, 0, 0.55);
-      box-shadow: 0 0 20px rgba(244, 180, 0, 0.15);
-    }
-
-    .arch-arrow {
-      color: var(--muted);
-      font-size: 0.9rem;
-      opacity: 0.5;
-      animation: arrowBlink 2s ease-in-out infinite;
-    }
-
-    .arch-arrow:nth-child(2) { animation-delay: 0.2s; }
-    .arch-arrow:nth-child(4) { animation-delay: 0.4s; }
-    .arch-arrow:nth-child(6) { animation-delay: 0.6s; }
-    .arch-arrow:nth-child(8) { animation-delay: 0.8s; }
-
-    @keyframes arrowBlink {
-      0%, 100% { opacity: 0.25; }
-      50% { opacity: 0.9; color: var(--accent); }
-    }
-
-    /* Sections */
-    section { padding: 3rem 0; }
-
-    .section-title {
-      font-size: 1.5rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 0.5rem;
-    }
-
-    .section-lead {
-      color: var(--muted);
-      margin-bottom: 2rem;
-      max-width: 36rem;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1rem;
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.35rem 1.4rem;
-      transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
-    }
-
-    .card:hover {
-      border-color: rgba(244, 180, 0, 0.3);
-      transform: translateY(-4px);
-      box-shadow: 0 12px 32px rgba(0,0,0,0.35);
-    }
-
-    .card-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: grid;
-      place-items: center;
-      font-size: 1.15rem;
-      margin-bottom: 0.9rem;
-      background: rgba(244, 180, 0, 0.1);
-      transition: transform 0.3s ease;
-    }
-
-    .card:hover .card-icon { transform: scale(1.08) rotate(-4deg); }
-
-    .card h3 {
-      font-size: 1.05rem;
-      font-weight: 600;
-      margin-bottom: 0.4rem;
-      letter-spacing: -0.01em;
-    }
-
-    .card p {
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
-
-    .modes {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
-    }
-
-    @media (max-width: 640px) {
-      .modes { grid-template-columns: 1fr; }
-      .nav-links .hide-sm { display: none; }
-      .mesh-wrap { height: 160px; }
-      .arch-flow { gap: 0.35rem; }
-      .arch-node { font-size: 0.72rem; padding: 0.4rem 0.55rem; }
-    }
-
-    .mode-card {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.5rem;
-      transition: border-color 0.25s, transform 0.25s;
-    }
-
-    .mode-card:hover {
-      border-color: rgba(255,255,255,0.14);
-      transform: translateY(-2px);
-    }
-
-    .mode-card h3 {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.5rem;
-      font-size: 1.1rem;
-    }
-
-    .pill {
-      font-size: 0.7rem;
-      font-weight: 600;
-      padding: 0.15rem 0.45rem;
-      border-radius: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .pill-local { background: rgba(61, 214, 140, 0.15); color: var(--ok); }
-    .pill-relay { background: rgba(91, 141, 239, 0.15); color: var(--accent2); }
-
-    .mode-card ul {
-      margin-top: 0.75rem;
-      padding-left: 1.1rem;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
-
-    .mode-card li { margin-bottom: 0.3rem; }
-
-    .stack {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-
-    .tag {
-      font-family: "JetBrains Mono", monospace;
-      font-size: 0.78rem;
-      padding: 0.35rem 0.7rem;
-      border-radius: 8px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      transition: border-color 0.2s, color 0.2s, transform 0.2s;
-    }
-
-    .tag:hover {
-      color: var(--text);
-      border-color: rgba(244, 180, 0, 0.35);
-      transform: translateY(-2px);
-    }
-
-    .cta {
-      margin: 2rem 0 4rem;
-      padding: 2.5rem 2rem;
-      border-radius: 18px;
-      background: linear-gradient(135deg, rgba(244, 180, 0, 0.12), rgba(91, 141, 239, 0.08));
-      border: 1px solid rgba(244, 180, 0, 0.2);
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .cta::before {
-      content: "";
-      position: absolute;
-      width: 200%;
-      height: 100%;
-      top: 0;
-      left: -100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
-      animation: ctaSweep 6s ease-in-out infinite;
-    }
-
-    @keyframes ctaSweep {
-      0% { left: -100%; }
-      50%, 100% { left: 100%; }
-    }
-
-    .cta h2 {
-      font-size: 1.5rem;
-      margin-bottom: 0.5rem;
-      letter-spacing: -0.02em;
-      position: relative;
-    }
-
-    .cta p {
-      color: var(--muted);
-      margin-bottom: 1.5rem;
-      position: relative;
-    }
-
-    .cta-actions {
-      display: flex;
-      gap: 0.75rem;
-      justify-content: center;
-      flex-wrap: wrap;
-      position: relative;
-    }
-
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 2rem 0;
-      color: var(--muted);
-      font-size: 0.85rem;
-      display: flex;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    footer a { color: var(--muted); text-decoration: none; }
-    footer a:hover { color: var(--accent); }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-      }
-      .reveal { opacity: 1; transform: none; }
-    }
+      --bg:#0b0c10; --bg2:#12141c; --card:#161822; --border:rgba(255,255,255,.08);
+      --text:#e8eaef; --muted:#9aa3b5; --accent:#f4b400; --accent2:#5b8def; --ok:#3dd68c; --radius:14px; --max:1080px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh;overflow-x:hidden}
+    body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% -10%,rgba(244,180,0,.12),transparent 50%),radial-gradient(ellipse 60% 40% at 90% 10%,rgba(91,141,239,.1),transparent 45%),radial-gradient(ellipse 50% 30% at 50% 100%,rgba(61,214,140,.06),transparent 40%);pointer-events:none;z-index:0;animation:ambient 18s ease-in-out infinite alternate}
+    @keyframes ambient{to{opacity:.85;filter:hue-rotate(12deg)}}
+    .wrap{position:relative;z-index:1;max-width:var(--max);margin:0 auto;padding:0 1.5rem}
+    .reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+    .reveal.visible{opacity:1;transform:none}
+    .reveal-d1{transition-delay:.08s}.reveal-d2{transition-delay:.16s}.reveal-d3{transition-delay:.24s}
+    nav{display:flex;align-items:center;justify-content:space-between;padding:1.2rem 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:.5rem;animation:fadeDown .6s ease both}
+    @keyframes fadeDown{from{opacity:0;transform:translateY(-10px)}}
+    .logo{display:flex;align-items:center;gap:.6rem;font-weight:700;text-decoration:none;color:var(--text)}
+    .logo-mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),#e89a00);display:grid;place-items:center;color:#111;font-weight:700;position:relative;animation:logoPulse 2.8s ease-in-out infinite}
+    .logo-mark::after{content:"";position:absolute;inset:-4px;border-radius:12px;border:1px solid rgba(244,180,0,.45);animation:ringOut 2.8s ease-out infinite}
+    @keyframes logoPulse{50%{box-shadow:0 0 16px 2px rgba(244,180,0,.25)}}
+    @keyframes ringOut{to{transform:scale(1.45);opacity:0}}
+    .nav-links{display:flex;gap:.35rem;align-items:center;flex-wrap:wrap}
+    .nav-links a{color:var(--muted);text-decoration:none;font-size:.85rem;font-weight:500;padding:.35rem .65rem;border-radius:8px}
+    .nav-links a:hover{color:var(--text);background:rgba(255,255,255,.04)}
+    .btn{display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1.1rem;border-radius:10px;font-weight:600;font-size:.9rem;text-decoration:none;border:none;cursor:pointer;transition:transform .15s,box-shadow .15s}
+    .btn:hover{transform:translateY(-1px)}
+    .btn-primary{background:var(--accent);color:#111;box-shadow:0 4px 20px rgba(244,180,0,.25)}
+    .btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+    .hero{padding:3rem 0 2rem;text-align:center}
+    .mesh-wrap{max-width:640px;height:200px;margin:0 auto 1.25rem}
+    #mesh{width:100%;height:100%;display:block}
+    .badge{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:rgba(244,180,0,.1);border:1px solid rgba(244,180,0,.25);color:var(--accent);font-size:.8rem;font-weight:600;margin-bottom:1rem}
+    .badge .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);animation:liveDot 1.8s ease-out infinite}
+    @keyframes liveDot{70%{box-shadow:0 0 0 8px transparent}}
+    .hero h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:700;letter-spacing:-.03em;line-height:1.15;margin-bottom:1rem;max-width:18ch;margin-left:auto;margin-right:auto}
+    .hero h1 span{background:linear-gradient(120deg,var(--accent),#ffe08a 40%,var(--accent2));background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 5s linear infinite}
+    @keyframes shimmer{to{background-position:200% center}}
+    .hero p{color:var(--muted);font-size:1.1rem;max-width:40rem;margin:0 auto 1.75rem}
+    .hero-actions{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.5rem}
+    .code-bar{display:inline-flex;align-items:center;gap:.75rem;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:.75rem 1rem;font-family:"JetBrains Mono",monospace;font-size:.8rem;color:var(--muted);max-width:100%;overflow-x:auto}
+    .code-bar code{color:var(--text);white-space:nowrap}
+    .copy-btn{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:.25rem .5rem;font-size:.75rem;cursor:pointer;font-family:inherit;flex-shrink:0}
+    section{padding:2.75rem 0}
+    .section-title{font-size:1.45rem;font-weight:700;letter-spacing:-.02em;margin-bottom:.5rem}
+    .section-lead{color:var(--muted);margin-bottom:1.5rem;max-width:40rem}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.35rem;transition:border-color .25s,transform .25s}
+    .card:hover{border-color:rgba(244,180,0,.3);transform:translateY(-3px)}
+    .card-icon{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-size:1.1rem;margin-bottom:.8rem;background:rgba(244,180,0,.1)}
+    .card h3{font-size:1.02rem;font-weight:600;margin-bottom:.35rem}
+    .card p{color:var(--muted);font-size:.9rem}
+    .modes{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    @media(max-width:640px){.modes{grid-template-columns:1fr}.nav-links .hide-sm{display:none}.mesh-wrap{height:150px}}
+    .mode-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.35rem}
+    .mode-card h3{display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem;font-size:1.05rem}
+    .pill{font-size:.7rem;font-weight:600;padding:.15rem .45rem;border-radius:6px;text-transform:uppercase}
+    .pill-local{background:rgba(61,214,140,.15);color:var(--ok)}
+    .pill-relay{background:rgba(91,141,239,.15);color:var(--accent2)}
+    .mode-card ul{margin-top:.6rem;padding-left:1.1rem;color:var(--muted);font-size:.9rem}
+    .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--card)}
+    table{width:100%;border-collapse:collapse;font-size:.88rem}
+    th,td{padding:.65rem 1rem;text-align:left;border-bottom:1px solid var(--border)}
+    th{color:var(--muted);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
+    td code{font-family:"JetBrains Mono",monospace;font-size:.8rem;color:var(--accent)}
+    tr:last-child td{border-bottom:none}
+    .stack{display:flex;flex-wrap:wrap;gap:.5rem}
+    .tag{font-family:"JetBrains Mono",monospace;font-size:.75rem;padding:.35rem .65rem;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--muted)}
+    .cta{margin:2rem 0 3rem;padding:2.25rem 1.75rem;border-radius:18px;background:linear-gradient(135deg,rgba(244,180,0,.12),rgba(91,141,239,.08));border:1px solid rgba(244,180,0,.2);text-align:center;position:relative;overflow:hidden}
+    .cta h2{font-size:1.4rem;margin-bottom:.5rem}
+    .cta p{color:var(--muted);margin-bottom:1.25rem}
+    .cta-actions{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap}
+    footer{border-top:1px solid var(--border);padding:2rem 0;color:var(--muted);font-size:.85rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+    footer a{color:var(--muted);text-decoration:none}
+    footer a:hover{color:var(--accent)}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.reveal{opacity:1;transform:none}}
   </style>
 </head>
 <body>
   <div class="wrap">
     <nav>
-      <a class="logo" href="#">
-        <span class="logo-mark">A</span>
-        Alset
-      </a>
+      <a class="logo" href="#"><span class="logo-mark">A</span> Alset</a>
       <div class="nav-links">
-        <a class="hide-sm" href="#que-es">Qué es</a>
         <a class="hide-sm" href="#capacidades">Capacidades</a>
         <a class="hide-sm" href="#lispai">LispAI</a>
-        <a class="hide-sm" href="#modos">Modos</a>
-        <a class="hide-sm" href="https://github.com/yecharlot/PrismaTec/blob/main/docs/ARCHITECTURE.md">Arquitectura</a>
-        <a class="btn btn-primary" href="https://github.com/yecharlot/PrismaTec">Ver en GitHub</a>
+        <a class="hide-sm" href="#api">API</a>
+        <a class="hide-sm" href="#empezar">Empezar</a>
+        <a class="hide-sm" href="https://github.com/yecharlot/PrismaTec/blob/main/docs/GUIA.md">Guía</a>
+        <a class="btn btn-primary" href="https://github.com/yecharlot/PrismaTec">GitHub</a>
       </div>
     </nav>
 
     <header class="hero">
-      <div class="mesh-wrap" aria-hidden="true">
-        <canvas id="mesh" width="640" height="220"></canvas>
-      </div>
+      <div class="mesh-wrap" aria-hidden="true"><canvas id="mesh" width="640" height="200"></canvas></div>
       <div class="badge"><span class="dot"></span> P.TEC-AN v4.0 · código abierto</div>
-      <h1>Red peer-to-peer <span>lista para nodos reales</span></h1>
+      <h1>Red peer-to-peer <span>programable en el borde</span></h1>
       <p>
-        Alset convierte cualquier máquina en un nodo de la red:
-        habla con otros peers, guarda estado, evalúa Lisp y participa
-        en una capa ligera de IA distribuida.
+        Nodos libp2p con agentes, apps por CID, intérprete Lisp, lógica ternaria Zyrion,
+        modelos ligeros, tokens y API v2. El mismo binario sirve en local o como relay.
       </p>
       <div class="hero-actions">
         <a class="btn btn-primary" href="https://github.com/yecharlot/PrismaTec">Repositorio</a>
-        <a class="btn btn-ghost" href="https://prismatec.onrender.com">Nodo relay en vivo</a>
+        <a class="btn btn-ghost" href="https://prismatec.onrender.com">Relay en vivo</a>
+        <a class="btn btn-ghost" href="https://github.com/yecharlot/PrismaTec/blob/main/docs/GUIA.md">Guía completa</a>
       </div>
       <div class="code-bar">
         <code id="clone-cmd">git clone https://github.com/yecharlot/PrismaTec.git && cd PrismaTec && go run ./cmd/prisma-tec</code>
         <button class="copy-btn" type="button" onclick="copyClone()">Copiar</button>
       </div>
-
-      <div class="arch-flow reveal" id="arch-flow" aria-label="Flujo de la arquitectura">
-        <span class="arch-node" data-i="0">Nodo</span>
-        <span class="arch-arrow">→</span>
-        <span class="arch-node" data-i="1">libp2p</span>
-        <span class="arch-arrow">→</span>
-        <span class="arch-node" data-i="2">Lisp</span>
-        <span class="arch-arrow">→</span>
-        <span class="arch-node" data-i="3">Pulsos</span>
-        <span class="arch-arrow">→</span>
-        <span class="arch-node" data-i="4">Supabase</span>
-      </div>
     </header>
 
-    <section id="que-es">
-      <h2 class="section-title reveal">Una sola base de código, dos modos</h2>
-      <p class="section-lead reveal reveal-delay-1">
-        El mismo binario sirve en un portátil o en la nube.
-        El comportamiento lo decide una variable de entorno.
-      </p>
-      <div class="modes" id="modos">
-        <div class="mode-card reveal reveal-delay-1">
+    <section id="modos">
+      <h2 class="section-title reveal">Dos modos, un binario</h2>
+      <p class="section-lead reveal reveal-d1">El comportamiento lo decide la variable de entorno <code style="color:var(--accent)">RENDER</code>.</p>
+      <div class="modes">
+        <div class="mode-card reveal reveal-d1">
           <h3><span class="pill pill-local">Local</span> Nodo completo</h3>
-          <p style="color:var(--muted);font-size:0.92rem;">Sin <code style="color:var(--accent)">RENDER</code></p>
           <ul>
             <li>API HTTP y panel de administración</li>
-            <li>Cliente de pulsos SSE</li>
-            <li>Conexión a la malla libp2p</li>
-            <li>Persistencia en disco o Supabase</li>
+            <li>Cliente y servidor de pulsos SSE</li>
+            <li>Malla libp2p + persistencia disco/Supabase</li>
+            <li>LispAI, Zyrion y modelos</li>
           </ul>
         </div>
-        <div class="mode-card reveal reveal-delay-2">
+        <div class="mode-card reveal reveal-d2">
           <h3><span class="pill pill-relay">Relay</span> Punto de sincronización</h3>
-          <p style="color:var(--muted);font-size:0.92rem;">Con <code style="color:var(--accent2)">RENDER</code> definida</p>
           <ul>
-            <li>Servidor de pulsos SSE</li>
-            <li>API y sincronización de estado</li>
-            <li>Sin cliente de pulsos (evita bucles)</li>
+            <li>Servidor de pulsos (sin cliente, evita bucles)</li>
+            <li>Misma API pública</li>
             <li>Ideal en Render u otros hosts</li>
+            <li>Enlace de nodos detrás de NAT</li>
           </ul>
         </div>
       </div>
     </section>
 
     <section id="capacidades">
-      <h2 class="section-title reveal">Qué incluye</h2>
-      <p class="section-lead reveal reveal-delay-1">Piezas pensadas para operar juntas, no como demos aislados.</p>
+      <h2 class="section-title reveal">Capacidades</h2>
+      <p class="section-lead reveal reveal-d1">Todo opera dentro del mismo nodo.</p>
       <div class="grid">
-        <article class="card reveal reveal-delay-1">
-          <div class="card-icon">🔗</div>
-          <h3>Red libp2p</h3>
-          <p>DHT, GossipSub y streams entre pares. Identificadores de contenido estilo IPFS sin depender de un daemon aparte.</p>
-        </article>
-        <article class="card reveal reveal-delay-2">
-          <div class="card-icon">λ</div>
-          <h3>Motor Lisp</h3>
-          <p>Intérprete embebido para scripts y automatización. Habla con el nodo a través de una interfaz clara, no de globals sueltos.</p>
-        </article>
-        <article class="card reveal reveal-delay-3">
-          <div class="card-icon">⚡</div>
-          <h3>Pulsos SSE</h3>
-          <p>Eventos en tiempo real entre nodos locales y relays. Útil cuando la malla P2P no alcanza o hay NAT de por medio.</p>
-        </article>
-        <article class="card reveal reveal-delay-1">
-          <div class="card-icon">🧠</div>
-          <h3>IA distribuida</h3>
-          <p>Estado neuronal, sinapsis y memoria ligera que puede propagarse entre nodos. Orientada a experimentación, no a modelos gigantes.</p>
-        </article>
-        <article class="card reveal reveal-delay-2">
-          <div class="card-icon">📦</div>
-          <h3>Agentes y bloques</h3>
-          <p>Registro de agentes, CIDs y nombres DNS internos. API HTTP para crear, listar y sincronizar estado.</p>
-        </article>
-        <article class="card reveal reveal-delay-3">
-          <div class="card-icon">🗄️</div>
-          <h3>Persistencia</h3>
-          <p>Disco local por defecto. Supabase opcional con tablas separadas para agentes, bloques y estado neural.</p>
-        </article>
+        <article class="card reveal reveal-d1"><div class="card-icon">🔗</div><h3>Red libp2p</h3><p>DHT, GossipSub, streams y bloques por CID entre peers.</p></article>
+        <article class="card reveal reveal-d2"><div class="card-icon">👤</div><h3>Agentes</h3><p>Identidad, saldo UTXO, RootCID y nombres <code>*.app.ans</code>.</p></article>
+        <article class="card reveal reveal-d3"><div class="card-icon">📦</div><h3>Apps en la malla</h3><p>Registro multipart y apertura en <code>/w/nombre.app.ans</code>.</p></article>
+        <article class="card reveal reveal-d1"><div class="card-icon">λ</div><h3>LispAI</h3><p>Intérprete embebido por <code>POST /api/lispai</code> para automatizar el nodo.</p></article>
+        <article class="card reveal reveal-d2"><div class="card-icon">⬡</div><h3>Zyrion 0·1·2</h3><p>Lógica ternaria y <code>evaluar-zyrion</code> con <code>:entradas</code> / <code>:salidas</code>.</p></article>
+        <article class="card reveal reveal-d3"><div class="card-icon">◈</div><h3>Modelos ligeros</h3><p>Embedding, capas, inferencia y entrenamiento exploratorio en agentes.</p></article>
+        <article class="card reveal reveal-d1"><div class="card-icon">🔑</div><h3>Auth y módulos</h3><p>Tokens, roles, módulos y entidades para organizar permisos y piezas.</p></article>
+        <article class="card reveal reveal-d2"><div class="card-icon">🛠</div><h3>API v2</h3><p>Crear agentes, transferir saldo, publicar e instalar apps de forma explícita.</p></article>
+        <article class="card reveal reveal-d3"><div class="card-icon">🗄️</div><h3>Persistencia</h3><p>Disco local o Supabase; CIDs en blockstore del nodo.</p></article>
       </div>
     </section>
 
-    
     <section id="lispai">
-      <h2 class="section-title reveal">LispAI, Zyrion y modelos en el borde</h2>
-      <p class="section-lead reveal reveal-delay-1">
-        Cada nodo ejecuta un intérprete Lisp por API. Encima van la lógica ternaria Zyrion
-        y capas que se guardan como agentes con CID — automatización, reglas y prototipos
-        de modelos sin salir de la red.
-      </p>
+      <h2 class="section-title reveal">LispAI y Zyrion</h2>
+      <p class="section-lead reveal reveal-d1">Decisiones y automatización sin recompilar el nodo.</p>
       <div class="grid">
-        <article class="card reveal reveal-delay-1">
-          <div class="card-icon">λ</div>
-          <h3>API /api/lispai</h3>
-          <p>POST con <code>{"cmd":"(…)"}</code>. Agentes, DNS, CID, saldo y scripts en el mismo runtime.</p>
+        <article class="card reveal reveal-d1">
+          <h3>Ejemplo en vivo</h3>
+          <p style="margin-bottom:.75rem">Estado 0 → BLOQUEO cuando las entradas son bajas:</p>
+          <div class="code-bar" style="display:block;text-align:left;font-size:.75rem">
+            <code>(evaluar-zyrion (quote (N :entradas (X Y) :salidas ((0 BLOQUEO) (1 OK) (2 RARO)))) (quote (X 0.1 Y 0.1)))</code>
+          </div>
         </article>
-        <article class="card reveal reveal-delay-2">
-          <div class="card-icon">⬡</div>
-          <h3>Zyrion 0 · 1 · 2</h3>
-          <p>Puertas ternarias y redes por topología. El estado parcial (2) modela incertidumbre, no solo sí/no.</p>
-        </article>
-        <article class="card reveal reveal-delay-3">
-          <div class="card-icon">◈</div>
-          <h3>Capas y embeddings</h3>
-          <p><code>embedding</code>, <code>crear-capa-lineal</code>, <code>inferir</code>, <code>evaluar-zyrion</code> con <code>:entradas</code>/<code>:salidas</code>, API v2 y tokens.</p>
-        </article>
-        <article class="card reveal reveal-delay-1">
-          <div class="card-icon">📦</div>
-          <h3>Apps en la malla</h3>
-          <p>Registro multipart en <code>/api/apps/register</code> y apertura en <code>/w/nombre.app.ans</code>.</p>
+        <article class="card reveal reveal-d2">
+          <h3>También incluye</h3>
+          <p>Agentes, DNS, CID, <code>embedding</code>, <code>crear-capa-lineal</code>, <code>inferir</code>, <code>entrenar-hebbiano</code>, <code>host-id</code>, <code>net-peers</code>, transferencias vía API v2.</p>
         </article>
       </div>
-      <div class="code-bar reveal" style="display:block;text-align:left;margin-top:1.5rem;">
-        <code>curl -s -X POST …/api/lispai -H "Content-Type: application/json" -d '{"cmd":"(similitud \"red\" \"red\")"}'</code>
+      <p class="section-lead reveal" style="margin-top:1.25rem">Referencia de formas: <a href="https://github.com/yecharlot/PrismaTec/blob/main/docs/LISPAI.md" style="color:var(--accent)">docs/LISPAI.md</a></p>
+    </section>
+
+    <section id="api">
+      <h2 class="section-title reveal">Mapa de la API</h2>
+      <p class="section-lead reveal reveal-d1">Relay de referencia: <a href="https://prismatec.onrender.com" style="color:var(--accent2)">prismatec.onrender.com</a></p>
+      <div class="table-wrap reveal">
+        <table>
+          <thead><tr><th>Área</th><th>Rutas principales</th></tr></thead>
+          <tbody>
+            <tr><td>Agentes</td><td><code>/api/crear-agente</code> · <code>/api/agentes/</code> · eliminar / modificar</td></tr>
+            <tr><td>Lisp</td><td><code>POST /api/lispai</code></td></tr>
+            <tr><td>Contenido</td><td><code>/api/ipfs/*</code></td></tr>
+            <tr><td>DNS / apps</td><td><code>/api/dns/*</code> · <code>/api/apps/*</code> · <code>/w/*.app.ans</code></td></tr>
+            <tr><td>Red / sync</td><td><code>/api/network/peers</code> · <code>/api/sync/*</code> · <code>/api/pulse</code></td></tr>
+            <tr><td>IA HTTP</td><td><code>/api/ia/*</code></td></tr>
+            <tr><td>Auth / módulos</td><td><code>/api/auth/*</code> · <code>/api/roles</code> · <code>/api/modulos</code> · entidades</td></tr>
+            <tr><td>API v2</td><td><code>/api/v2/info</code> · agente · transferir · app publicar/instalar/ejecutar</td></tr>
+            <tr><td>Prism / PoH</td><td><code>/api/prism/*</code> · <code>/api/poh/*</code></td></tr>
+          </tbody>
+        </table>
       </div>
-      <p class="section-lead reveal" style="margin-top:1rem;">
-        Detalle de formas y límites: documentación LispAI en el repositorio (<code>docs/LISPAI.md</code>).
-      </p>
+      <p class="section-lead reveal" style="margin-top:1rem">Detalle: <a href="https://github.com/yecharlot/PrismaTec/blob/main/docs/GUIA.md" style="color:var(--accent)">docs/GUIA.md</a> · <a href="https://github.com/yecharlot/PrismaTec/blob/main/docs/API_AUTH_MODULES_V2.md" style="color:var(--accent)">auth y v2</a></p>
+    </section>
+
+    <section id="empezar">
+      <h2 class="section-title reveal">Empezar en 3 pasos</h2>
+      <div class="grid">
+        <article class="card reveal reveal-d1"><h3>1. Clonar y arrancar</h3><p><code>go run ./cmd/prisma-tec</code> — API en el puerto 8080.</p></article>
+        <article class="card reveal reveal-d2"><h3>2. Probar Lisp</h3><p><code>POST /api/lispai</code> con <code>{"cmd":"(+ 1 2)"}</code> o un <code>evaluar-zyrion</code>.</p></article>
+        <article class="card reveal reveal-d3"><h3>3. Publicar una app</h3><p><code>POST /api/apps/register</code> y abrir <code>/w/nombre.app.ans</code>.</p></article>
+      </div>
     </section>
 
     <section>
       <h2 class="section-title reveal">Stack</h2>
-      <p class="section-lead reveal reveal-delay-1">Tecnologías que verás en el código y en el despliegue.</p>
-      <div class="stack reveal reveal-delay-2">
-        <span class="tag">Go 1.26</span>
-        <span class="tag">libp2p</span>
-        <span class="tag">GossipSub</span>
-        <span class="tag">CID / multihash</span>
-        <span class="tag">Lisp embebido</span>
-        <span class="tag">SSE</span>
-        <span class="tag">Supabase</span>
-        <span class="tag">Render</span>
-        <span class="tag">Docker</span>
+      <div class="stack reveal reveal-d1">
+        <span class="tag">Go 1.26</span><span class="tag">libp2p</span><span class="tag">GossipSub</span>
+        <span class="tag">CID</span><span class="tag">Lisp</span><span class="tag">Zyrion</span>
+        <span class="tag">SSE</span><span class="tag">Supabase</span><span class="tag">Render</span><span class="tag">Docker</span>
       </div>
     </section>
 
     <section>
-      <h2 class="section-title reveal">Probar la API</h2>
-      <p class="section-lead reveal reveal-delay-1">Con el nodo en marcha (local o relay):</p>
-      <div class="code-bar reveal reveal-delay-2" style="display:block;text-align:left;margin-bottom:0.75rem;">
-        <code>curl -X POST https://prismatec.onrender.com/api/crear-agente</code>
-      </div>
-      <div class="code-bar reveal reveal-delay-3" style="display:block;text-align:left;">
-        <code>curl https://prismatec.onrender.com/api/agentes/</code>
+      <h2 class="section-title reveal">Para qué sirve (y para qué no)</h2>
+      <div class="grid">
+        <article class="card reveal reveal-d1">
+          <h3>Sí</h3>
+          <p>Mallas P2P propias, apps ancladas a CID, automatización con Lisp, políticas ternarias, prototipos de contrato lógico, demos de IA en el borde, relays públicos.</p>
+        </article>
+        <article class="card reveal reveal-d2">
+          <h3>No (aún)</h3>
+          <p>Sustituir blockchains públicas, custodia legal de valor entre desconocidos, ni un LLM de producción.</p>
+        </article>
       </div>
     </section>
 
     <div class="cta reveal">
-      <h2>Contribuye o levanta tu propio nodo</h2>
-      <p>El código está en GitHub. README y arquitectura explican arranque, tests y estructura de paquetes.</p>
+      <h2>Documentación y código</h2>
+      <p>La guía completa cubre instalación, todas las rutas, Lisp, Zyrion, auth y API v2.</p>
       <div class="cta-actions">
-        <a class="btn btn-primary" href="https://github.com/yecharlot/PrismaTec">Abrir repositorio</a>
-        <a class="btn btn-ghost" href="https://github.com/yecharlot/PrismaTec/blob/main/README.md">Leer el README</a>
-        <a class="btn btn-ghost" href="https://github.com/yecharlot/PrismaTec/blob/main/docs/ARCHITECTURE.md">Arquitectura</a>
+        <a class="btn btn-primary" href="https://github.com/yecharlot/PrismaTec/blob/main/docs/GUIA.md">Abrir guía</a>
+        <a class="btn btn-ghost" href="https://github.com/yecharlot/PrismaTec">GitHub</a>
+        <a class="btn btn-ghost" href="https://prismatec.onrender.com/api/v2/info">API v2 info</a>
       </div>
     </div>
 
     <footer>
       <span>Alset · PrismaTec · P.TEC-AN v4.0</span>
       <span>
-        <a href="https://github.com/yecharlot/PrismaTec">GitHub</a>
-        ·
-        <a href="https://prismatec.onrender.com">Relay</a>
+        <a href="https://github.com/yecharlot/PrismaTec">GitHub</a> ·
+        <a href="https://prismatec.onrender.com">Relay</a> ·
+        <a href="https://github.com/yecharlot/PrismaTec/blob/main/docs/GUIA.md">Guía</a>
       </span>
     </footer>
   </div>
-
   <script>
-    function copyClone() {
-      const text = document.getElementById("clone-cmd").textContent;
-      navigator.clipboard.writeText(text).then(() => {
-        const btn = document.querySelector(".copy-btn");
-        const prev = btn.textContent;
-        btn.textContent = "Copiado";
-        setTimeout(() => { btn.textContent = prev; }, 1500);
-      });
-    }
-
-    /* Scroll reveal */
-    (function () {
-      const els = document.querySelectorAll(".reveal");
-      if (!("IntersectionObserver" in window)) {
-        els.forEach((el) => el.classList.add("visible"));
-        return;
-      }
-      const io = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((e) => {
-            if (e.isIntersecting) {
-              e.target.classList.add("visible");
-              io.unobserve(e.target);
-            }
-          });
-        },
-        { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
-      );
-      els.forEach((el) => io.observe(el));
-    })();
-
-    /* Architecture flow highlight */
-    (function () {
-      const nodes = document.querySelectorAll(".arch-node");
-      if (!nodes.length) return;
-      let i = 0;
-      setInterval(() => {
-        nodes.forEach((n) => n.classList.remove("active"));
-        nodes[i % nodes.length].classList.add("active");
-        i++;
-      }, 900);
-    })();
-
-    /* Network mesh canvas — nodes, links, pulses */
-    (function () {
-      const canvas = document.getElementById("mesh");
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-      function size() {
-        const rect = canvas.parentElement.getBoundingClientRect();
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
-        canvas.style.width = rect.width + "px";
-        canvas.style.height = rect.height + "px";
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        return { w: rect.width, h: rect.height };
-      }
-
-      let { w, h } = size();
-      window.addEventListener("resize", () => {
-        const s = size();
-        w = s.w;
-        h = s.h;
-        placeNodes();
-      });
-
-      const N = 9;
-      const nodes = [];
-      const links = [];
-      const pulses = [];
-
-      function placeNodes() {
-        nodes.length = 0;
-        links.length = 0;
-        const cx = w / 2;
-        const cy = h / 2;
-        // Center = relay
-        nodes.push({ x: cx, y: cy, r: 7, kind: "relay", phase: 0 });
-        for (let i = 0; i < N - 1; i++) {
-          const a = (i / (N - 1)) * Math.PI * 2 - Math.PI / 2;
-          const rad = Math.min(w, h) * 0.38;
-          nodes.push({
-            x: cx + Math.cos(a) * rad * (0.85 + (i % 3) * 0.08),
-            y: cy + Math.sin(a) * rad * 0.75,
-            r: 4.5,
-            kind: "local",
-            phase: i * 0.7,
-          });
-          links.push([0, i + 1]);
-        }
-        // a few peer links
-        links.push([2, 4], [3, 6], [5, 7], [1, 3]);
-      }
-
-      placeNodes();
-
-      function spawnPulse() {
-        if (pulses.length > 12) return;
-        const link = links[Math.floor(Math.random() * links.length)];
-        const from = Math.random() > 0.5 ? link[0] : link[1];
-        const to = from === link[0] ? link[1] : link[0];
-        pulses.push({ from, to, t: 0, speed: 0.008 + Math.random() * 0.01 });
-      }
-
-      let lastSpawn = 0;
-
-      function draw(ts) {
-        ctx.clearRect(0, 0, w, h);
-
-        // links
-        links.forEach(([a, b]) => {
-          const na = nodes[a];
-          const nb = nodes[b];
-          ctx.beginPath();
-          ctx.moveTo(na.x, na.y);
-          ctx.lineTo(nb.x, nb.y);
-          ctx.strokeStyle = "rgba(255,255,255,0.08)";
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        });
-
-        // pulses along links
-        if (!reduce) {
-          if (ts - lastSpawn > 400) {
-            spawnPulse();
-            lastSpawn = ts;
-          }
-          for (let i = pulses.length - 1; i >= 0; i--) {
-            const p = pulses[i];
-            p.t += p.speed;
-            if (p.t >= 1) {
-              pulses.splice(i, 1);
-              continue;
-            }
-            const a = nodes[p.from];
-            const b = nodes[p.to];
-            const x = a.x + (b.x - a.x) * p.t;
-            const y = a.y + (b.y - a.y) * p.t;
-            const g = ctx.createRadialGradient(x, y, 0, x, y, 8);
-            g.addColorStop(0, "rgba(244,180,0,0.95)");
-            g.addColorStop(1, "rgba(244,180,0,0)");
-            ctx.beginPath();
-            ctx.arc(x, y, 6, 0, Math.PI * 2);
-            ctx.fillStyle = g;
-            ctx.fill();
-          }
-        }
-
-        // nodes
-        nodes.forEach((n, idx) => {
-          const breath = reduce ? 1 : 1 + Math.sin(ts * 0.002 + n.phase) * 0.12;
-          const r = n.r * breath;
-
-          if (n.kind === "relay") {
-            ctx.beginPath();
-            ctx.arc(n.x, n.y, r + 10, 0, Math.PI * 2);
-            ctx.strokeStyle = "rgba(91,141,239,0.25)";
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-            if (!reduce) {
-              const ring = ((ts * 0.0004 + n.phase) % 1);
-              ctx.beginPath();
-              ctx.arc(n.x, n.y, r + 6 + ring * 14, 0, Math.PI * 2);
-              ctx.strokeStyle = "rgba(91,141,239," + (0.45 * (1 - ring)) + ")";
-              ctx.lineWidth = 1;
-              ctx.stroke();
-            }
-          }
-
-          ctx.beginPath();
-          ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
-          if (n.kind === "relay") {
-            ctx.fillStyle = "#5b8def";
-          } else {
-            ctx.fillStyle = idx % 2 === 0 ? "#f4b400" : "#3dd68c";
-          }
-          ctx.fill();
-
-          ctx.beginPath();
-          ctx.arc(n.x, n.y, r + 2, 0, Math.PI * 2);
-          ctx.strokeStyle = "rgba(255,255,255,0.15)";
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        });
-
-        requestAnimationFrame(draw);
-      }
-
-      requestAnimationFrame(draw);
-    })();
+    function copyClone(){navigator.clipboard.writeText(document.getElementById("clone-cmd").textContent).then(()=>{const b=document.querySelector(".copy-btn"),p=b.textContent;b.textContent="Copiado";setTimeout(()=>b.textContent=p,1500)})}
+    (function(){const els=document.querySelectorAll(".reveal");if(!("IntersectionObserver"in window)){els.forEach(e=>e.classList.add("visible"));return}
+      const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("visible");io.unobserve(e.target)}}),{threshold:.12,rootMargin:"0px 0px -40px 0px"});
+      els.forEach(e=>io.observe(e))})();
+    (function(){
+      const canvas=document.getElementById("mesh");if(!canvas)return;const ctx=canvas.getContext("2d");
+      const reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      function size(){const r=canvas.parentElement.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);canvas.width=r.width*d;canvas.height=r.height*d;canvas.style.width=r.width+"px";canvas.style.height=r.height+"px";ctx.setTransform(d,0,0,d,0,0);return{w:r.width,h:r.height}}
+      let{w,h}=size();const nodes=[],links=[],pulses=[];const N=9;
+      function place(){nodes.length=0;links.length=0;const cx=w/2,cy=h/2;nodes.push({x:cx,y:cy,r:7,kind:"relay",phase:0});
+        for(let i=0;i<N-1;i++){const a=(i/(N-1))*Math.PI*2-Math.PI/2,rad=Math.min(w,h)*.38;nodes.push({x:cx+Math.cos(a)*rad*(.85+(i%3)*.08),y:cy+Math.sin(a)*rad*.75,r:4.5,kind:"local",phase:i*.7});links.push([0,i+1])}
+        links.push([2,4],[3,6],[5,7],[1,3])}
+      place();window.addEventListener("resize",()=>{const s=size();w=s.w;h=s.h;place()});
+      let last=0;function spawn(){if(pulses.length>12)return;const L=links[Math.floor(Math.random()*links.length)];const from=Math.random()>.5?L[0]:L[1];pulses.push({from,to:from===L[0]?L[1]:L[0],t:0,speed:.008+Math.random()*.01})}
+      function draw(ts){ctx.clearRect(0,0,w,h);links.forEach(([a,b])=>{ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);ctx.strokeStyle="rgba(255,255,255,.08)";ctx.stroke()});
+        if(!reduce){if(ts-last>400){spawn();last=ts}for(let i=pulses.length-1;i>=0;i--){const p=pulses[i];p.t+=p.speed;if(p.t>=1){pulses.splice(i,1);continue}const A=nodes[p.from],B=nodes[p.to],x=A.x+(B.x-A.x)*p.t,y=A.y+(B.y-A.y)*p.t;const g=ctx.createRadialGradient(x,y,0,x,y,8);g.addColorStop(0,"rgba(244,180,0,.95)");g.addColorStop(1,"rgba(244,180,0,0)");ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fillStyle=g;ctx.fill()}}
+        nodes.forEach((n,idx)=>{const breath=reduce?1:1+Math.sin(ts*.002+n.phase)*.12,r=n.r*breath;if(n.kind==="relay"){ctx.beginPath();ctx.arc(n.x,n.y,r+10,0,Math.PI*2);ctx.strokeStyle="rgba(91,141,239,.25)";ctx.stroke();if(!reduce){const ring=((ts*.0004+n.phase)%1);ctx.beginPath();ctx.arc(n.x,n.y,r+6+ring*14,0,Math.PI*2);ctx.strokeStyle="rgba(91,141,239,"+(0.45*(1-ring))+")";ctx.stroke()}}
+          ctx.beginPath();ctx.arc(n.x,n.y,r,0,Math.PI*2);ctx.fillStyle=n.kind==="relay"?"#5b8def":(idx%2===0?"#f4b400":"#3dd68c");ctx.fill()});
+        requestAnimationFrame(draw)}
+      requestAnimationFrame(draw)})();
   </script>
 </body>
 </html>
