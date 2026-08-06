@@ -18,24 +18,30 @@ import (
 // buildHTTPHandler registers all HTTP routes and returns the handler.
 // Used by startHTTPServer and by integration tests.
 func (n *NodoAlset) buildHTTPHandler() http.Handler {
-	mux := http.NewServeMux()
-
 	n.ensureStaticFiles()
-
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(StaticDir))))
-
-	// Core JSON API (package httpapi)
+	mux := http.NewServeMux()
+	h := n.httpHandlers()
+	// Core API also registered via Backend adapter (crear-agente, listados, …)
 	httpapi.MountCore(mux, &httpAPIBackend{n: n})
+	httpapi.Mount(mux, h)
+	return mux
+}
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+func (n *NodoAlset) httpHandlers() httpapi.Handlers {
+	h := httpapi.Handlers{
+		StaticDir: StaticDir,
+		Extra:     make(map[string]http.HandlerFunc),
+	}
+
+	h.Extra["/"] = func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			http.Redirect(w, r, "/static/index.html", http.StatusFound)
 			return
 		}
 		http.FileServer(http.Dir(".")).ServeHTTP(w, r)
-	})
+	}
 
-	mux.HandleFunc("/w/", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/w/"] = func(w http.ResponseWriter, r *http.Request) {
 		parts := strings.Split(r.URL.Path, "/")
 		if len(parts) < 3 {
 			http.Error(w, "Not found", 404)
@@ -65,9 +71,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 		}
 		w.Header().Set("Content-Type", "text/html")
 		w.Write(data)
-	})
+	}
 
-	mux.HandleFunc("/apps/", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/apps/"] = func(w http.ResponseWriter, r *http.Request) {
 		filePath := strings.TrimPrefix(r.URL.Path, "/apps/")
 		fullPath := filepath.Join(StaticDir, "apps", filePath)
 		if _, err := os.Stat(fullPath); err == nil {
@@ -88,10 +94,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 			return
 		}
 		http.Error(w, "Archivo no encontrado", 404)
-	})
+	}
 
-	// ---- PULSO: endpoint SSE ----
-	mux.HandleFunc("/api/pulse", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/pulse"] = func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
@@ -147,10 +152,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 				return
 			}
 		}
-	})
+	}
 
-	// Dentro de startHTTPServer, junto a los otros endpoints
-	mux.HandleFunc("/api/pulse/emit", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/pulse/emit"] = func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Method not allowed", 405)
 			return
@@ -177,14 +181,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{"status": "emitted"})
-	})
+	}
 
-	// =============================================================================
-	// ENDPOINTS DE GITHUB SYNC
-	// =============================================================================
-
-	// Guardar estado en GitHub
-	mux.HandleFunc("/api/sync/github/save", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/sync/github/save"] = func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Method not allowed", 405)
 			return
@@ -210,10 +209,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 			"blocks":  blocksCount,
 			"message": "Estado guardado en GitHub correctamente",
 		})
-	})
+	}
 
-	// Cargar estado desde GitHub
-	mux.HandleFunc("/api/sync/github/load", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/sync/github/load"] = func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Method not allowed", 405)
 			return
@@ -239,10 +237,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 			"blocks":  blocksCount,
 			"message": "Estado cargado desde GitHub correctamente",
 		})
-	})
+	}
 
-	// Sincronización completa (guardar + cargar)
-	mux.HandleFunc("/api/sync/github", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/sync/github"] = func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Method not allowed", 405)
 			return
@@ -275,10 +272,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 			"blocks":  blocksCount,
 			"message": "Sincronización con GitHub completada",
 		})
-	})
+	}
 
-	// Verificar estado de GitHub
-	mux.HandleFunc("/api/sync/github/status", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/sync/github/status"] = func(w http.ResponseWriter, r *http.Request) {
 		if true { // GitHub persistence removed
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"configured": false,
@@ -299,14 +295,13 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 			"agents":     agentsCount,
 			"blocks":     blocksCount,
 		})
-	})
+	}
 
-	// ---- RESTO DE ENDPOINTS (copiados del original) ----
+	h.Extra["/api/dns/resolve"] = n.handleDNSResolve
 
-	mux.HandleFunc("/api/dns/resolve", n.handleDNSResolve)
-	mux.HandleFunc("/api/dns/delete", n.handleDNSDelete)
+	h.Extra["/api/dns/delete"] = n.handleDNSDelete
 
-	mux.HandleFunc("/api/ipfs/fetch", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/ipfs/fetch"] = func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Método no permitido", 405)
 			return
@@ -329,11 +324,11 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 			"data": string(data),
 			"size": len(data),
 		})
-	})
+	}
 
-	mux.HandleFunc("/api/audit/log", n.handleAuditLog)
+	h.Extra["/api/audit/log"] = n.handleAuditLog
 
-	mux.HandleFunc("/api/eliminar-agente", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/eliminar-agente"] = func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" && r.Method != "DELETE" {
 			http.Error(w, "Método no permitido", 405)
 			return
@@ -372,9 +367,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 			"id":      req.ID,
 			"message": "Agente eliminado correctamente",
 		})
-	})
+	}
 
-	mux.HandleFunc("/api/modificar-agente", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/modificar-agente"] = func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" && r.Method != "PUT" {
 			http.Error(w, "Método no permitido", 405)
 			return
@@ -417,22 +412,28 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 		} else {
 			http.Error(w, "Agente no encontrado", 404)
 		}
-	})
+	}
 
-	mux.HandleFunc("/api/debug/estado", n.handleDebugEstado)
-	mux.HandleFunc("/api/prism/verificar", n.handlePrismVerificar)
-	mux.HandleFunc("/api/prism/revocar", n.handlePrismRevocar)
-	mux.HandleFunc("/api/prism/sellar", n.handlePrismSellar)
-	mux.HandleFunc("/api/admin/update-pass", n.handleAdminUpdatePass)
-	mux.HandleFunc("/api/admin/login", n.handleAdminLogin)
-	mux.HandleFunc("/api/ipfs/add", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/debug/estado"] = n.handleDebugEstado
+
+	h.Extra["/api/prism/verificar"] = n.handlePrismVerificar
+
+	h.Extra["/api/prism/revocar"] = n.handlePrismRevocar
+
+	h.Extra["/api/prism/sellar"] = n.handlePrismSellar
+
+	h.Extra["/api/admin/update-pass"] = n.handleAdminUpdatePass
+
+	h.Extra["/api/admin/login"] = n.handleAdminLogin
+
+	h.Extra["/api/ipfs/add"] = func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		cidStr, _ := n.GenerarCID(body)
 		n.AnunciarNuevoBloque(cidStr)
 		json.NewEncoder(w).Encode(map[string]string{"cid": cidStr})
-	})
+	}
 
-	mux.HandleFunc("/api/ipfs/delete", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/ipfs/delete"] = func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" && r.Method != "DELETE" {
 			http.Error(w, "Método no permitido", 405)
 			return
@@ -464,18 +465,18 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 		} else {
 			http.Error(w, "Bloque no encontrado", 404)
 		}
-	})
+	}
 
-	mux.HandleFunc("/api/ipfs/get", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/ipfs/get"] = func(w http.ResponseWriter, r *http.Request) {
 		data, err := n.BuscarContenidoPorCID(r.URL.Query().Get("cid"))
 		if err != nil {
 			http.Error(w, "Not found", 404)
 			return
 		}
 		w.Write(data)
-	})
+	}
 
-	mux.HandleFunc("/api/ipfs/clear", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/ipfs/clear"] = func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" && r.Method != "DELETE" {
 			http.Error(w, "Método no permitido", 405)
 			return
@@ -501,11 +502,13 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 			"status":         "cleared",
 			"blocks_deleted": count,
 		})
-	})
+	}
 
-	mux.HandleFunc("/api/apps/register", n.handleAppsRegister)
-	mux.HandleFunc("/api/apps/list", n.handleAppsList)
-	mux.HandleFunc("/api/lispai", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/apps/register"] = n.handleAppsRegister
+
+	h.Extra["/api/apps/list"] = n.handleAppsList
+
+	h.Extra["/api/lispai"] = func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
 			Cmd string `json:"cmd"`
 		}
@@ -516,17 +519,21 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 			return
 		}
 		json.NewEncoder(w).Encode(map[string]interface{}{"resultado": res})
-	})
+	}
 
-	mux.HandleFunc("/api/poh/event", n.handlePoHEvent)
-	mux.HandleFunc("/api/poh/proof", n.handlePoHProof)
-	mux.HandleFunc("/api/sync/status", n.handleSyncStatus)
-	mux.HandleFunc("/api/sync/full", n.handleSyncFull)
-	mux.HandleFunc("/api/sync/quick", n.handleSyncQuick)
-	mux.HandleFunc("/api/sync/config", n.handleSyncConfig)
+	h.Extra["/api/poh/event"] = n.handlePoHEvent
 
-	// IA endpoints
-	mux.HandleFunc("/api/ia/configurar", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/poh/proof"] = n.handlePoHProof
+
+	h.Extra["/api/sync/status"] = n.handleSyncStatus
+
+	h.Extra["/api/sync/full"] = n.handleSyncFull
+
+	h.Extra["/api/sync/quick"] = n.handleSyncQuick
+
+	h.Extra["/api/sync/config"] = n.handleSyncConfig
+
+	h.Extra["/api/ia/configurar"] = func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Método no permitido", 405)
 			return
@@ -574,9 +581,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 		case <-time.After(5 * time.Second):
 			http.Error(w, "Timeout", 500)
 		}
-	})
+	}
 
-	mux.HandleFunc("/api/ia/inferir", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/ia/inferir"] = func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Método no permitido", 405)
 			return
@@ -624,9 +631,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 				n.topic.Publish(n.ctx, msgData)
 			}
 		}()
-	})
+	}
 
-	mux.HandleFunc("/api/ia/aprender", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/ia/aprender"] = func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Método no permitido", 405)
 			return
@@ -662,9 +669,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 			"status": "learning_completed",
 			"tasa":   tasa,
 		})
-	})
+	}
 
-	mux.HandleFunc("/api/ia/memoria/buscar", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/ia/memoria/buscar"] = func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Método no permitido", 405)
 			return
@@ -700,9 +707,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 			"results": resultados,
 			"count":   len(resultados),
 		})
-	})
+	}
 
-	mux.HandleFunc("/api/ia/topologia", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/ia/topologia"] = func(w http.ResponseWriter, r *http.Request) {
 		peers := n.host.Network().Peers()
 		vecinosInfo := []map[string]interface{}{}
 		n.mu.RLock()
@@ -741,9 +748,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 			"synapses":    synapsesCount,
 			"peers":       vecinosInfo,
 		})
-	})
+	}
 
-	mux.HandleFunc("/api/ia/estado", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/ia/estado"] = func(w http.ResponseWriter, r *http.Request) {
 		n.mu.RLock()
 		defer n.mu.RUnlock()
 		if n.neuralState == nil {
@@ -771,9 +778,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 			"synapses_count":     len(n.neuralState.Synapses),
 			"synapses":           sinapsisList,
 		})
-	})
+	}
 
-	mux.HandleFunc("/api/ia/metricas", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/ia/metricas"] = func(w http.ResponseWriter, r *http.Request) {
 		n.mu.RLock()
 		defer n.mu.RUnlock()
 		totalSpikes := int64(0)
@@ -800,9 +807,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 			"current_membrane_potential": membrane,
 			"uptime":                     time.Now().Unix() - n.startTime,
 		})
-	})
+	}
 
-	mux.HandleFunc("/api/ia/sinapsis/conectar", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/ia/sinapsis/conectar"] = func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Método no permitido", 405)
 			return
@@ -868,9 +875,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 		case <-time.After(5 * time.Second):
 			http.Error(w, "Timeout", 500)
 		}
-	})
+	}
 
-	mux.HandleFunc("/api/ia/sinapsis/clear", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/ia/sinapsis/clear"] = func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" && r.Method != "DELETE" {
 			http.Error(w, "Método no permitido", 405)
 			return
@@ -892,10 +899,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 				"synapses_removed": 0,
 			})
 		}
-	})
+	}
 
-	// Módulos, entidades y seguridad endpoints
-	mux.HandleFunc("/api/modulos", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/modulos"] = func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
 			n.listarModulos(w, r)
@@ -904,8 +910,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 		default:
 			http.Error(w, "Método no permitido", 405)
 		}
-	})
-	mux.HandleFunc("/api/modulos/", func(w http.ResponseWriter, r *http.Request) {
+	}
+
+	h.Extra["/api/modulos/"] = func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
 			n.obtenerModulo(w, r)
@@ -916,9 +923,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 		default:
 			http.Error(w, "Método no permitido", 405)
 		}
-	})
+	}
 
-	mux.HandleFunc("/api/entidades", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/entidades"] = func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
 			n.listarEntidades(w, r)
@@ -927,8 +934,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 		default:
 			http.Error(w, "Método no permitido", 405)
 		}
-	})
-	mux.HandleFunc("/api/entidades/", func(w http.ResponseWriter, r *http.Request) {
+	}
+
+	h.Extra["/api/entidades/"] = func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/relaciones") {
 			n.obtenerRelacionesDeEntidad(w, r)
 			return
@@ -939,9 +947,9 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 		default:
 			http.Error(w, "Método no permitido", 405)
 		}
-	})
+	}
 
-	mux.HandleFunc("/api/relaciones", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/relaciones"] = func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
 			n.listarRelaciones(w, r)
@@ -950,44 +958,47 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 		default:
 			http.Error(w, "Método no permitido", 405)
 		}
-	})
+	}
 
-	mux.HandleFunc("/api/auth/token", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/auth/token"] = func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "POST":
 			n.crearTokenEndpoint(w, r)
 		default:
 			http.Error(w, "Método no permitido", 405)
 		}
-	})
-	mux.HandleFunc("/api/auth/validate", n.validarTokenEndpoint)
-	mux.HandleFunc("/api/auth/revoke", func(w http.ResponseWriter, r *http.Request) {
+	}
+
+	h.Extra["/api/auth/validate"] = n.validarTokenEndpoint
+
+	h.Extra["/api/auth/revoke"] = func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "POST":
 			n.revocarTokenEndpoint(w, r)
 		default:
 			http.Error(w, "Método no permitido", 405)
 		}
-	})
+	}
 
-	mux.HandleFunc("/api/roles", func(w http.ResponseWriter, r *http.Request) {
+	h.Extra["/api/roles"] = func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "POST":
 			n.asignarRol(w, r)
 		default:
 			http.Error(w, "Método no permitido", 405)
 		}
-	})
-	mux.HandleFunc("/api/roles/", func(w http.ResponseWriter, r *http.Request) {
+	}
+
+	h.Extra["/api/roles/"] = func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
 			n.obtenerRoles(w, r)
 		default:
 			http.Error(w, "Método no permitido", 405)
 		}
-	})
+	}
 
-	return mux
+	return h
 }
 
 func (n *NodoAlset) startHTTPServer(port string) {

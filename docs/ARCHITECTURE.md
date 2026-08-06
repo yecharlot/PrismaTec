@@ -132,7 +132,7 @@ El paquete `node` ya no es un solo archivo: `init`, `p2p`, `persist`, `neural_op
 
 Ya extraído a paquetes:
 
-- `httpapi` — rutas core vía `Backend` + `MountCore`
+- `httpapi` — registro de **todas** las rutas (`Mount` + `MountCore`); el nodo solo implementa handlers
 - `pulse` — transporte SSE
 - `sync` — tipos de sincronización
 
