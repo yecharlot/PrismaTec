@@ -138,7 +138,7 @@ Tipos del sistema de pulsos (SSE). La lógica de conexión sigue en `node/pulse.
 
 ### `internal/httpapi`
 
-API HTTP estable (`/api/crear-agente`, agentes, bloques, peers, DNS). El nodo implementa `Backend` y monta las rutas con `MountCore`.
+Todas las rutas HTTP se registran aquí (`Mount` + `MountCore`). El nodo solo aporta las implementaciones (`httpHandlers` y el adaptador `Backend`).
 
 ### `internal/pulse`
 
