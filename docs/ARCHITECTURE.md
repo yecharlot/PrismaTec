@@ -128,12 +128,14 @@ Ya separado y usable:
 
 - Entrypoint, nodo, Lisp, persistencia, agentes, neural, PoH, contrato Host
 
-Pendiente de mover sin cambiar comportamiento:
+El paquete `node` ya no es un solo archivo: `init`, `p2p`, `persist`, `neural_ops`, `sync`, `admin`, `modules`, `http`, `pulse`.
+
+Pendiente de sacar a paquetes independientes (sin cambiar comportamiento):
 
 - Handlers HTTP → `httpapi`
 - Lógica completa de pulsos → `pulse`
-- Setup libp2p / streams → `p2p`
-- Sync manager → `sync`
+- Setup libp2p → paquete `p2p` propio (hoy está en `node/p2p.go` + `init.go`)
+- Sync manager → paquete `sync` propio (hoy en `node/sync.go`)
 
 Se hace por pasos para no mezclar refactors grandes con cambios de comportamiento.
 

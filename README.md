@@ -73,18 +73,26 @@ Solo arranca el nodo. No contiene lógica de negocio. Si mañana quieres otro bi
 
 ### `internal/node`
 
-El corazón del sistema. Aquí vive `NodoAlset`: conexión a la red (libp2p), sincronización, arranque del servidor HTTP y del sistema de pulsos.
-
-Archivos relevantes:
+El corazón del sistema. Aquí vive `NodoAlset`. El código está partido por responsabilidad:
 
 | Archivo | Responsabilidad |
 |---------|-----------------|
-| `node.go` | Ciclo de vida del nodo, P2P, sincronización, persistencia |
-| `http.go` | Rutas HTTP y panel |
-| `pulse.go` | Clientes y servidor SSE de pulsos |
-| `host_adapter.go` | Adapta el nodo a la interfaz que usa Lisp |
-| `types.go` | Tipos propios del nodo y alias a otros paquetes |
-| `helpers.go` | Utilidades pequeñas (UUID, JSON canónico) |
+| `node.go` | Estructura del nodo, constantes, `Run` |
+| `init.go` | Arranque de libp2p, DHT, GossipSub y Lisp |
+| `p2p.go` | Gossip, streams de datos y sincronización entre pares |
+| `persist.go` | Guardar y cargar estado |
+| `neural_ops.go` | Inferencia, memoria y sinapsis |
+| `sync.go` | Sync manager (rápida / completa) |
+| `admin.go` | Panel de administración e archivos estáticos |
+| `modules.go` | Módulos, entidades, tokens y handlers asociados |
+| `http.go` | Rutas HTTP (`buildHTTPHandler`) |
+| `pulse.go` | Clientes SSE de pulsos |
+| `host_adapter.go` | Implementación de `nodeiface.Host` para Lisp |
+| `types.go` / `helpers.go` | Tipos y utilidades |
+
+### `internal/config`
+
+Constantes de protocolo, directorios y tópicos PubSub. El nodo las reexporta para no romper el código existente.
 
 ### `internal/lisp`
 
