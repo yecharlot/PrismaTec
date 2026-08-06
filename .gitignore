@@ -1,0 +1,10 @@
+blocks/
+
+# generated at runtime
+blocks/
+**/blocks/
+static/
+**/nodo_config.json
+audit.jsonl
+**/audit.jsonl
+alset_data/
