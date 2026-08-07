@@ -9,6 +9,7 @@ Red peer-to-peer en Go: nodos libp2p, agentes, apps por CID, **LispAI**, lógica
 | Auth, módulos, API v2 | [docs/API_AUTH_MODULES_V2.md](docs/API_AUTH_MODULES_V2.md) |
 | Arquitectura | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Landing | https://yecharlot.github.io/PrismaTec/ |
+| LinkedIn (plantilla/post) | [docs/linkedin/](docs/linkedin/) |
 | Relay en vivo | https://prismatec.onrender.com |
 | API v2 info | https://prismatec.onrender.com/api/v2/info |
 
