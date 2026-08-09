@@ -4797,6 +4797,110 @@ function generateEmail(username, suffix = '') {
             }
         }
 
+        
+        // ============================================================
+        // AUTH ADAPTER: Supabase (primario) + Alset nodo (plan B)
+        // ============================================================
+        const ALSET_API = (typeof window !== 'undefined' && window.location && window.location.origin)
+            ? window.location.origin
+            : 'https://prismatec.onrender.com';
+        let authSource = 'supabase';
+        let alsetToken = null;
+
+        function isRateLimitError(err) {
+            if (!err) return false;
+            const m = String(err.message || err.error_description || err || '').toLowerCase();
+            const status = err.status || err.statusCode || err.code;
+            return status === 429 || m.includes('rate') || m.includes('over_email') || m.includes('signup is disabled')
+                || m.includes('too many') || m.includes('limit') || m.includes('email rate') || m.includes('security purposes');
+        }
+
+        function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+
+        async function supabaseSignUpWithRetry(email, password, data, attempts) {
+            attempts = attempts || 3;
+            var lastErr = null;
+            for (var i = 0; i < attempts; i++) {
+                var result = await supabase.auth.signUp({ email: email, password: password, options: { data: data || {} } });
+                if (!result.error) return { data: result.data, error: null };
+                lastErr = result.error;
+                if (!isRateLimitError(result.error)) break;
+                await sleep(800 * Math.pow(2, i));
+            }
+            return { data: null, error: lastErr };
+        }
+
+        async function alsetRegister(username, password, role, metadata) {
+            var res = await fetch(ALSET_API + '/api/sales/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: username, password: password, role: role, metadata: metadata || {} })
+            });
+            var body = {};
+            try { body = await res.json(); } catch (e) {}
+            if (!res.ok) throw new Error(body.message || body.error || ('Alset register ' + res.status));
+            return body;
+        }
+
+        async function alsetLogin(username, password) {
+            var res = await fetch(ALSET_API + '/api/sales/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: username, password: password })
+            });
+            var body = {};
+            try { body = await res.json(); } catch (e) {}
+            if (!res.ok) throw new Error(body.message || body.error || ('Alset login ' + res.status));
+            return body;
+        }
+
+        function applyAlsetSession(body) {
+            authSource = 'alset';
+            alsetToken = body.token;
+            try {
+                sessionStorage.setItem('alset_auth_source', 'alset');
+                sessionStorage.setItem('alset_token', body.token);
+                sessionStorage.setItem('alset_user', JSON.stringify(body.user || {}));
+            } catch (e) {}
+            var u = body.user || {};
+            currentUser = {
+                id: u.id,
+                email: (u.username || '') + '@alset.local',
+                profile: {
+                    id: u.id,
+                    user_id: u.id,
+                    username: u.username,
+                    role: u.role,
+                    metadata: Object.assign({}, u.metadata || {}, { source: 'alset', profile_cid: u.profile_cid })
+                }
+            };
+            currentRole = typeof resolveAppRole === 'function' ? resolveAppRole(currentUser.profile) : (u.role || 'cliente');
+            return currentUser;
+        }
+
+        function restoreAlsetSessionIfAny() {
+            try {
+                if (sessionStorage.getItem('alset_auth_source') !== 'alset') return false;
+                var tok = sessionStorage.getItem('alset_token');
+                var raw = sessionStorage.getItem('alset_user');
+                if (!tok || !raw) return false;
+                alsetToken = tok;
+                authSource = 'alset';
+                var u = JSON.parse(raw);
+                currentUser = {
+                    id: u.id,
+                    email: (u.username || '') + '@alset.local',
+                    profile: {
+                        id: u.id, user_id: u.id, username: u.username, role: u.role,
+                        metadata: Object.assign({}, u.metadata || {}, { source: 'alset', profile_cid: u.profile_cid })
+                    }
+                };
+                currentRole = typeof resolveAppRole === 'function' ? resolveAppRole(currentUser.profile) : (u.role || 'cliente');
+                return true;
+            } catch (e) { return false; }
+        }
+
+
         async function handleAuthSubmit(e) {
             e.preventDefault();
             const usernameRaw = document.getElementById('authUsername').value.trim();
@@ -5848,7 +5952,7 @@ function generateEmail(username, suffix = '') {
 
         try {
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/static/apps/sales/sw.js', { scope: '/' })
+                navigator.serviceWorker.register('/static/apps/sales/sw.js', { scope: '/static/apps/sales/' })
                     .then(function(){ console.log('SW Alset Sales listo'); })
                     .catch(function(e){ console.warn('SW', e); });
             }
