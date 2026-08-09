@@ -721,6 +721,49 @@
             color: var(--text-dark) !important;
         }
 
+        
+        .btn-install-pwa {
+            display: inline-flex !important;
+            align-items: center;
+            gap: 0.35rem;
+            background: var(--gradient1) !important;
+            color: #0b0c10 !important;
+            border: none;
+            border-radius: 50px;
+            padding: 0.45rem 0.85rem;
+            font-weight: 800;
+            font-size: 0.78rem;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .fab-install {
+            position: fixed;
+            right: 12px;
+            bottom: 16px;
+            z-index: 1200;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: linear-gradient(135deg, #f4b400, #c49200);
+            color: #0b0c10 !important;
+            border: none;
+            border-radius: 999px;
+            padding: 0.7rem 1rem;
+            font-weight: 800;
+            font-size: 0.85rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+            cursor: pointer;
+        }
+        .fab-install i { font-size: 1rem; }
+        @media (min-width: 769px) {
+            .fab-install { bottom: 24px; right: 24px; }
+        }
+        /* Si ya está en modo app, ocultar FAB */
+        @media (display-mode: standalone) {
+            .fab-install, .btn-install-pwa { display: none !important; }
+        }
+
         /* ========== APP MOBILE / RESPONSIVE ========== */
 
         .app-topbar-right { display: flex; align-items: center; gap: 0.75rem; margin-left: auto; }
@@ -925,10 +968,14 @@
                 <li><a href="#" onclick="event.preventDefault(); closeLandingNav(); openAuthModal('login');">Iniciar sesión</a></li>
                 <li><a class="btn-nav" id="navEmpezarDesktop" href="#" onclick="event.preventDefault(); closeLandingNav(); openAuthModal('register');">Empezar Ahora</a></li>
             </ul>
+            <button type="button" class="btn-install-pwa" id="btnInstallPwa" onclick="installAlsetPwa()" title="Añadir a pantalla de inicio">
+                <i class="fas fa-mobile-alt"></i> <span>Instalar</span>
+            </button>
             <button type="button" class="user-mode-btn" id="userModeToggle" onclick="toggleUserMode()" title="Modo claro/oscuro (solo tú)" aria-label="Tema">
                 <i class="fas fa-sun"></i>
             </button>
             <div class="nav-actions-mobile">
+                <button type="button" class="btn-nav btn-nav-mobile" onclick="installAlsetPwa()"><i class="fas fa-mobile-alt"></i> Instalar</button>
                 <a class="btn-nav btn-nav-mobile" href="#" onclick="event.preventDefault(); openAuthModal('register');">Empezar Ahora</a>
                 <button type="button" class="menu-toggle" id="menuToggle" aria-label="Menú" onclick="toggleLandingNav()"><i class="fas fa-bars"></i></button>
             </div>
@@ -5650,5 +5697,35 @@ function generateEmail(username, suffix = '') {
         };
         console.log('✅ Alset Sales Hub listo');
     </script>
+
+    <!-- PWA / Añadir a inicio (Samsung Internet, iOS, etc.) -->
+    <button type="button" class="fab-install" id="fabInstallPwa" onclick="installAlsetPwa()" aria-label="Instalar app">
+        <i class="fas fa-download"></i>
+        <span>Instalar app</span>
+    </button>
+    <div class="modal-overlay" id="installHelpModal" onclick="if(event.target===this)closeInstallHelp()">
+        <div class="modal" style="max-width:420px;" onclick="event.stopPropagation()">
+            <button type="button" class="modal-close" onclick="closeInstallHelp()">&times;</button>
+            <h2 style="margin-top:0;">Instalar Alset Sales</h2>
+            <p style="color:var(--text-light);font-size:0.95rem;">En este teléfono puedes dejar un acceso directo en la pantalla de inicio:</p>
+            <div style="background:var(--dark2);border:1px solid var(--border);border-radius:12px;padding:1rem;margin:0.75rem 0;">
+                <strong>Samsung Internet</strong>
+                <ol style="margin:0.5rem 0 0;padding-left:1.2rem;line-height:1.55;font-size:0.9rem;">
+                    <li>Toca el menú <strong>☰</strong> o las <strong>tres líneas</strong> abajo/arriba.</li>
+                    <li>Elige <strong>Añadir página a</strong> → <strong>Pantalla de inicio</strong>.</li>
+                    <li>Confirma con <strong>Añadir</strong>.</li>
+                </ol>
+            </div>
+            <div style="background:var(--dark2);border:1px solid var(--border);border-radius:12px;padding:1rem;margin:0.75rem 0;">
+                <strong>Chrome (Android)</strong>
+                <ol style="margin:0.5rem 0 0;padding-left:1.2rem;line-height:1.55;font-size:0.9rem;">
+                    <li>Menú <strong>⋮</strong> → <strong>Instalar aplicación</strong> o <strong>Añadir a la pantalla de inicio</strong>.</li>
+                </ol>
+            </div>
+            <p style="font-size:0.8rem;color:var(--text-light);">En el Samsung J2 Prime el navegador Internet no muestra el aviso automático de Chrome; el acceso se crea desde el menú como se indica arriba.</p>
+            <button type="button" class="btn-primary" style="width:100%;margin-top:0.5rem;" onclick="closeInstallHelp()">Entendido</button>
+        </div>
+    </div>
+
 </body>
 </html>
