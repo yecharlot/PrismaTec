@@ -968,14 +968,10 @@
                 <li><a href="#" onclick="event.preventDefault(); closeLandingNav(); openAuthModal('login');">Iniciar sesión</a></li>
                 <li><a class="btn-nav" id="navEmpezarDesktop" href="#" onclick="event.preventDefault(); closeLandingNav(); openAuthModal('register');">Empezar Ahora</a></li>
             </ul>
-            <button type="button" class="btn-install-pwa" id="btnInstallPwa" onclick="installAlsetPwa()" title="Añadir a pantalla de inicio">
-                <i class="fas fa-mobile-alt"></i> <span>Instalar</span>
-            </button>
             <button type="button" class="user-mode-btn" id="userModeToggle" onclick="toggleUserMode()" title="Modo claro/oscuro (solo tú)" aria-label="Tema">
                 <i class="fas fa-sun"></i>
             </button>
             <div class="nav-actions-mobile">
-                <button type="button" class="btn-nav btn-nav-mobile" onclick="installAlsetPwa()"><i class="fas fa-mobile-alt"></i> Instalar</button>
                 <a class="btn-nav btn-nav-mobile" href="#" onclick="event.preventDefault(); openAuthModal('register');">Empezar Ahora</a>
                 <button type="button" class="menu-toggle" id="menuToggle" aria-label="Menú" onclick="toggleLandingNav()"><i class="fas fa-bars"></i></button>
             </div>
@@ -2191,9 +2187,11 @@ function getCurrentGestorId() {
             if (typeof closeLandingNav === 'function') closeLandingNav();
             document.getElementById('landingPage').style.display = 'none';
             document.getElementById('appContainer').classList.add('active');
+            if (typeof syncInstallFab === 'function') syncInstallFab();
         }
 
         function showLanding() {
+            setTimeout(function(){ if (typeof syncInstallFab === 'function') syncInstallFab(); }, 0);
             document.getElementById('landingPage').style.display = 'block';
             document.getElementById('appContainer').classList.remove('active');
             document.getElementById('appSidebar')?.classList.remove('open');
@@ -5695,11 +5693,12 @@ function generateEmail(username, suffix = '') {
             if (typeof showNotification === 'function') showNotification('Instalar app', msg, 'info');
             else alert(msg);
         };
+        if (typeof syncInstallFab === 'function') syncInstallFab();
         console.log('✅ Alset Sales Hub listo');
     </script>
 
     <!-- PWA / Añadir a inicio (Samsung Internet, iOS, etc.) -->
-    <button type="button" class="fab-install" id="fabInstallPwa" onclick="installAlsetPwa()" aria-label="Instalar app">
+    <button type="button" class="fab-install" id="btnInstallPwa" onclick="installAlsetPwa()" aria-label="Instalar app">
         <i class="fas fa-download"></i>
         <span>Instalar app</span>
     </button>
