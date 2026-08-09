@@ -7,8 +7,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Alset Sales" />
-    <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="https://prismatec.onrender.com/w/sales.app.ans" />
+    <link rel="manifest" href="/static/apps/sales/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/static/apps/sales/icon-192.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
     <title>Alset Sales Hub - Revoluciona tus ventas</title>
     
@@ -5613,9 +5613,41 @@ function generateEmail(username, suffix = '') {
 
         try {
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('./sw.js').catch(function(e){ console.warn('SW', e); });
+                navigator.serviceWorker.register('/static/apps/sales/sw.js', { scope: '/' })
+                    .then(function(){ console.log('SW Alset Sales listo'); })
+                    .catch(function(e){ console.warn('SW', e); });
             }
         } catch (e) {}
+        // PWA install prompt
+        window.__alsetDeferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            window.__alsetDeferredPrompt = e;
+            var b = document.getElementById('btnInstallPwa');
+            if (b) b.style.display = 'inline-flex';
+        });
+        window.addEventListener('appinstalled', function() {
+            window.__alsetDeferredPrompt = null;
+            var b = document.getElementById('btnInstallPwa');
+            if (b) b.style.display = 'none';
+        });
+        window.installAlsetPwa = async function() {
+            var b = document.getElementById('btnInstallPwa');
+            if (window.__alsetDeferredPrompt) {
+                window.__alsetDeferredPrompt.prompt();
+                try { await window.__alsetDeferredPrompt.userChoice; } catch (e) {}
+                window.__alsetDeferredPrompt = null;
+                if (b) b.style.display = 'none';
+                return;
+            }
+            // Fallback instrucciones
+            var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+            var msg = isIOS
+                ? 'En iPhone/iPad: toca Compartir y luego «Añadir a pantalla de inicio».'
+                : 'En Android: menú ⋮ del navegador → «Instalar app» o «Añadir a pantalla de inicio». Si no aparece, abre esta página en Chrome.';
+            if (typeof showNotification === 'function') showNotification('Instalar app', msg, 'info');
+            else alert(msg);
+        };
         console.log('✅ Alset Sales Hub listo');
     </script>
 </body>

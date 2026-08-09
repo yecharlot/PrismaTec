@@ -1,19 +1,27 @@
 {
   "name": "Alset Sales Hub",
   "short_name": "Alset Sales",
-  "description": "Plataforma de gestión de ventas: negocios, gestores y clientes",
+  "description": "Gestión de ventas: negocios, gestores y clientes",
   "start_url": "/w/sales.app.ans",
-  "scope": "/w/",
+  "scope": "/",
+  "id": "/w/sales.app.ans",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#0b0c10",
   "theme_color": "#0b0c10",
   "lang": "es",
+  "dir": "ltr",
   "icons": [
     {
-      "src": "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/svgs/solid/rocket.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/static/apps/sales/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/apps/sales/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
