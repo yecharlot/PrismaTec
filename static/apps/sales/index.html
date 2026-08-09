@@ -2317,7 +2317,6 @@ function getCurrentGestorId() {
             ],
             cliente: [
                 { icon: 'fa-compass', label: 'Explorar', view: 'explorar' },
-                { icon: 'fa-users', label: 'Gestores', view: 'gestores' },
                 { icon: 'fa-comment', label: 'Mis chats', view: 'chats' },
                 { icon: 'fa-qrcode', label: 'Mis QR', view: 'mis-qr' },
             ],
@@ -2512,7 +2511,9 @@ function navigateTo(view) {
             switch(view) {
                 case 'dashboard': html = renderDashboard(); break;
                 case 'catalogo': html = renderCatalogo(); break;
-                case 'gestores': html = renderGestores(); break;
+                case 'gestores':
+                    if (currentRole === 'cliente') { html = typeof renderExplorar === 'function' ? renderExplorar() : '<div class="app-card">Explora productos desde el catálogo.</div>'; break; }
+                    html = renderGestores(); break;
                 case 'ranking': html = renderRanking(); break;
                 case 'monitoreo': html = renderMonitoreo(); break;
                 case 'panel': html = renderPanelGestor(); break;
