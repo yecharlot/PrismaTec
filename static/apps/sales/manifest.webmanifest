@@ -1,0 +1,20 @@
+{
+  "name": "Alset Sales Hub",
+  "short_name": "Alset Sales",
+  "description": "Plataforma de gestión de ventas: negocios, gestores y clientes",
+  "start_url": "/w/sales.app.ans",
+  "scope": "/w/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b0c10",
+  "theme_color": "#0b0c10",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/svgs/solid/rocket.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

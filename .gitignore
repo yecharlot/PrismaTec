@@ -4,6 +4,8 @@ blocks/
 blocks/
 **/blocks/
 static/
+!static/apps/
+!static/apps/**
 **/nodo_config.json
 audit.jsonl
 **/audit.jsonl
