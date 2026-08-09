@@ -39,6 +39,10 @@ func (n *NodoAlset) handleInfoV2(w http.ResponseWriter, r *http.Request) {
 			"POST /api/v2/app/publicar",
 			"POST /api/v2/app/instalar",
 			"POST /api/v2/app/ejecutar",
+			"POST /api/sales/register",
+			"POST /api/sales/login",
+			"GET  /api/sales/me",
+			"GET  /api/sales/info",
 		},
 	})
 }
