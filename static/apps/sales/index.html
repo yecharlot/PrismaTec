@@ -20,6 +20,7 @@
     
     <!-- QRCode.js -->
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
@@ -2302,6 +2303,7 @@ function getCurrentGestorId() {
                 { icon: 'fa-handshake', label: 'Mis gestores', view: 'ranking' },
                 { icon: 'fa-comments', label: 'Auditoría chats', view: 'chats' },
                 { icon: 'fa-chart-bar', label: 'Ventas', view: 'ventas-empresa' },
+                { icon: 'fa-qrcode', label: 'Escanear QR', view: 'escanear-qr' },
                 { icon: 'fa-crown', label: 'Mi plan', view: 'mi-plan' },
             ],
             gestor: [
@@ -2311,6 +2313,7 @@ function getCurrentGestorId() {
                 { icon: 'fa-hand-holding-heart', label: 'Seleccionar', view: 'seleccionar-productos' },
                 { icon: 'fa-comment', label: 'Mis chats', view: 'chats' },
                 { icon: 'fa-list-check', label: 'Oportunidades', view: 'oportunidades-gestor' },
+                { icon: 'fa-qrcode', label: 'Escanear QR', view: 'escanear-qr' },
             ],
             cliente: [
                 { icon: 'fa-compass', label: 'Explorar', view: 'explorar' },
@@ -2385,6 +2388,8 @@ function getCurrentGestorId() {
         }
 
 function navigateTo(view) {
+            if (typeof stopQrScanner === 'function') try { stopQrScanner(); } catch (e) {}
+
             if (typeof closeAppSidebar === 'function') closeAppSidebar();
             currentView = view;
             if (view === 'nuevo-producto') {
@@ -2522,6 +2527,7 @@ function navigateTo(view) {
                 case 'solicitudes': html = renderSolicitudes(); break;
                 case 'vender': html = renderVender(); break;
                 case 'ventas-empresa': html = renderVentasEmpresa(); break;
+                case 'escanear-qr': html = renderEscanearQR(); break;
                 case 'mis-qr': html = renderMisQR(); break;
                 case 'mi-plan': html = renderMiPlan(); break;
                 case 'admin-dashboard': html = renderAdminDashboard(); break;
@@ -2880,7 +2886,191 @@ function renderProductCardHTML(product, showManage = false) {
             `;
         }
 
-function renderVentasEmpresa() {
+
+        let html5QrCodeInstance = null;
+
+        function renderEscanearQR() {
+            setTimeout(() => {
+                // no auto-start camera (permisos); user taps button
+            }, 50);
+            return `
+                <div class="app-card">
+                    <h3>📷 Escanear QR de entrega</h3>
+                    <p style="color:var(--text-light);font-size:0.9rem;">
+                        Cuando el cliente llegue a recoger el producto, escanea el código QR de su venta
+                        o escribe el código manualmente.
+                    </p>
+                    <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin:1rem 0;">
+                        <button type="button" class="btn-primary" id="btnStartQrScan" onclick="startQrScanner()">
+                            <i class="fas fa-camera"></i> Abrir cámara
+                        </button>
+                        <button type="button" class="btn-secondary" id="btnStopQrScan" onclick="stopQrScanner()" style="display:none;">
+                            Detener cámara
+                        </button>
+                    </div>
+                    <div id="qr-reader" style="width:100%;max-width:420px;margin:0 auto;border-radius:12px;overflow:hidden;background:#000;"></div>
+                    <div style="margin-top:1.25rem;">
+                        <label style="font-size:0.85rem;color:var(--text-light);">Código manual</label>
+                        <div style="display:flex;gap:0.5rem;margin-top:0.35rem;flex-wrap:wrap;">
+                            <input id="qrManualCode" type="text" placeholder="Ej: VTA-..." style="flex:1;min-width:160px;padding:0.65rem 0.85rem;border-radius:10px;border:1px solid var(--border);background:var(--dark2);color:var(--text-dark);" />
+                            <button type="button" class="btn-primary" onclick="procesarCodigoQR(document.getElementById('qrManualCode').value)">
+                                Buscar
+                            </button>
+                        </div>
+                    </div>
+                    <div id="qrScanResult" style="margin-top:1.25rem;"></div>
+                </div>
+            `;
+        }
+
+        async function startQrScanner() {
+            const el = document.getElementById('qr-reader');
+            if (!el) return;
+            if (typeof Html5Qrcode === 'undefined') {
+                showNotification('Cámara', 'Librería de QR no cargó. Usa el código manual.', 'warning');
+                return;
+            }
+            try {
+                await stopQrScanner();
+                html5QrCodeInstance = new Html5Qrcode('qr-reader');
+                await html5QrCodeInstance.start(
+                    { facingMode: 'environment' },
+                    { fps: 8, qrbox: { width: 220, height: 220 } },
+                    (decoded) => {
+                        procesarCodigoQR(decoded);
+                        stopQrScanner();
+                    },
+                    () => {}
+                );
+                const stopBtn = document.getElementById('btnStopQrScan');
+                if (stopBtn) stopBtn.style.display = 'inline-flex';
+            } catch (e) {
+                console.warn(e);
+                showNotification('Cámara', 'No se pudo abrir la cámara. Escribe el código a mano.', 'warning');
+            }
+        }
+
+        async function stopQrScanner() {
+            try {
+                if (html5QrCodeInstance) {
+                    const st = html5QrCodeInstance.getState && html5QrCodeInstance.getState();
+                    // 2 = SCANNING in html5-qrcode
+                    if (st === 2 || st === 1) {
+                        await html5QrCodeInstance.stop();
+                    }
+                    try { await html5QrCodeInstance.clear(); } catch (e) {}
+                    html5QrCodeInstance = null;
+                }
+            } catch (e) {
+                html5QrCodeInstance = null;
+            }
+            const stopBtn = document.getElementById('btnStopQrScan');
+            if (stopBtn) stopBtn.style.display = 'none';
+            const el = document.getElementById('qr-reader');
+            if (el) el.innerHTML = '';
+        }
+
+        function extraerCodigoDesdeScan(raw) {
+            if (!raw) return '';
+            const text = String(raw).trim();
+            try {
+                const obj = JSON.parse(text);
+                if (obj && obj.codigo) return String(obj.codigo).trim();
+            } catch (e) {}
+            // plain code
+            return text;
+        }
+
+        async function procesarCodigoQR(raw) {
+            const codigo = extraerCodigoDesdeScan(raw);
+            const box = document.getElementById('qrScanResult');
+            if (!codigo) {
+                if (box) box.innerHTML = '<p style="color:#e74c3c;">Código vacío o no válido.</p>';
+                return;
+            }
+            if (box) box.innerHTML = '<p style="color:var(--text-light);">Buscando venta <strong>' + codigo.replace(/</g,'') + '</strong>…</p>';
+
+            // 1) local cache
+            let venta = (ventas || []).find(v => String(v.codigo || '').toLowerCase() === codigo.toLowerCase());
+            // 2) supabase
+            if (!venta) {
+                try {
+                    const { data, error } = await supabase.from('ventas').select('*').ilike('codigo', codigo).maybeSingle();
+                    if (!error && data) {
+                        venta = data;
+                        // merge into local list
+                        const idx = (ventas || []).findIndex(v => v.id === data.id);
+                        if (idx >= 0) ventas[idx] = { ...ventas[idx], ...data };
+                        else ventas.push(data);
+                    }
+                } catch (e) { console.warn(e); }
+            }
+            if (!venta) {
+                if (box) box.innerHTML = '<div class="app-card" style="border-color:#e74c3c;"><p>No se encontró ninguna venta con el código <strong>' + codigo.replace(/</g,'') + '</strong>.</p></div>';
+                showNotification('QR', 'Venta no encontrada', 'error');
+                return;
+            }
+
+            const prod = (productos || []).find(p => p.id === venta.producto_id);
+            const gest = (gestores || []).find(g => g.id === venta.gestor_id);
+            const yaEntregada = String(venta.estado || '').toLowerCase() === 'entregada';
+            const precioTxt = typeof formatPrecio === 'function' ? formatPrecio(venta.precio || venta.total, prod) : (venta.precio || venta.total || '—');
+
+            if (box) {
+                box.innerHTML = `
+                    <div class="app-card" style="border:1px solid var(--primary);">
+                        <h4 style="margin:0 0 0.5rem;">✅ Venta encontrada</h4>
+                        <div style="font-size:0.9rem;line-height:1.55;">
+                            <div><strong>Código:</strong> ${String(venta.codigo||'').replace(/</g,'')}</div>
+                            <div><strong>Producto:</strong> ${(prod && prod.nombre) || venta.producto_id || '—'}</div>
+                            <div><strong>Cliente:</strong> ${String(venta.cliente_nombre||'—').replace(/</g,'')}</div>
+                            <div><strong>Gestor:</strong> ${gest ? ((gest.nombres||'')+' '+(gest.apellidos||'')).trim() : (venta.gestor_id || '—')}</div>
+                            <div><strong>Importe:</strong> ${precioTxt}</div>
+                            <div><strong>Estado:</strong> <span id="qrEstadoLabel">${String(venta.estado||'—').replace(/</g,'')}</span></div>
+                        </div>
+                        <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+                            ${yaEntregada
+                                ? '<span class="badge badge-success">Ya marcada como entregada</span>'
+                                : `<button type="button" class="btn-primary" onclick="marcarVentaEntregada('${venta.id}')"><i class="fas fa-check"></i> Confirmar entrega</button>`
+                            }
+                        </div>
+                    </div>`;
+            }
+            showNotification('QR leído', venta.codigo || codigo, 'success');
+        }
+
+        async function marcarVentaEntregada(ventaId) {
+            if (!ventaId) return;
+            try {
+                const { data, error } = await supabase.from('ventas').update({
+                    estado: 'entregada',
+                    entregada_en: new Date().toISOString()
+                }).eq('id', ventaId).select().maybeSingle();
+                if (error) {
+                    // column entregada_en may not exist — retry only estado
+                    const { data: d2, error: e2 } = await supabase.from('ventas').update({ estado: 'entregada' }).eq('id', ventaId).select().maybeSingle();
+                    if (e2) throw e2;
+                    const idx = ventas.findIndex(v => v.id === ventaId);
+                    if (idx >= 0) ventas[idx].estado = 'entregada';
+                } else if (data) {
+                    const idx = ventas.findIndex(v => v.id === ventaId);
+                    if (idx >= 0) ventas[idx] = { ...ventas[idx], ...data };
+                    else ventas.push(data);
+                }
+                const lab = document.getElementById('qrEstadoLabel');
+                if (lab) lab.textContent = 'entregada';
+                showNotification('Entrega', 'Venta marcada como entregada', 'success');
+                // refresh result panel buttons
+                const v = ventas.find(x => x.id === ventaId);
+                if (v) procesarCodigoQR(v.codigo);
+            } catch (e) {
+                console.error(e);
+                showNotification('Error', e.message || 'No se pudo actualizar la venta', 'error');
+            }
+        }
+
+
+        function renderVentasEmpresa() {
             const ventasEmpresa = ventas.filter(v => {
                 const gestor = gestores.find(g => g.id === v.gestor_id);
                 return gestor && gestor.profile_id === currentUser?.id;
