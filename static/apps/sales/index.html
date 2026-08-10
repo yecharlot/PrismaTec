@@ -26,6 +26,106 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
     
     <style>
+        .footer-contact-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem 1rem;
+            margin-top: 1.25rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            max-width: 100%;
+        }
+        .footer-credit-label {
+            font-size: 0.7rem;
+            color: var(--text-light);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .footer-prismatec-logo {
+            width: min(260px, 58vw);
+            height: auto;
+            max-height: 64px;
+            object-fit: contain;
+            display: block;
+            flex-shrink: 1;
+            filter: drop-shadow(0 1px 4px rgba(0,0,0,0.2));
+        }
+        .footer-wa {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(37, 211, 102, 0.12);
+            color: #25D366;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+            margin-left: 0.15rem;
+        }
+        .footer-wa:hover { background: rgba(37, 211, 102, 0.22); color: #25D366; }
+        html.user-light .footer-prismatec-logo,
+        body.user-light .footer-prismatec-logo {
+            filter: drop-shadow(0 1px 3px rgba(0,0,0,0.12));
+        }
+        @media (max-width: 768px) {
+            .footer-prismatec-logo { width: min(230px, 55vw); max-height: 56px; }
+            .footer-wa { width: 42px; height: 42px; font-size: 1.3rem; }
+        }
+        @media (max-width: 480px) {
+            .footer-contact-row { gap: 0.5rem 0.65rem; }
+            .footer-credit-label { font-size: 0.62rem; }
+            .footer-prismatec-logo { width: min(190px, 52vw); max-height: 48px; }
+            .footer-wa { width: 40px; height: 40px; font-size: 1.25rem; }
+        }
+        @media (max-width: 360px) {
+            .footer-prismatec-logo { width: min(150px, 48vw); max-height: 42px; }
+            .footer-credit-label { font-size: 0.58rem; }
+        }
+            .prismatec-credit img { height: 30px !important; max-width: 150px !important; }
+        }
+
+        .plan-pick-btn { transition: transform 0.15s ease, box-shadow 0.15s ease; min-height: 48px; }
+        .plan-pick-btn:hover { transform: translateY(-1px); }
+        @media (max-width: 480px) {
+            .plan-pick-grid { grid-template-columns: 1fr 1fr !important; }
+            .plan-pick-btn { font-size: 0.75rem !important; padding: 0.65rem 0.35rem !important; }
+        }
+
+
+        .brand-logo {
+            height: 1.5rem;
+            width: 1.5rem;
+            border-radius: 50%;
+            object-fit: cover;
+            vertical-align: middle;
+            flex-shrink: 0;
+            background: #0b0c10;
+            border: 1.5px solid rgba(244, 180, 0, 0.55);
+            box-shadow: 0 0 0 2px rgba(11, 12, 16, 0.25);
+        }
+        html.user-light .brand-logo,
+        body.user-light .brand-logo,
+        [data-user-mode="light"] .brand-logo {
+            background: #0b0c10;
+            border-color: rgba(244, 180, 0, 0.85);
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.35);
+        }
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+        .logo .brand-logo { height: 1.55rem; width: 1.55rem; }
+        .app-sidebar .logo .brand-logo { height: 1.7rem; width: 1.7rem; }
+        @media (max-width: 480px) {
+            .logo .brand-logo { height: 1.35rem; width: 1.35rem; }
+            .logo { font-size: 1rem; }
+        }
+
 
         .nav-actions-mobile { display: none; align-items: center; gap: 0.5rem; }
         .btn-nav-mobile {
@@ -949,7 +1049,7 @@
     </style>
 </head>
 <body>
-    <!-- ============================================================
+<!-- ============================================================
     NOTIFICATION CONTAINER
     ============================================================ -->
     <div class="notification-container" id="notificationContainer"></div>
@@ -959,7 +1059,7 @@
     ============================================================ -->
     <div id="landingPage">
         <nav class="navbar" id="navbar">
-            <a href="#" class="logo" onclick="showLanding()"><i class="fas fa-rocket"></i> Alset<span>Sales</span></a>
+            <a href="#" class="logo" onclick="showLanding()"><img class="brand-logo" src="/static/apps/sales/logo.png" alt="Alset Sales" width="28" height="28" /> Alset<span>Sales</span></a>
                         <div class="nav-backdrop" id="navBackdrop" onclick="closeLandingNav()"></div>
             <ul class="nav-links" id="navLinks">
                 <li><a href="#features" onclick="landingNavGo('features')">Características</a></li>
@@ -991,7 +1091,7 @@
                     </h1>
                     <p><span data-copy="hero_subtitle">La plataforma que conecta a negocios, gestores y clientes en un solo lugar.</span></p>
                     <div class="hero-buttons">
-                        <a class="btn-primary" href="#" onclick="event.preventDefault(); openAuthModal('register');"><i class="fas fa-rocket"></i> Empezar Ahora</a>
+                        <a class="btn-primary" href="#" onclick="event.preventDefault(); openAuthModal('register');"><img class="brand-logo" src="/static/apps/sales/logo.png" alt="" style="height:1.1em;width:1.1em;margin-right:0.25rem;" /> Empezar Ahora</a>
                         <a class="btn-secondary" href="#" onclick="event.preventDefault(); openAuthModal('login');"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</a>
                     </div>
                     <div class="hero-stats">
@@ -1158,7 +1258,7 @@
             <div style="max-width:800px; margin:0 auto;">
                 <h2>🚀 ¿Listo para <span style="color:var(--accent);">revolucionar</span> tus ventas?</h2>
                 <p>Únete a los <span id="ctaNegociosCount">—</span> negocios que ya están transformando su gestión de ventas.</p>
-                <a class="btn-primary" href="#" onclick="event.preventDefault(); openAuthModal('register');"><i class="fas fa-rocket"></i> Comenzar Prueba Gratis</a>
+                <a class="btn-primary" href="#" onclick="event.preventDefault(); openAuthModal('register');"><img class="brand-logo" src="/static/apps/sales/logo.png" alt="" style="height:1.1em;width:1.1em;margin-right:0.25rem;" /> Comenzar Prueba Gratis</a>
                 <div style="margin-top:1.5rem; font-size:0.9rem; opacity:0.8;">
                     <i class="fas fa-check-circle"></i> Sin tarjeta de crédito &nbsp;&nbsp;
                     <i class="fas fa-check-circle"></i> Configuración en 5 minutos
@@ -1169,10 +1269,14 @@
         <footer class="footer">
             <div class="footer-grid" style="grid-template-columns: 2fr 1fr 1fr;">
                 <div>
-                    <a href="#" class="logo" onclick="showLanding()"><i class="fas fa-rocket"></i> Alset<span>Sales</span></a>
+                    <a href="#" class="logo" onclick="showLanding()"><img class="brand-logo" src="/static/apps/sales/logo.png" alt="Alset Sales" width="28" height="28" /> Alset<span>Sales</span></a>
                     <p style="max-width:300px;">La plataforma que conecta a negocios, gestores y clientes para revolucionar la gestión de ventas.</p>
-                    <div style="display:flex; gap:1rem; margin-top:1.5rem;">
-                        <a href="https://wa.me/5351069717" target="_blank" rel="noopener" title="WhatsApp" style="color:#25D366; font-size:1.4rem;"><i class="fab fa-whatsapp"></i></a>
+                    <div class="footer-contact-row">
+                        <span class="footer-credit-label">Creado por</span>
+                        <img class="footer-prismatec-logo" src="/static/apps/sales/prismatec-logo.png" alt="Prism@TEC" title="Prism@TEC — Tecnología, Finanzas, Consultoría" loading="lazy" width="220" height="72" />
+                        <a class="footer-wa" href="https://wa.me/5351069717" target="_blank" rel="noopener" title="WhatsApp" aria-label="WhatsApp">
+                            <i class="fab fa-whatsapp"></i>
+                        </a>
                     </div>
                 </div>
                 <div><h5>Producto</h5><ul><li><a onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">Características</a></li><li><a onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">Planes</a></li><li><a onclick="document.getElementById('testimonials').scrollIntoView({behavior:'smooth'})">Opiniones</a></li></ul></div>
@@ -1192,7 +1296,7 @@
     <div class="app-container" id="appContainer">
         <div class="app-sidebar-overlay" id="appSidebarOverlay" onclick="closeAppSidebar()"></div>
         <aside class="app-sidebar" id="appSidebar">
-            <div class="logo" onclick="showLanding()"><i class="fas fa-rocket"></i> Alset<span>Sales</span></div>
+            <div class="logo" onclick="showLanding()"><img class="brand-logo" src="/static/apps/sales/logo.png" alt="Alset Sales" width="28" height="28" /> Alset<span>Sales</span></div>
             <nav class="app-nav" id="appNav"></nav>
         </aside>
         
@@ -1291,7 +1395,15 @@
                     <input type="password" id="authPassword" placeholder="Mínimo 6 caracteres" required minlength="6" style="width:100%; padding:0.75rem 1rem; border:1px solid var(--gray2); border-radius:12px; font-family:'DM Sans', system-ui, sans-serif; font-size:1rem; outline:none;">
                 </div>
                 
-                <button type="submit" id="authSubmitBtn" style="width:100%; padding:1rem; background:var(--gradient1); color:white; border:none; border-radius:12px; font-weight:700; font-size:1.1rem; cursor:pointer; transition:all 0.3s ease; margin-top:0.5rem;">
+                
+                <div id="regAvatarBlock" style="margin-bottom:1rem;">
+                    <label style="font-weight:600;font-size:0.9rem;display:block;margin-bottom:0.35rem;">Foto de perfil <span style="color:var(--text-light);font-weight:500;">(opcional)</span></label>
+                    <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+                        <img id="regAvatarPreview" src="" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover;display:none;border:2px solid var(--primary);" />
+                        <input type="file" id="regAvatarFile" accept="image/*" style="font-size:0.85rem;max-width:100%;" onchange="previewRegAvatar(this)" />
+                    </div>
+                </div>
+<button type="submit" id="authSubmitBtn" style="width:100%; padding:1rem; background:var(--gradient1); color:white; border:none; border-radius:12px; font-weight:700; font-size:1.1rem; cursor:pointer; transition:all 0.3s ease; margin-top:0.5rem;">
                     Registrarse
                 </button>
                 
@@ -2055,6 +2167,7 @@ const SUPABASE_URL = 'https://bvekxaozilvloozcabpl.supabase.co';
         let uploadedFiles = [];
         let previewImages = [];
 let gestores = [];
+        let empresas = [];
         let productos = [];
         let ventas = [];
         let clientes = [];
@@ -2296,6 +2409,7 @@ function getCurrentGestorId() {
         // ============================================================
         const NAV_ITEMS = {
             empresa: [
+                { icon: 'fa-user-circle', label: 'Mi perfil', view: 'mi-perfil' },
                 { icon: 'fa-chart-pie', label: 'Dashboard', view: 'dashboard' },
                 { icon: 'fa-boxes', label: 'Catálogo', view: 'catalogo' },
                 { icon: 'fa-plus-circle', label: 'Nuevo Producto', view: 'nuevo-producto' },
@@ -2316,6 +2430,7 @@ function getCurrentGestorId() {
                 { icon: 'fa-qrcode', label: 'Escanear QR', view: 'escanear-qr' },
             ],
             cliente: [
+                { icon: 'fa-user-circle', label: 'Mi perfil', view: 'mi-perfil' },
                 { icon: 'fa-compass', label: 'Explorar', view: 'explorar' },
                 { icon: 'fa-comment', label: 'Mis chats', view: 'chats' },
                 { icon: 'fa-qrcode', label: 'Mis QR', view: 'mis-qr' },
@@ -2677,7 +2792,19 @@ function renderDashboard() {
             `;
         }
 
-function renderProductCardHTML(product, showManage = false) {
+function nombreNegocioProducto(product) {
+            if (!product) return '';
+            const emp = (typeof empresas !== 'undefined' && empresas) ? empresas.find(e => e.id === product.empresa_id) : null;
+            if (emp && (emp.nombre || emp.name)) return emp.nombre || emp.name;
+            // fallback metadata
+            try {
+                const m = typeof parseProductMeta === 'function' ? parseProductMeta(product) : {};
+                if (m.empresa_nombre) return m.empresa_nombre;
+            } catch (e) {}
+            return '';
+        }
+
+        function renderProductCardHTML(product, showManage = false) {
             const images = product.imagenes || ['📦'];
             const pagoGestorUi = (currentRole === 'empresa' || currentRole === 'gestor' || currentRole === 'admin')
                 ? getPagoGestorProducto(product) : null;
@@ -2717,6 +2844,18 @@ function renderProductCardHTML(product, showManage = false) {
                             <i class="fas fa-user-plus"></i> Enviar solicitud
                         </button>
                         <div style="font-size:0.75rem; color:var(--text-light);">Activos: ${gestoresDelProducto.map(g=>g.nombres).join(', ') || 'ninguno'}</div>
+                        ${sols.filter(s => s.estado === 'pendiente').map(s => {
+                            const g = gestores.find(x => x.id === s.gestor_id);
+                            const nombre = g ? `${g.nombres||''} ${g.apellidos||''}`.trim() : 'Gestor';
+                            const origen = s.origen === 'gestor' ? ' (pide gestionar)' : ' (tú solicitaste)';
+                            return `<div style="margin-top:0.5rem;padding:0.5rem;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;">
+                                <div><strong>${nombre}</strong>${origen}</div>
+                                <div style="display:flex;gap:0.35rem;margin-top:0.35rem;">
+                                  <button class="btn-primary" style="padding:0.3rem 0.5rem;font-size:0.75rem;" onclick="empresaResponderSolicitud('${product.id}','${s.gestor_id}',true)">Aceptar</button>
+                                  <button class="btn-secondary" style="padding:0.3rem 0.5rem;font-size:0.75rem;" onclick="empresaResponderSolicitud('${product.id}','${s.gestor_id}',false)">Rechazar</button>
+                                </div>
+                              </div>`;
+                        }).join('')}
                     </div>`;
             } else if (currentRole === 'gestor' && miPendiente) {
                 actions = `
@@ -2729,6 +2868,14 @@ function renderProductCardHTML(product, showManage = false) {
                     </div>`;
             } else if (currentRole === 'gestor' && isAssigned) {
                 actions = `<div style="margin-top:0.5rem;"><span class="badge badge-success">Lo gestionas tú</span></div>`;
+            } else if (currentRole === 'gestor' && !isAssigned && !miPendiente) {
+                actions = `
+                    <div style="margin-top:0.75rem;">
+                        <button class="btn-primary" style="padding:0.45rem 0.75rem; font-size:0.85rem; width:100%;" onclick="solicitarGestionDesdeGestor('${product.id}')">
+                            <i class="fas fa-hand-paper"></i> Solicitar gestionar
+                        </button>
+                        <div style="font-size:0.75rem;color:var(--text-light);margin-top:0.35rem;">El negocio acepta o rechaza tu solicitud</div>
+                    </div>`;
             } else if (currentRole === 'cliente') {
                 const g0 = gestoresDelProducto[0];
                 actions = g0 ? `
@@ -2743,12 +2890,24 @@ function renderProductCardHTML(product, showManage = false) {
                 <button class="btn-secondary" style="padding:0.4rem 0.7rem; font-size:0.8rem; color:#ff6b6b;" onclick="deleteProduct('${product.id}')">Eliminar</button></div>`;
             }
 
+            const negocioNombre = nombreNegocioProducto(product);
+            const negocioHtmlCliente = (currentRole === 'cliente' && negocioNombre)
+                ? `<div class="product-negocio" style="font-size:0.8rem;color:var(--text-light);margin:0.25rem 0 0.15rem;">
+                        <i class="fas fa-store" style="color:var(--primary);"></i> ${String(negocioNombre).replace(/</g,'')}
+                   </div>`
+                : '';
+            // Cliente: no mostrar pago a gestor ni datos internos de gestión
+            const priceBlock = currentRole === 'cliente'
+                ? `<div class="price">${precioTxt}</div>`
+                : `<div class="price">${precioTxt}${pagoGestorHtml}</div>`;
+
             return `
                 <div class="product-card">
                     <div class="image">${imageDisplay}</div>
                     <div class="body">
                         <div class="title">${product.nombre} ${isDestacado ? '<span class="badge badge-warning">Destacado</span>' : ''}</div>
-                        <div class="price">${precioTxt}${pagoGestorHtml}</div>
+                        ${negocioHtmlCliente}
+                        ${priceBlock}
                         <div class="description">${(product.descripcion || '').substring(0, 100)}</div>
                         <div class="meta">
                             <span class="badge badge-primary">${product.categoria || 'General'}</span>
@@ -3153,25 +3312,172 @@ function renderProductCardHTML(product, showManage = false) {
             `;
         }
 
-        function renderMiPerfil() {
-            const gestor = gestores.find(g => g.id === currentUser?.id);
-            if (!gestor) {
-                const gestorPorProfile = gestores.find(g => g.profile_id === currentUser?.id);
-                if (gestorPorProfile) {
-                    return renderMiPerfilHTML(gestorPorProfile);
-                }
-                return `
-                    <div class="app-card">
-                        <h3>Mi Perfil Profesional</h3>
-                        <p style="color:var(--text-light);">No se encontró tu perfil de gestor. Contacta a soporte.</p>
-                        <button class="btn-primary" style="margin-top:1rem;" onclick="crearPerfilGestor()">
-                            <i class="fas fa-plus"></i> Crear Perfil
-                        </button>
-                    </div>
-                `;
-            }
-            return renderMiPerfilHTML(gestor);
+        
+        function getProfileAvatarUrl() {
+            const m = (currentUser && currentUser.profile && currentUser.profile.metadata) || {};
+            return m.avatar_url || m.foto || m.photo_url || '';
         }
+
+        function previewRegAvatar(input) {
+            const img = document.getElementById('regAvatarPreview');
+            if (!img || !input.files || !input.files[0]) { if (img) img.style.display = 'none'; return; }
+            const url = URL.createObjectURL(input.files[0]);
+            img.src = url;
+            img.style.display = 'block';
+        }
+
+        async function uploadAvatarFile(file) {
+            if (!file || !currentUser) return null;
+            const path = `avatars/${currentUser.id || 'anon'}/${Date.now()}-${(file.name || 'avatar').replace(/[^\w.\-]+/g,'_')}`;
+            const { error } = await supabase.storage.from('productos').upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' });
+            if (error) throw error;
+            const { data } = supabase.storage.from('productos').getPublicUrl(path);
+            return data && data.publicUrl ? data.publicUrl : null;
+        }
+
+        function renderMiPerfil() {
+            if (currentRole === 'admin') {
+                return `<div class="app-card"><h3>Perfil</h3><p style="color:var(--text-light);">La cuenta administrador gestiona la plataforma desde el panel admin.</p></div>`;
+            }
+            const p = (currentUser && currentUser.profile) || {};
+            const m = { ...(p.metadata || {}) };
+            const avatar = getProfileAvatarUrl();
+            const username = p.username || currentUser.email || '—';
+            const roleLabel = ({ empresa: 'Negocio', gestor: 'Gestor', cliente: 'Cliente' })[currentRole] || currentRole;
+
+            // role-specific fields
+            let extraFields = '';
+            if (currentRole === 'empresa') {
+                extraFields = `
+                    <label>Nombre del negocio</label>
+                    <input id="pf_empresaNombre" value="${(m.empresaNombre||'').replace(/"/g,'&quot;')}" />
+                    <label>Teléfono del negocio</label>
+                    <input id="pf_empresaTelefono" value="${(m.empresaTelefono||m.telefono||'').replace(/"/g,'&quot;')}" />
+                    <label>Dirección</label>
+                    <input id="pf_empresaDireccion" value="${(m.empresaDireccion||'').replace(/"/g,'&quot;')}" />
+                    <label>Sector</label>
+                    <input id="pf_empresaSector" value="${(m.empresaSector||'').replace(/"/g,'&quot;')}" />`;
+            } else if (currentRole === 'gestor') {
+                extraFields = `
+                    <label>Nombres</label>
+                    <input id="pf_gestorNombres" value="${(m.gestorNombres||'').replace(/"/g,'&quot;')}" />
+                    <label>Apellidos</label>
+                    <input id="pf_gestorApellidos" value="${(m.gestorApellidos||'').replace(/"/g,'&quot;')}" />
+                    <label>Teléfono / WhatsApp</label>
+                    <input id="pf_gestorTelefono" value="${(m.gestorTelefono||m.telefono||'').replace(/"/g,'&quot;')}" />
+                    <label>Bio breve</label>
+                    <textarea id="pf_gestorBio" rows="3">${(m.gestorBio||m.bio||'').replace(/</g,'')}</textarea>`;
+            } else {
+                extraFields = `
+                    <label>Nombres</label>
+                    <input id="pf_clienteNombres" value="${(m.clienteNombres||'').replace(/"/g,'&quot;')}" />
+                    <label>Apellidos</label>
+                    <input id="pf_clienteApellidos" value="${(m.clienteApellidos||'').replace(/"/g,'&quot;')}" />
+                    <label>Teléfono</label>
+                    <input id="pf_clienteTelefono" value="${(m.clienteTelefono||m.telefono||'').replace(/"/g,'&quot;')}" />`;
+            }
+
+            return `
+                <div class="app-card">
+                    <h3>👤 Mi perfil</h3>
+                    <p style="color:var(--text-light);font-size:0.9rem;">Rol: <strong>${roleLabel}</strong> · Usuario: <strong>${String(username).replace(/</g,'')}</strong></p>
+                    <div style="display:flex;flex-wrap:wrap;gap:1.5rem;margin-top:1rem;align-items:flex-start;">
+                        <div style="text-align:center;">
+                            <div style="width:96px;height:96px;border-radius:50%;overflow:hidden;border:2px solid var(--primary);background:var(--dark2);margin:0 auto;">
+                                ${avatar
+                                    ? `<img id="pf_avatarImg" src="${avatar}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'" />`
+                                    : `<div id="pf_avatarImg" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2rem;">👤</div>`}
+                            </div>
+                            <label style="display:block;margin-top:0.75rem;font-size:0.8rem;color:var(--text-light);">Foto (opcional)</label>
+                            <input type="file" id="pf_avatarFile" accept="image/*" style="font-size:0.8rem;max-width:160px;" />
+                        </div>
+                        <div class="profile-form" style="flex:1;min-width:220px;display:grid;gap:0.5rem;">
+                            <style>
+                                .profile-form label { font-size:0.8rem; color: var(--text-light); margin-top:0.25rem; }
+                                .profile-form input, .profile-form textarea {
+                                    padding:0.65rem 0.85rem; border-radius:10px; border:1px solid var(--border);
+                                    background:var(--dark2); color:var(--text-dark); font-family:inherit; width:100%;
+                                }
+                            </style>
+                            ${extraFields}
+                            <button type="button" class="btn-primary" style="margin-top:0.75rem;" onclick="guardarPerfilUsuario()">
+                                <i class="fas fa-save"></i> Guardar cambios
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        async function attachRegAvatarIfNeeded() {
+            try {
+                const file = window.__regAvatarPending;
+                window.__regAvatarPending = null;
+                if (!file || !currentUser || !currentUser.profile?.id) return;
+                const url = await uploadAvatarFile(file);
+                if (!url) return;
+                const meta = { ...(currentUser.profile.metadata || {}), avatar_url: url };
+                await supabase.from('profiles').update({ metadata: meta }).eq('id', currentUser.profile.id);
+                currentUser.profile.metadata = meta;
+            } catch (e) { console.warn('avatar reg', e); }
+        }
+
+        async function guardarPerfilUsuario() {
+            if (!currentUser || !currentUser.profile || !currentUser.profile.id) {
+                showNotification('Error', 'Sesión no válida', 'error');
+                return;
+            }
+            if (currentRole === 'admin') return;
+            try {
+                const meta = { ...(currentUser.profile.metadata || {}) };
+                const fileInput = document.getElementById('pf_avatarFile');
+                if (fileInput && fileInput.files && fileInput.files[0]) {
+                    showNotification('Subiendo', 'Foto de perfil…', 'info');
+                    const url = await uploadAvatarFile(fileInput.files[0]);
+                    if (url) meta.avatar_url = url;
+                }
+                if (currentRole === 'empresa') {
+                    const v = id => (document.getElementById(id)?.value || '').trim();
+                    meta.empresaNombre = v('pf_empresaNombre');
+                    meta.empresaTelefono = v('pf_empresaTelefono');
+                    meta.empresaDireccion = v('pf_empresaDireccion');
+                    meta.empresaSector = v('pf_empresaSector');
+                    meta.telefono = meta.empresaTelefono || meta.telefono;
+                } else if (currentRole === 'gestor') {
+                    const v = id => (document.getElementById(id)?.value || '').trim();
+                    meta.gestorNombres = v('pf_gestorNombres');
+                    meta.gestorApellidos = v('pf_gestorApellidos');
+                    meta.gestorTelefono = v('pf_gestorTelefono');
+                    meta.gestorBio = v('pf_gestorBio');
+                    meta.telefono = meta.gestorTelefono || meta.telefono;
+                    // sync gestores table if exists
+                    const gid = typeof getCurrentGestorId === 'function' ? getCurrentGestorId() : null;
+                    if (gid) {
+                        await supabase.from('gestores').update({
+                            nombres: meta.gestorNombres,
+                            apellidos: meta.gestorApellidos,
+                            telefono: meta.gestorTelefono
+                        }).eq('id', gid);
+                    }
+                } else if (currentRole === 'cliente') {
+                    const v = id => (document.getElementById(id)?.value || '').trim();
+                    meta.clienteNombres = v('pf_clienteNombres');
+                    meta.clienteApellidos = v('pf_clienteApellidos');
+                    meta.clienteTelefono = v('pf_clienteTelefono');
+                    meta.telefono = meta.clienteTelefono || meta.telefono;
+                }
+                const { error } = await supabase.from('profiles').update({ metadata: meta }).eq('id', currentUser.profile.id);
+                if (error) throw error;
+                currentUser.profile.metadata = meta;
+                // update topbar avatar if any
+                if (typeof updateUserInfo === 'function') updateUserInfo();
+                showNotification('Perfil', 'Datos guardados', 'success');
+                if (typeof renderView === 'function') renderView('mi-perfil');
+            } catch (e) {
+                console.error(e);
+                showNotification('Error', e.message || 'No se pudo guardar', 'error');
+            }
+        }
+
 
         function renderMiPerfilHTML(gestor) {
             const calificaciones = gestor.calificaciones || [];
@@ -3261,13 +3567,13 @@ function renderProductCardHTML(product, showManage = false) {
         function renderSeleccionarProductos() {
             return `
                 <div style="margin-bottom:1.5rem;">
-                    <h3 style="font-size:1.2rem; font-weight:700;">Seleccionar Productos</h3>
-                    <p style="color:var(--text-light); font-size:0.9rem;">Elige los productos que deseas gestionar</p>
-                    <div style="margin-top:0.5rem; padding:0.75rem 1rem; background:rgba(108,99,255,0.1); border-radius:12px;">
-                        <span style="font-size:0.85rem; color:var(--primary);"><i class="fas fa-info-circle"></i> Haz clic en "Gestionar" para añadir o quitar productos de tu catálogo</span>
+                    <h3 style="font-size:1.2rem; font-weight:700;">Seleccionar productos</h3>
+                    <p style="color:var(--text-light); font-size:0.9rem;">Productos publicados por negocios. Puedes solicitar gestionar los que te interesen.</p>
+                    <div style="margin-top:0.5rem; padding:0.75rem 1rem; background:rgba(244,180,0,0.12); border-radius:12px;">
+                        <span style="font-size:0.85rem; color:var(--primary);"><i class="fas fa-info-circle"></i> Usa «Solicitar gestionar». El negocio acepta o rechaza. También puedes recibir invitaciones del negocio.</span>
                     </div>
                 </div>
-                <div class="product-grid">${productos.map(p => renderProductCardHTML(p, true)).join('')}</div>
+                <div class="product-grid">${(productos||[]).filter(p => (p.estado||'activo') !== 'inactivo').map(p => renderProductCardHTML(p, false)).join('') || '<p style="color:var(--text-light)">No hay productos publicados aún.</p>'}</div>
             `;
         }
 
@@ -3807,13 +4113,15 @@ const productosAsignados = productos.filter(p => gestorGestionaProducto(p, gesto
                     supabase.from('gestores').select('*'),
                     supabase.from('productos').select('*'),
                     supabase.from('ventas').select('*'),
-                    supabase.from('clientes').select('*')
+                    supabase.from('clientes').select('*'),
+                    supabase.from('empresas').select('*')
                 ]);
-                const [gRes, pRes, vRes, cRes] = results;
+                const [gRes, pRes, vRes, cRes, eRes] = results;
                 if (!gRes.error && gRes.data) gestores = gRes.data;
                 if (!pRes.error && pRes.data) productos = pRes.data;
                 if (!vRes.error && vRes.data) ventas = vRes.data;
                 if (!cRes.error && cRes.data) clientes = cRes.data;
+                if (eRes && !eRes.error && eRes.data) empresas = eRes.data;
                 asegurarCacheConversaciones().catch(() => {});
                 if (typeof actualizarReputaciones === 'function') actualizarReputaciones();
                 // Actualizar contadores de landing si están visibles
@@ -4271,7 +4579,8 @@ async function toggleProductAssignment(productId) {
         }
 
         function openProductModal(productId = null) {
-            if (!planPermiteNuevoProducto()) return;
+            // Solo aplicar límite del plan al CREAR; editar no consume cupo
+            if (!productId && !planPermiteNuevoProducto()) return;
 
             editingProductId = productId;
             uploadedFiles = [];
@@ -4482,7 +4791,9 @@ async function toggleProductAssignment(productId) {
                 return;
             }
             
-            if (uploadedFiles.length === 0) {
+            const isEdit = !!editingProductId;
+            const prevProduct = isEdit ? productos.find(p => p.id === editingProductId) : null;
+            if (!isEdit && uploadedFiles.length === 0) {
                 showNotification('Error', 'Debes seleccionar al menos una imagen.', 'error');
                 return;
             }
@@ -4494,11 +4805,18 @@ async function toggleProductAssignment(productId) {
                     return;
                 }
 
-                showNotification('⏳ Subiendo imágenes...', 'Por favor espera.', 'info');
-                const imagenesUrls = await subirImagenesALaNube();
-                
-                if (imagenesUrls.length === 0) {
-                    showNotification('Error', 'No se pudieron subir las imágenes. Revisa la consola.', 'error');
+                let imagenesUrls = [];
+                if (uploadedFiles.length > 0) {
+                    showNotification('⏳ Subiendo imágenes...', 'Por favor espera.', 'info');
+                    imagenesUrls = await subirImagenesALaNube();
+                    if (imagenesUrls.length === 0) {
+                        showNotification('Error', 'No se pudieron subir las imágenes. Revisa la consola.', 'error');
+                        return;
+                    }
+                } else if (prevProduct && Array.isArray(prevProduct.imagenes) && prevProduct.imagenes.length) {
+                    imagenesUrls = prevProduct.imagenes;
+                } else {
+                    showNotification('Error', 'El producto necesita al menos una imagen.', 'error');
                     return;
                 }
 
@@ -4559,6 +4877,10 @@ async function toggleProductAssignment(productId) {
         function editProduct(productId) { openProductModal(productId); }
 
         async function deleteProduct(productId) {
+            if (currentRole !== 'empresa' && currentRole !== 'admin') {
+                showNotification('Permiso', 'No puedes eliminar este producto', 'error');
+                return;
+            }
             if (!confirm('¿Estás seguro de eliminar este producto?')) return;
             try {
                 const { error } = await supabase.from('productos').delete().eq('id', productId);
@@ -4779,6 +5101,7 @@ function generateEmail(username, suffix = '') {
             const roleSelector = document.getElementById('authRoleSelector');
             const dynamicFields = document.getElementById('dynamicFields');
             
+            const regAvatar = document.getElementById('regAvatarBlock');
             if (isAuthMode === 'register') {
                 if (title) title.textContent = 'Crear cuenta';
                 if (sub) sub.textContent = 'Regístrate en Alset Sales Hub';
@@ -4787,7 +5110,9 @@ function generateEmail(username, suffix = '') {
                 if (toggleLink) toggleLink.textContent = 'Inicia sesión';
                 if (roleSelector) roleSelector.style.display = 'block';
                 if (dynamicFields) dynamicFields.style.display = 'block';
+                if (regAvatar) regAvatar.style.display = 'block';
             } else {
+                if (regAvatar) regAvatar.style.display = 'none';
                 if (title) title.textContent = 'Iniciar sesión';
                 if (sub) sub.textContent = 'Ingresa a tu cuenta de Alset Sales Hub';
                 if (btn) btn.textContent = 'Iniciar sesión';
@@ -5073,6 +5398,8 @@ function generateEmail(username, suffix = '') {
                     metadata.username = username;
                     metadata.telefono = usernameRaw;
                     metadata.role = role;
+                    // avatar opcional en registro (se sube tras crear sesión)
+                    window.__regAvatarPending = document.getElementById('regAvatarFile')?.files?.[0] || null;
 
                     const { data: existente, error: existError } = await supabase
                         .from('profiles')
@@ -5260,13 +5587,15 @@ function generateEmail(username, suffix = '') {
                     supabase.from('productos').select('*'),
                     supabase.from('ventas').select('*'),
                     supabase.from('clientes').select('*'),
-                    supabase.from('profiles').select('*')
+                    supabase.from('profiles').select('*'),
+                    supabase.from('empresas').select('*')
                 ]);
-                const [gRes, pRes, vRes, cRes, prRes] = results;
+                const [gRes, pRes, vRes, cRes, prRes, eRes] = results;
                 if (gRes.error) throw gRes.error;
                 if (pRes.error) throw pRes.error;
                 gestores = gRes.data || [];
                 productos = pRes.data || [];
+                empresas = (eRes && !eRes.error && eRes.data) ? eRes.data : (empresas || []);
                 ventas = vRes.error ? [] : (vRes.data || []);
                 if (vRes.error) console.warn('ventas', vRes.error.message);
                 clientes = cRes.error ? [] : (cRes.data || []);
@@ -5742,12 +6071,29 @@ function generateEmail(username, suffix = '') {
                     Uso actual: gestores en productos ${typeof contarGestoresEmpresa==='function'?contarGestoresEmpresa():'—'} · productos ${typeof contarProductosEmpresa==='function'?contarProductosEmpresa():'—'}
                 </div>
                 <h4 style="margin-top:1.5rem;">Cambiar de plan</h4>
-                <p style="color:var(--text-light);font-size:0.9rem;">Todos entran a la red; la empresa paga para ampliar capacidad. Gratis 0 · Pro 250 · Empresarial 500 CUP (Transfermóvil / Enzona)</p>
-                <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
-                    <button type="button" class="btn-secondary" onclick="seleccionarPlan('free')">Gratis (0 CUP)</button>
-                    <button type="button" class="btn-primary" onclick="seleccionarPlan('pro')">Profesional (250 CUP)</button>
-                    <button type="button" class="btn-primary" onclick="seleccionarPlan('business')">Empresarial (500 CUP)</button>
-                    <button type="button" class="btn-primary" onclick="seleccionarPlan('extra')">Extra (1000 CUP)</button>
+                <p style="color:var(--text-light);font-size:0.9rem;">El botón resaltado es tu plan actual. Los demás usan estilos distintos para elegir con claridad. Pago: Transfermóvil / Enzona (CUP).</p>
+                <div class="plan-pick-grid" style="margin-top:1rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.65rem;">
+                    ${['free','pro','business','extra'].map(id => {
+                        const pl = (window.PLANES || PLANES || {})[id];
+                        if (!pl) return '';
+                        const activo = planId === id;
+                        const styles = {
+                            free: activo
+                                ? 'background:linear-gradient(135deg,#2ecc71,#27ae60);color:#fff;border:2px solid #fff;box-shadow:0 0 0 2px #2ecc71;'
+                                : 'background:transparent;color:var(--text-dark);border:2px solid #2ecc71;',
+                            pro: activo
+                                ? 'background:linear-gradient(135deg,#f4b400,#c49200);color:#0b0c10;border:2px solid #fff;box-shadow:0 0 0 2px #f4b400;'
+                                : 'background:rgba(244,180,0,0.12);color:var(--text-dark);border:2px solid #f4b400;',
+                            business: activo
+                                ? 'background:linear-gradient(135deg,#5b8def,#3a6fd8);color:#fff;border:2px solid #fff;box-shadow:0 0 0 2px #5b8def;'
+                                : 'background:rgba(91,141,239,0.12);color:var(--text-dark);border:2px solid #5b8def;',
+                            extra: activo
+                                ? 'background:linear-gradient(135deg,#9b59b6,#8e44ad);color:#fff;border:2px solid #fff;box-shadow:0 0 0 2px #9b59b6;'
+                                : 'background:rgba(155,89,182,0.12);color:var(--text-dark);border:2px solid #9b59b6;'
+                        };
+                        const label = activo ? '✓ ' + (pl.nombre || id) + ' (actual)' : (pl.nombre || id) + ' (' + (pl.precio || 0) + ' CUP)';
+                        return '<button type="button" class="plan-pick-btn" data-plan="'+id+'" onclick="seleccionarPlan(\''+id+'\')" style="padding:0.75rem 0.5rem;border-radius:12px;font-weight:800;font-size:0.82rem;cursor:'+(activo?'default':'pointer')+';'+styles[id]+'">'+label+'</button>';
+                    }).join('')}
                 </div>
             </div>`;
         }
@@ -5820,9 +6166,87 @@ function generateEmail(username, suffix = '') {
         }
 
         function renderAdminProductos() {
-            return `<div class="app-card"><h3>📦 Productos (${(productos||[]).length})</h3>
-                <div class="product-grid" style="margin-top:1rem;">${(productos||[]).map(p=>renderProductCardHTML(p,false)).join('')||'<p>Sin productos</p>'}</div></div>`;
+            const list = (productos || []).slice().sort((a,b) => String(a.nombre||'').localeCompare(String(b.nombre||'')));
+            const rows = list.map(p => {
+                const emp = (typeof empresas !== 'undefined' && empresas) ? empresas.find(e => e.id === p.empresa_id) : null;
+                const negocio = emp ? (emp.nombre || emp.name || '—') : (p.empresa_id || '—');
+                const imgs = p.imagenes || [];
+                const thumb = (imgs[0] && String(imgs[0]).startsWith('http'))
+                    ? `<img src="${imgs[0]}" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:8px;" onerror="this.style.display='none'" />`
+                    : '📦';
+                const safeName = String(p.nombre||'').replace(/</g,'').replace(/'/g,"\\'");
+                return `<tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:0.55rem;vertical-align:middle;">${thumb}</td>
+                    <td style="padding:0.55rem;vertical-align:middle;font-weight:600;">${String(p.nombre||'—').replace(/</g,'')}</td>
+                    <td style="padding:0.55rem;vertical-align:middle;font-size:0.85rem;color:var(--text-light);">${String(negocio).replace(/</g,'')}</td>
+                    <td style="padding:0.55rem;vertical-align:middle;">${p.precio ?? '—'}</td>
+                    <td style="padding:0.55rem;vertical-align:middle;">${p.stock ?? '—'}</td>
+                    <td style="padding:0.55rem;vertical-align:middle;"><span class="badge badge-primary">${String(p.estado||'—').replace(/</g,'')}</span></td>
+                    <td style="padding:0.55rem;vertical-align:middle;white-space:nowrap;">
+                        <button type="button" class="btn-secondary" style="padding:0.3rem 0.55rem;font-size:0.78rem;" onclick="adminVerProducto('${p.id}')">Ver</button>
+                        <button type="button" class="btn-secondary" style="padding:0.3rem 0.55rem;font-size:0.78rem;color:#ff6b6b;" onclick="adminEliminarProducto('${p.id}', '${safeName}')">Eliminar</button>
+                    </td>
+                </tr>`;
+            }).join('') || '<tr><td colspan="7" style="padding:1rem;color:var(--text-light);">Sin productos</td></tr>';
+            return `
+                <div class="app-card">
+                    <h3>📦 Productos de la plataforma (${list.length})</h3>
+                    <p style="color:var(--text-light);font-size:0.9rem;">CRUD admin: revisa y elimina productos cuando sea necesario (contenido indebido, prueba, error, etc.).</p>
+                    <div style="overflow-x:auto;margin-top:1rem;-webkit-overflow-scrolling:touch;">
+                        <table style="width:100%;min-width:640px;border-collapse:collapse;font-size:0.88rem;">
+                            <thead>
+                                <tr style="text-align:left;color:var(--text-light);border-bottom:1px solid var(--border);">
+                                    <th style="padding:0.5rem;"></th>
+                                    <th style="padding:0.5rem;">Producto</th>
+                                    <th style="padding:0.5rem;">Negocio</th>
+                                    <th style="padding:0.5rem;">Precio</th>
+                                    <th style="padding:0.5rem;">Stock</th>
+                                    <th style="padding:0.5rem;">Estado</th>
+                                    <th style="padding:0.5rem;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                </div>`;
         }
+
+        function adminVerProducto(productId) {
+            const p = (productos || []).find(x => x.id === productId);
+            if (!p) return;
+            const emp = (empresas || []).find(e => e.id === p.empresa_id);
+            const msg = [
+                'Producto: ' + (p.nombre || '—'),
+                'Negocio: ' + (emp ? (emp.nombre || emp.name) : p.empresa_id || '—'),
+                'Precio: ' + (p.precio ?? '—'),
+                'Stock: ' + (p.stock ?? '—'),
+                'Estado: ' + (p.estado || '—'),
+                'SKU: ' + (p.sku || '—'),
+                'ID: ' + p.id
+            ].join('\\n');
+            alert(msg);
+        }
+
+        async function adminEliminarProducto(productId, nombre) {
+            if (currentRole !== 'admin') {
+                showNotification('Permiso', 'Solo el administrador puede eliminar desde aquí', 'error');
+                return;
+            }
+            const label = nombre || 'este producto';
+            if (!confirm('¿Eliminar el producto «' + label + '»? Esta acción no se puede deshacer.')) return;
+            try {
+                const { error } = await supabase.from('productos').delete().eq('id', productId);
+                if (error) throw error;
+                productos = (productos || []).filter(p => p.id !== productId);
+                showNotification('Eliminado', 'Producto quitado del catálogo', 'success');
+                if (typeof renderView === 'function') renderView('admin-productos');
+            } catch (e) {
+                console.error(e);
+                showNotification('Error', e.message || 'No se pudo eliminar', 'error');
+            }
+        }
+
+
 
         function renderAdminVentas() {
             return `<div class="app-card"><h3>🧾 Ventas (${(ventas||[]).length})</h3>
@@ -5904,6 +6328,9 @@ function generateEmail(username, suffix = '') {
 
         async function initAppConSupabase() {
             try {
+                if (typeof attachRegAvatarIfNeeded === 'function') {
+                    try { await attachRegAvatarIfNeeded(); } catch (e) { console.warn(e); }
+                }
                 if (typeof restoreAlsetSessionIfAny === 'function' && restoreAlsetSessionIfAny()) {
                     showApp();
                     initApp(currentRole);
@@ -5944,7 +6371,7 @@ function generateEmail(username, suffix = '') {
 
         // Precios visibles de inmediato (offline-first)
         try { if (typeof renderLandingPricing === 'function') renderLandingPricing(); } catch (e) { console.warn(e); }
-        initAppConSupabase();
+        (async function(){ try { await attachRegAvatarIfNeeded(); } catch(e){} initAppConSupabase(); })();
         if (typeof startLandingStatsPoll === 'function') startLandingStatsPoll();
         if (typeof loadPlatformPlans === 'function') loadPlatformPlans();
         if (typeof cargarOpinionesPlataforma === 'function') cargarOpinionesPlataforma();
@@ -5989,7 +6416,7 @@ function generateEmail(username, suffix = '') {
             else alert(msg);
         };
         if (typeof syncInstallFab === 'function') syncInstallFab();
-        console.log('✅ Alset Sales Hub listo');
+        console.log('✅ Alset Sales Hub listo'); /* production title */
     </script>
 
     <!-- PWA / Añadir a inicio (Samsung Internet, iOS, etc.) -->
