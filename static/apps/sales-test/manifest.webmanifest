@@ -1,0 +1,28 @@
+{
+  "name": "Alset Sales Hub TEST",
+  "short_name": "Alset TEST",
+  "description": "Gestión de ventas: negocios, gestores y clientes",
+  "start_url": "/w/sales-test.app.ans",
+  "scope": "/",
+  "id": "/w/sales-test.app.ans",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b0c10",
+  "theme_color": "#0b0c10",
+  "lang": "es",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/static/apps/sales-test/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/apps/sales-test/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
