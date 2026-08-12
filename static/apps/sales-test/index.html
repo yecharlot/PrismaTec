@@ -26,6 +26,49 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
     
     <style>
+
+        /* Global loading UX */
+        .alset-loading-overlay {
+            position: fixed; inset: 0; z-index: 200000;
+            background: rgba(11,12,16,0.55);
+            display: none; align-items: center; justify-content: center;
+            backdrop-filter: blur(2px);
+        }
+        .alset-loading-overlay.active { display: flex; }
+        .alset-loading-box {
+            background: var(--dark1, #12141c);
+            border: 1px solid var(--border, #2a2d3a);
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
+            min-width: min(280px, 86vw);
+            text-align: center;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+        }
+        .alset-spinner {
+            width: 36px; height: 36px; margin: 0 auto 0.75rem;
+            border: 3px solid rgba(244,180,0,0.2);
+            border-top-color: var(--primary, #f4b400);
+            border-radius: 50%;
+            animation: alsetSpin 0.75s linear infinite;
+        }
+        @keyframes alsetSpin { to { transform: rotate(360deg); } }
+        .alset-loading-text { color: var(--text-dark, #e8eaef); font-size: 0.95rem; font-weight: 600; }
+        .alset-loading-sub { color: var(--text-light, #9aa3b5); font-size: 0.8rem; margin-top: 0.35rem; }
+        button.is-loading, .btn-primary.is-loading, .btn-secondary.is-loading {
+            opacity: 0.75; pointer-events: none; position: relative;
+        }
+        button.is-loading::after {
+            content: '';
+            width: 14px; height: 14px;
+            margin-left: 0.5rem;
+            border: 2px solid rgba(255,255,255,0.35);
+            border-top-color: currentColor;
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: middle;
+            animation: alsetSpin 0.7s linear infinite;
+        }
+
 .notif-bell-btn {
             position: relative;
             background: var(--dark2);
@@ -2314,6 +2357,83 @@ function getCurrentGestorId() {
         // ============================================================
         // NOTIFICACIONES
         // ============================================================
+        
+        // ========== LOADING UX ==========
+        let _loadingDepth = 0;
+        function showLoading(message, sub) {
+            _loadingDepth++;
+            const ov = document.getElementById('alsetLoadingOverlay');
+            const t = document.getElementById('alsetLoadingText');
+            const s = document.getElementById('alsetLoadingSub');
+            if (t) t.textContent = message || 'Cargando…';
+            if (s) s.textContent = sub || 'Espera un momento';
+            if (ov) ov.classList.add('active');
+        }
+        function hideLoading(force) {
+            if (force) _loadingDepth = 0;
+            else _loadingDepth = Math.max(0, _loadingDepth - 1);
+            if (_loadingDepth === 0) {
+                const ov = document.getElementById('alsetLoadingOverlay');
+                if (ov) ov.classList.remove('active');
+            }
+        }
+        function withButtonLoading(btn, busy) {
+            if (!btn) return;
+            if (busy) {
+                btn.dataset.prevDisabled = btn.disabled ? '1' : '0';
+                btn.dataset.prevHtml = btn.innerHTML;
+                btn.classList.add('is-loading');
+                btn.disabled = true;
+            } else {
+                btn.classList.remove('is-loading');
+                btn.disabled = btn.dataset.prevDisabled === '1';
+                if (btn.dataset.prevHtml) btn.innerHTML = btn.dataset.prevHtml;
+            }
+        }
+        function isUserTypingInView() {
+            const ae = document.activeElement;
+            if (!ae) return false;
+            const tag = (ae.tagName || '').toLowerCase();
+            if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
+            if (ae.isContentEditable) return true;
+            return false;
+        }
+        function dataFingerprint() {
+            const g = (gestores || []).length;
+            const p = (productos || []).length;
+            const v = (ventas || []).length;
+            const c = (clientes || []).length;
+            const e = (typeof empresas !== 'undefined' && empresas) ? empresas.length : 0;
+            // include light hash of ids+updated fields
+            const pids = (productos || []).slice(0, 40).map(x => x.id + ':' + (x.stock ?? '') + ':' + (x.estado || '') + ':' + ((x.gestores_asignados || []).length)).join('|');
+            const vids = (ventas || []).slice(0, 40).map(x => x.id + ':' + (x.estado || '')).join('|');
+            return [g, p, v, c, e, pids, vids].join('::');
+        }
+        let _lastDataFp = '';
+        const REALTIME_REFRESH_VIEWS = [
+            'dashboard', 'panel', 'catalogo', 'explorar', 'seleccionar-productos', 'mis-productos',
+            'gestores', 'ranking', 'ver-gestores', 'vender', 'ventas-empresa', 'ventas-gestor',
+            'chats', 'mis-qr', 'admin-dashboard', 'admin-productos', 'admin-ventas', 'admin-cuentas',
+            'admin-pagos', 'admin-opiniones', 'oportunidades-gestor', 'escanear-qr', 'nuevo-producto',
+            'mi-perfil', 'mi-plan'
+        ];
+        function softRefreshCurrentView() {
+            try {
+                if (!currentUser) return;
+                if (document.hidden) return;
+                if (isUserTypingInView()) return;
+                // don't disrupt open modals that are not auth
+                const authModal = document.getElementById('authModal');
+                if (authModal && authModal.classList.contains('active')) return;
+                const view = currentView || 'dashboard';
+                if (typeof renderView === 'function' && REALTIME_REFRESH_VIEWS.includes(view)) {
+                    renderView(view);
+                }
+                if (typeof updateNotifBadge === 'function') updateNotifBadge();
+            } catch (e) { console.warn('softRefresh', e); }
+        }
+
+
         function showNotification(title, message, type = 'info', duration = 4000) {
             const container = document.getElementById('notificationContainer');
             const notification = document.createElement('div');
@@ -2647,10 +2767,9 @@ function navigateTo(view) {
                         productos = productos.filter(p => p.id !== payload.old.id);
                     }
                     
-                    const viewsToRefresh = ['seleccionar-productos', 'mis-productos', 'ver-gestores', 'explorar', 'catalogo', 'vender', 'ventas-empresa'];
-                    if (viewsToRefresh.includes(currentView)) {
-                        renderView(currentView);
-                    }
+                    const viewsToRefresh = REALTIME_REFRESH_VIEWS;
+                    if (typeof softRefreshCurrentView === 'function') softRefreshCurrentView();
+                    else if (viewsToRefresh.includes(currentView)) renderView(currentView);
                 })
                 .subscribe((status) => {
                     console.log('📡 Suscripción a productos:', status);
@@ -2683,10 +2802,9 @@ function navigateTo(view) {
                         gestores = gestores.filter(g => g.id !== payload.old.id);
                     }
                     
-                    const viewsToRefresh = ['gestores', 'ver-gestores', 'ranking', 'ranking-cliente', 'panel'];
-                    if (viewsToRefresh.includes(currentView)) {
-                        renderView(currentView);
-                    }
+                    const viewsToRefresh = REALTIME_REFRESH_VIEWS;
+                    if (typeof softRefreshCurrentView === 'function') softRefreshCurrentView();
+                    else if (viewsToRefresh.includes(currentView)) renderView(currentView);
                 })
                 .subscribe((status) => {
                     console.log('📡 Suscripción a gestores:', status);
@@ -3510,6 +3628,7 @@ function nombreNegocioProducto(product) {
                 return;
             }
             if (currentRole === 'admin') return;
+            showLoading('Guardando perfil…', 'Actualizando tus datos');
             try {
                 const meta = { ...(currentUser.profile.metadata || {}) };
                 const fileInput = document.getElementById('pf_avatarFile');
@@ -3553,7 +3672,7 @@ function nombreNegocioProducto(product) {
                 currentUser.profile.metadata = meta;
                 // update topbar avatar if any
                 if (typeof updateUserInfo === 'function') updateUserInfo();
-                showNotification('Perfil', 'Datos guardados', 'success');
+                hideLoading(true); showNotification('Perfil', 'Datos guardados', 'success');
                 if (typeof renderView === 'function') renderView('mi-perfil');
             } catch (e) {
                 console.error(e);
@@ -3801,6 +3920,7 @@ function renderVender() {
 
 async function confirmarVenta() {
             if (!ventaActual) return;
+            showLoading('Registrando venta…', 'Generando comprobante');
             
             const codigoVenta = ventaActual.codigo;
             
@@ -3881,9 +4001,11 @@ async function confirmarVenta() {
                 document.querySelector('#ventaModal h2').textContent = '✅ Venta confirmada';
                 document.querySelector('#ventaModal .subtitle').textContent = 'Entrega o muestra este QR al cliente para la recogida';
                 if (venta) ventas.unshift(venta);
-                showNotification('✅ Venta registrada', `Código ${codigoVenta}. QR listo para el cliente.`, 'success');
+                hideLoading(true);
+                    showNotification('✅ Venta registrada', `Código ${codigoVenta}. QR listo para el cliente.`, 'success');
                 
             } catch (error) {
+                hideLoading(true);
                 console.error('Error confirmando venta:', error);
                 showNotification('Error', 'No se pudo registrar la venta.', 'error');
             }
@@ -3939,7 +4061,8 @@ function renderMisQR() {
                                 <div><strong>Producto:</strong> ${parsed.producto || '—'}</div>
                             </div>`;
                         }
-                    } catch (e) { payload = v.qr_payload || v.codigo; }
+                    } catch (e) {
+                hideLoading(true); payload = v.qr_payload || v.codigo; }
                     try {
                         new QRCode(el, { text: typeof payload === 'string' ? payload : JSON.stringify(payload), width: 160, height: 160, correctLevel: QRCode.CorrectLevel.M });
                         el.dataset.ready = '1';
@@ -4182,15 +4305,15 @@ const productosAsignados = productos.filter(p => gestorGestionaProducto(p, gesto
             if (dataPollTimer) clearInterval(dataPollTimer);
             dataPollTimer = setInterval(async () => {
                 if (!currentUser) return;
-                if (document.hidden) return; // no gastar si la pestaña no está visible
+                if (document.hidden) return;
                 try {
                     await cargarDatosSilencioso();
                 } catch (e) {}
-            }, 25000);
+            }, 12000);
         }
 
         async function cargarDatosSilencioso() {
-            // Solo refresca datos en memoria. NO re-renderiza la vista (evita “saltos” al interactuar).
+            // Refresca datos en memoria y, si hay cambios, actualiza la vista actual sin bloquear al usuario.
             try {
                 const results = await Promise.all([
                     supabase.from('gestores').select('*'),
@@ -4207,13 +4330,23 @@ const productosAsignados = productos.filter(p => gestorGestionaProducto(p, gesto
                 if (eRes && !eRes.error && eRes.data) empresas = eRes.data;
                 asegurarCacheConversaciones().catch(() => {});
                 if (typeof actualizarReputaciones === 'function') actualizarReputaciones();
-                // Actualizar contadores de landing si están visibles
-                if (typeof cargarStatsLanding === 'function' && document.getElementById('landingPage')?.style.display !== 'none') {
-                    cargarStatsLanding();
+                if (typeof cargarStatsLanding === 'function') {
+                    try { cargarStatsLanding(); } catch (e) {}
                 }
-            } catch (e) { /* silencioso */ }
+                const fp = typeof dataFingerprint === 'function' ? dataFingerprint() : '';
+                if (fp && fp !== _lastDataFp) {
+                    const hadPrev = !!_lastDataFp;
+                    _lastDataFp = fp;
+                    if (hadPrev && typeof softRefreshCurrentView === 'function') softRefreshCurrentView();
+                } else if (!_lastDataFp && fp) {
+                    _lastDataFp = fp;
+                }
+            } catch (e) {
+                console.warn('cargarDatosSilencioso', e);
+            }
         }
 
+        
         function abrirChatConGestor(gestorId) {
             const g = gestores.find(x => x.id === gestorId);
             navigateTo('chats');
@@ -4847,6 +4980,7 @@ async function toggleProductAssignment(productId) {
 
         async function handleProductSubmit(e) {
             e.preventDefault();
+            // loading se activa tras validar campos
             
             const nombre = document.getElementById('productName').value.trim();
             const categoria = document.getElementById('productCategory').value;
@@ -4890,7 +5024,8 @@ async function toggleProductAssignment(productId) {
 
                 let imagenesUrls = [];
                 if (uploadedFiles.length > 0) {
-                    showNotification('⏳ Subiendo imágenes...', 'Por favor espera.', 'info');
+                    showLoading('Subiendo imágenes…', 'Esto puede tardar unos segundos');
+                showNotification('⏳ Subiendo imágenes...', 'Por favor espera.', 'info');
                     imagenesUrls = await subirImagenesALaNube();
                     if (imagenesUrls.length === 0) {
                         showNotification('Error', 'No se pudieron subir las imágenes. Revisa la consola.', 'error');
@@ -4935,13 +5070,15 @@ async function toggleProductAssignment(productId) {
                     if (error) throw error;
                     const index = productos.findIndex(p => p.id === editingProductId);
                     if (index !== -1) productos[index] = { ...productos[index], ...productData };
+                    hideLoading(true);
                     showNotification('✅ Producto actualizado', 'El producto se actualizó correctamente.', 'success');
                 } else {
                     const { data, error } = await supabase.from('productos').insert(productData).select();
                     if (error) throw error;
                     if (data) {
                         productos.push(data[0]);
-                        showNotification('✅ Producto creado', `El producto se publicó correctamente. SKU: ${skuFinal}`, 'success');
+                        hideLoading(true);
+                    showNotification('✅ Producto creado', `El producto se publicó correctamente. SKU: ${skuFinal}`, 'success');
                     }
                 }
                 
@@ -5318,6 +5455,10 @@ function generateEmail(username, suffix = '') {
                 showAuthError('Completa todos los campos obligatorios.');
                 return;
             }
+            const authBtn = document.getElementById('authSubmitBtn');
+            const isReg = (typeof isAuthMode !== 'undefined' && isAuthMode === 'register');
+            withButtonLoading(authBtn, true);
+            showLoading(isReg ? 'Creando tu cuenta…' : 'Iniciando sesión…', isReg ? 'Configurando tu perfil' : 'Cargando tu panel');
             if (password.length < 6) {
                 showAuthError('La contraseña debe tener al menos 6 caracteres.');
                 return;
@@ -5327,7 +5468,8 @@ function generateEmail(username, suffix = '') {
             try {
                 if (isAuthMode === 'login') {
                     // 1) Cerrar cualquier sesión previa
-                    try { await supabase.auth.signOut(); } catch (e) {}
+                    try { await supabase.auth.signOut(); } catch (e) {
+                hideLoading(true); withButtonLoading(document.getElementById('authSubmitBtn'), false);}
                     clearSessionState();
 
                     // 2) Buscar perfil por username (sin depender de mayúsculas)
@@ -5354,7 +5496,7 @@ function generateEmail(username, suffix = '') {
                         try {
                             const body = await alsetLogin(username, password);
                             applyAlsetSession(body);
-                            closeAuthModal();
+                            hideLoading(true); withButtonLoading(document.getElementById('authSubmitBtn'), false); closeAuthModal();
                             showApp();
                             renderSidebar(currentRole);
                             updateUserInfo();
@@ -5362,6 +5504,7 @@ function generateEmail(username, suffix = '') {
                             showNotification('👋 Bienvenido', `${currentUser.profile.username} · ${currentRole} · Alset`, 'success');
                             return;
                         } catch (e) {
+                hideLoading(true); withButtonLoading(document.getElementById('authSubmitBtn'), false);
                             showAuthError('No se encontró una cuenta con ese usuario o teléfono.');
                             return;
                         }
@@ -5380,7 +5523,7 @@ function generateEmail(username, suffix = '') {
                             try {
                                 const body = await alsetLogin(username, password);
                                 applyAlsetSession(body);
-                                closeAuthModal();
+                                hideLoading(true); withButtonLoading(document.getElementById('authSubmitBtn'), false); closeAuthModal();
                                 showApp();
                                 renderSidebar(currentRole);
                                 updateUserInfo();
@@ -5388,6 +5531,7 @@ function generateEmail(username, suffix = '') {
                                 showNotification('👋 Bienvenido', `${currentUser.profile.username} · ${currentRole} · Alset`, 'success');
                                 return;
                             } catch (eAlset) {
+                hideLoading(true); withButtonLoading(document.getElementById('authSubmitBtn'), false);
                                 if (authError) throw authError;
                                 throw eAlset;
                             }
@@ -5451,7 +5595,7 @@ function generateEmail(username, suffix = '') {
                         userId: authData.user.id
                     });
 
-                    closeAuthModal();
+                    hideLoading(true); withButtonLoading(document.getElementById('authSubmitBtn'), false); closeAuthModal();
                     showApp();
                     renderSidebar(currentRole);
                     updateUserInfo();
@@ -5528,7 +5672,7 @@ function generateEmail(username, suffix = '') {
                     if (!data?.user) throw new Error('No se pudo crear el usuario');
                     if (usedAlset) {
                         // Sesión Alset ya aplicada; entrar al dash sin filas Supabase
-                        closeAuthModal();
+                        hideLoading(true); withButtonLoading(document.getElementById('authSubmitBtn'), false); closeAuthModal();
                         showApp();
                         renderSidebar(currentRole);
                         updateUserInfo();
@@ -5596,7 +5740,7 @@ function generateEmail(username, suffix = '') {
                         user_metadata: { username, role, ...metadata }
                     };
                     currentRole = role;
-                    closeAuthModal();
+                    hideLoading(true); withButtonLoading(document.getElementById('authSubmitBtn'), false); closeAuthModal();
                     showApp();
                     renderSidebar(role);
                     updateUserInfo();
@@ -5642,6 +5786,7 @@ function generateEmail(username, suffix = '') {
         }
 
         function showAuthError(msg) {
+            try { hideLoading(true); const b=document.getElementById('authSubmitBtn'); if(b) withButtonLoading(b,false); } catch(e) {}
             const errorDiv = document.getElementById('authError');
             if (errorDiv) {
                 errorDiv.textContent = msg;
@@ -6395,6 +6540,7 @@ function generateEmail(username, suffix = '') {
 
         async function adminEnviarNotificacion() {
             if (currentRole !== 'admin') return;
+            showLoading('Enviando notificación…', 'Publicando aviso');
             const titulo = (document.getElementById('admNotifTitulo')?.value || '').trim();
             const mensaje = (document.getElementById('admNotifMensaje')?.value || '').trim();
             const audience = document.getElementById('admNotifAudience')?.value || 'all';
@@ -6441,11 +6587,11 @@ function generateEmail(username, suffix = '') {
                     if (e2) throw e2;
                 }
                 platformNotices = [notice, ...(platformNotices || [])].slice(0, 50);
-                showNotification('Enviado', 'Notificación publicada', 'success');
+                hideLoading(true); showNotification('Enviado', 'Notificación publicada', 'success');
                 if (typeof renderView === 'function') renderView('admin-notificaciones');
             } catch (e) {
                 console.error(e);
-                showNotification('Error', e.message || 'No se pudo enviar', 'error');
+                hideLoading(true); showNotification('Error', e.message || 'No se pudo enviar', 'error');
             }
         }
 
@@ -6811,5 +6957,13 @@ function generateEmail(username, suffix = '') {
 
 
     <div id="notifToastStack" class="notif-toast-stack" aria-live="polite"></div>
+
+    <div id="alsetLoadingOverlay" class="alset-loading-overlay" aria-live="polite" aria-busy="true">
+        <div class="alset-loading-box">
+            <div class="alset-spinner" aria-hidden="true"></div>
+            <div class="alset-loading-text" id="alsetLoadingText">Cargando…</div>
+            <div class="alset-loading-sub" id="alsetLoadingSub">Espera un momento</div>
+        </div>
+    </div>
 </body>
 </html>
