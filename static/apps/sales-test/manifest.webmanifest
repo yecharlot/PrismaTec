@@ -1,7 +1,7 @@
 {
   "name": "Alset Sales Hub TEST",
   "short_name": "Alset TEST",
-  "description": "Gestión de ventas: negocios, gestores y clientes (entorno de prueba)",
+  "description": "Gestión de ventas (entorno de prueba)",
   "start_url": "/w/sales-test.app.ans",
   "scope": "/",
   "id": "/w/sales-test.app.ans",

@@ -1,4 +1,4 @@
-const CACHE = 'alset-sales-test-v2';
+const CACHE = 'alset-sales-test-v3';
 const PRECACHE = [
   '/w/sales-test.app.ans',
   '/static/apps/sales-test/manifest.webmanifest',
