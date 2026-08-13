@@ -27,6 +27,72 @@
     
     <style>
 
+        /* Splash de arranque */
+        #alsetSplash {
+            position: fixed;
+            inset: 0;
+            z-index: 400000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0b0c10;
+            transition: opacity 0.45s ease, visibility 0.45s ease;
+        }
+        #alsetSplash.is-hiding {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        #alsetSplash .splash-logo {
+            width: 88px;
+            height: 88px;
+            border-radius: 22px;
+            object-fit: cover;
+            box-shadow: 0 12px 40px rgba(244, 180, 0, 0.25);
+            margin-bottom: 1.25rem;
+        }
+        #alsetSplash .splash-logo-fallback {
+            width: 88px;
+            height: 88px;
+            border-radius: 22px;
+            background: linear-gradient(135deg, #f4b400, #6c63ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 1.25rem;
+            box-shadow: 0 12px 40px rgba(244, 180, 0, 0.25);
+        }
+        #alsetSplash .splash-title {
+            color: #f0f2f7;
+            font-weight: 800;
+            font-size: 1.25rem;
+            letter-spacing: -0.02em;
+            margin: 0 0 0.35rem;
+        }
+        #alsetSplash .splash-sub {
+            color: #9aa3b5;
+            font-size: 0.9rem;
+            margin: 0 0 1.25rem;
+            min-height: 1.25em;
+            text-align: center;
+            padding: 0 1.5rem;
+        }
+        #alsetSplash .splash-spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid rgba(244, 180, 0, 0.2);
+            border-top-color: #f4b400;
+            border-radius: 50%;
+            animation: alsetSpin 0.75s linear infinite;
+        }
+        body.splash-active #landingPage,
+        body.splash-active #appContainer {
+            visibility: hidden !important;
+        }
+
+
         /* Global loading UX */
         .alset-loading-overlay {
             position: fixed !important; inset: 0 !important; z-index: 300000 !important;
@@ -1166,6 +1232,16 @@
     </style>
 </head>
 <body>
+<div id="alsetSplash" role="status" aria-live="polite" aria-busy="true">
+        <img class="splash-logo" src="/static/apps/sales/logo.png" alt="Alset" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+        <div class="splash-logo-fallback" style="display:none;" aria-hidden="true">🚀</div>
+        <p class="splash-title">Alset Sales Hub</p>
+        <p class="splash-sub" id="alsetSplashText">Cargando Alset Sales Hub…</p>
+        <div class="splash-spinner" aria-hidden="true"></div>
+    </div>
+    <script>try{document.body.classList.add('splash-active');window.__alsetSplashStarted=Date.now();}catch(e){}</script>
+
+
 <!-- ============================================================
     NOTIFICATION CONTAINER
     ============================================================ -->
@@ -2365,6 +2441,33 @@ function getCurrentGestorId() {
         
         // ========== LOADING UX ==========
         let _loadingDepth = 0;
+        
+        function setSplashText(msg) {
+            const el = document.getElementById('alsetSplashText');
+            if (el) el.textContent = msg || 'Cargando Alset Sales Hub…';
+        }
+        function hideSplash(delayMs) {
+            const MIN_MS = 10000; // splash visible al menos 10s
+            const started = window.__alsetSplashStarted || Date.now();
+            const elapsed = Date.now() - started;
+            const waitMore = Math.max(0, MIN_MS - elapsed);
+            const extra = typeof delayMs === 'number' ? delayMs : 280;
+            const splash = document.getElementById('alsetSplash');
+            const go = () => {
+                document.body.classList.remove('splash-active');
+                if (!splash) return;
+                splash.classList.add('is-hiding');
+                splash.setAttribute('aria-busy', 'false');
+                setTimeout(() => {
+                    try { splash.remove(); } catch (e) { if (splash) splash.style.display = 'none'; }
+                }, 480);
+            };
+            setTimeout(go, waitMore + extra);
+        }
+        // Ocultar landing/app hasta que termine el splash
+        try { document.body.classList.add('splash-active'); if (!window.__alsetSplashStarted) window.__alsetSplashStarted = Date.now(); } catch (e) {}
+
+
         function showLoading(message, sub) {
             _loadingDepth = Math.max(1, (_loadingDepth || 0) + 1);
             const ov = document.getElementById('alsetLoadingOverlay');
@@ -6921,17 +7024,22 @@ function generateEmail(username, suffix = '') {
 
         async function initAppConSupabase() {
             try {
+                setSplashText('Cargando Alset Sales Hub…');
                 if (typeof attachRegAvatarIfNeeded === 'function') {
                     try { await attachRegAvatarIfNeeded(); } catch (e) { console.warn(e); }
                 }
                 if (typeof restoreAlsetSessionIfAny === 'function' && restoreAlsetSessionIfAny()) {
+                    setSplashText('Restableciendo sesión iniciada…');
                     showApp();
                     initApp(currentRole);
                     updateUserInfo();
+                    hideSplash(350);
                     return;
                 }
+                setSplashText('Comprobando sesión…');
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session) {
+                    setSplashText('Restableciendo sesión iniciada…');
                     const { data: profileData, error: profileError } = await supabase
                         .from('profiles').select('*').eq('user_id', session.user.id).maybeSingle();
                     if (!profileError && profileData) {
@@ -6939,31 +7047,39 @@ function generateEmail(username, suffix = '') {
                             await supabase.auth.signOut();
                             clearSessionState();
                             showLanding();
+                            hideSplash(250);
                             showNotification('Cuenta deshabilitada', 'Contacta al administrador.', 'error');
                             return;
                         }
                         currentUser = { ...session.user, profile: profileData };
                         currentRole = resolveAppRole(profileData);
+                        setSplashText('Preparando tu panel…');
                         await cargarDatos();
                         if (currentRole === 'empresa') {
                             window._empresaIdCache = await obtenerEmpresaUsuario();
                         }
                         showApp();
                         initApp(currentRole);
-                        showNotification('👋 Bienvenido', `${profileData.username} · ${currentRole}`, 'success');
+                        if (typeof updateUserInfo === 'function') updateUserInfo();
                         if (typeof actualizarLineaPlan === 'function') actualizarLineaPlan();
+                        hideSplash(350);
+                        showNotification('👋 Bienvenido', `${profileData.username} · ${currentRole}`, 'success');
                         return;
                     }
                 }
+                setSplashText('Cargando Alset Sales Hub…');
                 showLanding();
+                hideSplash(300);
             } catch (error) {
                 console.error('Error inicializando:', error);
                 showLanding();
+                hideSplash(200);
             }
         }
 
         // Precios visibles de inmediato (offline-first)
         try { if (typeof renderLandingPricing === 'function') renderLandingPricing(); } catch (e) { console.warn(e); }
+        setTimeout(function(){ try { if (document.getElementById('alsetSplash')) hideSplash(0); } catch(e){} }, 20000);
         (async function(){ try { await attachRegAvatarIfNeeded(); } catch(e){} initAppConSupabase(); })();
         if (typeof startLandingStatsPoll === 'function') startLandingStatsPoll();
         if (typeof loadPlatformPlans === 'function') loadPlatformPlans();
