@@ -29,12 +29,15 @@
 
         /* Global loading UX */
         .alset-loading-overlay {
-            position: fixed; inset: 0; z-index: 200000;
-            background: rgba(11,12,16,0.55);
-            display: none; align-items: center; justify-content: center;
-            backdrop-filter: blur(2px);
+            position: fixed !important; inset: 0 !important; z-index: 300000 !important;
+            background: rgba(11,12,16,0.72) !important;
+            display: none;
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            pointer-events: all;
         }
-        .alset-loading-overlay.active { display: flex; }
+        .alset-loading-overlay.active { display: flex !important; }
         .alset-loading-box {
             background: var(--dark1, #12141c);
             border: 1px solid var(--border, #2a2d3a);
@@ -508,7 +511,8 @@
         .app-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--gray2); }
         .app-topbar .page-title { font-size: 1.8rem; font-weight: 800; }
         .app-topbar .user-info { display: flex; align-items: center; gap: 1rem; }
-        .app-topbar .user-info .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--gradient1); display: flex; align-items: center; justify-content: center; color: #0b0c10; font-weight: 700; cursor: pointer; }
+        .app-topbar .user-info .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--gradient1); display: flex; align-items: center; justify-content: center; color: #0b0c10; font-weight: 700; cursor: pointer; overflow: hidden; flex-shrink: 0; padding: 0; }
+        .app-topbar .user-info .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%; }
         .app-topbar .user-info .username { font-weight: 600; font-size: 0.95rem; }
         .app-topbar .user-info .role-badge { background: rgba(108,99,255,0.1); color: var(--primary); padding: 0.2rem 0.8rem; border-radius: 50px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
         .app-topbar .user-info .logout-btn { background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 1.2rem; transition: color 0.3s ease; }
@@ -1450,6 +1454,10 @@
     <div class="modal-overlay" id="authModal">
         <div class="modal">
             <button class="close-modal" onclick="closeAuthModal()">&times;</button>
+            <div id="authLoadingHint" style="display:none;margin:0.5rem 0 0.75rem;padding:0.65rem 0.85rem;border-radius:10px;background:rgba(244,180,0,0.12);border:1px solid var(--primary);color:var(--text-dark);font-size:0.9rem;font-weight:600;text-align:center;">
+                <span class="alset-spinner" style="width:18px;height:18px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:0.45rem;"></span>
+                <span id="authLoadingHintText">Iniciando sesión…</span>
+            </div>
             <h2 id="authModalTitle">Crear cuenta</h2>
             <p class="subtitle" id="authModalSub">Regístrate en Alset Sales Hub</p>
             <div id="authError" style="background:#fee; color:#c00; padding:0.75rem; border-radius:8px; margin-bottom:1rem; display:none;"></div>
@@ -2014,6 +2022,7 @@ const SUPABASE_URL = 'https://bvekxaozilvloozcabpl.supabase.co';
         }
 
         async function enviarOpinionPlataforma() {
+            showLoading('Enviando opinión…', 'Gracias');
             if (!currentUser || !currentUser.profile || !currentUser.profile.id) {
                 openAuthModal('login');
                 return;
@@ -2237,6 +2246,7 @@ const SUPABASE_URL = 'https://bvekxaozilvloozcabpl.supabase.co';
         }
 
         async function guardarAparienciaAdmin() {
+            showLoading('Guardando apariencia…', 'Admin');
             if (!currentUser?.profile?.id) return;
             const copy = {
                 ...(platformSettings.copy || {}),
@@ -2361,20 +2371,33 @@ function getCurrentGestorId() {
         // ========== LOADING UX ==========
         let _loadingDepth = 0;
         function showLoading(message, sub) {
-            _loadingDepth++;
+            _loadingDepth = Math.max(1, (_loadingDepth || 0) + 1);
             const ov = document.getElementById('alsetLoadingOverlay');
             const t = document.getElementById('alsetLoadingText');
             const s = document.getElementById('alsetLoadingSub');
             if (t) t.textContent = message || 'Cargando…';
             if (s) s.textContent = sub || 'Espera un momento';
-            if (ov) ov.classList.add('active');
+            if (ov) {
+                ov.classList.add('active');
+                ov.style.display = 'flex';
+                void ov.offsetHeight;
+            }
+            const hint = document.getElementById('authLoadingHint');
+            const hintT = document.getElementById('authLoadingHintText');
+            if (hint) { hint.style.display = 'block'; }
+            if (hintT) hintT.textContent = message || 'Cargando…';
         }
         function hideLoading(force) {
             if (force) _loadingDepth = 0;
-            else _loadingDepth = Math.max(0, _loadingDepth - 1);
+            else _loadingDepth = Math.max(0, (_loadingDepth || 1) - 1);
             if (_loadingDepth === 0) {
                 const ov = document.getElementById('alsetLoadingOverlay');
-                if (ov) ov.classList.remove('active');
+                if (ov) {
+                    ov.classList.remove('active');
+                    ov.style.display = 'none';
+                }
+                const hint = document.getElementById('authLoadingHint');
+                if (hint) hint.style.display = 'none';
             }
         }
         function withButtonLoading(btn, busy) {
@@ -2613,7 +2636,6 @@ function getCurrentGestorId() {
                 { icon: 'fa-user-circle', label: 'Mi perfil', view: 'mi-perfil' },
                 { icon: 'fa-chart-pie', label: 'Dashboard', view: 'dashboard' },
                 { icon: 'fa-boxes', label: 'Catálogo', view: 'catalogo' },
-                { icon: 'fa-plus-circle', label: 'Nuevo Producto', view: 'nuevo-producto' },
                 { icon: 'fa-users', label: 'Red de gestores', view: 'gestores' },
                 { icon: 'fa-handshake', label: 'Mis gestores', view: 'ranking' },
                 { icon: 'fa-comments', label: 'Auditoría chats', view: 'chats' },
@@ -2957,13 +2979,12 @@ function renderDashboard() {
                     }).join('') : '<li>Aún no hay ventas registradas</li>'}</ul></div></div>`;
             } else {
                 extra += `<div class="app-card" style="margin-top:1rem;"><h3>📈 Estadísticas</h3>
-                    <p style="color:var(--text-light);font-size:0.9rem;">Tu plan <strong>${plan.nombre}</strong> incluye métricas básicas. Mejora a Profesional o Empresarial para ranking de productos, ticket medio y más detalle.</p>
-                    <button type="button" class="btn-primary" style="margin-top:0.75rem;" onclick="navigateTo('mi-plan')">Ver planes</button></div>`;
+                    <p style="color:var(--text-light);font-size:0.9rem;">Tu plan <strong>${plan.nombre}</strong> incluye métricas básicas. En planes superiores verás ticket medio, productos más vendidos y ranking de gestores.</p></div>`;
             }
             if (nivel === 'premium') {
                 const porGestor = {};
                 misVentas.forEach(v => { if (v.gestor_id) porGestor[v.gestor_id] = (porGestor[v.gestor_id]||0)+1; });
-                extra += `<div class="app-card" style="margin-top:1rem;"><h3>👑 Ranking de gestores (premium)</h3>
+                extra += `<div class="app-card" style="margin-top:1rem;"><h3>👑 Ranking de gestores por ventas</h3>
                     <ul style="color:var(--text-light);">${Object.entries(porGestor).sort((a,b)=>b[1]-a[1]).map(([gid,n]) => {
                         const g = gestores.find(x => x.id === gid);
                         return `<li>${g ? g.nombres + ' ' + (g.apellidos||'') : gid}: ${n} venta(s)</li>`;
@@ -2971,25 +2992,18 @@ function renderDashboard() {
             }
 
             return `
+                <div class="app-card" style="margin-bottom:1rem;">
+                    <h3 style="margin:0 0 0.35rem;">📊 Resumen del negocio</h3>
+                    <p style="color:var(--text-light);font-size:0.9rem;margin:0;">Solo métricas de tu actividad. Las acciones están en el menú lateral y en Catálogo.</p>
+                </div>
                 <div class="stats-grid">
                     <div class="stat-card"><div class="label">Tus productos</div><div class="value primary">${misProductos.length}</div></div>
                     <div class="stat-card"><div class="label">Gestores en red</div><div class="value success">${misGestores.length}</div></div>
                     <div class="stat-card"><div class="label">Ventas</div><div class="value warning">${misVentas.length}</div></div>
                     <div class="stat-card"><div class="label">Ingresos reg.</div><div class="value danger">${ingreso.toLocaleString('es-ES')}</div></div>
                 </div>
-                <p style="color:var(--text-light);font-size:0.85rem;margin-bottom:1rem;">Plan activo: <strong>${plan.nombre || 'Gratis'}</strong> · cupos gestores ${plan.gestores} · productos ${plan.productos}</p>
-                <div style="display:flex; gap:0.75rem; margin-bottom:1.5rem; flex-wrap:wrap;">
-                    <button class="btn-primary" style="padding:0.75rem 1.5rem;" onclick="openProductModal()"><i class="fas fa-plus"></i> Nuevo Producto</button>
-                    <button class="btn-secondary" style="padding:0.75rem 1.5rem;" onclick="navigateTo('ventas-empresa')">Ver ventas</button>
-                    <button class="btn-secondary" style="padding:0.75rem 1.5rem;" onclick="navigateTo('mi-plan')">Mi plan</button>
-                </div>
+                <p style="color:var(--text-light);font-size:0.85rem;margin:0.5rem 0 1rem;">Plan activo: <strong>${plan.nombre || 'Gratis'}</strong> · cupos gestores ${plan.gestores} · productos ${plan.productos}</p>
                 ${extra}
-                <div class="app-card" style="margin-top:1rem;">
-                    <h3>🏆 Gestores de tus productos</h3>
-                    <div class="gestor-grid">
-                        ${misGestores.length ? misGestores.slice(0, 6).map((g, i) => renderGestorCardHTML(g, i)).join('') : '<p style="color:var(--text-light);">Aún no hay gestores asignados. Solicítalos desde cada producto.</p>'}
-                    </div>
-                </div>
             `;
         }
 
@@ -3514,9 +3528,34 @@ function nombreNegocioProducto(product) {
         }
 
         
+        function previewProfileAvatar(input) {
+            if (!input || !input.files || !input.files[0]) return;
+            const file = input.files[0];
+            const url = URL.createObjectURL(file);
+            const wrap = document.getElementById('pf_avatarImg');
+            if (!wrap) return;
+            // wrap may be img or div
+            if (wrap.tagName === 'IMG') {
+                wrap.src = url;
+                wrap.style.display = 'block';
+            } else {
+                wrap.outerHTML = '<img id="pf_avatarImg" src="' + url + '" alt="Vista previa" style="width:100%;height:100%;object-fit:cover;" />';
+            }
+            const hint = document.getElementById('pf_avatarHint');
+            if (hint) hint.textContent = 'Vista previa lista. Pulsa «Guardar cambios» para aplicar.';
+        }
+
         function getProfileAvatarUrl() {
-            const m = (currentUser && currentUser.profile && currentUser.profile.metadata) || {};
-            return m.avatar_url || m.foto || m.photo_url || '';
+            try {
+                let meta = (currentUser && currentUser.profile && currentUser.profile.metadata) || {};
+                if (typeof meta === 'string') {
+                    try { meta = JSON.parse(meta); } catch (e) { meta = {}; }
+                }
+                const um = (currentUser && (currentUser.user_metadata || currentUser.user?.user_metadata)) || {};
+                return meta.avatar_url || meta.foto || meta.photo_url || um.avatar_url || um.foto || '';
+            } catch (e) {
+                return '';
+            }
         }
 
         function previewRegAvatar(input) {
@@ -3590,7 +3629,8 @@ function nombreNegocioProducto(product) {
                                     : `<div id="pf_avatarImg" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2rem;">👤</div>`}
                             </div>
                             <label style="display:block;margin-top:0.75rem;font-size:0.8rem;color:var(--text-light);">Foto (opcional)</label>
-                            <input type="file" id="pf_avatarFile" accept="image/*" style="font-size:0.8rem;max-width:160px;" />
+                            <input type="file" id="pf_avatarFile" accept="image/*" style="font-size:0.8rem;max-width:160px;" onchange="previewProfileAvatar(this)" />
+                            <div id="pf_avatarHint" style="font-size:0.75rem;color:var(--text-light);margin-top:0.35rem;">Puedes cambiar la foto y ver la vista previa antes de guardar.</div>
                         </div>
                         <div class="profile-form" style="flex:1;min-width:220px;display:grid;gap:0.5rem;">
                             <style>
@@ -3614,12 +3654,19 @@ function nombreNegocioProducto(product) {
                 const file = window.__regAvatarPending;
                 window.__regAvatarPending = null;
                 if (!file || !currentUser || !currentUser.profile?.id) return;
+                showLoading('Subiendo foto de perfil…', 'Un momento');
                 const url = await uploadAvatarFile(file);
-                if (!url) return;
+                if (!url) { hideLoading(true); return; }
                 const meta = { ...(currentUser.profile.metadata || {}), avatar_url: url };
-                await supabase.from('profiles').update({ metadata: meta }).eq('id', currentUser.profile.id);
+                const { error } = await supabase.from('profiles').update({ metadata: meta }).eq('id', currentUser.profile.id);
+                if (error) throw error;
                 currentUser.profile.metadata = meta;
-            } catch (e) { console.warn('avatar reg', e); }
+                if (typeof updateUserInfo === 'function') updateUserInfo();
+                hideLoading(true);
+            } catch (e) {
+                console.warn('avatar reg', e);
+                hideLoading(true);
+            }
         }
 
         async function guardarPerfilUsuario() {
@@ -3633,7 +3680,7 @@ function nombreNegocioProducto(product) {
                 const meta = { ...(currentUser.profile.metadata || {}) };
                 const fileInput = document.getElementById('pf_avatarFile');
                 if (fileInput && fileInput.files && fileInput.files[0]) {
-                    showNotification('Subiendo', 'Foto de perfil…', 'info');
+                    showLoading('Subiendo foto de perfil…', 'Actualizando tu imagen');
                     const url = await uploadAvatarFile(fileInput.files[0]);
                     if (url) meta.avatar_url = url;
                 }
@@ -4624,8 +4671,22 @@ const productosAsignados = productos.filter(p => gestorGestionaProducto(p, gesto
                 showNotification('Chat', 'Modo auditoría: solo lectura', 'warning');
                 return;
             }
+            const rid = getRemitenteProfileId() || currentUser?.id;
+            // Optimista: se ve al instante (sin loading)
+            const tempId = 'tmp_' + Date.now();
+            const optimistic = {
+                id: tempId,
+                conversacion_id: chatConversacionId,
+                remitente_id: rid,
+                contenido: mensaje,
+                leido: false,
+                created_at: new Date().toISOString()
+            };
+            mensajesChat = mensajesChat || [];
+            mensajesChat.push(optimistic);
+            if (input) input.value = '';
+            if (typeof renderMensajes === 'function') renderMensajes();
             try {
-                const rid = getRemitenteProfileId() || currentUser?.id;
                 const { data, error } = await supabase.from('mensajes').insert({
                     conversacion_id: chatConversacionId,
                     remitente_id: rid,
@@ -4633,16 +4694,20 @@ const productosAsignados = productos.filter(p => gestorGestionaProducto(p, gesto
                     leido: false
                 }).select().single();
                 if (error) throw error;
-                await supabase.from('conversaciones').update({ ultimo_mensaje: new Date().toISOString() }).eq('id', chatConversacionId);
-                if (input) input.value = '';
+                supabase.from('conversaciones').update({ ultimo_mensaje: new Date().toISOString() }).eq('id', chatConversacionId).then(() => {}).catch(() => {});
                 if (data) {
-                    if (!mensajesChat.find(m => m.id === data.id)) mensajesChat.push(data);
-                    renderMensajes();
+                    const idx = mensajesChat.findIndex(m => m.id === tempId);
+                    if (idx !== -1) mensajesChat[idx] = data;
+                    else if (!mensajesChat.find(m => m.id === data.id)) mensajesChat.push(data);
+                    if (typeof renderMensajes === 'function') renderMensajes();
                 } else {
                     await refrescarMensajesSilencioso(true);
                 }
             } catch (err) {
                 console.error(err);
+                mensajesChat = (mensajesChat || []).filter(m => m.id !== tempId);
+                if (typeof renderMensajes === 'function') renderMensajes();
+                if (input && !input.value) input.value = mensaje;
                 showNotification('Error', err.message || 'No se pudo enviar', 'error');
             }
         }
@@ -5102,6 +5167,7 @@ async function toggleProductAssignment(productId) {
                 return;
             }
             if (!confirm('¿Estás seguro de eliminar este producto?')) return;
+            showLoading('Eliminando producto…', 'Un momento');
             try {
                 const { error } = await supabase.from('productos').delete().eq('id', productId);
                 if (error) throw error;
@@ -5174,6 +5240,7 @@ async function toggleProductAssignment(productId) {
         }
 
         async function submitFeedback() {
+            showLoading('Enviando…', 'Un momento');
             if (!selectedFeedbackType) { showNotification('Error', 'Selecciona si es un elogio o una queja.', 'error'); return; }
             if (selectedStar === 0) { showNotification('Error', 'Selecciona una calificación de 1 a 5 estrellas.', 'error'); return; }
             const gestor = gestores.find(g => g.id === feedbackTargetId);
@@ -5243,6 +5310,7 @@ const gestor = getCurrentGestor();
         });
 
 async function savePhoto() {
+            showLoading('Guardando foto…', 'Un momento');
             const gestor = getCurrentGestor();
             const gestorId = getCurrentGestorId();
             if (gestor && gestorId && tempPhoto) {
@@ -5457,19 +5525,27 @@ function generateEmail(username, suffix = '') {
             }
             const authBtn = document.getElementById('authSubmitBtn');
             const isReg = (typeof isAuthMode !== 'undefined' && isAuthMode === 'register');
-            withButtonLoading(authBtn, true);
-            showLoading(isReg ? 'Creando tu cuenta…' : 'Iniciando sesión…', isReg ? 'Configurando tu perfil' : 'Cargando tu panel');
             if (password.length < 6) {
                 showAuthError('La contraseña debe tener al menos 6 caracteres.');
                 return;
             }
             const username = usernameRaw.toLowerCase();
+            const loadingMsg = isReg ? 'Creando tu cuenta…' : 'Iniciando sesión…';
+            const loadingSub = isReg ? 'Configurando tu perfil' : 'Cargando tu panel';
+            if (authBtn) {
+                authBtn.dataset.prevHtml = authBtn.innerHTML;
+                authBtn.disabled = true;
+                authBtn.classList.add('is-loading');
+                authBtn.textContent = loadingMsg;
+            }
+            showLoading(loadingMsg, loadingSub);
+            // ceder un frame para que el navegador pinte el loading antes del await
+            await new Promise(function(r){ requestAnimationFrame(function(){ requestAnimationFrame(r); }); });
 
             try {
                 if (isAuthMode === 'login') {
                     // 1) Cerrar cualquier sesión previa
-                    try { await supabase.auth.signOut(); } catch (e) {
-                hideLoading(true); withButtonLoading(document.getElementById('authSubmitBtn'), false);}
+                    try { await supabase.auth.signOut(); } catch (e) { /* ignore */ }
                     clearSessionState();
 
                     // 2) Buscar perfil por username (sin depender de mayúsculas)
@@ -5883,8 +5959,23 @@ function generateEmail(username, suffix = '') {
 
             const nameEl = document.getElementById('appUserName');
             if (nameEl) nameEl.textContent = displayName;
-            const av = document.getElementById('appUserAvatar');
-            if (av) av.textContent = (displayName || '?').charAt(0).toUpperCase();
+            const avEl = document.getElementById('appUserAvatar');
+            if (avEl) {
+                const avUrl = (typeof getProfileAvatarUrl === 'function') ? getProfileAvatarUrl() : ((m && m.avatar_url) || '');
+                const initial = (displayName || 'U').trim().charAt(0).toUpperCase() || 'U';
+                if (avUrl) {
+                    avEl.innerHTML = '';
+                    const im = document.createElement('img');
+                    im.src = String(avUrl);
+                    im.alt = displayName || 'Avatar';
+                    im.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;';
+                    im.onerror = function(){ avEl.textContent = initial; };
+                    avEl.appendChild(im);
+                    avEl.title = displayName;
+                } else {
+                    avEl.textContent = initial;
+                }
+            }
             console.log('[Alset UI]', { rol, displayName, profileId: p.id, username: p.username });
         }
 
@@ -6148,6 +6239,7 @@ function generateEmail(username, suffix = '') {
         }
 
         async function guardarPlanesAdmin() {
+            showLoading('Guardando planes…', 'Admin');
             const next = {};
             Object.keys(PLANES).forEach(id => {
                 const nombre = document.getElementById('pl_nombre_' + id)?.value?.trim() || id;
@@ -6199,6 +6291,7 @@ function generateEmail(username, suffix = '') {
         }
 
         async function enviarOpinionDesdeDash() {
+            showLoading('Enviando opinión…', 'Gracias');
             const ta = document.getElementById('opinionTextoDash');
             const texto = (ta?.value || '').trim();
             if (texto.length < 8) {
@@ -6263,6 +6356,7 @@ function generateEmail(username, suffix = '') {
         }
 
         async function adminBorrarOpinion(profileId) {
+            showLoading('Eliminando opinión…', 'Admin');
             const p = (allProfiles || []).find(x => x.id === profileId);
             if (!p) return;
             if (!confirm('¿Eliminar la opinión de ' + (p.username || 'usuario') + '?')) return;
@@ -6733,6 +6827,7 @@ function generateEmail(username, suffix = '') {
             }
             const label = nombre || 'este producto';
             if (!confirm('¿Eliminar el producto «' + label + '»? Esta acción no se puede deshacer.')) return;
+            showLoading('Eliminando producto…', 'Admin');
             try {
                 const { error } = await supabase.from('productos').delete().eq('id', productId);
                 if (error) throw error;
@@ -6755,6 +6850,7 @@ function generateEmail(username, suffix = '') {
         }
 
         async function adminToggleCuenta(profileId, enable) {
+            showLoading('Actualizando cuenta…', 'Admin');
             const p = (allProfiles||[]).find(x => x.id === profileId);
             if (!p) return;
             const meta = { ...(p.metadata||{}), account_enabled: !!enable, account_status: enable ? 'active' : 'disabled' };
@@ -6770,6 +6866,7 @@ function generateEmail(username, suffix = '') {
         }
 
         async function adminAprobarPago(profileId) {
+            showLoading('Aprobando pago…', 'Activando plan');
             const p = (allProfiles||[]).find(x => x.id === profileId);
             if (!p) return;
             const meta = { ...(p.metadata||{}), plan_status: 'active', plan_activated_at: new Date().toISOString(), account_enabled: true, account_status: 'active' };
@@ -6781,6 +6878,7 @@ function generateEmail(username, suffix = '') {
         }
 
         async function adminRechazarPago(profileId) {
+            showLoading('Rechazando pago…', 'Admin');
             const p = (allProfiles||[]).find(x => x.id === profileId);
             if (!p) return;
             const meta = { ...(p.metadata||{}), plan_status: 'rejected' };
@@ -6793,6 +6891,7 @@ function generateEmail(username, suffix = '') {
 
 
         async function enviarComprobantePago(planId) {
+            showLoading('Subiendo comprobante…', 'Plan de suscripción');
             const plan = (window.PLANES || PLANES || {})[planId];
             const fileInput = document.getElementById('paymentProofFile');
             const file = fileInput?.files?.[0];

@@ -26,6 +26,52 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
     
     <style>
+
+        /* Global loading UX */
+        .alset-loading-overlay {
+            position: fixed !important; inset: 0 !important; z-index: 300000 !important;
+            background: rgba(11,12,16,0.72) !important;
+            display: none;
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            pointer-events: all;
+        }
+        .alset-loading-overlay.active { display: flex !important; }
+        .alset-loading-box {
+            background: var(--dark1, #12141c);
+            border: 1px solid var(--border, #2a2d3a);
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
+            min-width: min(280px, 86vw);
+            text-align: center;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+        }
+        .alset-spinner {
+            width: 36px; height: 36px; margin: 0 auto 0.75rem;
+            border: 3px solid rgba(244,180,0,0.2);
+            border-top-color: var(--primary, #f4b400);
+            border-radius: 50%;
+            animation: alsetSpin 0.75s linear infinite;
+        }
+        @keyframes alsetSpin { to { transform: rotate(360deg); } }
+        .alset-loading-text { color: var(--text-dark, #e8eaef); font-size: 0.95rem; font-weight: 600; }
+        .alset-loading-sub { color: var(--text-light, #9aa3b5); font-size: 0.8rem; margin-top: 0.35rem; }
+        button.is-loading, .btn-primary.is-loading, .btn-secondary.is-loading {
+            opacity: 0.75; pointer-events: none; position: relative;
+        }
+        button.is-loading::after {
+            content: '';
+            width: 14px; height: 14px;
+            margin-left: 0.5rem;
+            border: 2px solid rgba(255,255,255,0.35);
+            border-top-color: currentColor;
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: middle;
+            animation: alsetSpin 0.7s linear infinite;
+        }
+
 .notif-bell-btn {
             position: relative;
             background: var(--dark2);
@@ -465,7 +511,8 @@
         .app-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--gray2); }
         .app-topbar .page-title { font-size: 1.8rem; font-weight: 800; }
         .app-topbar .user-info { display: flex; align-items: center; gap: 1rem; }
-        .app-topbar .user-info .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--gradient1); display: flex; align-items: center; justify-content: center; color: #0b0c10; font-weight: 700; cursor: pointer; }
+        .app-topbar .user-info .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--gradient1); display: flex; align-items: center; justify-content: center; color: #0b0c10; font-weight: 700; cursor: pointer; overflow: hidden; flex-shrink: 0; padding: 0; }
+        .app-topbar .user-info .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%; }
         .app-topbar .user-info .username { font-weight: 600; font-size: 0.95rem; }
         .app-topbar .user-info .role-badge { background: rgba(108,99,255,0.1); color: var(--primary); padding: 0.2rem 0.8rem; border-radius: 50px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
         .app-topbar .user-info .logout-btn { background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 1.2rem; transition: color 0.3s ease; }
@@ -1402,6 +1449,10 @@
     <div class="modal-overlay" id="authModal">
         <div class="modal">
             <button class="close-modal" onclick="closeAuthModal()">&times;</button>
+            <div id="authLoadingHint" style="display:none;margin:0.5rem 0 0.75rem;padding:0.65rem 0.85rem;border-radius:10px;background:rgba(244,180,0,0.12);border:1px solid var(--primary);color:var(--text-dark);font-size:0.9rem;font-weight:600;text-align:center;">
+                <span class="alset-spinner" style="width:18px;height:18px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:0.45rem;"></span>
+                <span id="authLoadingHintText">Iniciando sesión…</span>
+            </div>
             <h2 id="authModalTitle">Crear cuenta</h2>
             <p class="subtitle" id="authModalSub">Regístrate en Alset Sales Hub</p>
             <div id="authError" style="background:#fee; color:#c00; padding:0.75rem; border-radius:8px; margin-bottom:1rem; display:none;"></div>
@@ -1966,6 +2017,7 @@ const SUPABASE_URL = 'https://bvekxaozilvloozcabpl.supabase.co';
         }
 
         async function enviarOpinionPlataforma() {
+            showLoading('Enviando opinión…', 'Gracias');
             if (!currentUser || !currentUser.profile || !currentUser.profile.id) {
                 openAuthModal('login');
                 return;
@@ -2189,6 +2241,7 @@ const SUPABASE_URL = 'https://bvekxaozilvloozcabpl.supabase.co';
         }
 
         async function guardarAparienciaAdmin() {
+            showLoading('Guardando apariencia…', 'Admin');
             if (!currentUser?.profile?.id) return;
             const copy = {
                 ...(platformSettings.copy || {}),
@@ -2309,6 +2362,96 @@ function getCurrentGestorId() {
         // ============================================================
         // NOTIFICACIONES
         // ============================================================
+        
+        // ========== LOADING UX ==========
+        let _loadingDepth = 0;
+        function showLoading(message, sub) {
+            _loadingDepth = Math.max(1, (_loadingDepth || 0) + 1);
+            const ov = document.getElementById('alsetLoadingOverlay');
+            const t = document.getElementById('alsetLoadingText');
+            const s = document.getElementById('alsetLoadingSub');
+            if (t) t.textContent = message || 'Cargando…';
+            if (s) s.textContent = sub || 'Espera un momento';
+            if (ov) {
+                ov.classList.add('active');
+                ov.style.display = 'flex';
+                void ov.offsetHeight;
+            }
+            const hint = document.getElementById('authLoadingHint');
+            const hintT = document.getElementById('authLoadingHintText');
+            if (hint) { hint.style.display = 'block'; }
+            if (hintT) hintT.textContent = message || 'Cargando…';
+        }
+        function hideLoading(force) {
+            if (force) _loadingDepth = 0;
+            else _loadingDepth = Math.max(0, (_loadingDepth || 1) - 1);
+            if (_loadingDepth === 0) {
+                const ov = document.getElementById('alsetLoadingOverlay');
+                if (ov) {
+                    ov.classList.remove('active');
+                    ov.style.display = 'none';
+                }
+                const hint = document.getElementById('authLoadingHint');
+                if (hint) hint.style.display = 'none';
+            }
+        }
+        function withButtonLoading(btn, busy) {
+            if (!btn) return;
+            if (busy) {
+                btn.dataset.prevDisabled = btn.disabled ? '1' : '0';
+                btn.dataset.prevHtml = btn.innerHTML;
+                btn.classList.add('is-loading');
+                btn.disabled = true;
+            } else {
+                btn.classList.remove('is-loading');
+                btn.disabled = btn.dataset.prevDisabled === '1';
+                if (btn.dataset.prevHtml) btn.innerHTML = btn.dataset.prevHtml;
+            }
+        }
+        function isUserTypingInView() {
+            const ae = document.activeElement;
+            if (!ae) return false;
+            const tag = (ae.tagName || '').toLowerCase();
+            if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
+            if (ae.isContentEditable) return true;
+            return false;
+        }
+        function dataFingerprint() {
+            const g = (gestores || []).length;
+            const p = (productos || []).length;
+            const v = (ventas || []).length;
+            const c = (clientes || []).length;
+            const e = (typeof empresas !== 'undefined' && empresas) ? empresas.length : 0;
+            // include light hash of ids+updated fields
+            const pids = (productos || []).slice(0, 40).map(x => x.id + ':' + (x.stock ?? '') + ':' + (x.estado || '') + ':' + ((x.gestores_asignados || []).length)).join('|');
+            const vids = (ventas || []).slice(0, 40).map(x => x.id + ':' + (x.estado || '')).join('|');
+            return [g, p, v, c, e, pids, vids].join('::');
+        }
+        let _lastDataFp = '';
+        const REALTIME_REFRESH_VIEWS = [
+            'dashboard', 'panel', 'catalogo', 'explorar', 'seleccionar-productos', 'mis-productos',
+            'gestores', 'ranking', 'ver-gestores', 'vender', 'ventas-empresa', 'ventas-gestor',
+            'chats', 'mis-qr', 'admin-dashboard', 'admin-productos', 'admin-ventas', 'admin-cuentas',
+            'admin-pagos', 'admin-opiniones', 'oportunidades-gestor', 'escanear-qr', 'nuevo-producto',
+            'mi-perfil', 'mi-plan'
+        ];
+        function softRefreshCurrentView() {
+            try {
+                if (!currentUser) return;
+                if (document.hidden) return;
+                if (isUserTypingInView()) return;
+                // don't disrupt open modals that are not auth
+                const authModal = document.getElementById('authModal');
+                if (authModal && authModal.classList.contains('active')) return;
+                const view = currentView || 'dashboard';
+                if (typeof renderView === 'function' && REALTIME_REFRESH_VIEWS.includes(view)) {
+                    renderView(view);
+                }
+                if (typeof updateNotifBadge === 'function') updateNotifBadge();
+            } catch (e) { console.warn('softRefresh', e); }
+        }
+
+
         function showNotification(title, message, type = 'info', duration = 4000) {
             const container = document.getElementById('notificationContainer');
             const notification = document.createElement('div');
@@ -2488,7 +2631,6 @@ function getCurrentGestorId() {
                 { icon: 'fa-user-circle', label: 'Mi perfil', view: 'mi-perfil' },
                 { icon: 'fa-chart-pie', label: 'Dashboard', view: 'dashboard' },
                 { icon: 'fa-boxes', label: 'Catálogo', view: 'catalogo' },
-                { icon: 'fa-plus-circle', label: 'Nuevo Producto', view: 'nuevo-producto' },
                 { icon: 'fa-users', label: 'Red de gestores', view: 'gestores' },
                 { icon: 'fa-handshake', label: 'Mis gestores', view: 'ranking' },
                 { icon: 'fa-comments', label: 'Auditoría chats', view: 'chats' },
@@ -2642,10 +2784,9 @@ function navigateTo(view) {
                         productos = productos.filter(p => p.id !== payload.old.id);
                     }
                     
-                    const viewsToRefresh = ['seleccionar-productos', 'mis-productos', 'ver-gestores', 'explorar', 'catalogo', 'vender', 'ventas-empresa'];
-                    if (viewsToRefresh.includes(currentView)) {
-                        renderView(currentView);
-                    }
+                    const viewsToRefresh = REALTIME_REFRESH_VIEWS;
+                    if (typeof softRefreshCurrentView === 'function') softRefreshCurrentView();
+                    else if (viewsToRefresh.includes(currentView)) renderView(currentView);
                 })
                 .subscribe((status) => {
                     console.log('📡 Suscripción a productos:', status);
@@ -2678,10 +2819,9 @@ function navigateTo(view) {
                         gestores = gestores.filter(g => g.id !== payload.old.id);
                     }
                     
-                    const viewsToRefresh = ['gestores', 'ver-gestores', 'ranking', 'ranking-cliente', 'panel'];
-                    if (viewsToRefresh.includes(currentView)) {
-                        renderView(currentView);
-                    }
+                    const viewsToRefresh = REALTIME_REFRESH_VIEWS;
+                    if (typeof softRefreshCurrentView === 'function') softRefreshCurrentView();
+                    else if (viewsToRefresh.includes(currentView)) renderView(currentView);
                 })
                 .subscribe((status) => {
                     console.log('📡 Suscripción a gestores:', status);
@@ -2834,13 +2974,12 @@ function renderDashboard() {
                     }).join('') : '<li>Aún no hay ventas registradas</li>'}</ul></div></div>`;
             } else {
                 extra += `<div class="app-card" style="margin-top:1rem;"><h3>📈 Estadísticas</h3>
-                    <p style="color:var(--text-light);font-size:0.9rem;">Tu plan <strong>${plan.nombre}</strong> incluye métricas básicas. Mejora a Profesional o Empresarial para ranking de productos, ticket medio y más detalle.</p>
-                    <button type="button" class="btn-primary" style="margin-top:0.75rem;" onclick="navigateTo('mi-plan')">Ver planes</button></div>`;
+                    <p style="color:var(--text-light);font-size:0.9rem;">Tu plan <strong>${plan.nombre}</strong> incluye métricas básicas. En planes superiores verás ticket medio, productos más vendidos y ranking de gestores.</p></div>`;
             }
             if (nivel === 'premium') {
                 const porGestor = {};
                 misVentas.forEach(v => { if (v.gestor_id) porGestor[v.gestor_id] = (porGestor[v.gestor_id]||0)+1; });
-                extra += `<div class="app-card" style="margin-top:1rem;"><h3>👑 Ranking de gestores (premium)</h3>
+                extra += `<div class="app-card" style="margin-top:1rem;"><h3>👑 Ranking de gestores por ventas</h3>
                     <ul style="color:var(--text-light);">${Object.entries(porGestor).sort((a,b)=>b[1]-a[1]).map(([gid,n]) => {
                         const g = gestores.find(x => x.id === gid);
                         return `<li>${g ? g.nombres + ' ' + (g.apellidos||'') : gid}: ${n} venta(s)</li>`;
@@ -2848,25 +2987,18 @@ function renderDashboard() {
             }
 
             return `
+                <div class="app-card" style="margin-bottom:1rem;">
+                    <h3 style="margin:0 0 0.35rem;">📊 Resumen del negocio</h3>
+                    <p style="color:var(--text-light);font-size:0.9rem;margin:0;">Solo métricas de tu actividad. Las acciones están en el menú lateral y en Catálogo.</p>
+                </div>
                 <div class="stats-grid">
                     <div class="stat-card"><div class="label">Tus productos</div><div class="value primary">${misProductos.length}</div></div>
                     <div class="stat-card"><div class="label">Gestores en red</div><div class="value success">${misGestores.length}</div></div>
                     <div class="stat-card"><div class="label">Ventas</div><div class="value warning">${misVentas.length}</div></div>
                     <div class="stat-card"><div class="label">Ingresos reg.</div><div class="value danger">${ingreso.toLocaleString('es-ES')}</div></div>
                 </div>
-                <p style="color:var(--text-light);font-size:0.85rem;margin-bottom:1rem;">Plan activo: <strong>${plan.nombre || 'Gratis'}</strong> · cupos gestores ${plan.gestores} · productos ${plan.productos}</p>
-                <div style="display:flex; gap:0.75rem; margin-bottom:1.5rem; flex-wrap:wrap;">
-                    <button class="btn-primary" style="padding:0.75rem 1.5rem;" onclick="openProductModal()"><i class="fas fa-plus"></i> Nuevo Producto</button>
-                    <button class="btn-secondary" style="padding:0.75rem 1.5rem;" onclick="navigateTo('ventas-empresa')">Ver ventas</button>
-                    <button class="btn-secondary" style="padding:0.75rem 1.5rem;" onclick="navigateTo('mi-plan')">Mi plan</button>
-                </div>
+                <p style="color:var(--text-light);font-size:0.85rem;margin:0.5rem 0 1rem;">Plan activo: <strong>${plan.nombre || 'Gratis'}</strong> · cupos gestores ${plan.gestores} · productos ${plan.productos}</p>
                 ${extra}
-                <div class="app-card" style="margin-top:1rem;">
-                    <h3>🏆 Gestores de tus productos</h3>
-                    <div class="gestor-grid">
-                        ${misGestores.length ? misGestores.slice(0, 6).map((g, i) => renderGestorCardHTML(g, i)).join('') : '<p style="color:var(--text-light);">Aún no hay gestores asignados. Solicítalos desde cada producto.</p>'}
-                    </div>
-                </div>
             `;
         }
 
@@ -3391,9 +3523,34 @@ function nombreNegocioProducto(product) {
         }
 
         
+        function previewProfileAvatar(input) {
+            if (!input || !input.files || !input.files[0]) return;
+            const file = input.files[0];
+            const url = URL.createObjectURL(file);
+            const wrap = document.getElementById('pf_avatarImg');
+            if (!wrap) return;
+            // wrap may be img or div
+            if (wrap.tagName === 'IMG') {
+                wrap.src = url;
+                wrap.style.display = 'block';
+            } else {
+                wrap.outerHTML = '<img id="pf_avatarImg" src="' + url + '" alt="Vista previa" style="width:100%;height:100%;object-fit:cover;" />';
+            }
+            const hint = document.getElementById('pf_avatarHint');
+            if (hint) hint.textContent = 'Vista previa lista. Pulsa «Guardar cambios» para aplicar.';
+        }
+
         function getProfileAvatarUrl() {
-            const m = (currentUser && currentUser.profile && currentUser.profile.metadata) || {};
-            return m.avatar_url || m.foto || m.photo_url || '';
+            try {
+                let meta = (currentUser && currentUser.profile && currentUser.profile.metadata) || {};
+                if (typeof meta === 'string') {
+                    try { meta = JSON.parse(meta); } catch (e) { meta = {}; }
+                }
+                const um = (currentUser && (currentUser.user_metadata || currentUser.user?.user_metadata)) || {};
+                return meta.avatar_url || meta.foto || meta.photo_url || um.avatar_url || um.foto || '';
+            } catch (e) {
+                return '';
+            }
         }
 
         function previewRegAvatar(input) {
@@ -3467,7 +3624,8 @@ function nombreNegocioProducto(product) {
                                     : `<div id="pf_avatarImg" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2rem;">👤</div>`}
                             </div>
                             <label style="display:block;margin-top:0.75rem;font-size:0.8rem;color:var(--text-light);">Foto (opcional)</label>
-                            <input type="file" id="pf_avatarFile" accept="image/*" style="font-size:0.8rem;max-width:160px;" />
+                            <input type="file" id="pf_avatarFile" accept="image/*" style="font-size:0.8rem;max-width:160px;" onchange="previewProfileAvatar(this)" />
+                            <div id="pf_avatarHint" style="font-size:0.75rem;color:var(--text-light);margin-top:0.35rem;">Puedes cambiar la foto y ver la vista previa antes de guardar.</div>
                         </div>
                         <div class="profile-form" style="flex:1;min-width:220px;display:grid;gap:0.5rem;">
                             <style>
@@ -3491,12 +3649,19 @@ function nombreNegocioProducto(product) {
                 const file = window.__regAvatarPending;
                 window.__regAvatarPending = null;
                 if (!file || !currentUser || !currentUser.profile?.id) return;
+                showLoading('Subiendo foto de perfil…', 'Un momento');
                 const url = await uploadAvatarFile(file);
-                if (!url) return;
+                if (!url) { hideLoading(true); return; }
                 const meta = { ...(currentUser.profile.metadata || {}), avatar_url: url };
-                await supabase.from('profiles').update({ metadata: meta }).eq('id', currentUser.profile.id);
+                const { error } = await supabase.from('profiles').update({ metadata: meta }).eq('id', currentUser.profile.id);
+                if (error) throw error;
                 currentUser.profile.metadata = meta;
-            } catch (e) { console.warn('avatar reg', e); }
+                if (typeof updateUserInfo === 'function') updateUserInfo();
+                hideLoading(true);
+            } catch (e) {
+                console.warn('avatar reg', e);
+                hideLoading(true);
+            }
         }
 
         async function guardarPerfilUsuario() {
@@ -3505,11 +3670,12 @@ function nombreNegocioProducto(product) {
                 return;
             }
             if (currentRole === 'admin') return;
+            showLoading('Guardando perfil…', 'Actualizando tus datos');
             try {
                 const meta = { ...(currentUser.profile.metadata || {}) };
                 const fileInput = document.getElementById('pf_avatarFile');
                 if (fileInput && fileInput.files && fileInput.files[0]) {
-                    showNotification('Subiendo', 'Foto de perfil…', 'info');
+                    showLoading('Subiendo foto de perfil…', 'Actualizando tu imagen');
                     const url = await uploadAvatarFile(fileInput.files[0]);
                     if (url) meta.avatar_url = url;
                 }
@@ -3548,7 +3714,7 @@ function nombreNegocioProducto(product) {
                 currentUser.profile.metadata = meta;
                 // update topbar avatar if any
                 if (typeof updateUserInfo === 'function') updateUserInfo();
-                showNotification('Perfil', 'Datos guardados', 'success');
+                hideLoading(true); showNotification('Perfil', 'Datos guardados', 'success');
                 if (typeof renderView === 'function') renderView('mi-perfil');
             } catch (e) {
                 console.error(e);
@@ -3796,6 +3962,7 @@ function renderVender() {
 
 async function confirmarVenta() {
             if (!ventaActual) return;
+            showLoading('Registrando venta…', 'Generando comprobante');
             
             const codigoVenta = ventaActual.codigo;
             
@@ -3876,9 +4043,11 @@ async function confirmarVenta() {
                 document.querySelector('#ventaModal h2').textContent = '✅ Venta confirmada';
                 document.querySelector('#ventaModal .subtitle').textContent = 'Entrega o muestra este QR al cliente para la recogida';
                 if (venta) ventas.unshift(venta);
-                showNotification('✅ Venta registrada', `Código ${codigoVenta}. QR listo para el cliente.`, 'success');
+                hideLoading(true);
+                    showNotification('✅ Venta registrada', `Código ${codigoVenta}. QR listo para el cliente.`, 'success');
                 
             } catch (error) {
+                hideLoading(true);
                 console.error('Error confirmando venta:', error);
                 showNotification('Error', 'No se pudo registrar la venta.', 'error');
             }
@@ -3934,7 +4103,8 @@ function renderMisQR() {
                                 <div><strong>Producto:</strong> ${parsed.producto || '—'}</div>
                             </div>`;
                         }
-                    } catch (e) { payload = v.qr_payload || v.codigo; }
+                    } catch (e) {
+                hideLoading(true); payload = v.qr_payload || v.codigo; }
                     try {
                         new QRCode(el, { text: typeof payload === 'string' ? payload : JSON.stringify(payload), width: 160, height: 160, correctLevel: QRCode.CorrectLevel.M });
                         el.dataset.ready = '1';
@@ -4177,15 +4347,15 @@ const productosAsignados = productos.filter(p => gestorGestionaProducto(p, gesto
             if (dataPollTimer) clearInterval(dataPollTimer);
             dataPollTimer = setInterval(async () => {
                 if (!currentUser) return;
-                if (document.hidden) return; // no gastar si la pestaña no está visible
+                if (document.hidden) return;
                 try {
                     await cargarDatosSilencioso();
                 } catch (e) {}
-            }, 25000);
+            }, 12000);
         }
 
         async function cargarDatosSilencioso() {
-            // Solo refresca datos en memoria. NO re-renderiza la vista (evita “saltos” al interactuar).
+            // Refresca datos en memoria y, si hay cambios, actualiza la vista actual sin bloquear al usuario.
             try {
                 const results = await Promise.all([
                     supabase.from('gestores').select('*'),
@@ -4202,13 +4372,23 @@ const productosAsignados = productos.filter(p => gestorGestionaProducto(p, gesto
                 if (eRes && !eRes.error && eRes.data) empresas = eRes.data;
                 asegurarCacheConversaciones().catch(() => {});
                 if (typeof actualizarReputaciones === 'function') actualizarReputaciones();
-                // Actualizar contadores de landing si están visibles
-                if (typeof cargarStatsLanding === 'function' && document.getElementById('landingPage')?.style.display !== 'none') {
-                    cargarStatsLanding();
+                if (typeof cargarStatsLanding === 'function') {
+                    try { cargarStatsLanding(); } catch (e) {}
                 }
-            } catch (e) { /* silencioso */ }
+                const fp = typeof dataFingerprint === 'function' ? dataFingerprint() : '';
+                if (fp && fp !== _lastDataFp) {
+                    const hadPrev = !!_lastDataFp;
+                    _lastDataFp = fp;
+                    if (hadPrev && typeof softRefreshCurrentView === 'function') softRefreshCurrentView();
+                } else if (!_lastDataFp && fp) {
+                    _lastDataFp = fp;
+                }
+            } catch (e) {
+                console.warn('cargarDatosSilencioso', e);
+            }
         }
 
+        
         function abrirChatConGestor(gestorId) {
             const g = gestores.find(x => x.id === gestorId);
             navigateTo('chats');
@@ -4486,8 +4666,22 @@ const productosAsignados = productos.filter(p => gestorGestionaProducto(p, gesto
                 showNotification('Chat', 'Modo auditoría: solo lectura', 'warning');
                 return;
             }
+            const rid = getRemitenteProfileId() || currentUser?.id;
+            // Optimista: se ve al instante (sin loading)
+            const tempId = 'tmp_' + Date.now();
+            const optimistic = {
+                id: tempId,
+                conversacion_id: chatConversacionId,
+                remitente_id: rid,
+                contenido: mensaje,
+                leido: false,
+                created_at: new Date().toISOString()
+            };
+            mensajesChat = mensajesChat || [];
+            mensajesChat.push(optimistic);
+            if (input) input.value = '';
+            if (typeof renderMensajes === 'function') renderMensajes();
             try {
-                const rid = getRemitenteProfileId() || currentUser?.id;
                 const { data, error } = await supabase.from('mensajes').insert({
                     conversacion_id: chatConversacionId,
                     remitente_id: rid,
@@ -4495,16 +4689,20 @@ const productosAsignados = productos.filter(p => gestorGestionaProducto(p, gesto
                     leido: false
                 }).select().single();
                 if (error) throw error;
-                await supabase.from('conversaciones').update({ ultimo_mensaje: new Date().toISOString() }).eq('id', chatConversacionId);
-                if (input) input.value = '';
+                supabase.from('conversaciones').update({ ultimo_mensaje: new Date().toISOString() }).eq('id', chatConversacionId).then(() => {}).catch(() => {});
                 if (data) {
-                    if (!mensajesChat.find(m => m.id === data.id)) mensajesChat.push(data);
-                    renderMensajes();
+                    const idx = mensajesChat.findIndex(m => m.id === tempId);
+                    if (idx !== -1) mensajesChat[idx] = data;
+                    else if (!mensajesChat.find(m => m.id === data.id)) mensajesChat.push(data);
+                    if (typeof renderMensajes === 'function') renderMensajes();
                 } else {
                     await refrescarMensajesSilencioso(true);
                 }
             } catch (err) {
                 console.error(err);
+                mensajesChat = (mensajesChat || []).filter(m => m.id !== tempId);
+                if (typeof renderMensajes === 'function') renderMensajes();
+                if (input && !input.value) input.value = mensaje;
                 showNotification('Error', err.message || 'No se pudo enviar', 'error');
             }
         }
@@ -4842,6 +5040,7 @@ async function toggleProductAssignment(productId) {
 
         async function handleProductSubmit(e) {
             e.preventDefault();
+            // loading se activa tras validar campos
             
             const nombre = document.getElementById('productName').value.trim();
             const categoria = document.getElementById('productCategory').value;
@@ -4885,7 +5084,8 @@ async function toggleProductAssignment(productId) {
 
                 let imagenesUrls = [];
                 if (uploadedFiles.length > 0) {
-                    showNotification('⏳ Subiendo imágenes...', 'Por favor espera.', 'info');
+                    showLoading('Subiendo imágenes…', 'Esto puede tardar unos segundos');
+                showNotification('⏳ Subiendo imágenes...', 'Por favor espera.', 'info');
                     imagenesUrls = await subirImagenesALaNube();
                     if (imagenesUrls.length === 0) {
                         showNotification('Error', 'No se pudieron subir las imágenes. Revisa la consola.', 'error');
@@ -4930,13 +5130,15 @@ async function toggleProductAssignment(productId) {
                     if (error) throw error;
                     const index = productos.findIndex(p => p.id === editingProductId);
                     if (index !== -1) productos[index] = { ...productos[index], ...productData };
+                    hideLoading(true);
                     showNotification('✅ Producto actualizado', 'El producto se actualizó correctamente.', 'success');
                 } else {
                     const { data, error } = await supabase.from('productos').insert(productData).select();
                     if (error) throw error;
                     if (data) {
                         productos.push(data[0]);
-                        showNotification('✅ Producto creado', `El producto se publicó correctamente. SKU: ${skuFinal}`, 'success');
+                        hideLoading(true);
+                    showNotification('✅ Producto creado', `El producto se publicó correctamente. SKU: ${skuFinal}`, 'success');
                     }
                 }
                 
@@ -4960,6 +5162,7 @@ async function toggleProductAssignment(productId) {
                 return;
             }
             if (!confirm('¿Estás seguro de eliminar este producto?')) return;
+            showLoading('Eliminando producto…', 'Un momento');
             try {
                 const { error } = await supabase.from('productos').delete().eq('id', productId);
                 if (error) throw error;
@@ -5032,6 +5235,7 @@ async function toggleProductAssignment(productId) {
         }
 
         async function submitFeedback() {
+            showLoading('Enviando…', 'Un momento');
             if (!selectedFeedbackType) { showNotification('Error', 'Selecciona si es un elogio o una queja.', 'error'); return; }
             if (selectedStar === 0) { showNotification('Error', 'Selecciona una calificación de 1 a 5 estrellas.', 'error'); return; }
             const gestor = gestores.find(g => g.id === feedbackTargetId);
@@ -5101,6 +5305,7 @@ const gestor = getCurrentGestor();
         });
 
 async function savePhoto() {
+            showLoading('Guardando foto…', 'Un momento');
             const gestor = getCurrentGestor();
             const gestorId = getCurrentGestorId();
             if (gestor && gestorId && tempPhoto) {
@@ -5313,16 +5518,29 @@ function generateEmail(username, suffix = '') {
                 showAuthError('Completa todos los campos obligatorios.');
                 return;
             }
+            const authBtn = document.getElementById('authSubmitBtn');
+            const isReg = (typeof isAuthMode !== 'undefined' && isAuthMode === 'register');
             if (password.length < 6) {
                 showAuthError('La contraseña debe tener al menos 6 caracteres.');
                 return;
             }
             const username = usernameRaw.toLowerCase();
+            const loadingMsg = isReg ? 'Creando tu cuenta…' : 'Iniciando sesión…';
+            const loadingSub = isReg ? 'Configurando tu perfil' : 'Cargando tu panel';
+            if (authBtn) {
+                authBtn.dataset.prevHtml = authBtn.innerHTML;
+                authBtn.disabled = true;
+                authBtn.classList.add('is-loading');
+                authBtn.textContent = loadingMsg;
+            }
+            showLoading(loadingMsg, loadingSub);
+            // ceder un frame para que el navegador pinte el loading antes del await
+            await new Promise(function(r){ requestAnimationFrame(function(){ requestAnimationFrame(r); }); });
 
             try {
                 if (isAuthMode === 'login') {
                     // 1) Cerrar cualquier sesión previa
-                    try { await supabase.auth.signOut(); } catch (e) {}
+                    try { await supabase.auth.signOut(); } catch (e) { /* ignore */ }
                     clearSessionState();
 
                     // 2) Buscar perfil por username (sin depender de mayúsculas)
@@ -5349,7 +5567,7 @@ function generateEmail(username, suffix = '') {
                         try {
                             const body = await alsetLogin(username, password);
                             applyAlsetSession(body);
-                            closeAuthModal();
+                            hideLoading(true); withButtonLoading(document.getElementById('authSubmitBtn'), false); closeAuthModal();
                             showApp();
                             renderSidebar(currentRole);
                             updateUserInfo();
@@ -5357,6 +5575,7 @@ function generateEmail(username, suffix = '') {
                             showNotification('👋 Bienvenido', `${currentUser.profile.username} · ${currentRole} · Alset`, 'success');
                             return;
                         } catch (e) {
+                hideLoading(true); withButtonLoading(document.getElementById('authSubmitBtn'), false);
                             showAuthError('No se encontró una cuenta con ese usuario o teléfono.');
                             return;
                         }
@@ -5375,7 +5594,7 @@ function generateEmail(username, suffix = '') {
                             try {
                                 const body = await alsetLogin(username, password);
                                 applyAlsetSession(body);
-                                closeAuthModal();
+                                hideLoading(true); withButtonLoading(document.getElementById('authSubmitBtn'), false); closeAuthModal();
                                 showApp();
                                 renderSidebar(currentRole);
                                 updateUserInfo();
@@ -5383,6 +5602,7 @@ function generateEmail(username, suffix = '') {
                                 showNotification('👋 Bienvenido', `${currentUser.profile.username} · ${currentRole} · Alset`, 'success');
                                 return;
                             } catch (eAlset) {
+                hideLoading(true); withButtonLoading(document.getElementById('authSubmitBtn'), false);
                                 if (authError) throw authError;
                                 throw eAlset;
                             }
@@ -5446,7 +5666,7 @@ function generateEmail(username, suffix = '') {
                         userId: authData.user.id
                     });
 
-                    closeAuthModal();
+                    hideLoading(true); withButtonLoading(document.getElementById('authSubmitBtn'), false); closeAuthModal();
                     showApp();
                     renderSidebar(currentRole);
                     updateUserInfo();
@@ -5523,7 +5743,7 @@ function generateEmail(username, suffix = '') {
                     if (!data?.user) throw new Error('No se pudo crear el usuario');
                     if (usedAlset) {
                         // Sesión Alset ya aplicada; entrar al dash sin filas Supabase
-                        closeAuthModal();
+                        hideLoading(true); withButtonLoading(document.getElementById('authSubmitBtn'), false); closeAuthModal();
                         showApp();
                         renderSidebar(currentRole);
                         updateUserInfo();
@@ -5591,7 +5811,7 @@ function generateEmail(username, suffix = '') {
                         user_metadata: { username, role, ...metadata }
                     };
                     currentRole = role;
-                    closeAuthModal();
+                    hideLoading(true); withButtonLoading(document.getElementById('authSubmitBtn'), false); closeAuthModal();
                     showApp();
                     renderSidebar(role);
                     updateUserInfo();
@@ -5637,6 +5857,7 @@ function generateEmail(username, suffix = '') {
         }
 
         function showAuthError(msg) {
+            try { hideLoading(true); const b=document.getElementById('authSubmitBtn'); if(b) withButtonLoading(b,false); } catch(e) {}
             const errorDiv = document.getElementById('authError');
             if (errorDiv) {
                 errorDiv.textContent = msg;
@@ -5733,8 +5954,23 @@ function generateEmail(username, suffix = '') {
 
             const nameEl = document.getElementById('appUserName');
             if (nameEl) nameEl.textContent = displayName;
-            const av = document.getElementById('appUserAvatar');
-            if (av) av.textContent = (displayName || '?').charAt(0).toUpperCase();
+            const avEl = document.getElementById('appUserAvatar');
+            if (avEl) {
+                const avUrl = (typeof getProfileAvatarUrl === 'function') ? getProfileAvatarUrl() : ((m && m.avatar_url) || '');
+                const initial = (displayName || 'U').trim().charAt(0).toUpperCase() || 'U';
+                if (avUrl) {
+                    avEl.innerHTML = '';
+                    const im = document.createElement('img');
+                    im.src = String(avUrl);
+                    im.alt = displayName || 'Avatar';
+                    im.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;';
+                    im.onerror = function(){ avEl.textContent = initial; };
+                    avEl.appendChild(im);
+                    avEl.title = displayName;
+                } else {
+                    avEl.textContent = initial;
+                }
+            }
             console.log('[Alset UI]', { rol, displayName, profileId: p.id, username: p.username });
         }
 
@@ -5998,6 +6234,7 @@ function generateEmail(username, suffix = '') {
         }
 
         async function guardarPlanesAdmin() {
+            showLoading('Guardando planes…', 'Admin');
             const next = {};
             Object.keys(PLANES).forEach(id => {
                 const nombre = document.getElementById('pl_nombre_' + id)?.value?.trim() || id;
@@ -6049,6 +6286,7 @@ function generateEmail(username, suffix = '') {
         }
 
         async function enviarOpinionDesdeDash() {
+            showLoading('Enviando opinión…', 'Gracias');
             const ta = document.getElementById('opinionTextoDash');
             const texto = (ta?.value || '').trim();
             if (texto.length < 8) {
@@ -6113,6 +6351,7 @@ function generateEmail(username, suffix = '') {
         }
 
         async function adminBorrarOpinion(profileId) {
+            showLoading('Eliminando opinión…', 'Admin');
             const p = (allProfiles || []).find(x => x.id === profileId);
             if (!p) return;
             if (!confirm('¿Eliminar la opinión de ' + (p.username || 'usuario') + '?')) return;
@@ -6390,6 +6629,7 @@ function generateEmail(username, suffix = '') {
 
         async function adminEnviarNotificacion() {
             if (currentRole !== 'admin') return;
+            showLoading('Enviando notificación…', 'Publicando aviso');
             const titulo = (document.getElementById('admNotifTitulo')?.value || '').trim();
             const mensaje = (document.getElementById('admNotifMensaje')?.value || '').trim();
             const audience = document.getElementById('admNotifAudience')?.value || 'all';
@@ -6436,11 +6676,11 @@ function generateEmail(username, suffix = '') {
                     if (e2) throw e2;
                 }
                 platformNotices = [notice, ...(platformNotices || [])].slice(0, 50);
-                showNotification('Enviado', 'Notificación publicada', 'success');
+                hideLoading(true); showNotification('Enviado', 'Notificación publicada', 'success');
                 if (typeof renderView === 'function') renderView('admin-notificaciones');
             } catch (e) {
                 console.error(e);
-                showNotification('Error', e.message || 'No se pudo enviar', 'error');
+                hideLoading(true); showNotification('Error', e.message || 'No se pudo enviar', 'error');
             }
         }
 
@@ -6582,6 +6822,7 @@ function generateEmail(username, suffix = '') {
             }
             const label = nombre || 'este producto';
             if (!confirm('¿Eliminar el producto «' + label + '»? Esta acción no se puede deshacer.')) return;
+            showLoading('Eliminando producto…', 'Admin');
             try {
                 const { error } = await supabase.from('productos').delete().eq('id', productId);
                 if (error) throw error;
@@ -6604,6 +6845,7 @@ function generateEmail(username, suffix = '') {
         }
 
         async function adminToggleCuenta(profileId, enable) {
+            showLoading('Actualizando cuenta…', 'Admin');
             const p = (allProfiles||[]).find(x => x.id === profileId);
             if (!p) return;
             const meta = { ...(p.metadata||{}), account_enabled: !!enable, account_status: enable ? 'active' : 'disabled' };
@@ -6619,6 +6861,7 @@ function generateEmail(username, suffix = '') {
         }
 
         async function adminAprobarPago(profileId) {
+            showLoading('Aprobando pago…', 'Activando plan');
             const p = (allProfiles||[]).find(x => x.id === profileId);
             if (!p) return;
             const meta = { ...(p.metadata||{}), plan_status: 'active', plan_activated_at: new Date().toISOString(), account_enabled: true, account_status: 'active' };
@@ -6630,6 +6873,7 @@ function generateEmail(username, suffix = '') {
         }
 
         async function adminRechazarPago(profileId) {
+            showLoading('Rechazando pago…', 'Admin');
             const p = (allProfiles||[]).find(x => x.id === profileId);
             if (!p) return;
             const meta = { ...(p.metadata||{}), plan_status: 'rejected' };
@@ -6642,6 +6886,7 @@ function generateEmail(username, suffix = '') {
 
 
         async function enviarComprobantePago(planId) {
+            showLoading('Subiendo comprobante…', 'Plan de suscripción');
             const plan = (window.PLANES || PLANES || {})[planId];
             const fileInput = document.getElementById('paymentProofFile');
             const file = fileInput?.files?.[0];
@@ -6806,5 +7051,13 @@ function generateEmail(username, suffix = '') {
 
 
     <div id="notifToastStack" class="notif-toast-stack" aria-live="polite"></div>
+
+    <div id="alsetLoadingOverlay" class="alset-loading-overlay" aria-live="polite" aria-busy="true">
+        <div class="alset-loading-box">
+            <div class="alset-spinner" aria-hidden="true"></div>
+            <div class="alset-loading-text" id="alsetLoadingText">Cargando…</div>
+            <div class="alset-loading-sub" id="alsetLoadingSub">Espera un momento</div>
+        </div>
+    </div>
 </body>
 </html>
