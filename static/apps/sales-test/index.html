@@ -1238,8 +1238,8 @@
     <style>body{padding-top:28px !important;}</style>
 
     <div id="alsetSplash" role="status" aria-live="polite" aria-busy="true">
-        <img class="splash-logo" src="/static/apps/sales-test/logo.png" alt="Alset" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-        <div class="splash-logo-fallback" style="display:none;" aria-hidden="true">🚀</div>
+        <img class="splash-logo" src="/static/apps/sales-test/logo.png" alt="Alset Sales Hub"
+             onerror="this.onerror=null;this.src='/static/apps/sales-test/icon-512.png';this.onerror=function(){this.src='/static/apps/sales-test/icon-192.png';};" />
         <p class="splash-title">Alset Sales Hub</p>
         <p class="splash-sub" id="alsetSplashText">Cargando Alset Sales Hub…</p>
         <div class="splash-spinner" aria-hidden="true"></div>
@@ -1280,7 +1280,7 @@
             <div class="hero-content">
                 <div class="hero-text">
                     <div style="display:inline-block; background:rgba(108,99,255,0.1); color:var(--primary); padding:0.3rem 1.2rem; border-radius:50px; font-size:0.8rem; font-weight:600; margin-bottom:1.5rem;">
-                        🚀 Revoluciona tu negocio
+                         Revoluciona tu negocio
                     </div>
                     <h1>
                         Gestiona tus ventas<br>
@@ -1454,7 +1454,7 @@
         
         <section class="cta" id="cta">
             <div style="max-width:800px; margin:0 auto;">
-                <h2>🚀 ¿Listo para <span style="color:var(--accent);">revolucionar</span> tus ventas?</h2>
+                <h2> ¿Listo para <span style="color:var(--accent);">revolucionar</span> tus ventas?</h2>
                 <p>Únete a los <span id="ctaNegociosCount">—</span> negocios que ya están transformando su gestión de ventas.</p>
                 <a class="btn-primary" href="#" onclick="event.preventDefault(); openAuthModal('register');"><img class="brand-logo" src="/static/apps/sales-test/logo.png" alt="" style="height:1.1em;width:1.1em;margin-right:0.25rem;" /> Comenzar Prueba Gratis</a>
                 <div style="margin-top:1.5rem; font-size:0.9rem; opacity:0.8;">
@@ -1929,7 +1929,7 @@ const SUPABASE_URL = 'https://bvekxaozilvloozcabpl.supabase.co';
             grid.innerHTML = order.map((id) => {
                 const p = PLANES[id];
                 const popular = id === 'pro' ? ' popular' : '';
-                const badge = id === 'pro' ? '<div class="popular-badge">⭐ Recomendado</div>' : (id === 'extra' ? '<div class="popular-badge">🚀 Ilimitado</div>' : '');
+                const badge = id === 'pro' ? '<div class="popular-badge">⭐ Recomendado</div>' : (id === 'extra' ? '<div class="popular-badge"> Ilimitado</div>' : '');
                 const priceLabel = (p.precio || 0) === 0 ? '0' : String(p.precio);
                 const cta = (p.precio || 0) === 0 ? 'Usar plan gratis' : `Suscribirme · ${p.precio} ${p.moneda || 'CUP'}`;
                 const feats = (p.features && p.features.length) ? p.features : [
@@ -2582,33 +2582,61 @@ function getCurrentGestorId() {
         // FUNCIONES DE REPUTACIÓN
         // ============================================================
         function calcularReputacion(gestor) {
-            const tasaExito = gestor.ventas_asignadas > 0 ? 
-                gestor.ventas_cerradas / gestor.ventas_asignadas : 0;
-            const calificaciones = gestor.calificaciones || [];
-            const calificacionPromedio = calificaciones.length > 0 ?
-                calificaciones.reduce((a, b) => a + b, 0) / calificaciones.length : 3;
-            const totalFeedback = (gestor.elogios || 0) + (gestor.quejas || 0);
-            const ratioFeedback = totalFeedback > 0 ? 
-                gestor.elogios / totalFeedback : 0.5;
-            const factorVentas = Math.min((gestor.ventas_cerradas || 0) / 20, 1);
-            const pesoExito = 0.30;
-            const pesoCalificacion = 0.30;
-            const pesoFeedback = 0.25;
-            const pesoVolumen = 0.15;
-            const puntuacion = (
-                (tasaExito * 100 * pesoExito) +
-                ((calificacionPromedio / 5) * 100 * pesoCalificacion) +
-                (ratioFeedback * 100 * pesoFeedback) +
-                (factorVentas * 100 * pesoVolumen)
-            );
-            return Math.round(Math.min(puntuacion, 100));
+            if (!gestor) return null;
+            const ventasCerradas = Number(gestor.ventas_cerradas || 0);
+            const ventasAsignadas = Number(gestor.ventas_asignadas || 0);
+            const calificaciones = Array.isArray(gestor.calificaciones) ? gestor.calificaciones : [];
+            const elogios = Number(gestor.elogios || 0);
+            const quejas = Number(gestor.quejas || 0);
+            const totalFeedback = elogios + quejas;
+            // Sin actividad real no inventar un % (antes salía ~31% por defaults)
+            const hasActivity = ventasCerradas > 0 || ventasAsignadas > 0 || calificaciones.length > 0 || totalFeedback > 0;
+            if (!hasActivity) return null;
+
+            const tasaExito = ventasAsignadas > 0 ? (ventasCerradas / ventasAsignadas) : (ventasCerradas > 0 ? 1 : 0);
+            const calificacionPromedio = calificaciones.length > 0
+                ? calificaciones.reduce((a, b) => a + Number(b || 0), 0) / calificaciones.length
+                : null;
+            const ratioFeedback = totalFeedback > 0 ? (elogios / totalFeedback) : null;
+            const factorVentas = Math.min(ventasCerradas / 20, 1);
+
+            // Pesos solo sobre componentes con datos
+            let pesoExito = 0.30, pesoCalificacion = 0.30, pesoFeedback = 0.25, pesoVolumen = 0.15;
+            let score = 0, pesoTotal = 0;
+            if (ventasAsignadas > 0 || ventasCerradas > 0) {
+                score += tasaExito * 100 * pesoExito;
+                pesoTotal += pesoExito;
+            }
+            if (calificacionPromedio != null) {
+                score += (calificacionPromedio / 5) * 100 * pesoCalificacion;
+                pesoTotal += pesoCalificacion;
+            }
+            if (ratioFeedback != null) {
+                score += ratioFeedback * 100 * pesoFeedback;
+                pesoTotal += pesoFeedback;
+            }
+            if (ventasCerradas > 0) {
+                score += factorVentas * 100 * pesoVolumen;
+                pesoTotal += pesoVolumen;
+            }
+            if (pesoTotal <= 0) return null;
+            const puntuacion = score / pesoTotal;
+            return Math.round(Math.min(Math.max(puntuacion, 0), 100));
+        }
+
+        function formatReputacion(gestor) {
+            const r = (gestor && gestor.reputacion != null)
+                ? gestor.reputacion
+                : (typeof calcularReputacion === 'function' ? calcularReputacion(gestor) : null);
+            if (r == null || r === '') return '—';
+            return r + '%';
         }
 
         function actualizarReputaciones() {
-            gestores.forEach(g => {
+            (gestores || []).forEach(g => {
                 g.reputacion = calcularReputacion(g);
             });
-            gestores.sort((a, b) => b.reputacion - a.reputacion);
+            gestores.sort((a, b) => (b.reputacion ?? -1) - (a.reputacion ?? -1));
         }
 
         function getStars(rating) {
@@ -2993,7 +3021,7 @@ function navigateTo(view) {
         
         function renderGestorCardHTML(gestor, index) {
             if (!gestor) return '';
-            const reputacion = gestor.reputacion || (typeof calcularReputacion === 'function' ? calcularReputacion(gestor) : 0);
+            const reputacion = (gestor.reputacion != null) ? gestor.reputacion : (typeof calcularReputacion === 'function' ? calcularReputacion(gestor) : null);
             const calificaciones = gestor.calificaciones || [];
             const calificacionPromedio = calificaciones.length > 0 ?
                 calificaciones.reduce((a, b) => a + b, 0) / calificaciones.length : 0;
@@ -3013,7 +3041,7 @@ function navigateTo(view) {
                     <div class="name">${gestor.nombres || ''} ${gestor.apellidos || ''}</div>
                     <div class="specialty">${gestor.especialidad || 'Sin especialidad'}</div>
                     <div class="phone"><i class="fas fa-phone"></i> ${gestor.telefono || '—'}</div>
-                    <div class="reputation"><div class="score">${reputacion}%</div><div class="stars">${stars}</div></div>
+                    <div class="reputation"><div class="score">${reputacion != null ? reputacion + '%' : '—'}</div><div class="stars">${stars}</div></div>
                     <div class="metrics">
                         <div class="metric"><div class="value">${gestor.elogios || 0}</div><div class="label">Elogios</div></div>
                         <div class="metric"><div class="value">${gestor.quejas || 0}</div><div class="label">Quejas</div></div>
@@ -3165,25 +3193,38 @@ function nombreNegocioProducto(product) {
                         ${sols.filter(s => s.estado === 'pendiente').map(s => {
                             const g = gestores.find(x => x.id === s.gestor_id);
                             const nombre = g ? `${g.nombres||''} ${g.apellidos||''}`.trim() : 'Gestor';
-                            const origen = s.origen === 'gestor' ? ' (pide gestionar)' : ' (tú solicitaste)';
+                            const desdeGestor = s.origen === 'gestor';
+                            const origen = desdeGestor ? ' — el gestor pide gestionar' : ' — tú solicitaste (pendiente de respuesta)';
+                            const botones = desdeGestor
+                              ? `<button class="btn-primary" style="padding:0.3rem 0.5rem;font-size:0.75rem;" onclick="empresaResponderSolicitud('${product.id}','${s.gestor_id}',true)">Aceptar</button>
+                                  <button class="btn-secondary" style="padding:0.3rem 0.5rem;font-size:0.75rem;" onclick="empresaResponderSolicitud('${product.id}','${s.gestor_id}',false)">Rechazar</button>`
+                              : `<button class="btn-secondary" style="padding:0.3rem 0.5rem;font-size:0.75rem;" onclick="cancelarSolicitudEmpresa('${product.id}','${s.gestor_id}')">Cancelar solicitud</button>`;
                             return `<div style="margin-top:0.5rem;padding:0.5rem;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;">
                                 <div><strong>${nombre}</strong>${origen}</div>
-                                <div style="display:flex;gap:0.35rem;margin-top:0.35rem;">
-                                  <button class="btn-primary" style="padding:0.3rem 0.5rem;font-size:0.75rem;" onclick="empresaResponderSolicitud('${product.id}','${s.gestor_id}',true)">Aceptar</button>
-                                  <button class="btn-secondary" style="padding:0.3rem 0.5rem;font-size:0.75rem;" onclick="empresaResponderSolicitud('${product.id}','${s.gestor_id}',false)">Rechazar</button>
+                                <div style="display:flex;gap:0.35rem;margin-top:0.35rem;flex-wrap:wrap;">
+                                  ${botones}
                                 </div>
                               </div>`;
                         }).join('')}
                     </div>`;
             } else if (currentRole === 'gestor' && miPendiente) {
-                actions = `
+                const desdeGestor = miPendiente.origen === 'gestor';
+                if (desdeGestor) {
+                    actions = `
                     <div style="margin-top:0.75rem; padding:0.75rem; background:rgba(244,180,0,0.1); border-radius:10px; border:1px solid var(--primary);">
-                        <div style="font-size:0.85rem; font-weight:600; margin-bottom:0.5rem;">Solicitud pendiente</div>
+                        <div style="font-size:0.85rem; font-weight:600; margin-bottom:0.5rem;">Tu solicitud al negocio está pendiente</div>
+                        <button class="btn-secondary" style="width:100%; padding:0.45rem; font-size:0.85rem;" onclick="cancelarSolicitudGestor('${product.id}')">Cancelar solicitud</button>
+                    </div>`;
+                } else {
+                    actions = `
+                    <div style="margin-top:0.75rem; padding:0.75rem; background:rgba(244,180,0,0.1); border-radius:10px; border:1px solid var(--primary);">
+                        <div style="font-size:0.85rem; font-weight:600; margin-bottom:0.5rem;">El negocio te solicita gestionar este producto</div>
                         <div style="display:flex; gap:0.5rem;">
                             <button class="btn-primary" style="flex:1; padding:0.45rem; font-size:0.85rem;" onclick="responderSolicitud('${product.id}', true)">Aceptar</button>
                             <button class="btn-secondary" style="flex:1; padding:0.45rem; font-size:0.85rem;" onclick="responderSolicitud('${product.id}', false)">Rechazar</button>
                         </div>
                     </div>`;
+                }
             } else if (currentRole === 'gestor' && isAssigned) {
                 actions = `<div style="margin-top:0.5rem;"><span class="badge badge-success">Lo gestionas tú</span></div>`;
             } else if (currentRole === 'gestor' && !isAssigned && !miPendiente) {
@@ -3251,7 +3292,7 @@ function nombreNegocioProducto(product) {
                             <p style="color:var(--text-light);font-size:0.85rem;margin:0.25rem 0;">@${g.username || '—'} · ${g.email || ''}</p>
                         </div>
                         <div style="text-align:right;">
-                            <div style="font-weight:800;color:var(--primary);font-size:1.2rem;">${g.reputacion != null ? g.reputacion : 0}%</div>
+                            <div style="font-weight:800;color:var(--primary);font-size:1.2rem;">${g.reputacion != null ? (g.reputacion + '%') : '—'}</div>
                             <div style="font-size:0.75rem;color:var(--text-light);">reputación</div>
                         </div>
                     </div>
@@ -3616,7 +3657,7 @@ function nombreNegocioProducto(product) {
             const misProductos = productos.filter(p => (p.gestores_asignados || []).includes(gestorId));
             return `
                 <div class="stats-grid">
-                    <div class="stat-card"><div class="label">Mi Reputación</div><div class="value primary">${gestor?.reputacion || 0}%</div></div>
+                    <div class="stat-card"><div class="label">Mi Reputación</div><div class="value primary">${(gestor && gestor.reputacion != null) ? (gestor.reputacion + '%') : '—'}</div></div>
                     <div class="stat-card"><div class="label">Ventas</div><div class="value success">${gestor?.ventas_cerradas || 0}</div></div>
                     <div class="stat-card"><div class="label">Elogios</div><div class="value warning">${gestor?.elogios || 0}</div></div>
                     <div class="stat-card"><div class="label">Productos</div><div class="value danger">${misProductos.length}</div></div>
@@ -4308,7 +4349,7 @@ function renderVerGestores() {
         }
 
         function renderGestorCardCompleta(gestor, index) {
-            const reputacion = gestor.reputacion || calcularReputacion(gestor);
+            const reputacion = (gestor.reputacion != null) ? gestor.reputacion : calcularReputacion(gestor);
             const calificaciones = gestor.calificaciones || [];
             const calificacionPromedio = calificaciones.length > 0 ?
                 calificaciones.reduce((a, b) => a + b, 0) / calificaciones.length : 0;
@@ -4334,7 +4375,7 @@ const productosAsignados = productos.filter(p => gestorGestionaProducto(p, gesto
                     <div class="phone"><i class="fas fa-phone"></i> ${gestor.telefono}</div>
                     
                     <div class="reputation">
-                        <div class="score">${reputacion}%</div>
+                        <div class="score">${reputacion != null ? reputacion + '%' : '—'}</div>
                         <div class="stars">${stars}</div>
                     </div>
                     
@@ -4862,6 +4903,7 @@ const productosAsignados = productos.filter(p => gestorGestionaProducto(p, gesto
             sols.push({
                 gestor_id: gestorId,
                 estado: 'pendiente',
+                origen: 'empresa',
                 empresa_id: product.empresa_id,
                 created_at: new Date().toISOString()
             });
@@ -4877,6 +4919,136 @@ const productosAsignados = productos.filter(p => gestorGestionaProducto(p, gesto
             renderView(currentView);
         }
 
+        
+        async function solicitarGestionDesdeGestor(productId) {
+            const gid = typeof getCurrentGestorId === 'function' ? getCurrentGestorId() : null;
+            const product = (productos || []).find(p => p.id === productId);
+            if (!product || !gid) {
+                showNotification('Solicitud', 'No se pudo identificar el gestor o el producto', 'warning');
+                return;
+            }
+            if ((product.gestores_asignados || []).includes(gid)) {
+                showNotification('Solicitud', 'Ya gestionas este producto', 'info');
+                return;
+            }
+            const sols = parseSolicitudes(product);
+            if (sols.some(s => s.gestor_id === gid && s.estado === 'pendiente')) {
+                showNotification('Solicitud', 'Ya tienes una solicitud pendiente', 'warning');
+                return;
+            }
+            sols.push({
+                gestor_id: gid,
+                estado: 'pendiente',
+                origen: 'gestor',
+                empresa_id: product.empresa_id,
+                created_at: new Date().toISOString()
+            });
+            try {
+                const { error } = await supabase.from('productos').update({
+                    especificaciones: serializeSolicitudes(product, sols)
+                }).eq('id', productId);
+                if (error) throw error;
+                product.especificaciones = serializeSolicitudes(product, sols);
+                showNotification('Solicitud enviada', 'El negocio debe aceptar o rechazar', 'success');
+                if (typeof softRefreshCurrentView === 'function') softRefreshCurrentView();
+                else if (typeof renderView === 'function') renderView(currentView);
+            } catch (e) {
+                console.error(e);
+                showNotification('Error', e.message || 'No se pudo enviar', 'error');
+            }
+        }
+
+        async function empresaResponderSolicitud(productId, gestorId, aceptar) {
+            if (currentRole !== 'empresa' && currentRole !== 'admin') return;
+            const product = (productos || []).find(p => p.id === productId);
+            if (!product || !gestorId) return;
+            let sols = parseSolicitudes(product);
+            const idx = sols.findIndex(s => s.gestor_id === gestorId && s.estado === 'pendiente');
+            if (idx < 0) {
+                showNotification('Solicitud', 'No hay solicitud pendiente', 'warning');
+                return;
+            }
+            // Solo el negocio responde cuando el gestor originó la solicitud
+            if (sols[idx].origen && sols[idx].origen !== 'gestor') {
+                showNotification('Solicitud', 'Esta solicitud la enviaste tú; puedes cancelarla', 'info');
+                return;
+            }
+            sols[idx].estado = aceptar ? 'aceptada' : 'rechazada';
+            sols[idx].responded_at = new Date().toISOString();
+            let asignados = [...(product.gestores_asignados || [])];
+            if (aceptar && !asignados.includes(gestorId)) asignados.push(gestorId);
+            try {
+                const { error } = await supabase.from('productos').update({
+                    especificaciones: serializeSolicitudes(product, sols),
+                    gestores_asignados: asignados
+                }).eq('id', productId);
+                if (error) throw error;
+                product.gestores_asignados = asignados;
+                product.especificaciones = serializeSolicitudes(product, sols);
+                showNotification(aceptar ? 'Aceptada' : 'Rechazada', aceptar ? 'El gestor ya puede gestionar el producto' : 'Solicitud rechazada', aceptar ? 'success' : 'info');
+                if (typeof softRefreshCurrentView === 'function') softRefreshCurrentView();
+                else if (typeof renderView === 'function') renderView(currentView);
+            } catch (e) {
+                console.error(e);
+                showNotification('Error', e.message || 'No se pudo responder', 'error');
+            }
+        }
+
+        async function cancelarSolicitudEmpresa(productId, gestorId) {
+            if (currentRole !== 'empresa' && currentRole !== 'admin') return;
+            const product = (productos || []).find(p => p.id === productId);
+            if (!product || !gestorId) return;
+            let sols = parseSolicitudes(product);
+            const idx = sols.findIndex(s => s.gestor_id === gestorId && s.estado === 'pendiente');
+            if (idx < 0) {
+                showNotification('Solicitud', 'No hay solicitud pendiente', 'warning');
+                return;
+            }
+            sols[idx].estado = 'cancelada';
+            sols[idx].responded_at = new Date().toISOString();
+            try {
+                const { error } = await supabase.from('productos').update({
+                    especificaciones: serializeSolicitudes(product, sols)
+                }).eq('id', productId);
+                if (error) throw error;
+                product.especificaciones = serializeSolicitudes(product, sols);
+                showNotification('Solicitud cancelada', 'Se retiró la solicitud al gestor', 'success');
+                if (typeof softRefreshCurrentView === 'function') softRefreshCurrentView();
+                else if (typeof renderView === 'function') renderView(currentView);
+            } catch (e) {
+                console.error(e);
+                showNotification('Error', e.message || 'No se pudo cancelar', 'error');
+            }
+        }
+
+        async function cancelarSolicitudGestor(productId) {
+            const gid = typeof getCurrentGestorId === 'function' ? getCurrentGestorId() : null;
+            const product = (productos || []).find(p => p.id === productId);
+            if (!product || !gid) return;
+            let sols = parseSolicitudes(product);
+            const idx = sols.findIndex(s => s.gestor_id === gid && s.estado === 'pendiente');
+            if (idx < 0) {
+                showNotification('Solicitud', 'No hay solicitud pendiente', 'warning');
+                return;
+            }
+            sols[idx].estado = 'cancelada';
+            sols[idx].responded_at = new Date().toISOString();
+            try {
+                const { error } = await supabase.from('productos').update({
+                    especificaciones: serializeSolicitudes(product, sols)
+                }).eq('id', productId);
+                if (error) throw error;
+                product.especificaciones = serializeSolicitudes(product, sols);
+                showNotification('Solicitud cancelada', 'Retiraste tu solicitud al negocio', 'success');
+                if (typeof softRefreshCurrentView === 'function') softRefreshCurrentView();
+                else if (typeof renderView === 'function') renderView(currentView);
+            } catch (e) {
+                console.error(e);
+                showNotification('Error', e.message || 'No se pudo cancelar', 'error');
+            }
+        }
+
+
         async function responderSolicitud(productId, aceptar) {
             const product = productos.find(p => p.id === productId);
             const gid = getCurrentGestorId();
@@ -4885,6 +5057,10 @@ const productosAsignados = productos.filter(p => gestorGestionaProducto(p, gesto
             const idx = sols.findIndex(s => s.gestor_id === gid && s.estado === 'pendiente');
             if (idx < 0) {
                 showNotification('Solicitud', 'No hay solicitud pendiente', 'warning');
+                return;
+            }
+            if (sols[idx].origen === 'gestor') {
+                showNotification('Solicitud', 'Tú enviaste esta solicitud; usa Cancelar si quieres retirarla', 'info');
                 return;
             }
             sols[idx].estado = aceptar ? 'aceptada' : 'rechazada';
