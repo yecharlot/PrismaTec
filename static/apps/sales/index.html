@@ -2447,7 +2447,7 @@ function getCurrentGestorId() {
             if (el) el.textContent = msg || 'Cargando Alset Sales Hub…';
         }
         function hideSplash(delayMs) {
-            const MIN_MS = 10000; // splash visible al menos 10s
+            const MIN_MS = 5000; // splash visible al menos 5s
             const started = window.__alsetSplashStarted || Date.now();
             const elapsed = Date.now() - started;
             const waitMore = Math.max(0, MIN_MS - elapsed);
