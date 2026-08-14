@@ -27,6 +27,205 @@
     
     <style>
 
+        /* Brand hero + splash: icono plataforma animado */
+        .brand-spectacle {
+            position: relative;
+            width: 100%;
+            min-height: 320px;
+            height: clamp(280px, 42vw, 380px);
+            max-height: 420px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 24px;
+            overflow: hidden;
+            background:
+                radial-gradient(ellipse at 50% 45%, rgba(244,180,0,0.22) 0%, transparent 55%),
+                radial-gradient(ellipse at 30% 70%, rgba(108,99,255,0.18) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 30%, rgba(37,211,102,0.12) 0%, transparent 45%),
+                linear-gradient(160deg, #0b0c12 0%, #14162a 50%, #0e1018 100%);
+            isolation: isolate;
+        }
+        .brand-spectacle.brand-spectacle--splash {
+            min-height: 0;
+            height: auto;
+            width: min(280px, 72vw);
+            aspect-ratio: 1 / 1;
+            max-height: none;
+            border-radius: 28px;
+            margin: 0 auto 1.25rem;
+            background:
+                radial-gradient(ellipse at 50% 45%, rgba(244,180,0,0.28) 0%, transparent 55%),
+                radial-gradient(ellipse at 30% 70%, rgba(108,99,255,0.2) 0%, transparent 50%),
+                transparent;
+            box-shadow: none;
+        }
+        .brand-spectacle .bs-glow {
+            position: absolute;
+            width: min(220px, 55%);
+            height: min(220px, 55%);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(244,180,0,0.55) 0%, rgba(108,99,255,0.25) 40%, transparent 70%);
+            filter: blur(18px);
+            animation: bsPulse 3.2s ease-in-out infinite;
+            z-index: 0;
+        }
+        .brand-spectacle .bs-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 1.5px solid rgba(244,180,0,0.35);
+            z-index: 1;
+            animation: bsSpin 12s linear infinite;
+        }
+        .brand-spectacle .bs-ring.r1 { width: min(200px, 52%); height: min(200px, 52%); border-style: dashed; animation-duration: 14s; }
+        .brand-spectacle .bs-ring.r2 { width: min(260px, 68%); height: min(260px, 68%); border-color: rgba(108,99,255,0.35); animation-direction: reverse; animation-duration: 18s; }
+        .brand-spectacle .bs-ring.r3 { width: min(310px, 82%); height: min(310px, 82%); border-color: rgba(37,211,102,0.25); border-style: dotted; animation-duration: 22s; }
+        .brand-spectacle .bs-orbit {
+            position: absolute;
+            width: min(280px, 74%);
+            height: min(280px, 74%);
+            border-radius: 50%;
+            animation: bsSpin 9s linear infinite;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .brand-spectacle .bs-dot {
+            position: absolute;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: #f4b400;
+            box-shadow: 0 0 12px #f4b400, 0 0 24px rgba(244,180,0,0.6);
+            top: 0; left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .brand-spectacle .bs-dot.d2 {
+            top: auto; bottom: 12%; left: 8%;
+            background: #6c63ff;
+            box-shadow: 0 0 12px #6c63ff;
+            width: 8px; height: 8px;
+        }
+        .brand-spectacle .bs-dot.d3 {
+            top: 40%; left: auto; right: 0;
+            background: #25d366;
+            box-shadow: 0 0 12px #25d366;
+            width: 7px; height: 7px;
+        }
+        .brand-spectacle .bs-logo-wrap {
+            position: relative;
+            z-index: 5;
+            width: clamp(96px, 22vw, 140px);
+            height: clamp(96px, 22vw, 140px);
+            border-radius: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: bsFloat 4s ease-in-out infinite, bsIn 1.1s cubic-bezier(0.22,1,0.36,1) both;
+            background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+            box-shadow:
+                0 0 0 1px rgba(255,255,255,0.12),
+                0 20px 50px rgba(0,0,0,0.45),
+                0 0 40px rgba(244,180,0,0.35),
+                0 0 80px rgba(108,99,255,0.2);
+        }
+        .brand-spectacle.brand-spectacle--splash .bs-logo-wrap {
+            width: clamp(88px, 28vw, 120px);
+            height: clamp(88px, 28vw, 120px);
+            border-radius: 28px;
+        }
+        .brand-spectacle .bs-logo-wrap img {
+            width: 88%;
+            height: 88%;
+            object-fit: contain;
+            border-radius: 24px;
+            filter: drop-shadow(0 8px 16px rgba(0,0,0,0.35));
+        }
+        .brand-spectacle .bs-shine {
+            position: absolute;
+            inset: -40%;
+            background: conic-gradient(from 0deg, transparent 0%, rgba(255,255,255,0.35) 10%, transparent 20%);
+            animation: bsSpin 6s linear infinite;
+            z-index: 4;
+            mix-blend-mode: screen;
+            pointer-events: none;
+            border-radius: 50%;
+            opacity: 0.55;
+        }
+        .brand-spectacle .bs-ray {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 2px; height: min(160px, 42%);
+            background: linear-gradient(to top, transparent, rgba(244,180,0,0.55), transparent);
+            transform-origin: bottom center;
+            z-index: 1;
+            opacity: 0.5;
+            animation: bsRay 5s ease-in-out infinite;
+        }
+        .brand-spectacle .bs-ray:nth-child(1) { transform: translate(-50%, -100%) rotate(0deg); animation-delay: 0s; }
+        .brand-spectacle .bs-ray:nth-child(2) { transform: translate(-50%, -100%) rotate(60deg); animation-delay: 0.4s; }
+        .brand-spectacle .bs-ray:nth-child(3) { transform: translate(-50%, -100%) rotate(120deg); animation-delay: 0.8s; }
+        .brand-spectacle .bs-ray:nth-child(4) { transform: translate(-50%, -100%) rotate(180deg); animation-delay: 1.2s; }
+        .brand-spectacle .bs-ray:nth-child(5) { transform: translate(-50%, -100%) rotate(240deg); animation-delay: 1.6s; }
+        .brand-spectacle .bs-ray:nth-child(6) { transform: translate(-50%, -100%) rotate(300deg); animation-delay: 2s; }
+        .brand-spectacle .bs-label {
+            position: absolute;
+            bottom: 1.1rem;
+            left: 0.5rem; right: 0.5rem;
+            text-align: center;
+            z-index: 6;
+            font-weight: 800;
+            font-size: clamp(0.75rem, 2.5vw, 0.95rem);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.92);
+            text-shadow: 0 0 20px rgba(244,180,0,0.5);
+            animation: bsIn 1.3s 0.25s cubic-bezier(0.22,1,0.36,1) both;
+        }
+        .brand-spectacle.brand-spectacle--splash .bs-label { display: none; }
+        @keyframes bsSpin { to { transform: rotate(360deg); } }
+        @keyframes bsPulse {
+            0%, 100% { transform: scale(0.92); opacity: 0.65; }
+            50% { transform: scale(1.12); opacity: 1; }
+        }
+        @keyframes bsFloat {
+            0%, 100% { transform: translateY(0) rotate(-2deg); }
+            50% { transform: translateY(-12px) rotate(2deg); }
+        }
+        @keyframes bsIn {
+            from { opacity: 0; transform: scale(0.55) translateY(24px); filter: blur(8px); }
+            to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+        }
+        @keyframes bsRay {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 0.7; }
+        }
+        @media (max-width: 640px) {
+            .brand-spectacle {
+                min-height: 260px;
+                height: 280px;
+                border-radius: 18px;
+            }
+            .brand-spectacle .bs-logo-wrap {
+                width: 100px; height: 100px; border-radius: 24px;
+            }
+            .brand-spectacle .bs-ray { display: none; } /* menos carga visual en móvil */
+        }
+        @media (max-width: 380px) {
+            .brand-spectacle { min-height: 220px; height: 240px; }
+            .brand-spectacle .bs-logo-wrap { width: 84px; height: 84px; border-radius: 20px; }
+            .brand-spectacle .bs-label { font-size: 0.7rem; bottom: 0.75rem; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .brand-spectacle .bs-glow,
+            .brand-spectacle .bs-ring,
+            .brand-spectacle .bs-orbit,
+            .brand-spectacle .bs-shine,
+            .brand-spectacle .bs-ray,
+            .brand-spectacle .bs-logo-wrap {
+                animation: none !important;
+            }
+        }
+
+
         .hero-live-feed {
             margin-top: 0.25rem;
             background: var(--card);
@@ -206,7 +405,7 @@
             text-align: center;
             padding: 0 1.5rem;
         }
-        #alsetSplash .splash-spinner {
+        #alsetSplash .splash-spinner { margin-top: 0.5rem;
             width: 36px;
             height: 36px;
             border: 3px solid rgba(244, 180, 0, 0.2);
@@ -1360,8 +1559,22 @@
 </head>
 <body>
 <div id="alsetSplash" role="status" aria-live="polite" aria-busy="true">
-        <img class="splash-logo" src="/static/apps/sales/logo.png" alt="Alset Sales Hub"
-             onerror="this.onerror=null;this.src='/static/apps/sales/icon-512.png';this.onerror=function(){this.src='/static/apps/sales/icon-192.png';};" />
+
+        <div class="brand-spectacle brand-spectacle--splash" aria-hidden="true">
+            <div class="bs-glow"></div>
+            <div class="bs-ring r1"></div>
+            <div class="bs-ring r2"></div>
+            <div class="bs-orbit">
+                <span class="bs-dot"></span>
+                <span class="bs-dot d2"></span>
+                <span class="bs-dot d3"></span>
+            </div>
+            <div class="bs-shine"></div>
+            <div class="bs-logo-wrap">
+                <img src="/static/apps/sales/logo.png" alt=""
+                     onerror="this.onerror=null;this.src='/static/apps/sales/icon-512.png';" />
+            </div>
+        </div>
         <p class="splash-title">Alset Sales Hub</p>
         <p class="splash-sub" id="alsetSplashText">Cargando Alset Sales Hub…</p>
         <div class="splash-spinner" aria-hidden="true"></div>
@@ -1423,59 +1636,33 @@
                     </div>
                 </div>
                 <div class="hero-image">
-                    <div class="mockup" style="background:linear-gradient(135deg, #F8F7FF, #EEF0FF);">
-                        <div style="background:var(--card); border-radius:16px; padding:1.5rem;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-                                <div style="display:flex; gap:0.5rem;">
-                                    <span style="width:12px; height:12px; border-radius:50%; background:#FF6B6B;"></span>
-                                    <span style="width:12px; height:12px; border-radius:50%; background:#FFD93D;"></span>
-                                    <span style="width:12px; height:12px; border-radius:50%; background:#6BCB77;"></span>
-                                </div>
-                                <span style="font-size:0.8rem; color:var(--text-light);">Panel de Gestión</span>
-                            </div>
-                            <div style="background:var(--gray); border-radius:12px; padding:1rem; margin-bottom:1rem;">
-                                <div style="display:flex; justify-content:space-between; align-items:center;">
-                                    <div>
-                                        <div style="font-weight:600; font-size:0.9rem;">📢 Ofertas del día</div>
-                                        <div style="font-size:0.8rem; color:var(--text-light);">4 nuevas ofertas asignadas</div>
-                                    </div>
-                                    <span style="background:var(--primary); color:white; padding:0.2rem 0.8rem; border-radius:50px; font-size:0.7rem; font-weight:600;">+12%</span>
-                                </div>
-                            </div>
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem;">
-                                <div style="background:var(--card); border-radius:10px; padding:0.75rem; border:1px solid var(--gray);">
-                                    <div style="font-size:1.5rem; font-weight:700; color:var(--primary);" id="mockStatVentas">—</div>
-                                    <div style="font-size:0.7rem; color:var(--text-light);">Ventas totales</div>
-                                </div>
-                                <div style="background:var(--card); border-radius:10px; padding:0.75rem; border:1px solid var(--gray);">
-                                    <div style="font-size:1.5rem; font-weight:700; color:var(--accent2);" id="mockStatClientes">—</div>
-                                    <div style="font-size:0.7rem; color:var(--text-light);">Clientes</div>
-                                </div>
-                            </div>
-                            <div class="hero-live-feed" aria-hidden="true">
-                                <div class="hero-live-title"><span class="hero-live-dot"></span> Actividad reciente</div>
-                                <div class="hero-live-track">
-                                    <div class="hero-live-item"><span class="hl-tag venta">Venta</span> Nueva venta registrada</div>
-                                    <div class="hero-live-item"><span class="hl-tag chat">Chat</span> Cliente contactó gestor</div>
-                                    <div class="hero-live-item"><span class="hl-tag prod">Catálogo</span> Producto publicado</div>
-                                    <div class="hero-live-item"><span class="hl-tag venta">Venta</span> QR de recogida generado</div>
-                                    <div class="hero-live-item"><span class="hl-tag chat">Chat</span> Mensaje entregado</div>
-                                    <div class="hero-live-item"><span class="hl-tag prod">Catálogo</span> Gestor asignado</div>
-                                </div>
-                            </div>
+
+                    <div class="brand-spectacle" aria-hidden="true">
+                        <div class="bs-glow"></div>
+                        <div class="bs-ray"></div>
+                        <div class="bs-ray"></div>
+                        <div class="bs-ray"></div>
+                        <div class="bs-ray"></div>
+                        <div class="bs-ray"></div>
+                        <div class="bs-ray"></div>
+                        <div class="bs-ring r1"></div>
+                        <div class="bs-ring r2"></div>
+                        <div class="bs-ring r3"></div>
+                        <div class="bs-orbit">
+                            <span class="bs-dot"></span>
+                            <span class="bs-dot d2"></span>
+                            <span class="bs-dot d3"></span>
                         </div>
-                    </div>
-                    <div class="floating-badge top-right">
-                        <i class="fas fa-bolt" style="color:var(--accent);"></i>
-                        <div><div class="badge-text">Datos en vivo</div><div class="badge-sub">actualización al instante</div></div>
-                    </div>
-                    <div class="floating-badge bottom-left">
-                        <svg class="wa-official-icon" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" style="flex-shrink:0;"><path fill="#25D366" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                        <div><div class="badge-text">WhatsApp integrado</div><div class="badge-sub">Comunicación automática</div></div>
+                        <div class="bs-shine"></div>
+                        <div class="bs-logo-wrap">
+                            <img src="/static/apps/sales/logo.png" alt="Alset Sales Hub"
+                                 onerror="this.onerror=null;this.src='/static/apps/sales/icon-512.png';" />
+                        </div>
+                        <div class="bs-label">Alset Sales Hub</div>
                     </div>
                 </div>
             </div>
-        </section>
+</section>
         
         <section class="features" id="features">
             <div class="section-header">
