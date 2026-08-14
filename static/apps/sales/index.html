@@ -27,6 +27,133 @@
     
     <style>
 
+        .hero-live-feed {
+            margin-top: 0.25rem;
+            background: var(--card);
+            border: 1px solid var(--border, var(--gray));
+            border-radius: 12px;
+            padding: 0.65rem 0.75rem;
+            overflow: hidden;
+            min-height: 4.5rem;
+        }
+        .hero-live-title {
+            font-size: 0.72rem; font-weight: 700; color: var(--text-light);
+            margin-bottom: 0.45rem; display: flex; align-items: center; gap: 0.4rem;
+            text-transform: uppercase; letter-spacing: 0.04em;
+        }
+        .hero-live-dot {
+            width: 8px; height: 8px; border-radius: 50%; background: #25D366;
+            box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.5);
+            animation: livePulse 1.6s ease-out infinite;
+        }
+        @keyframes livePulse {
+            0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.45); }
+            70% { box-shadow: 0 0 0 8px rgba(37, 211, 102, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+        }
+        .hero-live-track { display: flex; flex-direction: column; gap: 0.35rem; animation: liveScroll 14s linear infinite; }
+        @keyframes liveScroll {
+            0%, 12% { transform: translateY(0); }
+            16%, 28% { transform: translateY(-1.55rem); }
+            32%, 44% { transform: translateY(-3.1rem); }
+            48%, 60% { transform: translateY(-4.65rem); }
+            64%, 76% { transform: translateY(-6.2rem); }
+            80%, 92% { transform: translateY(-7.75rem); }
+            96%, 100% { transform: translateY(0); }
+        }
+        .hero-live-item {
+            font-size: 0.78rem; color: var(--text-dark); white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis; height: 1.4rem; line-height: 1.4rem;
+            display: flex; align-items: center; gap: 0.4rem;
+        }
+        .hl-tag { font-size: 0.65rem; font-weight: 700; padding: 0.12rem 0.4rem; border-radius: 999px; flex-shrink: 0; }
+        .hl-tag.venta { background: rgba(244,180,0,0.2); color: var(--primary); }
+        .hl-tag.chat { background: rgba(37,211,102,0.15); color: #1faa55; }
+        .hl-tag.prod { background: rgba(108,99,255,0.15); color: #6c63ff; }
+        .wa-official-icon { display: block; }
+
+        .product-card { display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
+        .product-card-body { flex: 1 1 auto; }
+        .product-card-footer {
+            margin-top: auto;
+            padding: 0.75rem;
+            border-top: 1px solid var(--border);
+            background: rgba(255,255,255,0.045);
+            border-radius: 0 0 14px 14px;
+        }
+        body.user-mode-light .product-card-footer,
+        [data-user-mode="light"] .product-card-footer {
+            background: rgba(0,0,0,0.04);
+        }
+        .sol-collapse-btn {
+            width: 100%; text-align: left; background: transparent;
+            border: 1px dashed var(--border); border-radius: 8px;
+            padding: 0.45rem 0.6rem; color: var(--text-dark); font-size: 0.8rem;
+            cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+        }
+        .sol-collapse-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .sol-collapse-panel { display: none; margin-top: 0.45rem; max-height: 220px; overflow-y: auto; }
+        .sol-collapse-panel.open { display: block; }
+
+        .gestor-grid, .product-grid {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 1rem;
+            align-items: stretch;
+        }
+        .gestor-grid > *, .product-grid > * { min-width: 0; height: 100%; }
+        .gestor-card {
+            display: flex; flex-direction: column; height: 100%; box-sizing: border-box;
+        }
+        .gestor-card .body, .gestor-card .info { flex: 1 1 auto; }
+
+        .chat-container { display: flex; gap: 0; min-height: 420px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+        .chat-sidebar { width: 280px; max-width: 40%; border-right: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; }
+        .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        .chat-contact { display: flex; gap: 0.65rem; padding: 0.75rem; align-items: center; cursor: pointer; border-bottom: 1px solid var(--border); }
+        .chat-contact .info { min-width: 0; flex: 1; }
+        .chat-contact .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chat-contact .last-msg { font-size: 0.78rem; color: var(--text-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+        .chat-messages .msg { max-width: 85%; padding: 0.55rem 0.75rem; border-radius: 12px; word-break: break-word; overflow-wrap: anywhere; line-height: 1.35; }
+        #chatHeader { display: flex; flex-wrap: wrap; gap: 0.35rem 0.75rem; align-items: center; padding: 0.75rem; border-bottom: 1px solid var(--border); }
+        #chatHeader .title, #chatPeerTitle { font-weight: 700; line-height: 1.3; word-break: break-word; min-width: 0; }
+        #chatHeader .sub { font-size: 0.78rem; color: var(--text-light); width: 100%; line-height: 1.3; }
+        .chat-input-bar { display: flex; gap: 0.5rem; padding: 0.65rem; border-top: 1px solid var(--border); align-items: center; }
+        .chat-input-bar input, #chatInput { flex: 1; min-width: 0; }
+
+        @media (max-width: 640px) {
+            .chat-container { flex-direction: column !important; min-height: 0; }
+            .chat-sidebar { width: 100% !important; max-width: 100% !important; max-height: 36vh; border-right: none; border-bottom: 1px solid var(--border); }
+            .chat-main { width: 100%; min-height: 48vh; }
+            .chat-layout, .chats-wrap, #view-chats .app-card {
+                flex-direction: column !important;
+            }
+            .chat-sidebar, .chat-list-panel {
+                width: 100% !important; max-height: 38vh; overflow-y: auto;
+            }
+            .chat-main-panel, .chat-thread {
+                width: 100% !important; min-height: 42vh;
+            }
+            .chat-header, .chat-peer-header, #chatHeader {
+                flex-wrap: wrap !important; gap: 0.35rem; align-items: flex-start !important;
+            }
+            .chat-header h3, .chat-peer-name, #chatPeerName {
+                font-size: 0.95rem !important; line-height: 1.3 !important;
+                word-break: break-word; max-width: 100%;
+            }
+            .mensaje, .msg-row, .chat-msg, .bubble {
+                max-width: 90% !important; word-break: break-word; overflow-wrap: anywhere;
+            }
+            #chatInput, .chat-composer input {
+                min-width: 0; max-width: 100%; flex: 1 1 auto;
+            }
+            .chat-composer, .chat-input-bar {
+                display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center;
+            }
+        }
+
+
         /* Splash de arranque */
         #alsetSplash {
             position: fixed;
@@ -1260,13 +1387,13 @@
                 <li><a href="#pricing" onclick="landingNavGo('pricing')">Planes</a></li>
                 <li><a href="#testimonials" onclick="landingNavGo('testimonials')">Opiniones</a></li>
                 <li><a href="#" onclick="event.preventDefault(); closeLandingNav(); openAuthModal('login');">Iniciar sesión</a></li>
-                <li><a class="btn-nav" id="navEmpezarDesktop" href="#" onclick="event.preventDefault(); closeLandingNav(); openAuthModal('register');">Empezar Ahora</a></li>
+                <li><a class="btn-nav" id="navEmpezarDesktop" href="#" onclick="event.preventDefault(); closeLandingNav(); openAuthModal('register');">Registrar Ahora</a></li>
             </ul>
             <button type="button" class="user-mode-btn" id="userModeToggle" onclick="toggleUserMode()" title="Modo claro/oscuro (solo tú)" aria-label="Tema">
                 <i class="fas fa-sun"></i>
             </button>
             <div class="nav-actions-mobile">
-                <a class="btn-nav btn-nav-mobile" href="#" onclick="event.preventDefault(); openAuthModal('register');">Empezar Ahora</a>
+                <a class="btn-nav btn-nav-mobile" href="#" onclick="event.preventDefault(); openAuthModal('register');">Registrar Ahora</a>
                 <button type="button" class="menu-toggle" id="menuToggle" aria-label="Menú" onclick="toggleLandingNav()"><i class="fas fa-bars"></i></button>
             </div>
         </nav>
@@ -1284,7 +1411,7 @@
                     </h1>
                     <p><span data-copy="hero_subtitle">La plataforma que conecta a negocios, gestores y clientes en un solo lugar.</span></p>
                     <div class="hero-buttons">
-                        <a class="btn-primary" href="#" onclick="event.preventDefault(); openAuthModal('register');"><img class="brand-logo" src="/static/apps/sales/logo.png" alt="" style="height:1.1em;width:1.1em;margin-right:0.25rem;" /> Empezar Ahora</a>
+                        <a class="btn-primary" href="#" onclick="event.preventDefault(); openAuthModal('register');"><img class="brand-logo" src="/static/apps/sales/logo.png" alt="" style="height:1.1em;width:1.1em;margin-right:0.25rem;" /> Registrar Ahora</a>
                         <a class="btn-secondary" href="#" onclick="event.preventDefault(); openAuthModal('login');"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</a>
                     </div>
                     <div class="hero-stats">
@@ -1325,22 +1452,25 @@
                                     <div style="font-size:0.7rem; color:var(--text-light);">Clientes</div>
                                 </div>
                             </div>
-                            <div style="display:flex; gap:0.75rem;">
-                                <div style="flex:1; background:var(--gradient1); color:white; padding:0.6rem; border-radius:10px; text-align:center; font-size:0.8rem; font-weight:600;">
-                                    <i class="fas fa-plus-circle"></i> Crear Oferta
-                                </div>
-                                <div style="flex:1; background:var(--gray2); padding:0.6rem; border-radius:10px; text-align:center; font-size:0.8rem; font-weight:600;">
-                                    <i class="fas fa-users"></i> Gestores
+                            <div class="hero-live-feed" aria-hidden="true">
+                                <div class="hero-live-title"><span class="hero-live-dot"></span> Actividad reciente</div>
+                                <div class="hero-live-track">
+                                    <div class="hero-live-item"><span class="hl-tag venta">Venta</span> Nueva venta registrada</div>
+                                    <div class="hero-live-item"><span class="hl-tag chat">Chat</span> Cliente contactó gestor</div>
+                                    <div class="hero-live-item"><span class="hl-tag prod">Catálogo</span> Producto publicado</div>
+                                    <div class="hero-live-item"><span class="hl-tag venta">Venta</span> QR de recogida generado</div>
+                                    <div class="hero-live-item"><span class="hl-tag chat">Chat</span> Mensaje entregado</div>
+                                    <div class="hero-live-item"><span class="hl-tag prod">Catálogo</span> Gestor asignado</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="floating-badge top-right">
                         <i class="fas fa-bolt" style="color:var(--accent);"></i>
-                        <div><div class="badge-text">Datos en vivo</div><div class="badge-sub">desde Supabase</div></div>
+                        <div><div class="badge-text">Datos en vivo</div><div class="badge-sub">actualización al instante</div></div>
                     </div>
                     <div class="floating-badge bottom-left">
-                        <i class="fas fa-whatsapp" style="color:#25D366;"></i>
+                        <svg class="wa-official-icon" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" style="flex-shrink:0;"><path fill="#25D366" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                         <div><div class="badge-text">WhatsApp integrado</div><div class="badge-sub">Comunicación automática</div></div>
                     </div>
                 </div>
@@ -3174,33 +3304,39 @@ function nombreNegocioProducto(product) {
                     const label = ya ? '✓ ' : (pend ? '⏳ ' : '');
                     return `<option value="${g.id}" ${ya||pend?'disabled':''}>${label}${g.nombres} ${g.apellidos||''} · rep ${g.reputacion||0}%</option>`;
                 }).join('');
+                const pendientes = sols.filter(s => s.estado === 'pendiente');
+                const pendientesHtml = pendientes.map(s => {
+                    const g = gestores.find(x => x.id === s.gestor_id);
+                    const nombre = g ? `${g.nombres||''} ${g.apellidos||''}`.trim() : 'Gestor';
+                    const desdeGestor = s.origen === 'gestor';
+                    const origen = desdeGestor ? ' — pide gestionar' : ' — tú solicitaste';
+                    const botones = desdeGestor
+                      ? `<button class="btn-primary" style="padding:0.3rem 0.5rem;font-size:0.75rem;" onclick="event.stopPropagation();empresaResponderSolicitud('${product.id}','${s.gestor_id}',true)">Aceptar</button>
+                          <button class="btn-secondary" style="padding:0.3rem 0.5rem;font-size:0.75rem;" onclick="event.stopPropagation();empresaResponderSolicitud('${product.id}','${s.gestor_id}',false)">Rechazar</button>`
+                      : `<button class="btn-secondary" style="padding:0.3rem 0.5rem;font-size:0.75rem;" onclick="event.stopPropagation();cancelarSolicitudEmpresa('${product.id}','${s.gestor_id}')">Cancelar</button>`;
+                    return `<div style="margin-top:0.4rem;padding:0.45rem;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;">
+                        <div><strong>${nombre}</strong>${origen}</div>
+                        <div style="display:flex;gap:0.35rem;margin-top:0.3rem;flex-wrap:wrap;">${botones}</div>
+                      </div>`;
+                }).join('');
+                const collapseBlock = pendientes.length ? `
+                        <button type="button" class="sol-collapse-btn" onclick="toggleSolicitudesPanel('${product.id}', event)">
+                            <span><i class="fas fa-inbox"></i> Solicitudes (${pendientes.length})</span>
+                            <i class="fas fa-chevron-down" id="sol_chev_${product.id}"></i>
+                        </button>
+                        <div class="sol-collapse-panel" id="sol_panel_${product.id}">${pendientesHtml}</div>` : '';
                 actions = `
-                    <div style="margin-top:0.75rem; display:flex; flex-direction:column; gap:0.4rem;">
+                    <div class="product-card-footer">
                         <label style="font-size:0.75rem; color:var(--text-light);">Solicitar gestor</label>
-                        <select id="sol_gestor_${product.id}" style="padding:0.45rem; border-radius:8px; background:var(--dark2); color:var(--text-dark); border:1px solid var(--border);">
+                        <select id="sol_gestor_${product.id}" style="width:100%;margin-top:0.25rem;padding:0.45rem; border-radius:8px; background:var(--dark2); color:var(--text-dark); border:1px solid var(--border);">
                             <option value="">Elegir gestor…</option>
                             ${opciones}
                         </select>
-                        <button class="btn-primary" style="padding:0.45rem 0.75rem; font-size:0.85rem;" onclick="(function(){ const s=document.getElementById('sol_gestor_${product.id}'); if(s&&s.value) solicitarGestorParaProducto('${product.id}', s.value); })()">
+                        <button class="btn-primary" style="margin-top:0.4rem;width:100%;padding:0.45rem 0.75rem; font-size:0.85rem;" onclick="(function(){ const s=document.getElementById('sol_gestor_${product.id}'); if(s&&s.value) solicitarGestorParaProducto('${product.id}', s.value); })()">
                             <i class="fas fa-user-plus"></i> Enviar solicitud
                         </button>
-                        <div style="font-size:0.75rem; color:var(--text-light);">Activos: ${gestoresDelProducto.map(g=>g.nombres).join(', ') || 'ninguno'}</div>
-                        ${sols.filter(s => s.estado === 'pendiente').map(s => {
-                            const g = gestores.find(x => x.id === s.gestor_id);
-                            const nombre = g ? `${g.nombres||''} ${g.apellidos||''}`.trim() : 'Gestor';
-                            const desdeGestor = s.origen === 'gestor';
-                            const origen = desdeGestor ? ' — el gestor pide gestionar' : ' — tú solicitaste (pendiente de respuesta)';
-                            const botones = desdeGestor
-                              ? `<button class="btn-primary" style="padding:0.3rem 0.5rem;font-size:0.75rem;" onclick="empresaResponderSolicitud('${product.id}','${s.gestor_id}',true)">Aceptar</button>
-                                  <button class="btn-secondary" style="padding:0.3rem 0.5rem;font-size:0.75rem;" onclick="empresaResponderSolicitud('${product.id}','${s.gestor_id}',false)">Rechazar</button>`
-                              : `<button class="btn-secondary" style="padding:0.3rem 0.5rem;font-size:0.75rem;" onclick="cancelarSolicitudEmpresa('${product.id}','${s.gestor_id}')">Cancelar solicitud</button>`;
-                            return `<div style="margin-top:0.5rem;padding:0.5rem;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;">
-                                <div><strong>${nombre}</strong>${origen}</div>
-                                <div style="display:flex;gap:0.35rem;margin-top:0.35rem;flex-wrap:wrap;">
-                                  ${botones}
-                                </div>
-                              </div>`;
-                        }).join('')}
+                        <div style="font-size:0.75rem; color:var(--text-light);margin-top:0.4rem;">Activos: ${gestoresDelProducto.map(g=>g.nombres).join(', ') || 'ninguno'}</div>
+                        <div style="margin-top:0.45rem;">${collapseBlock}</div>
                     </div>`;
             } else if (currentRole === 'gestor' && miPendiente) {
                 const desdeGestor = miPendiente.origen === 'gestor';
@@ -3255,10 +3391,14 @@ function nombreNegocioProducto(product) {
                 ? `<div class="price">${precioTxt}</div>`
                 : `<div class="price">${precioTxt}${pagoGestorHtml}</div>`;
 
+            const actionsBlock = (actions && String(actions).includes('product-card-footer'))
+                ? actions
+                : (actions ? `<div class="product-card-footer">${actions}</div>` : '');
+
             return `
                 <div class="product-card">
                     <div class="image">${imageDisplay}</div>
-                    <div class="body">
+                    <div class="body product-card-body">
                         <div class="title">${product.nombre} ${isDestacado ? '<span class="badge badge-warning">Destacado</span>' : ''}</div>
                         ${negocioHtmlCliente}
                         ${priceBlock}
@@ -3267,11 +3407,21 @@ function nombreNegocioProducto(product) {
                             <span class="badge badge-primary">${product.categoria || 'General'}</span>
                             <span style="font-size:0.8rem; color:var(--text-light);">Stock: ${product.stock ?? '—'}</span>
                         </div>
-                        ${actions}
                     </div>
+                    ${actionsBlock}
                 </div>
             `;
         }
+
+        function toggleSolicitudesPanel(productId, ev) {
+            if (ev) { try { ev.preventDefault(); ev.stopPropagation(); } catch (e) {} }
+            const panel = document.getElementById('sol_panel_' + productId);
+            const chev = document.getElementById('sol_chev_' + productId);
+            if (!panel) return;
+            const open = panel.classList.toggle('open');
+            if (chev) chev.style.transform = open ? 'rotate(180deg)' : '';
+        }
+
 
 
                 function renderGestores() {
