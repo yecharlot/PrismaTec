@@ -214,6 +214,57 @@
             .brand-spectacle .bs-logo-wrap { width: 84px; height: 84px; border-radius: 20px; }
             .brand-spectacle .bs-label { font-size: 0.7rem; bottom: 0.75rem; }
         }
+        
+        /* Splash + brand spectacle adaptados a tema claro/oscuro */
+        body.theme-light #alsetSplash {
+            background: linear-gradient(165deg, #f4f5f7 0%, #e8ebf2 45%, #f0f2f7 100%);
+        }
+        body.theme-light #alsetSplash .splash-title {
+            color: #1a1d26;
+        }
+        body.theme-light #alsetSplash .splash-sub {
+            color: #5c6578;
+        }
+        body.theme-light #alsetSplash .splash-spinner {
+            border-color: rgba(108,99,255,0.2);
+            border-top-color: #f4b400;
+        }
+        body.theme-light .brand-spectacle {
+            background:
+                radial-gradient(ellipse at 50% 45%, rgba(244,180,0,0.2) 0%, transparent 55%),
+                radial-gradient(ellipse at 30% 70%, rgba(108,99,255,0.14) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 30%, rgba(37,211,102,0.1) 0%, transparent 45%),
+                linear-gradient(160deg, #f7f8fb 0%, #eef0f6 50%, #f4f5f9 100%);
+        }
+        body.theme-light .brand-spectacle.brand-spectacle--splash {
+            background:
+                radial-gradient(ellipse at 50% 45%, rgba(244,180,0,0.22) 0%, transparent 55%),
+                radial-gradient(ellipse at 30% 70%, rgba(108,99,255,0.12) 0%, transparent 50%),
+                transparent;
+        }
+        body.theme-light .brand-spectacle .bs-logo-wrap {
+            background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(255,255,255,0.75));
+            box-shadow:
+                0 0 0 1px rgba(0,0,0,0.06),
+                0 16px 40px rgba(0,0,0,0.12),
+                0 0 36px rgba(244,180,0,0.28),
+                0 0 60px rgba(108,99,255,0.12);
+        }
+        body.theme-light .brand-spectacle .bs-label {
+            color: #1a1d26;
+            text-shadow: 0 0 18px rgba(244,180,0,0.35);
+        }
+        body.theme-light .brand-spectacle .bs-ring.r1 { border-color: rgba(244,180,0,0.45); }
+        body.theme-light .brand-spectacle .bs-ring.r2 { border-color: rgba(108,99,255,0.4); }
+        body.theme-light .brand-spectacle .bs-ring.r3 { border-color: rgba(37,211,102,0.35); }
+        body.theme-light .brand-spectacle .bs-glow {
+            background: radial-gradient(circle, rgba(244,180,0,0.4) 0%, rgba(108,99,255,0.18) 40%, transparent 70%);
+        }
+        body.theme-light .brand-spectacle .bs-shine {
+            opacity: 0.35;
+            mix-blend-mode: multiply;
+        }
+
         @media (prefers-reduced-motion: reduce) {
             .brand-spectacle .bs-glow,
             .brand-spectacle .bs-ring,
@@ -1579,7 +1630,7 @@
         <p class="splash-sub" id="alsetSplashText">Cargando Alset Sales Hub…</p>
         <div class="splash-spinner" aria-hidden="true"></div>
     </div>
-    <script>try{document.body.classList.add('splash-active');window.__alsetSplashStarted=Date.now();}catch(e){}</script>
+    <script>try{document.body.classList.add('splash-active');window.__alsetSplashStarted=Date.now();var m=localStorage.getItem('alset_user_mode')||'dark';if(m==='light'){document.body.classList.add('theme-light');document.body.classList.remove('theme-dark');document.documentElement.style.setProperty('--dark','#f4f5f7');}else{document.body.classList.add('theme-dark');document.body.classList.remove('theme-light');}}catch(e){}</script>
 
 
 <!-- ============================================================
