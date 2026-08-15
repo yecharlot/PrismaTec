@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Vero · Identidad comercial</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0a0e14;--card:#121a24;--text:#eef3f8;--muted:#8b9aab;--accent:#22d3ee;--accent2:#a78bfa;--ok:#34d399;--wa:#25d366;--border:rgba(148,163,184,.14);--font:DM Sans,system-ui,sans-serif}
+*{box-sizing:border-box}body{margin:0;font-family:var(--font);background:radial-gradient(900px 500px at 0% 0%,rgba(34,211,238,.08),transparent),radial-gradient(800px 400px at 100% 0%,rgba(167,139,250,.07),transparent),var(--bg);color:var(--text);min-height:100vh}
+.hidden{display:none!important}
+input,select,button,textarea{font-family:var(--font)}
+input,select,textarea{width:100%;padding:.65rem .8rem;border-radius:10px;border:1px solid var(--border);background:#0c1219;color:var(--text)}
+label{display:block;font-size:.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:.5rem 0 .25rem}
+button{border:none;cursor:pointer;font-weight:600;padding:.65rem 1rem;border-radius:10px;background:linear-gradient(135deg,#22d3ee,#06b6d4);color:#083344}
+button.secondary{background:#1a2330;color:var(--text);border:1px solid var(--border)}
+button.wa{background:var(--wa);color:#052e16}
+button.ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.shell{max-width:480px;margin:0 auto;padding:1rem 1rem 2.5rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:.75rem;margin-bottom:1rem}
+.logo{display:flex;align-items:center;gap:.6rem}
+.mark{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-weight:800;background:linear-gradient(145deg,rgba(34,211,238,.3),rgba(167,139,250,.2));border:1px solid rgba(34,211,238,.35);color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.15rem;margin-bottom:1rem}
+.card h2{margin:0 0 .75rem;font-size:1rem}
+.tabs{display:flex;gap:.3rem;background:#0c1219;padding:.3rem;border-radius:12px;margin-bottom:1rem}
+.tabs button{flex:1;background:transparent;color:var(--muted)}
+.tabs button.on{background:#1a2330;color:var(--text)}
+.err{color:#fca5a5;font-size:.82rem;min-height:1.2em;margin-top:.4rem}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
+.stat{text-align:center;background:#0c1219;border-radius:12px;padding:.75rem .4rem;border:1px solid var(--border)}
+.stat .n{font-size:1.25rem;font-weight:700}.stat .l{font-size:.65rem;color:var(--muted);text-transform:uppercase}
+.pill{display:inline-block;font-size:.68rem;font-weight:700;padding:.2rem .5rem;border-radius:999px;background:rgba(34,211,238,.12);color:var(--accent)}
+.prod{display:flex;justify-content:space-between;gap:.5rem;padding:.65rem 0;border-bottom:1px solid var(--border);font-size:.9rem}
+.prod:last-child{border:none}
+.share-row{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%) translateY(8px);background:#1a2330;border:1px solid var(--border);padding:.65rem 1rem;border-radius:12px;opacity:0;transition:.25s;z-index:20;font-size:.85rem}
+.toast.show{opacity:1;transform:translateX(-50%)}
+/* Public profile */
+.pub-hero{text-align:center;padding:1.5rem 1rem 1rem}
+.pub-hero h1{margin:.35rem 0;font-size:1.45rem;letter-spacing:-.02em}
+.score{font-size:1.1rem;font-weight:700;color:var(--accent2)}
+.stars{color:#fbbf24;letter-spacing:.05em}
+.muted{color:var(--muted);font-size:.85rem}
+.qr-box{text-align:center;margin:1rem 0}
+.qr-box img{width:160px;height:160px;background:#fff;border-radius:12px;padding:8px}
+</style>
+</head>
+<body>
+<div id="auth" class="shell">
+  <div class="top"><div class="logo"><div class="mark">V</div><div><strong>Vero</strong><div class="muted" style="font-size:.75rem">Tu identidad comercial</div></div></div></div>
+  <div class="card">
+    <div class="tabs"><button type="button" class="on" id="tLogin" onclick="authTab('login')">Entrar</button><button type="button" id="tReg" onclick="authTab('reg')">Crear cuenta</button></div>
+    <div id="loginBox">
+      <label>Email</label><input id="loginEmail" type="email"/>
+      <label>Contraseña</label><input id="loginPass" type="password"/>
+      <button style="width:100%;margin-top:.85rem" onclick="doLogin()">Entrar</button>
+      <div class="err" id="loginErr"></div>
+    </div>
+    <div id="regBox" class="hidden">
+      <label>Nombre</label><input id="regName"/>
+      <label>Email</label><input id="regEmail" type="email"/>
+      <label>Contraseña</label><input id="regPass" type="password"/>
+      <button style="width:100%;margin-top:.85rem" onclick="doReg()">Crear cuenta</button>
+      <div class="err" id="regErr"></div>
+    </div>
+  </div>
+  <p class="muted" style="text-align:center;font-size:.8rem">No es otra red social. Es la tarjeta comercial que llevas a WhatsApp, Facebook e Instagram.</p>
+</div>
+
+<div id="app" class="shell hidden">
+  <div class="top">
+    <div class="logo"><div class="mark">V</div><div><strong id="bizTitle">Vero</strong><div class="muted" id="bizSub" style="font-size:.75rem">Panel</div></div></div>
+    <button class="ghost" style="width:auto" onclick="logout()">Salir</button>
+  </div>
+  <div id="dash">
+    <div class="card" id="createBizCard">
+      <h2>Crea tu Vero</h2>
+      <label>Nombre del negocio</label><input id="bName" placeholder="ABC Combos"/>
+      <label>Enlace (slug)</label><input id="bSlug" placeholder="abc-combos"/>
+      <label>WhatsApp (con código país)</label><input id="bWa" placeholder="5351234567"/>
+      <label>Categoría</label><input id="bCat" placeholder="Comida / Combos"/>
+      <label>Ciudad</label><input id="bCity" placeholder="La Habana"/>
+      <label>Bio</label><textarea id="bBio" rows="2" placeholder="Combos a domicilio…"></textarea>
+      <button style="width:100%;margin-top:.75rem" onclick="createBiz()">Publicar mi Vero</button>
+      <div class="err" id="bizErr"></div>
+    </div>
+    <div id="ownerPanel" class="hidden">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap">
+          <div><span class="pill" id="veroId">VERO-</span>
+            <div style="margin-top:.35rem;font-size:.85rem">Tu enlace</div>
+            <strong id="publicLink" style="word-break:break-all;font-size:.9rem"></strong>
+          </div>
+        </div>
+        <div class="share-row" style="margin-top:1rem">
+          <button class="secondary" onclick="copyLink()">Copiar enlace</button>
+          <button class="wa" onclick="shareWA()">Compartir WhatsApp</button>
+          <button class="secondary" onclick="showQR()">Ver QR</button>
+          <button class="ghost" onclick="openPublic()">Ver perfil</button>
+        </div>
+        <div class="qr-box hidden" id="qrBox"><img id="qrImg" alt="QR"/><p class="muted">Escanea para abrir este Vero</p></div>
+      </div>
+      <div class="card">
+        <h2>Estadísticas</h2>
+        <div class="stat-row" id="stats"></div>
+      </div>
+      <div class="card">
+        <h2>Catálogo</h2>
+        <label>Producto</label><input id="pTitle" placeholder="Combo familiar"/>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+          <div><label>Precio</label><input id="pPrice" type="number" step="0.01" value="25"/></div>
+          <div><label>Moneda</label><input id="pCur" value="USD"/></div>
+        </div>
+        <button style="width:100%;margin-top:.65rem" onclick="addProduct()">Añadir producto</button>
+        <div id="prodList" style="margin-top:.75rem"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="pub" class="shell hidden">
+  <div class="pub-hero">
+    <span class="pill" id="pPill">Vero</span>
+    <h1 id="pName">—</h1>
+    <div class="score" id="pScore">Vero Score —</div>
+    <div class="stars" id="pStars"></div>
+    <p class="muted" id="pMeta"></p>
+    <p id="pBio" style="font-size:.9rem;margin:.75rem 0 1rem"></p>
+    <button class="wa" style="width:100%;max-width:280px" onclick="contactWA()">WhatsApp</button>
+  </div>
+  <div class="card"><h2>Catálogo</h2><div id="pCatalog"></div></div>
+  <div class="card"><h2>Reputación</h2>
+    <div id="pReviews" class="muted">Sin reseñas aún</div>
+    <div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:.75rem">
+      <label>Tu valoración (1-5)</label><input id="rRating" type="number" min="1" max="5" value="5"/>
+      <label>Comentario</label><input id="rComment" placeholder="Opcional"/>
+      <button class="secondary" style="width:100%;margin-top:.5rem" onclick="sendReview()">Enviar reseña</button>
+    </div>
+  </div>
+  <p class="muted" style="text-align:center;font-size:.72rem">El Vero Score es un indicador de reputación y actividad en Vero, no una garantía de seguridad.</p>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+const SK='vero_token';
+let token=localStorage.getItem(SK)||'';
+let me=null, biz=null, pubSlug=null;
+
+function toast(m){const t=toast;/*fix*/const el=document.getElementById('toast');el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2500)}
+function headers(extra){const h=Object.assign({'Content-Type':'application/json'},extra||{});if(token)h.Authorization='Bearer '+token;return h}
+async function j(url,opt){opt=opt||{};opt.headers=Object.assign(headers(),opt.headers||{});const r=await fetch(url,opt);const t=await r.text();let d;try{d=JSON.parse(t)}catch{d=t};return{ok:r.ok,data:d,status:r.status}}
+
+function authTab(w){const L=w==='login';tLogin.classList.toggle('on',L);tReg.classList.toggle('on',!L);loginBox.classList.toggle('hidden',!L);regBox.classList.toggle('hidden',L)}
+function route(){
+  const h=location.hash||'';
+  if(h.startsWith('#/p/')){showPublic(h.slice(4));return}
+  if(token){enterApp();return}
+  auth.classList.remove('hidden');app.classList.add('hidden');pub.classList.add('hidden');
+}
+async function doReg(){
+  regErr.textContent='';
+  const res=await j('/api/vero/auth/register',{method:'POST',body:JSON.stringify({name:regName.value,email:regEmail.value,password:regPass.value})});
+  if(!res.ok){regErr.textContent=res.data.error||'Error';return}
+  token=res.data.token;localStorage.setItem(SK,token);toast('Cuenta creada');enterApp();
+}
+async function doLogin(){
+  loginErr.textContent='';
+  const res=await j('/api/vero/auth/login',{method:'POST',body:JSON.stringify({email:loginEmail.value,password:loginPass.value})});
+  if(!res.ok){loginErr.textContent=res.data.error||'Error';return}
+  token=res.data.token;localStorage.setItem(SK,token);toast('Sesión iniciada');enterApp();
+}
+async function logout(){await j('/api/vero/auth/logout',{method:'POST'});token='';localStorage.removeItem(SK);biz=null;location.hash='';route()}
+async function enterApp(){
+  const res=await j('/api/vero/auth/me');
+  if(!res.ok){token='';localStorage.removeItem(SK);route();return}
+  me=res.data.session;
+  auth.classList.add('hidden');pub.classList.add('hidden');app.classList.remove('hidden');
+  const list=res.data.businesses||[];
+  if(list.length){biz=list[0];showOwner()}else{createBizCard.classList.remove('hidden');ownerPanel.classList.add('hidden')}
+}
+function showOwner(){
+  createBizCard.classList.add('hidden');ownerPanel.classList.remove('hidden');
+  bizTitle.textContent=biz.name;bizSub.textContent=biz.slug;
+  veroId.textContent=biz.vero_id||biz.zyr_id||'VERO';
+  const link=location.origin+'/z/'+biz.slug;
+  publicLink.textContent=link;
+  loadStats();loadProducts();
+}
+async function createBiz(){
+  bizErr.textContent='';
+  const body={name:bName.value,slug:bSlug.value,whatsapp:bWa.value,phone:bWa.value,category:bCat.value,city:bCity.value,bio:bBio.value};
+  const res=await j('/api/vero/businesses',{method:'POST',body:JSON.stringify(body)});
+  if(!res.ok){bizErr.textContent=res.data.error||'Error';return}
+  biz=res.data;toast('Tu Vero está publicado');showOwner();
+}
+async function loadStats(){
+  if(!biz)return;
+  const res=await j('/api/vero/businesses/'+biz.id+'/stats');
+  const s=res.data||{};
+  stats.innerHTML=[['Visitas',s.profile_views],['WhatsApp',s.whatsapp_clicks],['QR',s.qr_scans]].map(([l,n])=>`<div class="stat"><div class="n">${n||0}</div><div class="l">${l}</div></div>`).join('');
+}
+async function loadProducts(){
+  if(!biz)return;
+  const res=await j('/api/vero/businesses/'+biz.id+'/products');
+  const list=res.data.products||[];
+  prodList.innerHTML=list.length?list.map(p=>`<div class="prod"><div><strong>${esc(p.title)}</strong><div class="muted">${p.price} ${esc(p.currency)}</div></div>
+    <button class="ghost" style="width:auto;padding:.3rem .5rem" onclick="delProd('${p.id}')">Eliminar</button></div>`).join(''):'<div class="muted">Añade tu primer producto</div>';
+}
+async function addProduct(){
+  const res=await j('/api/vero/businesses/'+biz.id+'/products',{method:'POST',body:JSON.stringify({title:pTitle.value,price:parseFloat(pPrice.value)||0,currency:pCur.value})});
+  if(!res.ok){toast(res.data.error||'Error');return}
+  pTitle.value='';loadProducts();toast('Producto añadido');
+}
+async function delProd(id){await j('/api/vero/businesses/'+biz.id+'/products/'+id,{method:'DELETE'});loadProducts()}
+function copyLink(){navigator.clipboard.writeText(publicLink.textContent);toast('Enlace copiado')}
+function shareWA(){const t=encodeURIComponent('Este es mi Vero (identidad comercial): '+publicLink.textContent);window.open('https://wa.me/?text='+t,'_blank');j('/api/vero/track/'+biz.slug+'/business_shared',{method:'POST'})}
+function showQR(){qrBox.classList.remove('hidden');qrImg.src='/api/vero/qr/'+encodeURIComponent(biz.slug)+'?t='+Date.now()}
+function openPublic(){location.hash='#/p/'+biz.slug;route()}
+function esc(s){return String(s||'').replace(/[<>&]/g,c=>({ '<':'&lt;','>':'&gt;','&':'&amp;' }[c]))}
+
+async function showPublic(slug){
+  pubSlug=slug;auth.classList.add('hidden');app.classList.add('hidden');pub.classList.remove('hidden');
+  const res=await j('/api/vero/public/'+encodeURIComponent(slug));
+  if(!res.ok){pName.textContent='No encontrado';return}
+  const b=res.data.business;const products=res.data.products||[];const reviews=res.data.reviews||[];
+  pName.textContent=b.name;pPill.textContent=b.vero_id||'Vero';
+  pScore.textContent='Vero Score '+b.score+'/100';
+  pStars.textContent=b.review_count?('★'.repeat(Math.round(b.rating_avg||0))+' '+(b.rating_avg||0).toFixed(1)+' · '+b.review_count+' reseñas'):'Sin reseñas aún';
+  pMeta.textContent=[b.city,b.category,b.published?'Activo':''].filter(Boolean).join(' · ');
+  pBio.textContent=b.bio||'';
+  window.__wa=b.whatsapp;window.__bname=b.name;window.__bid=b.id;
+  pCatalog.innerHTML=products.length?products.map(p=>`<div class="prod"><strong>${esc(p.title)}</strong><span>${p.price} ${esc(p.currency)}</span></div>`).join(''):'<div class="muted">Sin productos publicados</div>';
+  pReviews.innerHTML=reviews.length?reviews.slice().reverse().map(r=>`<div style="padding:.4rem 0;border-bottom:1px solid var(--border)"><strong>${'★'.repeat(r.rating)}</strong> ${esc(r.comment||'')}</div>`).join(''):'Sin reseñas aún';
+}
+function contactWA(){
+  const phone=(window.__wa||'').replace(/\D/g,'');
+  const msg=encodeURIComponent('Hola, vi tu negocio en Vero ('+ (window.__bname||'') +') y estoy interesado.');
+  if(pubSlug) j('/api/vero/track/'+pubSlug+'/whatsapp_clicked',{method:'POST'});
+  window.open('https://wa.me/'+phone+'?text='+msg,'_blank');
+}
+async function sendReview(){
+  if(!window.__bid)return;
+  const res=await j('/api/vero/businesses/'+window.__bid+'/reviews',{method:'POST',body:JSON.stringify({rating:parseInt(rRating.value,10),comment:rComment.value})});
+  if(!res.ok){toast(res.data.error||'Error');return}
+  toast('Gracias por tu reseña');showPublic(pubSlug);
+}
+window.addEventListener('hashchange',route);
+route();
+</script>
+</body>
+</html>

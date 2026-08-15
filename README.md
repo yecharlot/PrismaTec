@@ -420,3 +420,14 @@ Los de integración HTTP no levantan libp2p: montan el mux real del nodo con un 
 ## Licencia
 
 Por definir por el autor del repositorio.
+
+
+## Vero — identidad comercial portable
+
+**Vero** (ES/EN: corto, fácil de decir: *pásame tu Vero* / *send me your Vero*).
+
+- App: 
+- Perfil público: 
+- API: 
+
+MVP: registro, negocio con slug, catálogo, WhatsApp, QR, reseñas básicas, estadísticas de visitas y clics.
