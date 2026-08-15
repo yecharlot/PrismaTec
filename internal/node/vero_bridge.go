@@ -3,6 +3,8 @@ package node
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"net/http"
 	"strings"
 	"sync"
@@ -16,6 +18,17 @@ var (
 	veroOnce sync.Once
 	veroSvc  *vero.Service
 )
+
+
+func (n *NodoAlset) ensureVeroAppFiles() {
+	dir := filepath.Join(StaticDir, "apps", "vero")
+	_ = os.MkdirAll(dir, 0755)
+	path := filepath.Join(dir, "index.html")
+	// Always refresh from embedded UI so deploys never miss the app
+	if len(vero.AppHTML) > 0 {
+		_ = os.WriteFile(path, vero.AppHTML, 0644)
+	}
+}
 
 func (n *NodoAlset) veroService() *vero.Service {
 	veroOnce.Do(func() {
@@ -357,6 +370,25 @@ func (n *NodoAlset) handleVeroPublicPage(w http.ResponseWriter, r *http.Request)
 		http.NotFound(w, r)
 		return
 	}
-	// Serve SPA public view via same app with hash — redirect to app public mode
-	http.Redirect(w, r, "/w/vero.app.ans#/p/"+slug, http.StatusFound)
+	n.ensureVeroAppFiles()
+	// Prefer file on disk; fall back to embedded UI
+	appPath := filepath.Join(StaticDir, "apps", "vero", "index.html")
+	html := vero.AppHTML
+	if data, err := os.ReadFile(appPath); err == nil && len(data) > 0 {
+		html = data
+	}
+	if len(html) == 0 {
+		http.Error(w, "Vero UI not available", 500)
+		return
+	}
+	// Inject slug boot so public profile opens without relying on hash after redirect
+	boot := fmt.Sprintf(`<script>sessionStorage.setItem("vero_boot_slug",%q);if(!location.hash)location.hash="#/p/%s";</script>`, slug, slug)
+	s := string(html)
+	if i := strings.LastIndex(s, "</body>"); i >= 0 {
+		s = s[:i] + boot + s[i:]
+	} else {
+		s += boot
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write([]byte(s))
 }

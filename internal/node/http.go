@@ -17,6 +17,7 @@ import (
 // Used by startHTTPServer and by integration tests.
 func (n *NodoAlset) buildHTTPHandler() http.Handler {
 	n.ensureStaticFiles()
+	n.ensureVeroAppFiles()
 	mux := http.NewServeMux()
 	h := n.httpHandlers()
 	// Core API also registered via Backend adapter (crear-agente, listados, …)
@@ -50,6 +51,14 @@ func (n *NodoAlset) httpHandlers() httpapi.Handlers {
 		if _, err := os.Stat(appPath); err == nil {
 			http.ServeFile(w, r, appPath)
 			return
+		}
+		// Embedded fallback for first-party apps (survives empty/persistent static volumes)
+		if alias == "vero" {
+			n.ensureVeroAppFiles()
+			if _, err := os.Stat(appPath); err == nil {
+				http.ServeFile(w, r, appPath)
+				return
+			}
 		}
 		n.mu.RLock()
 		targetID, ok := n.nombres[alias+".app.ans"]
