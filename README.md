@@ -431,3 +431,8 @@ Por definir por el autor del repositorio.
 - API: 
 
 MVP: registro, negocio con slug, catálogo, WhatsApp, QR, reseñas básicas, estadísticas de visitas y clics.
+
+
+## Landing Prism@.TEC
+
+Página institucional del TCP: `/w/prismatec.app.ans`
