@@ -791,9 +791,10 @@ async function uploadAndRegisterApp() {
     }
     
     const statusDiv = document.getElementById('appUploadStatus');
-    statusDiv.style.display = 'block';
-    statusDiv.innerHTML = '<div class="loading">Subiendo archivos y registrando aplicación...<div class="spinner"></div></div>';
-    const _regBtn = document.getElementById('registerAppBtn'); if (_regBtn) _regBtn.disabled = true;
+    if (statusDiv) {
+        statusDiv.style.display = 'block';
+        statusDiv.innerHTML = '<div class="loading">Subiendo archivos y registrando aplicación...<div class="spinner"></div></div>';
+    }
     
     try {
         const formData = new FormData();
@@ -811,7 +812,7 @@ async function uploadAndRegisterApp() {
         const result = await response.json();
         
         if (response.ok && result.status === 'registered') {
-            statusDiv.innerHTML = `
+            if (statusDiv) statusDiv.innerHTML = `
                 <div style="color: var(--accent-green);">✅ Aplicación "${appName}" registrada exitosamente!</div>
                 <div>🔗 URL: <a href="${result.url}" target="_blank" style="color: var(--primary);">${result.url}</a></div>
                 <div>🆔 Agente: ${result.agent_id}</div>
@@ -825,15 +826,14 @@ async function uploadAndRegisterApp() {
             await loadRegisteredApps();
             await refreshAll();
         } else {
-            statusDiv.innerHTML = `<div style="color: var(--accent-red);">❌ Error: ${result.error || 'Error desconocido'}</div>`;
+            if (statusDiv) statusDiv.innerHTML = `<div style="color: var(--accent-red);">❌ Error: ${result.error || 'Error desconocido'}</div>`;
             showToast('Error al registrar la aplicación', 'error');
         }
     } catch (error) {
         console.error('Error en uploadAndRegisterApp:', error);
-        statusDiv.innerHTML = `<div style="color: var(--accent-red);">❌ Error de conexión: ${error.message}</div>`;
+        if (statusDiv) statusDiv.innerHTML = `<div style="color: var(--accent-red);">❌ Error de conexión: ${error.message}</div>`;
         showToast('Error de conexión con el servidor', 'error');
     } finally {
-        const _regBtn2 = document.getElementById('registerAppBtn'); if (_regBtn2) _regBtn2.disabled = false;
     }
 }
 
