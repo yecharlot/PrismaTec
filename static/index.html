@@ -407,15 +407,19 @@
         <p style="color: var(--text-secondary); margin-bottom: 2rem;">Red P2P Descentralizada · IA Distribuida · dApps</p>
         
         <div id="loginStep1">
-            <input type="text" id="configCid" placeholder="CID de Configuración (ej: Qm...)">
-            <input type="password" id="nodePass" placeholder="Clave Maestra del Nodo">
-            <button class="btn btn-primary" onclick="loginNode()" style="width: 100%;">Verificar Identidad</button>
-            <p style="margin-top: 1.5rem; font-size: 0.8rem; cursor: pointer; color: var(--primary);" onclick="showSetup()">Configurar nuevo nodo</p>
+            <input type="text" id="loginAlias" placeholder="Alias (ej: admin.prismatec)">
+            <input type="text" id="configCid" placeholder="CID de configuración (opcional si usas alias)">
+            <input type="password" id="nodePass" placeholder="Clave maestra del nodo">
+            <button class="btn btn-primary" onclick="loginNode()" style="width: 100%;">Entrar</button>
+            <p id="setupLink" style="margin-top: 1.5rem; font-size: 0.8rem; cursor: pointer; color: var(--primary);" onclick="showSetup()">Configurar nuevo nodo</p>
+            <p id="setupLockedHint" style="display:none;margin-top:1rem;font-size:0.75rem;color:var(--text-muted);">Nodo ya inicializado. Use alias o CID + clave.</p>
         </div>
         <div id="setupStep" style="display:none;">
-            <p style="color: var(--primary); margin-bottom: 1rem;">ESTABLECER CREDENCIALES INICIALES</p>
-            <input type="password" id="newPass" placeholder="Nueva Clave de Nodo">
-            <button class="btn btn-primary" onclick="initializeSecurity()" style="width: 100%; margin-top: 1rem;">Generar CID de Seguridad</button>
+            <p style="color: var(--primary); margin-bottom: 1rem;">ALTA DE OPERADOR (bootstrap)</p>
+            <input type="text" id="setupAlias" placeholder="Alias (ej: admin.prismatec)">
+            <input type="password" id="bootstrapSecret" placeholder="BOOTSTRAP_SECRET (si está configurado)">
+            <input type="password" id="newPass" placeholder="Nueva clave de nodo (mín. 6)">
+            <button class="btn btn-primary" onclick="initializeSecurity()" style="width: 100%; margin-top: 1rem;">Generar CID y registrar operador</button>
             <p style="margin-top: 1rem; font-size: 0.7rem; cursor: pointer; color: var(--text-muted);" onclick="showLogin()">← Volver al login</p>
         </div>
     </div>
@@ -676,26 +680,77 @@ function showToast(msg, type) { let t = document.createElement('div'); t.classNa
 // ============================================
 // LOGIN
 // ============================================
-async function loginNode() {
-    let configCid = document.getElementById('configCid').value;
-    let pass = document.getElementById('nodePass').value;
-    if (!configCid || !pass) { showToast('Ingrese CID y clave', 'error'); return; }
+async function loadAdminStatus() {
     try {
-        let res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ config_cid: configCid, clave: pass }) });
-        if (res.ok) { let data = await res.json(); document.getElementById('nodeIdDisplay').innerHTML = `🆔 ${data.node.substring(0,20)}...`; showToast('Autenticación exitosa', 'success'); enterDashboard(); }
-        else showToast('Credenciales inválidas', 'error');
+        let res = await fetch('/api/admin/status');
+        if (!res.ok) return;
+        let st = await res.json();
+        window.__adminStatus = st;
+        if (st.initialized) {
+            let link = document.getElementById('setupLink');
+            if (link) link.style.display = 'none';
+            let hint = document.getElementById('setupLockedHint');
+            if (hint) hint.style.display = 'block';
+            if (st.alias) {
+                let a = document.getElementById('loginAlias');
+                if (a && !a.value) a.value = st.alias.replace(/\.ans$/, '');
+            }
+        }
+    } catch (e) { console.log('status', e); }
+}
+async function loginNode() {
+    let alias = (document.getElementById('loginAlias') || {}).value || '';
+    let configCid = (document.getElementById('configCid') || {}).value || '';
+    let pass = (document.getElementById('nodePass') || {}).value || '';
+    if (!pass) { showToast('Ingrese la clave', 'error'); return; }
+    if (!alias && !configCid) { showToast('Indique alias o CID de configuración', 'error'); return; }
+    try {
+        let body = { clave: pass };
+        if (alias) body.alias = alias;
+        if (configCid) body.config_cid = configCid;
+        let res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        let data = await res.json().catch(() => ({}));
+        if (res.ok) {
+            let label = data.alias || data.node || '';
+            if (data.alias) label = data.alias;
+            else if (data.node) label = data.node.substring(0, 16) + '…';
+            let el = document.getElementById('nodeIdDisplay');
+            if (el) el.innerHTML = `👤 ${label}`;
+            try { localStorage.setItem('alset_admin_alias', data.alias || alias || ''); } catch(e) {}
+            showToast('Autenticación exitosa', 'success');
+            enterDashboard();
+        } else showToast(data.error || 'Credenciales inválidas', 'error');
     } catch(e) { showToast('Error: ' + e.message, 'error'); }
 }
-function showSetup() { document.getElementById('loginStep1').style.display = 'none'; document.getElementById('setupStep').style.display = 'block'; }
+function showSetup() {
+    let st = window.__adminStatus || {};
+    if (st.initialized) {
+        showToast('Nodo ya inicializado. Use login o rotación con clave actual.', 'warning');
+        return;
+    }
+    document.getElementById('loginStep1').style.display = 'none';
+    document.getElementById('setupStep').style.display = 'block';
+}
 function showLogin() { document.getElementById('loginStep1').style.display = 'block'; document.getElementById('setupStep').style.display = 'none'; }
 async function initializeSecurity() {
-    let pass = document.getElementById('newPass').value;
-    if (!pass) { showToast('Ingrese contraseña', 'error'); return; }
-    let res = await fetch('/api/admin/update-pass', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nuevaClave: pass }) });
-    let data = await res.json();
-    alert(`CID: ${data.config_cid}\n⚠️ GUÁRDELO`);
+    let pass = (document.getElementById('newPass') || {}).value || '';
+    let alias = (document.getElementById('setupAlias') || {}).value || 'admin.prismatec';
+    let secret = (document.getElementById('bootstrapSecret') || {}).value || '';
+    if (!pass || pass.length < 6) { showToast('Clave mínima 6 caracteres', 'error'); return; }
+    let res = await fetch('/api/admin/update-pass', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nuevaClave: pass, alias: alias, bootstrap_secret: secret })
+    });
+    let data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        showToast(data.error || 'No autorizado para inicializar', 'error');
+        return;
+    }
+    alert('Operador listo\n\nAlias: ' + (data.alias || alias) + '\nCID: ' + data.config_cid + '\n\nGuarde el CID y use el alias para entrar.');
     location.reload();
 }
+loadAdminStatus();
 function logout() { if (refreshInterval) clearInterval(refreshInterval); location.reload(); }
 function enterDashboard() { document.getElementById('loginOverlay').style.display = 'none'; document.getElementById('adminDashboard').style.display = 'block'; refreshAll(); initPoHCollector(); refreshInterval = setInterval(() => refreshAll(), 30000); }
 

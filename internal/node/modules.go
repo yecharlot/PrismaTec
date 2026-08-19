@@ -1026,50 +1026,194 @@ func (n *NodoAlset) handlePrismSellar(w http.ResponseWriter, r *http.Request) {
 
 func (n *NodoAlset) handleAdminUpdatePass(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		NuevaClave string `json:"nuevaClave"`
+		NuevaClave      string `json:"nuevaClave"`
+		BootstrapSecret string `json:"bootstrap_secret"`
+		Alias           string `json:"alias"`
+		ClaveActual     string `json:"clave_actual"`
+		ConfigCID       string `json:"config_cid"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "JSON inválido", 400)
 		return
 	}
-	hashedPass, _ := bcrypt.GenerateFromPassword([]byte(req.NuevaClave), bcrypt.DefaultCost)
+	req.NuevaClave = strings.TrimSpace(req.NuevaClave)
+	if req.NuevaClave == "" || len(req.NuevaClave) < 6 {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{"error": "clave mínima 6 caracteres"})
+		return
+	}
+
+	st := n.loadOperatorState()
+	initialized := st.Initialized && st.ConfigCID != ""
+
+	if !initialized {
+		// First setup: require BOOTSTRAP_SECRET when configured
+		if bootstrapSecretConfigured() && !bootstrapSecretOK(req.BootstrapSecret) {
+			w.WriteHeader(403)
+			json.NewEncoder(w).Encode(map[string]string{"error": "bootstrap_secret requerido o inválido"})
+			return
+		}
+	} else {
+		// Password rotation: need current password or bootstrap secret (recovery)
+		allowed := bootstrapSecretOK(req.BootstrapSecret)
+		if !allowed {
+			cid := strings.TrimSpace(req.ConfigCID)
+			if cid == "" {
+				cid = st.ConfigCID
+			}
+			cfgBytes, err := n.BuscarContenidoPorCID(cid)
+			if err != nil {
+				w.WriteHeader(401)
+				json.NewEncoder(w).Encode(map[string]string{"error": "no se pudo verificar clave actual"})
+				return
+			}
+			var cfg NodoConfig
+			_ = json.Unmarshal(cfgBytes, &cfg)
+			if bcrypt.CompareHashAndPassword([]byte(cfg.AdminPassHash), []byte(req.ClaveActual)) != nil {
+				w.WriteHeader(401)
+				json.NewEncoder(w).Encode(map[string]string{"error": "clave actual incorrecta"})
+				return
+			}
+			allowed = true
+		}
+		if !allowed {
+			w.WriteHeader(401)
+			json.NewEncoder(w).Encode(map[string]string{"error": "no autorizado"})
+			return
+		}
+	}
+
+	hashedPass, err := bcrypt.GenerateFromPassword([]byte(req.NuevaClave), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(w, "error hash", 500)
+		return
+	}
 	config := NodoConfig{
 		AdminPassHash: string(hashedPass),
 		LastUpdate:    time.Now().Unix(),
 		Version:       "4.0.0-PTEC-AN",
+		IsGenesis:     !initialized,
 	}
 	configBytes, _ := json.Marshal(config)
-	cidStr, _ := n.GenerarCID(configBytes)
-	n.Auditoria("SEGURIDAD_PASSWORD_UPDATE", fmt.Sprintf("Nuevo CID de config: %s", cidStr))
+	cidStr, err := n.GenerarCID(configBytes)
+	if err != nil || cidStr == "" {
+		http.Error(w, "error generando CID", 500)
+		return
+	}
+
+	alias := normalizeAlias(req.Alias)
+	if alias == "" {
+		if st.Alias != "" {
+			alias = normalizeAlias(st.Alias)
+		} else {
+			alias = defaultOperatorAlias
+		}
+	}
+	agentID := n.ensureOperatorAgent(alias, cidStr)
+	peer := ""
+	if n.host != nil {
+		peer = n.host.ID().String()
+	}
+	st = OperatorState{
+		Alias:       alias,
+		AgentID:     agentID,
+		ConfigCID:   cidStr,
+		PeerID:      peer,
+		Initialized: true,
+	}
+	_ = n.saveOperatorState(st)
+
+	n.Auditoria("SEGURIDAD_PASSWORD_UPDATE", fmt.Sprintf("CID=%s alias=%s", cidStr, alias))
 	n.AnunciarNuevoBloque(cidStr)
-	fmt.Printf("🔒 [SEGURIDAD] Nueva configuración sellada con CID: %s\n", cidStr)
-	json.NewEncoder(w).Encode(map[string]string{"config_cid": cidStr})
+	fmt.Printf("🔒 [SEGURIDAD] Config sellada CID=%s alias=%s\n", cidStr, alias)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"config_cid":  cidStr,
+		"alias":       alias,
+		"agent_id":    agentID,
+		"initialized": true,
+		"peer_id":     peer,
+	})
 }
 
 func (n *NodoAlset) handleAdminLogin(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		CID   string `json:"config_cid"`
+		Alias string `json:"alias"`
 		Clave string `json:"clave"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Solicitud inválida", 400)
 		return
 	}
-	configBytes, err := n.BuscarContenidoPorCID(req.CID)
+	req.Clave = strings.TrimSpace(req.Clave)
+	if req.Clave == "" {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{"error": "clave requerida"})
+		return
+	}
+
+	cid := strings.TrimSpace(req.CID)
+	alias := strings.TrimSpace(req.Alias)
+	if cid == "" && alias != "" {
+		resolved, resolvedAlias, err := n.resolveConfigCIDFromAlias(alias)
+		if err != nil {
+			w.WriteHeader(401)
+			json.NewEncoder(w).Encode(map[string]string{"error": "alias o configuración no encontrada"})
+			return
+		}
+		cid = resolved
+		alias = resolvedAlias
+	}
+	if cid == "" {
+		// fallback: operator state
+		st := n.loadOperatorState()
+		if st.ConfigCID != "" {
+			cid = st.ConfigCID
+			if alias == "" {
+				alias = st.Alias
+			}
+		}
+	}
+	if cid == "" {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{"error": "indique alias o config_cid"})
+		return
+	}
+
+	configBytes, err := n.BuscarContenidoPorCID(cid)
 	if err != nil {
 		w.WriteHeader(401)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Configuración no encontrada"})
 		return
 	}
 	var config NodoConfig
-	json.Unmarshal(configBytes, &config)
-	err = bcrypt.CompareHashAndPassword([]byte(config.AdminPassHash), []byte(req.Clave))
-	if err != nil {
+	_ = json.Unmarshal(configBytes, &config)
+	if config.AdminPassHash == "" || bcrypt.CompareHashAndPassword([]byte(config.AdminPassHash), []byte(req.Clave)) != nil {
 		w.WriteHeader(401)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Clave incorrecta"})
 		return
 	}
-	json.NewEncoder(w).Encode(map[string]interface{}{"status": "authorized", "node": n.host.ID().String()})
+
+	st := n.loadOperatorState()
+	if alias == "" {
+		alias = st.Alias
+	}
+	if alias == "" {
+		alias = defaultOperatorAlias
+	}
+	peer := ""
+	if n.host != nil {
+		peer = n.host.ID().String()
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":     "authorized",
+		"node":       peer,
+		"alias":      alias,
+		"config_cid": cid,
+		"agent_id":   st.AgentID,
+	})
 }
 
 // =============================================================================
