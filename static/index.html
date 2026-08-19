@@ -528,7 +528,7 @@
         <section id="sec-auditoria" class="admin-section"><h2>Sistema de Auditoría Forense</h2><div class="card"><div style="display:flex; gap:10px; margin-bottom:1rem;"><input id="auditFilter" placeholder="Filtrar por acción..." style="flex:1;"><button class="btn btn-secondary" onclick="loadAuditLog()">🔍 Filtrar</button><button class="btn btn-secondary" onclick="loadAuditLog(true)">🔄 Recargar</button><button class="btn btn-danger" onclick="clearAuditLog()">🗑 Limpiar Log</button></div><div id="auditLog" class="console" style="height:500px;">Cargando auditoría...</div></div></section>
 
         <!-- Web Apps -->
-        <section id="sec-webapps" class="admin-section"><h2>📱 Web Apps</h2><div class="grid-2"><div class="card"><h3>📦 Registrar Nueva App</h3><div class="file-upload-area" id="appUploadArea"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#F4B400" stroke-width="1.5"><path d="M12 3v12m0 0-3-3m3 3 3-3M5 21h14"/></svg><p>Arrastra y suelta una carpeta o selecciona archivos</p><input type="file" id="appFileInput" webkitdirectory directory multiple style="display:none"></div><input type="text" id="appName" placeholder="Nombre de la app"><div style="display: flex; gap: 8px;"><button class="btn btn-secondary" onclick="selectAppFolder()">📂 Seleccionar Carpeta</button><button class="btn btn-primary" onclick="uploadAndRegisterApp()">🚀 Subir y Registrar</button></div><div id="appUploadStatus" class="console" style="margin-top:1rem; font-size:0.7rem; display:none;"></div></div><div class="card"><h3>🗂️ Apps en el Servidor</h3><div class="file-tree" id="serverAppsTree"><div class="loading">Cargando...</div></div><div style="margin-top:12px;"><button class="btn btn-success btn-sm" onclick="refreshServerApps()">🔄 Refrescar</button><button class="btn btn-primary btn-sm" onclick="registerSelectedServerApp()" id="registerServerAppBtn" disabled>✅ Registrar Seleccionada</button></div></div></div><div class="card"><h3>📋 Apps Registradas</h3><div id="registeredAppsList" class="console">Cargando...</div><button class="btn btn-secondary btn-sm" onclick="loadRegisteredApps()">🔄 Actualizar</button></div></section>
+        <section id="sec-webapps" class="admin-section"><h2>📱 Web Apps</h2><div class="grid-2"><div class="card"><h3>📦 Registrar Nueva App</h3><div class="file-upload-area" id="appUploadArea"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#F4B400" stroke-width="1.5"><path d="M12 3v12m0 0-3-3m3 3 3-3M5 21h14"/></svg><p>Arrastra y suelta una carpeta o selecciona archivos</p><input type="file" id="appFileInput" webkitdirectory directory multiple style="display:none"></div><input type="text" id="appName" placeholder="Nombre de la app"><div style="display: flex; gap: 8px;"><button class="btn btn-secondary" onclick="selectAppFolder()">📂 Seleccionar Carpeta</button><button class="btn btn-primary" id="registerAppBtn" onclick="uploadAndRegisterApp()">🚀 Subir y Registrar</button></div><div id="appUploadStatus" class="console" style="margin-top:1rem; font-size:0.7rem; display:none;"></div></div><div class="card"><h3>🗂️ Apps en el Servidor</h3><div class="file-tree" id="serverAppsTree"><div class="loading">Cargando...</div></div><div style="margin-top:12px;"><button class="btn btn-success btn-sm" onclick="refreshServerApps()">🔄 Refrescar</button><button class="btn btn-primary btn-sm" onclick="registerSelectedServerApp()" id="registerServerAppBtn" disabled>✅ Registrar Seleccionada</button></div></div></div><div class="card"><h3>📋 Apps Registradas</h3><div id="registeredAppsList" class="console">Cargando...</div><button class="btn btn-secondary btn-sm" onclick="loadRegisteredApps()">🔄 Actualizar</button></div></section>
 
         <!-- Editor Visual -->
         <section id="sec-editor" class="admin-section">
@@ -793,7 +793,7 @@ async function uploadAndRegisterApp() {
     const statusDiv = document.getElementById('appUploadStatus');
     statusDiv.style.display = 'block';
     statusDiv.innerHTML = '<div class="loading">Subiendo archivos y registrando aplicación...<div class="spinner"></div></div>';
-    document.getElementById('registerAppBtn').disabled = true;
+    const _regBtn = document.getElementById('registerAppBtn'); if (_regBtn) _regBtn.disabled = true;
     
     try {
         const formData = new FormData();
@@ -833,7 +833,7 @@ async function uploadAndRegisterApp() {
         statusDiv.innerHTML = `<div style="color: var(--accent-red);">❌ Error de conexión: ${error.message}</div>`;
         showToast('Error de conexión con el servidor', 'error');
     } finally {
-        document.getElementById('registerAppBtn').disabled = false;
+        const _regBtn2 = document.getElementById('registerAppBtn'); if (_regBtn2) _regBtn2.disabled = false;
     }
 }
 
