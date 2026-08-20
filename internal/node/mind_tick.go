@@ -408,6 +408,10 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string) string {
 	if memSpeak != "" {
 		return memSpeak
 	}
+	// Curated polymath knowledge (structured JSON, not token prediction)
+	if know := speakFromKnowledge(text); know != "" {
+		return know
+	}
 	// Confirm when user just declared a personal fact (will be saved as CID)
 	if isPersonalFact(low) {
 		if name := extractDeclaredName(text); name != "" {

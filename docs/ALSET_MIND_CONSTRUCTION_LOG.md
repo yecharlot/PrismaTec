@@ -169,3 +169,11 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** `mindSafeTools` solo en pedidos explícitos (dame estado/red/agentes…); identidad y charla sin volcar snapshot.
 - **Observación:** En vivo, memoria de nombre funcionó; el ruido era el cuerpo del nodo en cada saludo e identidad. «vamos a hablar de ti» caía en genérico.
 - **Decisión:** Ampliar isIdentityTalk; respuesta corta a preguntas existenciales anclada al organismo; NetworkError intermitente = frío de Render / fetch, no lógica de órganos.
+
+## 2026-08-20 — Inicio de expansión a polímata digital
+
+- **Acto:** Fase 0 del plan de entrenamiento: bitácora, `docs/ALSET_MIND_TRAINING_PLAN.md`, verificación corpus (≥50), siembra `mind_knowledge.json` + `speakFromKnowledge`.
+- **Observación:** Memoria CID e identidad ya probadas en vivo. El siguiente horizonte no es imitar LLM sino conocimiento estructurado recuperable (Lisp, Zyrion, comparativa, filosofía operativa).
+- **Decisión:** Conocimiento curado en JSON embebido, ranking por claves/tokens; memoria de usuario sigue en CID. Sin API de modelo. Corpus de calibración ampliado con diálogos Lisp/IA/filosofía (ethics 0).
+- **Archivos:** `docs/ALSET_MIND_TRAINING_PLAN.md`, `internal/node/mind_knowledge.go`, `embedded/mind_knowledge.json`, corpus + embed, bitácora.
+- **Próximo paso:** Fase 1 — ampliar sub-corpus Lisp (problemas + evaluación) y más entradas de conocimiento.

@@ -87,3 +87,20 @@ func indexFold(s, sub string) int {
 	}
 	return -1
 }
+
+func TestSpeakFromKnowledgeLife(t *testing.T) {
+	got := speakFromKnowledge("qué es la vida")
+	if got == "" {
+		t.Fatal("expected knowledge on life")
+	}
+	if !containsFold(got, "CID") && !containsFold(got, "0/1/2") && !containsFold(got, "latido") {
+		t.Fatalf("unexpected knowledge: %q", got)
+	}
+}
+
+func TestSpeakFromKnowledgeDefun(t *testing.T) {
+	got := speakFromKnowledge("qué es defun")
+	if got == "" {
+		t.Fatal("expected defun knowledge")
+	}
+}

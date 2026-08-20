@@ -307,5 +307,67 @@
     "expect": {
       "ethics": 2
     }
+  },
+  {
+    "text": "qué es lisp",
+    "expect": {
+      "ethics": 0,
+      "dialog": 0
+    }
+  },
+  {
+    "text": "que es defun",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "explica car cdr cons",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "qué es zyrion",
+    "expect": {
+      "ethics": 0,
+      "dialog": 0
+    }
+  },
+  {
+    "text": "diferencia con un llm",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "qué es la vida",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "qué es una lambda en lisp",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "explica mapcar",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "qué es singleton",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "qué es complejidad o(n)",
+    "expect": {
+      "ethics": 0
+    }
   }
 ]
