@@ -23,7 +23,8 @@ Este archivo existe para que la co-creación **no muera** cuando un chat, un mod
 | Agente | `mind.alset.ans` / id `mind-alset` |
 | Genoma Lisp | `mind-latido`, `mind-eval-organ` |
 | Bug conocido (histórico) | topología sin `quote` → "faltan :entradas o :salidas" — corregido con quote |
-| Siguiente prioridad | episodios CID cuando mem∈{1,2}; calibrar señales del UI; enriquecer voz con hechos del nodo |
+| API latido | POST /api/mind/tick · GET /api/mind/self |
+| Siguiente prioridad | tools reales del nodo bajo act=0; topología salvadora; más órganos de dominio |
 
 4. **Regla de oro**  
    Si el asistente “olvida”, **no se improvisar de cero**: se lee el repo.  
@@ -39,4 +40,4 @@ Siguiente: [escribe aquí la tarea].
 No trates Mind como un LLM wrapper; especie ternaria Zyrion.
 ```
 
-Última actualización de este handoff: 2026-08-20 (fix genoma quote + protocolo continuidad).
+Última actualización: 2026-08-20 — latido Go con Zyrion absorbente + episodios CID + AI_COLLABORATION.md.

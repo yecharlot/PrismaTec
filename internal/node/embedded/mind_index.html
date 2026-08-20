@@ -150,22 +150,27 @@ async function latido() {
   inp.value = '';
   add('user', text);
   send.disabled = true;
-  const sig = signalsFromText(text);
-  const cmd = `(mind-latido ${sig.claridad} ${sig.orden} ${sig.riesgo} ${sig.permiso} ${sig.novedad})`;
   try {
-    const res = await fetch('/api/lispai', {
+    const res = await fetch('/api/mind/tick', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cmd })
+      body: JSON.stringify({ text })
     });
     const data = await res.json();
-    if (data.error) {
-      add('mind', 'Genoma aún no cargado o error Lisp: ' + data.error);
+    if (!res.ok) {
+      add('mind', 'Error de latido');
       document.getElementById('status').textContent = 'error';
     } else {
-      const r = data.resultado;
-      paintOrgans(Array.isArray(r) ? r : []);
-      add('mind', voiceFromField(Array.isArray(r) ? r : [], text));
+      const organs = data.organs || [];
+      organs.forEach(o => {
+        const el = document.getElementById('c-' + o.name);
+        if (!el) return;
+        const cls = o.state === 2 ? 's2' : (o.state === 1 ? 's1' : 's0');
+        el.innerHTML = '<strong>' + o.name + '</strong><span class="' + cls + '">' + o.state + ' ' + o.label + '</span>';
+      });
+      let msg = data.voice || 'Latido';
+      if (data.episode_cid) msg += '\n📎 episodio CID: ' + data.episode_cid;
+      add('mind', msg);
       document.getElementById('status').textContent = 'vivo';
     }
   } catch (e) {

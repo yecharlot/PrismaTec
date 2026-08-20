@@ -35,3 +35,11 @@ Formato: fecha · acto · observación · decisión.
 - **Decisión:** `quote` en topología y entorno al estilo del DSL que ya funcionaba en curl.
 - **Continuidad:** creado `docs/ALSET_MIND_HANDOFF.md` para reanudar co-creación tras límites de sesión.
 
+
+## 2026-08-20 — Latido nativo Go + episodios + multi-IA
+
+- **Hecho:** `POST /api/mind/tick` evalúa 5 órganos con sumidero a 2 (misma ley que `zyrion` absorbente), genera voz y opcionalmente **episodio CID** si mem≥1.
+- **Hecho:** UI Mind consume `/api/mind/tick` (no solo Lisp).
+- **Hecho:** `docs/AI_COLLABORATION.md` — cómo otra IA continúa el trabajo; roles Grok/Cursor/Claude.
+- **Nota:** el genoma Lisp sigue disponible; el camino de producción del UI es el tick Go (señales y env más fiables).
+
