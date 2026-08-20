@@ -204,3 +204,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** Dockerfile con GOPROXY, binario -ldflags -s -w, alpine 3.20 fijo, render.yaml de referencia.
 - **Observación:** Deploys fallaban / “service unavailable” en consola; el código compilaba en local. Causa típica: timeout/OOM en build libre de Render, no panic de Mind.
 - **Decisión:** Build más predecible; health check sugerido `/api/v2/info`. Si el dashboard sigue en unavailable, es cola/plataforma: reintentar, clear cache, o upgrade temporal de plan.
+
+## 2026-08-20 — Dockerfile endurecido para deploys Render
+
+- **Acto:** Dockerfile con GOPROXY, binario -ldflags -s -w, alpine 3.20 fijo, render.yaml de referencia.
+- **Observación:** Deploys fallaban / “service unavailable” en consola; el código compilaba en local. Causa típica: timeout/OOM en build libre de Render.
+- **Decisión:** Build más predecible; health check sugerido `/api/v2/info`.
