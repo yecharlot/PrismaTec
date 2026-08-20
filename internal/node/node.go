@@ -161,10 +161,19 @@ func (n *NodoAlset) GenerarCID(data []byte) (string, error) {
 	c, _ := pref.Sum(data)
 	cidStr := c.String()
 	n.mu.Lock()
+	if n.blockstore == nil {
+		n.blockstore = make(map[string][]byte)
+	}
 	n.blockstore[cidStr] = data
 	n.mu.Unlock()
 	_ = os.MkdirAll(BlocksDir, 0755)
 	_ = os.WriteFile(filepath.Join(BlocksDir, cidStr), data, 0644)
+	// Durable store (Supabase or local data dir) — critical on Render redeploy
+	if n.store != nil {
+		if err := n.store.SaveBlock(context.Background(), cidStr, data); err != nil {
+			log.Printf("⚠️ SaveBlock %s: %v", cidStr[:12], err)
+		}
+	}
 	return cidStr, nil
 }
 

@@ -25,8 +25,9 @@ type Store interface {
 
 // Logical keys still used for leftover KV data (names, etc.).
 const (
-	KeyState       = "alset_state.json"
-	KeyNames       = "alset_names.json"
-	KeyBlocks      = "blocks.json"
-	KeyNeuralState = "neural_state.json"
+	KeyState         = "alset_state.json"
+	KeyNames         = "alset_names.json"
+	KeyBlocks        = "blocks.json"
+	KeyNeuralState   = "neural_state.json"
+	KeyMindEpisodes  = "mind_episodes.json" // ring of episode CIDs (survives redeploy if Store is durable)
 )

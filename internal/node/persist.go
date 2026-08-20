@@ -126,7 +126,11 @@ func (n *NodoAlset) CargarEstado() {
 		}
 	}
 	n.mu.Unlock()
-	fmt.Printf("📂 Alset Engine: %d agentes, %d nombres y %d bloques en RAM.\n", len(n.agentes), len(n.nombres), len(n.blockstore))
+
+	// Mind episodic index: restore from Store or rebuild from loaded blocks
+	mindIdx := n.loadMindEpisodeIndex()
+	fmt.Printf("📂 Alset Engine: %d agentes, %d nombres y %d bloques en RAM · mind episodios index=%d.\n",
+		len(n.agentes), len(n.nombres), len(n.blockstore), len(mindIdx.CIDs))
 }
 
 // =============================================================================

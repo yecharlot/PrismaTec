@@ -1,11 +1,15 @@
 package node
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
+
+	"redalset/internal/persistence"
 )
 
 const (
@@ -13,28 +17,37 @@ const (
 	mindEpisodeMaxKeep   = 32
 )
 
-// mindEpisodeIndex is a local ring of recent episode CIDs (efficient, node-local).
+// mindEpisodeIndex is a ring of recent episode CIDs (disk + durable Store).
 type mindEpisodeIndex struct {
 	CIDs      []string `json:"cids"`
 	UpdatedAt int64    `json:"updated_at"`
 }
 
 type mindEpisodePayload struct {
-	Type   string                 `json:"type"`
-	Text   string                 `json:"text"`
-	Signals map[string]float64    `json:"signals"`
-	Voice  string                 `json:"voice"`
-	TS     string                 `json:"ts"`
-	Agent  string                 `json:"agent"`
-	Organs []MindOrganResult      `json:"organs"`
+	Type    string              `json:"type"`
+	Text    string              `json:"text"`
+	Signals map[string]float64  `json:"signals"`
+	Voice   string              `json:"voice"`
+	TS      string              `json:"ts"`
+	Agent   string              `json:"agent"`
+	Organs  []MindOrganResult   `json:"organs"`
 }
 
 func (n *NodoAlset) loadMindEpisodeIndex() mindEpisodeIndex {
 	var idx mindEpisodeIndex
-	b, err := os.ReadFile(mindEpisodeIndexFile)
-	if err == nil {
-		_ = json.Unmarshal(b, &idx)
+	// 1) Durable store (Supabase / local data dir) — survives Render redeploy when Store is not ephemeral-only
+	if n.store != nil {
+		if b, err := n.store.Load(context.Background(), persistence.KeyMindEpisodes); err == nil && len(b) > 0 {
+			_ = json.Unmarshal(b, &idx)
+		}
 	}
+	// 2) Local file (same process lifetime / local dev)
+	if len(idx.CIDs) == 0 {
+		if b, err := os.ReadFile(mindEpisodeIndexFile); err == nil {
+			_ = json.Unmarshal(b, &idx)
+		}
+	}
+	// 3) Rebuild from blockstore (after LoadBlocks on boot)
 	if len(idx.CIDs) == 0 {
 		idx = n.rebuildMindEpisodeIndexFromBlockstore()
 		if len(idx.CIDs) > 0 {
@@ -91,14 +104,23 @@ func (n *NodoAlset) rebuildMindEpisodeIndexFromBlockstore() mindEpisodeIndex {
 
 func (n *NodoAlset) saveMindEpisodeIndex(idx mindEpisodeIndex) {
 	idx.UpdatedAt = time.Now().Unix()
-	if len(idx.CIDs) > mindEpisodeMaxKeep {
-		idx.CIDs = idx.CIDs[len(idx.CIDs)-mindEpisodeMaxKeep:]
+	keep := mindEpisodeMaxKeep
+	if g := getMindGenome(); g.EpisodeKeep > 0 {
+		keep = g.EpisodeKeep
+	}
+	if len(idx.CIDs) > keep {
+		idx.CIDs = idx.CIDs[len(idx.CIDs)-keep:]
 	}
 	b, err := json.MarshalIndent(idx, "", "  ")
 	if err != nil {
 		return
 	}
 	_ = os.WriteFile(mindEpisodeIndexFile, b, 0600)
+	if n.store != nil {
+		if err := n.store.Save(context.Background(), persistence.KeyMindEpisodes, b); err != nil {
+			log.Printf("⚠️ mind episodes index Save: %v", err)
+		}
+	}
 }
 
 func (n *NodoAlset) appendMindEpisodeCID(cid string) {

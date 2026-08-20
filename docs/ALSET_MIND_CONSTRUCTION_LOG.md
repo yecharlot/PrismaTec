@@ -191,3 +191,10 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** `cmd/prisma-tec/main.go` lee `PORT` del entorno antes de argv/8080.
 - **Observación:** Tras deploys recientes, https://prismatec.onrender.com devolvía 502; el binario compila y arranca en local (Mind semilla OK). Render asigna puerto dinámico vía env; escuchar solo 8080 puede dejar el proxy sin backend.
 - **Decisión:** Prioridad PORT env → argv → 8080. Si sigue 502, revisar logs de build/runtime en el dashboard (OOM, health check).
+
+## 2026-08-20 — Memoria episódica durable (Store + índice)
+
+- **Acto:** Índice `mind_episodes` y bloques CID se guardan en `persistence.Store` (Save + SaveBlock). Load en boot: Store → archivo → rebuild desde blockstore.
+- **Observación:** En Render el disco es efímero; sin Store durable (Supabase) el índice y los bloques se pierden en cada deploy.
+- **Decisión:** `GenerarCID` hace SaveBlock inmediato; `saveMindEpisodeIndex` escribe disco + `KeyMindEpisodes`. En producción: configurar `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` para que la memoria sobreviva redeploys.
+- **Archivos:** `mind_memory.go`, `node.go` GenerarCID, `persist.go` CargarEstado, `persistence/store.go` KeyMindEpisodes.

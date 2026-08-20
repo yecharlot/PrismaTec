@@ -38,3 +38,13 @@ Tras un episodio con `mem≥1`, el tick puede anotar `+genome_mut` en `note` si 
 ## HyperIA Pro
 
 Los mismos endpoints alimentan cualquier cara rica. La UI Mind actual es el laboratorio mínimo; HyperIA puede componer paneles equivalentes con más diseño sin tocar el motor.
+
+## Persistencia de memoria (Render)
+
+El filesystem de Render se borra en cada deploy. Para que los episodios CID y el índice sobrevivan:
+
+1. Configura en el servicio Render: `SUPABASE_URL` y `SUPABASE_SERVICE_KEY`.
+2. Tablas usadas: `alset_kv` (índice `mind_episodes.json`), `alset_blocks` (payloads por CID).
+3. Sin Supabase, la memoria solo dura mientras el proceso viva (o en disco local en desarrollo).
+
+Tras un deploy con Supabase, `GET /api/mind/memory` debe listar episodios previos.
