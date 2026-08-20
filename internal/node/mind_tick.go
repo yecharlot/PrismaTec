@@ -179,6 +179,19 @@ func signalsFromTextMind(t string) map[string]float64 {
 		riesgo = 0.15
 		permiso = 0.9
 	}
+	if strings.Contains(s, "zyrion") || strings.Contains(s, "evalua") || strings.Contains(s, "evalúa") ||
+		strings.Contains(s, "checkpoint") || strings.Contains(s, "topolog") {
+		orden = 0.45
+		riesgo = 0.12
+		permiso = 0.9
+		claridad = 0.8
+		novedad = 0.55
+	}
+	if strings.Contains(s, "red") || strings.Contains(s, "peer") || strings.Contains(s, "network") {
+		orden = 0.25
+		riesgo = 0.12
+		permiso = 0.9
+	}
 	return map[string]float64{
 		"claridad": claridad,
 		"orden":    orden,
@@ -221,7 +234,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	// Ethics 2 absorbs action
 	if ethics.State == 2 && act.State != 2 {
 		act.State = 2
-		act.Label = "VETO"
+		act.Label = labelForOrgan("act", 2)
 	}
 
 	organs := []MindOrganResult{dialog, act, mem, self, ethics}
@@ -296,7 +309,7 @@ func mindVoice(text string, organs []MindOrganResult) string {
 }
 
 
-// mindSafeTools runs read-only node introspection for calm / status turns.
+// mindSafeTools runs read-only node introspection and Zyrion demos.
 func (n *NodoAlset) mindSafeTools(text string) string {
 	s := strings.ToLower(strings.TrimSpace(text))
 	wantStatus := strings.Contains(s, "estado") || strings.Contains(s, "status") ||
@@ -304,10 +317,25 @@ func (n *NodoAlset) mindSafeTools(text string) string {
 		strings.Contains(s, "qué puedes") || strings.Contains(s, "que puedes") ||
 		strings.Contains(s, "self") || strings.Contains(s, "agentes") || strings.Contains(s, "peers") ||
 		strings.Contains(s, "apps") || strings.Contains(s, "nombres") || strings.Contains(s, "mind") ||
+		strings.Contains(s, "red") || strings.Contains(s, "network") ||
 		s == "hola" || strings.HasPrefix(s, "dame ")
-	if !wantStatus {
+	wantZyrion := strings.Contains(s, "zyrion") || strings.Contains(s, "evalua") ||
+		strings.Contains(s, "evalúa") || strings.Contains(s, "checkpoint") || strings.Contains(s, "topolog")
+	if !wantStatus && !wantZyrion {
 		return ""
 	}
+
+	var lines []string
+	if wantStatus {
+		lines = append(lines, n.mindBodySnapshot(s)...)
+	}
+	if wantZyrion {
+		lines = append(lines, n.mindZyrionDemo(s)...)
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (n *NodoAlset) mindBodySnapshot(s string) []string {
 	n.mu.RLock()
 	nAgents := len(n.agentes)
 	nNames := len(n.nombres)
@@ -332,11 +360,16 @@ func (n *NodoAlset) mindSafeTools(text string) string {
 	n.mu.RUnlock()
 	peers := 0
 	peerID := ""
+	addrs := ""
 	if n.host != nil {
 		peers = len(n.host.Network().Peers())
 		peerID = n.host.ID().String()
-		if len(peerID) > 20 {
-			peerID = peerID[:20] + "…"
+		if len(peerID) > 22 {
+			peerID = peerID[:22] + "…"
+		}
+		for _, a := range n.host.Addrs() {
+			addrs = a.String()
+			break
 		}
 	}
 	apps := []string{}
@@ -356,6 +389,9 @@ func (n *NodoAlset) mindSafeTools(text string) string {
 		fmt.Sprintf("agentes: %d · DNS: %d · apps: %d", nAgents, nNames, len(apps)),
 		fmt.Sprintf("Mind: %s · id: %s · root: %s", mindAlias, mindAgentID, root),
 	}
+	if addrs != "" {
+		lines = append(lines, "listen: "+addrs)
+	}
 	if len(apps) > 0 {
 		lines = append(lines, "apps: "+strings.Join(apps, ", "))
 	}
@@ -369,7 +405,36 @@ func (n *NodoAlset) mindSafeTools(text string) string {
 			lines = append(lines, "nombres: "+strings.Join(nameSamples, ", "))
 		}
 	}
-	return strings.Join(lines, "\n")
+	if strings.Contains(s, "red") || strings.Contains(s, "peer") || strings.Contains(s, "network") {
+		lines = append(lines, fmt.Sprintf("red: peers activos=%d (relay puede estar solo)", peers))
+	}
+	return lines
+}
+
+func (n *NodoAlset) mindZyrionDemo(s string) []string {
+	lines := []string{"—— Zyrion (campo nativo) ——"}
+	if n.lisp == nil {
+		return append(lines, "LispAI no disponible en este proceso")
+	}
+	// Three damage scenarios for DNA-style checkpoint (same DSL as API demos)
+	cases := []struct {
+		name string
+		cmd  string
+	}{
+		{"daño bajo", `(evaluar-zyrion (quote (CHECKPOINT-ADN :entradas (p53 MDM2 BAX) :salidas ((0 APOPTOSIS) (1 REPARACION) (2 CHECKPOINT)))) (quote (p53 0.2 MDM2 0.8 BAX 0.1)))`},
+		{"daño medio", `(evaluar-zyrion (quote (CHECKPOINT-ADN :entradas (p53 MDM2 BAX) :salidas ((0 APOPTOSIS) (1 REPARACION) (2 CHECKPOINT)))) (quote (p53 0.6 MDM2 0.5 BAX 0.4)))`},
+		{"daño alto", `(evaluar-zyrion (quote (CHECKPOINT-ADN :entradas (p53 MDM2 BAX) :salidas ((0 APOPTOSIS) (1 REPARACION) (2 CHECKPOINT)))) (quote (p53 0.9 MDM2 0.2 BAX 0.8)))`},
+	}
+	for _, c := range cases {
+		res, err := n.lisp.Eval(c.cmd)
+		if err != nil {
+			lines = append(lines, fmt.Sprintf("%s: error %v", c.name, err))
+			continue
+		}
+		lines = append(lines, fmt.Sprintf("%s → %v", c.name, res))
+	}
+	lines = append(lines, "ley: 0 seguir · 1 matizar · 2 sumidero (absorbente)")
+	return lines
 }
 
 func (n *NodoAlset) handleMindTick(w http.ResponseWriter, r *http.Request) {

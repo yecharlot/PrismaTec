@@ -66,3 +66,11 @@ Formato: fecha · acto · observación · decisión.
 - Triggers de introspección: «dame …», estado, apps, mind, hola.
 - Handoff DeepSeek sigue en `docs/DEEPSEEK_HANDOFF.md`.
 
+
+## 2026-08-20 — Zyrion bajo demanda + cuerpo de red
+
+- Intent «evalua zyrion» / checkpoint ejecuta tres escenarios ADN vía LispAI en el nodo.
+- «dame red» / peers en snapshot de cuerpo.
+- Señales de evaluación Zyrion tratadas como lectura segura (bajo riesgo).
+- Avance hacia el pacto: mente que opera el sustrato (Zyrion+cuerpo), no solo chatea.
+
