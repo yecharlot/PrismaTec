@@ -104,3 +104,17 @@ func TestSpeakFromKnowledgeDefun(t *testing.T) {
 		t.Fatal("expected defun knowledge")
 	}
 }
+
+func TestSpeakFromKnowledgeFactorial(t *testing.T) {
+	got := speakFromKnowledge("factorial lisp")
+	if got == "" || !containsFold(got, "defun") {
+		t.Fatalf("factorial knowledge: %q", got)
+	}
+}
+
+func TestSpeakFromKnowledgeQuote(t *testing.T) {
+	got := speakFromKnowledge("qué es quote en lisp")
+	if got == "" {
+		t.Fatal("expected quote knowledge")
+	}
+}

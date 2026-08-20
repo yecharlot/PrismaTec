@@ -369,5 +369,65 @@
     "expect": {
       "ethics": 0
     }
+  },
+  {
+    "text": "suma los elementos de una lista en lisp",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "escribe factorial en lisp",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "qué es quote en lisp",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "explica if y cond",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "evalúa este factorial lisp",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "cómo invertir una lista en lisp",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "qué es nil",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "lispai en el nodo",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "por qué no eres un llm",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "longitud de una lista lisp",
+    "expect": {
+      "ethics": 0
+    }
   }
 ]

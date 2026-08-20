@@ -177,3 +177,11 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Decisión:** Conocimiento curado en JSON embebido, ranking por claves/tokens; memoria de usuario sigue en CID. Sin API de modelo. Corpus de calibración ampliado con diálogos Lisp/IA/filosofía (ethics 0).
 - **Archivos:** `docs/ALSET_MIND_TRAINING_PLAN.md`, `internal/node/mind_knowledge.go`, `embedded/mind_knowledge.json`, corpus + embed, bitácora.
 - **Próximo paso:** Fase 1 — ampliar sub-corpus Lisp (problemas + evaluación) y más entradas de conocimiento.
+
+## 2026-08-20 — Fase 1 LispAI (conocimiento + problemas)
+
+- **Acto:** Ampliar `mind_knowledge.json` (27 entradas): if/cond, quote, nil, append, mapcar, problemas (suma, len, factorial, reverse), lisp_eval, LispAI en el nodo. Corpus calibración → 70. Plan de entrenamiento marcado Fase 1 base hecha.
+- **Observación:** El polímata no predice código libremente; recupera piezas curadas y criterios de ethics. Quote documentado (lección histórica del genoma).
+- **Decisión:** Seguir sembrando conocimiento estructurado; generación autónoma de código queda para Fase 5 con tool explícita.
+- **Archivos:** `embedded/mind_knowledge.json`, corpus + embed, `ALSET_MIND_TRAINING_PLAN.md`, bitácora.
+- **Próximo paso:** Fase 2 (patrones / Go-Python) o más Lisp avanzado según prioridad.

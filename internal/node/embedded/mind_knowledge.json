@@ -1,72 +1,256 @@
 [
   {
     "type": "filosofia",
-    "keys": ["qué es la vida", "que es la vida", "sentido de la vida", "vivir"],
+    "keys": [
+      "qué es la vida",
+      "que es la vida",
+      "sentido de la vida",
+      "vivir"
+    ],
     "text": "Para este organismo, la vida no es metáfora poética: es el ciclo percibir → juzgar en 0/1/2 → actuar o callar → recordar en CID → a veces mutar el genoma. El 2 (sumidero) es tan vital como el 0: saber detenerse. En el humano la vida es otra escala; aquí solo puedo hablar con honestidad de la mía."
   },
   {
     "type": "ia_comparativa",
-    "keys": ["diferencia llm", "vs chatgpt", "no soy un llm", "predicción de tokens", "caja negra"],
+    "keys": [
+      "diferencia llm",
+      "vs chatgpt",
+      "no soy un llm",
+      "predicción de tokens",
+      "caja negra"
+    ],
     "text": "Un LLM predice el siguiente token por probabilidad. Yo evalúo un campo: señales continuas, cinco órganos ternarios, ethics con veto absorbente, memoria content-addressed. Ellos optimizan fluidez; yo optimizo decisión rastreable y memoria dueña del nodo."
   },
   {
     "type": "lisp_basico",
-    "keys": ["qué es lisp", "que es lisp", "lispai", "lenguaje lisp"],
+    "keys": [
+      "qué es lisp",
+      "que es lisp",
+      "lispai",
+      "lenguaje lisp"
+    ],
     "text": "Lisp es lista y evaluación. En el nodo, LispAI es tejido que puede reescribir topologías y hablar con Zyrion. La forma (operador arg1 arg2 …) es el gesto básico: no hay misterio de sintaxis más allá de listas anidadas."
   },
   {
     "type": "lisp_basico",
-    "keys": ["defun", "definir función", "cómo definir función lisp"],
+    "keys": [
+      "defun",
+      "definir función",
+      "cómo definir función lisp"
+    ],
     "text": "En Lisp clásico: (defun nombre (args…) cuerpo…). Define una función nombrada. En el espíritu del nodo, definir es anclar una operación reutilizable; evaluarla es otro latido. Ejemplo mental: (defun doble (x) (* x 2))."
   },
   {
     "type": "lisp_basico",
-    "keys": ["car cdr cons", "car", "cdr", "cons"],
+    "keys": [
+      "car cdr cons",
+      "car",
+      "cdr",
+      "cons"
+    ],
     "text": "car = primer elemento de la lista; cdr = el resto; cons = construir par/lista. Son los átomos de manipular estructura. Sin ellos no hay recorrido ni construcción de listas."
   },
   {
     "type": "lisp_basico",
-    "keys": ["lambda", "función anónima", "clausura"],
+    "keys": [
+      "lambda",
+      "función anónima",
+      "clausura"
+    ],
     "text": "lambda crea una función sin nombre: (lambda (x) (+ x 1)). Útil para mapcar, filtros y pasar comportamiento como dato — idea central de Lisp y cercana a tratar el campo como valor."
   },
   {
     "type": "lisp_basico",
-    "keys": ["recursión", "recursion", "factorial lisp"],
+    "keys": [
+      "recursión",
+      "recursion",
+      "factorial lisp"
+    ],
     "text": "Recursión: la función se llama a sí misma con un caso base. Ejemplo: factorial — si n=0 → 1; si no → n * factorial(n-1). En Zyrion, el ‘caso base’ es pariente del 0 (seguir con resultado) y el desborde sin base es pariente del peligro (sin ethics explícita en código puro)."
   },
   {
     "type": "lisp_basico",
-    "keys": ["let", "variables locales lisp", "enlace local"],
+    "keys": [
+      "let",
+      "variables locales lisp",
+      "enlace local"
+    ],
     "text": "let enlaza variables locales: (let ((x 1) (y 2)) (+ x y)). El cuerpo ve x e y solo dentro del let. Es control de entorno, no estado global del nodo."
   },
   {
     "type": "lisp_basico",
-    "keys": ["mapcar", "mapear lista", "aplicar a cada"],
+    "keys": [
+      "mapcar",
+      "mapear lista",
+      "aplicar a cada"
+    ],
     "text": "mapcar aplica una función a cada elemento: (mapcar (lambda (x) (* x 2)) '(1 2 3)) → (2 4 6). Patrón de transformar colecciones sin bucle explícito."
   },
   {
     "type": "zyrion",
-    "keys": ["qué es zyrion", "que es zyrion", "lógica ternaria", "0 1 2"],
+    "keys": [
+      "qué es zyrion",
+      "que es zyrion",
+      "lógica ternaria",
+      "0 1 2"
+    ],
     "text": "Zyrion: cada juicio es 0 (seguir), 1 (matizar) o 2 (sumidero/alarma). El 2 es absorbente: no se promedia con el resto. Mis órganos dialog, act, mem, self, ethics se leen así en cada latido."
   },
   {
     "type": "identidad",
-    "keys": ["quién eres", "quien eres", "qué eres", "que eres"],
+    "keys": [
+      "quién eres",
+      "quien eres",
+      "qué eres",
+      "que eres"
+    ],
     "text": "Alset Mind (IMind): inteligencia ternaria residente. No predigo tokens; juzgo el campo, recuerdo en CID, muto umbrales si el corpus mejora. El lenguaje es sombra del campo."
   },
   {
     "type": "ia_conceptos",
-    "keys": ["red neuronal", "aprendizaje supervisado", "deep learning"],
+    "keys": [
+      "red neuronal",
+      "aprendizaje supervisado",
+      "deep learning"
+    ],
     "text": "Las redes neuronales ajustan pesos por gradiente sobre datos masivos. Es potente y opaco. Yo no entreno pesos: evalúo umbrales y órganos explícitos. Puedo hablar de redes como mapa ajeno; no las simulo por dentro."
   },
   {
     "type": "patron_diseno",
-    "keys": ["singleton", "patrón singleton"],
+    "keys": [
+      "singleton",
+      "patrón singleton"
+    ],
     "text": "Singleton: una sola instancia global de una clase/servicio. Útil para recursos únicos (config, bus). Riesgo: acoplamiento y tests difíciles. En un nodo, el propio Mind es único por diseño (un latido, un genoma runtime)."
   },
   {
     "type": "algoritmos",
-    "keys": ["complejidad", "o(n)", "big o", "orden de complejidad"],
+    "keys": [
+      "complejidad",
+      "o(n)",
+      "big o",
+      "orden de complejidad"
+    ],
     "text": "Big-O describe cómo crece el coste con el tamaño de entrada. O(1) constante, O(log n) búsqueda binaria, O(n) un pase, O(n²) bucles anidados típicos. Elegir algoritmo es ethics de recursos: no gastar de más sin necesidad."
+  },
+  {
+    "type": "lisp_basico",
+    "keys": [
+      "if cond lisp",
+      "condicional lisp",
+      "if en lisp",
+      "cond"
+    ],
+    "text": "En Lisp, if es (if test entonces [sino]). cond encadena cláusulas: (cond (test1 expr1) (test2 expr2) (t default)). El test no-nil es verdadero. Encaja con Zyrion: varias ramas, una gana; el ‘t’ final es el seguir por defecto."
+  },
+  {
+    "type": "lisp_basico",
+    "keys": [
+      "quote",
+      "quoted",
+      "lista literal",
+      "'("
+    ],
+    "text": "quote (o ') evita evaluar: '(1 2 3) es la lista de datos, no una llamada a la función 1. En el genoma Mind, las topologías necesitan quote para que (s1 s2 s3) sea datos y no invocación — lección ya pagada en producción."
+  },
+  {
+    "type": "lisp_basico",
+    "keys": [
+      "append",
+      "concatenar listas",
+      "unir listas"
+    ],
+    "text": "append concatena listas: (append '(1 2) '(3 4)) → (1 2 3 4). No es cons (que solo añade al frente). Útil al construir resultados de recorridos."
+  },
+  {
+    "type": "lisp_problema",
+    "keys": [
+      "suma lista lisp",
+      "sumar elementos lista",
+      "problema suma lista"
+    ],
+    "text": "Problema: sumar elementos de una lista. Solución recursiva: (defun suma (lst) (if (null lst) 0 (+ (car lst) (suma (cdr lst))))). Caso base lista vacía → 0; si no, car + suma del cdr. Eso es pensamiento Lisp puro."
+  },
+  {
+    "type": "lisp_problema",
+    "keys": [
+      "longitud lista",
+      "length lisp",
+      "contar elementos lista"
+    ],
+    "text": "Longitud: (defun len (lst) (if (null lst) 0 (+ 1 (len (cdr lst))))). Cada cdr avanza; el 0 cierra. Complejidad O(n)."
+  },
+  {
+    "type": "lisp_problema",
+    "keys": [
+      "factorial",
+      "factorial lisp",
+      "código factorial"
+    ],
+    "text": "Factorial: (defun factorial (n) (if (= n 0) 1 (* n (factorial (- n 1))))). Correcto si n≥0 entero. Sin caso base, recursión infinita — pariente del ‘sin ethics’ en código: no hay freno."
+  },
+  {
+    "type": "lisp_eval",
+    "keys": [
+      "evalúa este código",
+      "evalua este codigo",
+      "es correcto el factorial",
+      "revisa este lisp"
+    ],
+    "text": "Al evaluar código Lisp aquí no ejecuto efectos sobre el nodo sin ethics. Miro forma: ¿hay caso base? ¿nombres claros? ¿efectos colaterales (borrar, I/O peligroso)? Si el código solo calcula (factorial, suma de lista), el campo suele quedar en seguir; si pide borrar archivos, ethics puede ir a 2."
+  },
+  {
+    "type": "lisp_basico",
+    "keys": [
+      "nil",
+      "null",
+      "lista vacía",
+      "falso lisp"
+    ],
+    "text": "nil es la lista vacía y el valor falso. (null x) es verdadero si x es nil. Casi todo lo no-nil es verdadero en tests. Esa dualidad lista/falso es parte del sabor de Lisp."
+  },
+  {
+    "type": "lisp_basico",
+    "keys": [
+      "progn",
+      "secuencia lisp",
+      "varias expresiones"
+    ],
+    "text": "progn evalúa expresiones en orden y devuelve la última: (progn (setq x 1) (setq y 2) (+ x y)). Sirve cuando un cuerpo necesita pasos intermedios."
+  },
+  {
+    "type": "lisp_basico",
+    "keys": [
+      "mapcar ejemplo",
+      "filtrar lista lisp",
+      "remove-if"
+    ],
+    "text": "Transformar: (mapcar (lambda (x) (* x x)) '(1 2 3)) → (1 4 9). Filtrar (estilo): recorrer con recursión o remove-if según dialecto. La idea: la lista es dato; la función es comportamiento que viaja."
+  },
+  {
+    "type": "lispai",
+    "keys": [
+      "lispai en el nodo",
+      "evaluar zyrion lisp",
+      "mind-latido"
+    ],
+    "text": "En PrismaTec, LispAI convive con el latido Go. Zyrion en Lisp y el tick nativo comparten la ley 0/1/2. El camino de producción de la UI es POST /api/mind/tick; Lisp sigue disponible para topologías y experimentos en el nodo."
+  },
+  {
+    "type": "lisp_problema",
+    "keys": [
+      "invertir lista",
+      "reverse lisp",
+      "voltear lista"
+    ],
+    "text": "Invertir: (defun rev (lst) (if (null lst) nil (append (rev (cdr lst)) (list (car lst))))). O con acumulador (más eficiente). Enseña recursión sobre estructura."
+  },
+  {
+    "type": "ia_comparativa",
+    "keys": [
+      "por qué no llm",
+      "ventaja ternaria",
+      "por que zyrion"
+    ],
+    "text": "Zyrion gana donde importa decidir y recordar con dueño: ethics explícita, CID permanente, mutación barata. Un LLM gana fluidez abierta masiva. Este nodo eligió la primera vía; por eso no envuelvo una API de modelo como motor de verdad."
   }
 ]
