@@ -163,3 +163,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** `speakFromMemory` + hechos personales → episodio CID forzado; consultas «cómo me llamo / qué te dije» recuperan el contenido en la voz.
 - **Observación:** El TF-IDF solo sesgaba señales; un LLM olvida fuera de contexto. Había que demostrar recuerdo permanente en diálogo.
 - **Decisión:** `extractDeclaredName`, `isPersonalFact`, `isMemoryQuery`; recall profundo (24) en consultas de memoria; voz prioriza recuerdo hablado sobre menú. Tests de nombre. Sin API de LLM.
+
+## 2026-08-20 — Diálogo limpio: sin cuerpo en cada hola
+
+- **Acto:** `mindSafeTools` solo en pedidos explícitos (dame estado/red/agentes…); identidad y charla sin volcar snapshot.
+- **Observación:** En vivo, memoria de nombre funcionó; el ruido era el cuerpo del nodo en cada saludo e identidad. «vamos a hablar de ti» caía en genérico.
+- **Decisión:** Ampliar isIdentityTalk; respuesta corta a preguntas existenciales anclada al organismo; NetworkError intermitente = frío de Render / fetch, no lógica de órganos.

@@ -269,7 +269,10 @@ func isIdentityTalk(s string) bool {
 		strings.Contains(s, "cuentame") || strings.Contains(s, "explicame") ||
 		strings.Contains(s, "explícame") || strings.Contains(s, "como funcionas") ||
 		strings.Contains(s, "cómo funcionas") || strings.Contains(s, "qué es zyrion") ||
-		strings.Contains(s, "que es zyrion")
+		strings.Contains(s, "que es zyrion") || strings.Contains(s, "hablar de ti") ||
+		strings.Contains(s, "hablamos de ti") || strings.Contains(s, "hablemos de ti") ||
+		strings.Contains(s, "vamo") && strings.Contains(s, "de ti") ||
+		strings.Contains(s, "te llamas") || strings.Contains(s, "tu nombre")
 }
 
 // evalOrganPolar applies per-slot polarity: "H" alarm if high, "L" alarm if low.
@@ -421,13 +424,18 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string) string {
 		if strings.Contains(low, "zyrion") {
 			return "Zyrion es la primitiva: cada señal se vuelve 0, 1 o 2; el 2 es absorbente (alarma que no se diluye). Mis órganos (dialog, act, mem, self, ethics) se evalúan así en cada latido."
 		}
+		if strings.Contains(low, "te llamas") || strings.Contains(low, "tu nombre") {
+			return "Sí: Alset Mind (IMind). Inteligencia ternaria residente aquí. Tú puedes darme hechos tuyos («me llamo…») y los guardo en CID; yo no cambio de nombre por sugerencia, el alias del nodo es mind.alset.ans."
+		}
 		if strings.Contains(low, "puedes") || strings.Contains(low, "sirves") || strings.Contains(low, "sabes") {
-			return "Puedo leer el cuerpo del nodo (agentes, peers, apps), evaluar Zyrion, recordar episodios relevantes en CID y, si mejora el corpus, mutar umbrales del genoma. No invento hechos ni ejecuto borrados. ¿Qué quieres explorar?"
+			return "Puedo conversar, recordar hechos en CID, leer el nodo si lo pides («dame estado»), evaluar Zyrion y mutar umbrales si el corpus mejora. No invento hechos ni ejecuto borrados. ¿Por dónde seguimos?"
 		}
-		if strings.Contains(low, "funcionas") || strings.Contains(low, "explic") || strings.Contains(low, "cuéntame") || strings.Contains(low, "cuentame") {
-			return "En cada mensaje: percibo señales → cinco órganos en lógica ternaria → voz. Si mem marca relevancia, guardo episodio; a veces pruebo una mutación acotada del genoma. Ethics puede vetar todo lo demás. Así late el organismo."
+		if strings.Contains(low, "funcionas") || strings.Contains(low, "explic") || strings.Contains(low, "cuéntame") ||
+			strings.Contains(low, "cuentame") || strings.Contains(low, "hablar de ti") ||
+			strings.Contains(low, "de ti") {
+			return "En cada mensaje: señales → cinco órganos ternarios → voz. Si algo importa, va a episodio CID; a veces el genoma muta si mejora la calibración. Ethics puede cortar todo. Hablar de mí es hablar de ese campo, no de una personalidad inventada."
 		}
-		return "Soy Alset Mind — inteligencia ternaria residente en este nodo. No predigo tokens: juzgo el campo (seguir / matizar / vetar), recuerdo en IPFS y evoluciono umbrales si el corpus lo respalda. Puedes hablarme en natural o pedir el cuerpo del nodo."
+		return "Soy Alset Mind — inteligencia ternaria residente en este nodo. No predigo tokens: juzgo el campo (seguir / matizar / vetar), recuerdo en CID y evoluciono umbrales si el corpus lo respalda. Habla en natural; pide «dame estado» solo si quieres el cuerpo del nodo."
 	}
 
 	// Node body / tools intents — short lead-in; snapshot comes from mindSafeTools
@@ -476,26 +484,31 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string) string {
 		return "Te escucho. Marcó relevancia para memoria; si se graba el episodio, el genoma podría probar un ajuste. Sigue, o dime si quieres el estado del nodo."
 	}
 
-	// Generic open dialogue — still human, still field-anchored
+	// Open / philosophical questions — short, field-anchored (not an LLM essay)
+	if strings.Contains(low, "qué es la vida") || strings.Contains(low, "que es la vida") ||
+		strings.Contains(low, "sentido de la vida") || strings.Contains(low, "qué es el amor") ||
+		strings.Contains(low, "que es el amor") {
+		return "Desde este organismo no respondo con poesía generada: la «vida» aquí es latido — percibir, juzgar 0/1/2, recordar en CID y, a veces, mutar. En el humano es otra escala. Si quieres filosofía profunda, tráela tú; yo sostengo el campo y la memoria."
+	}
 	if strings.Contains(low, "?") || strings.HasPrefix(low, "qué") || strings.HasPrefix(low, "que") ||
 		strings.HasPrefix(low, "cómo") || strings.HasPrefix(low, "como") || strings.HasPrefix(low, "por") {
-		return "Buena pregunta. Desde este campo: puedo anclarme a lo que soy (ternario, memoria CID, genoma) o mirar el nodo contigo. Reformúlala un poco si quieres detalle técnico, o sigue en charla."
+		return "Te escucho. Puedo anclarme a lo que soy (ternario, memoria CID, genoma), recuperar lo que guardamos, o mirar el nodo si lo pides. Sigue con la pregunta en tus palabras."
 	}
 
-	return "Te leo. Campo en seguir. Puedes seguir hablando en natural, preguntarme por mí, o pedir una lectura del nodo."
+	return "Te leo. Sigo en el campo. Habla, pregunta o pide algo concreto del nodo cuando quieras."
 }
 
 
 // mindSafeTools runs read-only node introspection and Zyrion demos.
+// Only on explicit body requests — never on pure greetings or identity chat.
 func (n *NodoAlset) mindSafeTools(text string) string {
 	s := strings.ToLower(strings.TrimSpace(text))
 	wantStatus := strings.Contains(s, "estado") || strings.Contains(s, "status") ||
-		strings.Contains(s, "quién eres") || strings.Contains(s, "quien eres") ||
-		strings.Contains(s, "qué puedes") || strings.Contains(s, "que puedes") ||
-		strings.Contains(s, "self") || strings.Contains(s, "agentes") || strings.Contains(s, "peers") ||
-		strings.Contains(s, "apps") || strings.Contains(s, "nombres") || strings.Contains(s, "mind") ||
+		strings.Contains(s, "agentes") || strings.Contains(s, "peers") ||
+		strings.Contains(s, "apps") || strings.Contains(s, "nombres") ||
 		strings.Contains(s, "red") || strings.Contains(s, "network") ||
-		s == "hola" || strings.HasPrefix(s, "dame ")
+		strings.Contains(s, "cuerpo del nodo") || strings.Contains(s, "snapshot") ||
+		strings.HasPrefix(s, "dame ") || s == "dame"
 	wantZyrion := strings.Contains(s, "zyrion") || strings.Contains(s, "evalua") ||
 		strings.Contains(s, "evalúa") || strings.Contains(s, "checkpoint") || strings.Contains(s, "topolog")
 	if !wantStatus && !wantZyrion {
