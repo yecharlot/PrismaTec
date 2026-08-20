@@ -320,11 +320,20 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 		}
 	}
 	if !isMemoryQuery(q) {
-		// Soft echo on strong overlap even without explicit "recuerdas"
+		// Proactive recall: threshold scales with MemoryActiveWeight
+		g := getMindGenome()
+		w := g.MemoryActiveWeight
+		if w <= 0 {
+			w = 0.7
+		}
+		need := int(3.5 - w*2) // weight 1 → need ~1; weight 0.5 → need 2
+		if need < 1 {
+			need = 1
+		}
 		rel, score := bestEpisodeOverlap(query, episodes)
-		if score >= 3 && rel != "" {
+		if score >= need && rel != "" {
 			snip := truncateRunes(rel, 100)
-			return "Esto resuena con un episodio previo: «" + snip + "». ¿Seguimos desde ahí?"
+			return "Recuerdo un episodio relacionado: «" + snip + "». ¿Seguimos desde ahí?"
 		}
 		return ""
 	}
