@@ -33,7 +33,8 @@ ESTADO AL CERRAR HANDOFF GROK (2026-08-20):
 - VETO ethics en pedidos peligrosos; saludos deben ir a SEGUIR (polaridad + absorbente suavizado)
 - Episodios CID si mem relevante
 - Tools de solo lectura (estado/agentes/peers) cuando act/ethics no vetan
-- Siguiente hito sugerido: más tools seguras (listar apps, eval zyrion bajo demanda); topología salvadora; no ejecutar borrados nunca desde Mind sin operador autenticado
+- Escalado labels + mindSafeTools (apps/agentes/peers)
+- Siguiente hito sugerido: topología salvadora en ethics; tool evaluar-zyrion bajo demanda; tests unitarios de polaridad; no ejecutar borrados desde Mind sin operador
 
 Tu primera respuesta debe: (1) resumir el estado en 10 líneas, (2) proponer UN solo siguiente cambio concreto, (3) implementarlo si tienes acceso al repo o dar el diff completo.
 ```

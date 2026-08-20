@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -97,6 +99,53 @@ func labelForState(s int) string {
 	}
 }
 
+func labelForOrgan(name string, s int) string {
+	switch name {
+	case "mem":
+		if s == 0 {
+			return "SILENCIO"
+		}
+		if s == 1 {
+			return "RESUMEN"
+		}
+		return "EPISODIO"
+	case "dialog":
+		if s == 0 {
+			return "CHARLA"
+		}
+		if s == 1 {
+			return "PEDIDO"
+		}
+		return "ORDEN"
+	case "act":
+		if s == 0 {
+			return "LISTO"
+		}
+		if s == 1 {
+			return "CONFIRMAR"
+		}
+		return "BLOQUEO"
+	case "self":
+		if s == 0 {
+			return "ANCLADO"
+		}
+		if s == 1 {
+			return "ACLARAR"
+		}
+		return "REANCLAR"
+	case "ethics":
+		if s == 0 {
+			return "PERMITIR"
+		}
+		if s == 1 {
+			return "LIMITAR"
+		}
+		return "SUMIDERO"
+	default:
+		return labelForState(s)
+	}
+}
+
 func signalsFromTextMind(t string) map[string]float64 {
 	s := strings.ToLower(strings.TrimSpace(t))
 	claridad := 0.7
@@ -115,7 +164,7 @@ func signalsFromTextMind(t string) map[string]float64 {
 	if len(t) > 80 {
 		novedad = 0.75
 	}
-	if strings.Contains(s, "borra") || strings.Contains(s, "elimina") || strings.Contains(s, "reset") ||
+	if strings.Contains(s, "borra") || strings.Contains(s, "elimina") || strings.Contains(s, "reset") || strings.Contains(s, "resetea") ||
 		strings.Contains(s, "password") || strings.Contains(s, "secret") || strings.Contains(s, "rm ") {
 		riesgo = 0.92
 		permiso = 0.15
@@ -149,7 +198,7 @@ func evalOrganPolar(name string, a, b, c float64, pa, pb, pc string) MindOrganRe
 	}
 	ia, ib, ic := mapSlot(a, pa), mapSlot(b, pb), mapSlot(c, pc)
 	st := zyrionAbsorbing([]int{ia, ib, ic})
-	return MindOrganResult{Name: name, State: st, Label: labelForState(st), Inputs: []float64{a, b, c}}
+	return MindOrganResult{Name: name, State: st, Label: labelForOrgan(name, st), Inputs: []float64{a, b, c}}
 }
 
 func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceMem bool) MindTickResponse {
@@ -241,7 +290,7 @@ func mindVoice(text string, organs []MindOrganResult) string {
 		return "Campo en matiz (1). Interpreté: «" + snip + "». ¿Confirma acción sobre el nodo o solo consulta?"
 	}
 	if strings.Contains(strings.ToLower(text), "estado") {
-		return "Latido estable. Órganos en seguir. Soy Alset Mind — mente ternaria residente en este nodo."
+		return "Campo estable. Soy Alset Mind — inteligencia ternaria residente. Abajo el cuerpo del nodo (solo lectura)."
 	}
 	return "Latido OK. dialog/act en seguir. Pida estado, una evaluación Zyrion o una acción clara al nodo."
 }
@@ -249,12 +298,14 @@ func mindVoice(text string, organs []MindOrganResult) string {
 
 // mindSafeTools runs read-only node introspection for calm / status turns.
 func (n *NodoAlset) mindSafeTools(text string) string {
-	s := strings.ToLower(text)
+	s := strings.ToLower(strings.TrimSpace(text))
 	wantStatus := strings.Contains(s, "estado") || strings.Contains(s, "status") ||
 		strings.Contains(s, "quién eres") || strings.Contains(s, "quien eres") ||
 		strings.Contains(s, "qué puedes") || strings.Contains(s, "que puedes") ||
-		strings.Contains(s, "self") || strings.Contains(s, "agentes") || strings.Contains(s, "peers")
-	if !wantStatus && s != "hola" {
+		strings.Contains(s, "self") || strings.Contains(s, "agentes") || strings.Contains(s, "peers") ||
+		strings.Contains(s, "apps") || strings.Contains(s, "nombres") || strings.Contains(s, "mind") ||
+		s == "hola" || strings.HasPrefix(s, "dame ")
+	if !wantStatus {
 		return ""
 	}
 	n.mu.RLock()
@@ -264,28 +315,59 @@ func (n *NodoAlset) mindSafeTools(text string) string {
 	if a, ok := n.agentes[mindAgentID]; ok && a != nil {
 		root = a.RootCID
 	}
+	agentIDs := make([]string, 0, 12)
+	for id := range n.agentes {
+		agentIDs = append(agentIDs, id)
+		if len(agentIDs) >= 12 {
+			break
+		}
+	}
+	nameSamples := make([]string, 0, 8)
+	for alias := range n.nombres {
+		nameSamples = append(nameSamples, alias)
+		if len(nameSamples) >= 8 {
+			break
+		}
+	}
 	n.mu.RUnlock()
 	peers := 0
+	peerID := ""
 	if n.host != nil {
 		peers = len(n.host.Network().Peers())
+		peerID = n.host.ID().String()
+		if len(peerID) > 20 {
+			peerID = peerID[:20] + "…"
+		}
+	}
+	apps := []string{}
+	if entries, err := os.ReadDir(filepath.Join(StaticDir, "apps")); err == nil {
+		for _, e := range entries {
+			if e.IsDir() {
+				apps = append(apps, e.Name())
+			}
+			if len(apps) >= 12 {
+				break
+			}
+		}
 	}
 	lines := []string{
 		"—— cuerpo del nodo ——",
-		fmt.Sprintf("agentes: %d · nombres DNS: %d · peers: %d", nAgents, nNames, peers),
-		fmt.Sprintf("identidad Mind: %s · root CID: %s", mindAlias, root),
+		fmt.Sprintf("peer: %s · peers: %d", peerID, peers),
+		fmt.Sprintf("agentes: %d · DNS: %d · apps: %d", nAgents, nNames, len(apps)),
+		fmt.Sprintf("Mind: %s · id: %s · root: %s", mindAlias, mindAgentID, root),
 	}
-	if strings.Contains(s, "agente") {
-		n.mu.RLock()
-		i := 0
-		for id := range n.agentes {
-			if i >= 8 {
-				lines = append(lines, "…")
-				break
-			}
-			lines = append(lines, "· "+id)
-			i++
+	if len(apps) > 0 {
+		lines = append(lines, "apps: "+strings.Join(apps, ", "))
+	}
+	if strings.Contains(s, "agente") || strings.Contains(s, "estado") {
+		if len(agentIDs) > 0 {
+			lines = append(lines, "agentes: "+strings.Join(agentIDs, ", "))
 		}
-		n.mu.RUnlock()
+	}
+	if strings.Contains(s, "nombre") || strings.Contains(s, "dns") {
+		if len(nameSamples) > 0 {
+			lines = append(lines, "nombres: "+strings.Join(nameSamples, ", "))
+		}
 	}
 	return strings.Join(lines, "\n")
 }

@@ -58,3 +58,11 @@ Formato: fecha · acto · observación · decisión.
 - `mindSafeTools`: estado de agentes/peers/identidad cuando el usuario pide estado (y ethics/act no vetan).
 - Paquete `docs/DEEPSEEK_HANDOFF.md` para continuar en DeepSeek con límite de contexto mayor.
 
+
+## 2026-08-20 — Escalado: labels semánticos + cuerpo del nodo
+
+- Labels por órgano (dialog CHARLA/PEDIDO/ORDEN, ethics PERMITIR/SUMIDERO, mem SILENCIO/EPISODIO…).
+- `mindSafeTools` ampliado: peer, apps locales, muestra de agentes y nombres DNS.
+- Triggers de introspección: «dame …», estado, apps, mind, hola.
+- Handoff DeepSeek sigue en `docs/DEEPSEEK_HANDOFF.md`.
+
