@@ -118,3 +118,19 @@ func TestSpeakFromKnowledgeQuote(t *testing.T) {
 		t.Fatal("expected quote knowledge")
 	}
 }
+
+func TestCuriosityUnknownTopic(t *testing.T) {
+	g := defaultMindGenome()
+	o := evaluateCuriosity("ayer vi un documental sobre agujeros negros", "", g)
+	if o.State < 1 {
+		t.Fatalf("expected curiosity >=1, got %d", o.State)
+	}
+}
+
+func TestHumorJoke(t *testing.T) {
+	g := defaultMindGenome()
+	o := evaluateHumor("qué hace una abeja en el gimnasio?", g)
+	if o.State < 1 {
+		t.Fatalf("expected humor >=1, got %d", o.State)
+	}
+}

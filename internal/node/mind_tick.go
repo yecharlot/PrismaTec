@@ -158,6 +158,22 @@ func labelForOrgan(name string, s int) string {
 			return "LIMITAR"
 		}
 		return "SUMIDERO"
+	case "curiosity":
+		if s == 0 {
+			return "QUIETO"
+		}
+		if s == 1 {
+			return "PREGUNTAR"
+		}
+		return "APRENDER"
+	case "humor":
+		if s == 0 {
+			return "SERIO"
+		}
+		if s == 1 {
+			return "LIGERO"
+		}
+		return "COMICO"
 	default:
 		return labelForState(s)
 	}
@@ -318,15 +334,26 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	self := evalOrganPolar("self", sig["claridad"], sig["riesgo"], sig["permiso"], "L", "H", "L")
 	// ethics: high risk, low permission, high aggressive order → sumidero
 	ethics := evalOrganPolar("ethics", sig["riesgo"], sig["permiso"], sig["orden"], "H", "L", "H")
+	g := getMindGenome()
+	curiosity := evaluateCuriosity(text, memSpeak, g)
+	humor := evaluateHumor(text, g)
 
-	// Ethics 2 absorbs action
+	// Ethics 2 absorbs action only (curiosity/humor never veto the node)
 	if ethics.State == 2 && act.State != 2 {
 		act.State = 2
 		act.Label = labelForOrgan("act", 2)
 	}
 
-	organs := []MindOrganResult{dialog, act, mem, self, ethics}
+	organs := []MindOrganResult{dialog, act, mem, self, ethics, curiosity, humor}
 	voice := mindVoice(text, organs, memSpeak)
+	// Soft organs color voice when ethics allows
+	if ethics.State != 2 {
+		if hv := humorVoice(text, humor.State); hv != "" {
+			voice = hv
+		} else if cv := curiosityVoice(text, curiosity.State); cv != "" && memSpeak == "" {
+			voice = cv
+		}
+	}
 	// Safe tools when ethics/act allow (not veto)
 	if ethics.State != 2 && act.State != 2 {
 		if extra := n.mindSafeTools(text); extra != "" {
@@ -342,7 +369,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		Voice:      voice,
 		MemState:   mem.State,
 		MemoryHint: memHint,
-		Note:       "latido+memoria-episodica+zyrion",
+		Note:       "latido+memoria+curiosity+humor+zyrion",
 	}
 
 	saveEp := forceMem || isPersonalFact(text) ||
@@ -662,10 +689,10 @@ func (n *NodoAlset) handleMindSelf(w http.ResponseWriter, r *http.Request) {
 		"agent_id":      mindAgentID,
 		"alias":         alias,
 		"root_cid":      root,
-		"organs":        []string{"dialog", "act", "mem", "self", "ethics"},
+		"organs":        []string{"dialog", "act", "mem", "self", "ethics", "curiosity", "humor"},
 		"episode_count": len(idx.CIDs),
 		"genome":        getMindGenome(),
-		"endpoints":     []string{"POST /api/mind/tick", "GET /api/mind/self", "GET /api/mind/memory", "POST /api/lispai"},
+		"endpoints":     []string{"POST /api/mind/tick", "GET /api/mind/self", "GET /api/mind/memory", "GET /api/mind/calibrate", "POST /api/mind/feedback"},
 		"docs":          []string{"docs/ALSET_MIND_THESIS.md", "docs/ALSET_MIND_HANDOFF.md", "docs/AI_COLLABORATION.md"},
 	})
 }

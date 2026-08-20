@@ -210,3 +210,11 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** Dockerfile con GOPROXY, binario -ldflags -s -w, alpine 3.20 fijo, render.yaml de referencia.
 - **Observación:** Deploys fallaban / “service unavailable” en consola; el código compilaba en local. Causa típica: timeout/OOM en build libre de Render.
 - **Decisión:** Build más predecible; health check sugerido `/api/v2/info`.
+
+## 2026-08-20 — Órganos curiosity + humor + feedback + memoria activa
+
+- **Acto:** Genoma 1.1 (`CuriosityCut`, `HumorCut`, `MemoryActiveWeight`, `AutoCalibrateEnabled`). Órganos curiosity/humor en el tick (no absorben ethics). `POST /api/mind/feedback`. UI con 7 órganos y 👍/👎. Memoria proactiva ponderada.
+- **Observación:** El plan pedía sumidero=max de todos; se rechazó: solo ethics absorbe act. Curiosity/humor colorean la voz.
+- **Decisión:** Soft organs + auto-calibración acotada (±0.02). Conocimiento y corpus ampliados.
+- **Archivos:** mind_genome.go, mind_organs_extra.go, mind_tick.go, mind_memory.go, http.go, mind_index.html, knowledge, corpus.
+- **Próximo paso:** Probar en producción tras deploy; afinar umbrales con feedback real.

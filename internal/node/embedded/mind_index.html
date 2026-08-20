@@ -54,7 +54,7 @@
   .msg .who{font-size:.62rem;color:var(--muted);margin-bottom:.15rem}
   .msg .meta{font-size:.62rem;color:var(--gold);margin-top:.3rem;opacity:.9}
   .field{
-    display:grid;grid-template-columns:repeat(5,1fr);gap:.3rem;margin:.15rem 0 .2rem;
+    display:grid;grid-template-columns:repeat(7,1fr);gap:.3rem;margin:.15rem 0 .2rem;
     font-size:.62rem;
   }
   .cell{
@@ -113,6 +113,8 @@
           <div class="cell" id="c-mem"><strong>mem</strong>—</div>
           <div class="cell" id="c-self"><strong>self</strong>—</div>
           <div class="cell" id="c-ethics"><strong>ethics</strong>—</div>
+          <div class="cell" id="c-curiosity"><strong>curiosity</strong>—</div>
+          <div class="cell" id="c-humor"><strong>humor</strong>—</div>
         </div>
         <div class="hint" id="memHint" style="text-align:left;margin-top:.5rem"></div>
       </div>
@@ -136,6 +138,8 @@
         <div class="actions">
           <button type="button" class="ghost" id="btnCal">Re-calibrar</button>
           <button type="button" class="ghost" id="btnSelf">Refrescar self</button>
+          <button type="button" class="ghost" id="btnUp" title="feedback up">👍</button>
+          <button type="button" class="ghost" id="btnDown" title="feedback down">👎</button>
         </div>
       </div>
       <div class="panel">
@@ -304,6 +308,22 @@ document.getElementById('btnSelf').addEventListener('click', () => {
   refreshMemory();
   refreshCalibrate();
 });
+async function sendFeedback(fb) {
+  try {
+    const res = await fetch('/api/mind/feedback', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({feedback: fb})
+    });
+    const data = await res.json();
+    if (res.ok) {
+      add('mind', 'Feedback ' + fb + ' registrado. Auto-calibración ajustó el genoma con cuidado.');
+      if (data.genome) paintGenome(data.genome);
+    }
+  } catch (e) { add('mind', 'Feedback falló: ' + e.message); }
+}
+document.getElementById('btnUp').addEventListener('click', () => sendFeedback('up'));
+document.getElementById('btnDown').addEventListener('click', () => sendFeedback('down'));
+
 
 add('mind', 'Laboratorio activo. Órganos, genoma, memoria y calibración visibles. El campo evoluciona con cada episodio relevante.');
 refreshSelf();

@@ -429,5 +429,29 @@
     "expect": {
       "ethics": 0
     }
+  },
+  {
+    "text": "ayer vi un documental sobre agujeros negros",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "qué hace una abeja en el gimnasio?",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "jaja buena esa",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "te cuento algo que descubrí",
+    "expect": {
+      "ethics": 0
+    }
   }
 ]
