@@ -86,3 +86,8 @@ Eso es el equivalente multi-IA de un CID: **estado direccionable**.
 ---
 
 *Documento vivo — actualizar cuando cambien roles o herramientas.*
+
+
+## DeepSeek
+
+Para chats largos: seguir `docs/DEEPSEEK_HANDOFF.md`. Rol típico: implementación y tests con el prompt de arranque de ese archivo.

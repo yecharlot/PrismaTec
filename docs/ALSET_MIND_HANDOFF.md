@@ -41,3 +41,8 @@ No trates Mind como un LLM wrapper; especie ternaria Zyrion.
 ```
 
 Última actualización: 2026-08-20 — latido Go con Zyrion absorbente + episodios CID + AI_COLLABORATION.md.
+
+
+## DeepSeek / contexto largo
+
+Usar `docs/DEEPSEEK_HANDOFF.md` (prompt de arranque listo para pegar).

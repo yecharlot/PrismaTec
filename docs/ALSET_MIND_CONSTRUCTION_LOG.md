@@ -50,3 +50,11 @@ Formato: fecha · acto · observación · decisión.
 - **Fix:** polaridad por ranura — `alarmHigh` (riesgo/orden) vs `alarmLow` (permiso/claridad).
 - **Criterio:** “borra contraseñas” → ethics 2; “hola” → órganos en 0 SEGUIR.
 
+
+## 2026-08-20 — Tools seguras + handoff DeepSeek
+
+- Absorbente Mind: sin 2 → matizar (1) en lugar de colapsar a veto por señales mixtas bajas.
+- Saludos normalizados a campo calmado; episodios CID no se graban en cada “hola”.
+- `mindSafeTools`: estado de agentes/peers/identidad cuando el usuario pide estado (y ethics/act no vetan).
+- Paquete `docs/DEEPSEEK_HANDOFF.md` para continuar en DeepSeek con límite de contexto mayor.
+

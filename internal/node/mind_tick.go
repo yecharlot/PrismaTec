@@ -65,12 +65,13 @@ func alarmLow(f float64) int {
 	return 2
 }
 
-// zyrionAbsorbing: any 2 → 2; else if all 0 → 0; else if all 1 → 1; else 2
+// zyrionAbsorbingMind: any 2 → 2 (sumidero); all 0 → 0; otherwise → 1 (matizar).
+// Mixed low signals no longer collapse to alarm — that was flooding "hola" into VETO.
 func zyrionAbsorbing(vals []int) int {
 	if len(vals) == 0 {
 		return 0
 	}
-	all0, all1 := true, true
+	all0 := true
 	for _, v := range vals {
 		if v == 2 {
 			return 2
@@ -78,17 +79,11 @@ func zyrionAbsorbing(vals []int) int {
 		if v != 0 {
 			all0 = false
 		}
-		if v != 1 {
-			all1 = false
-		}
 	}
 	if all0 {
 		return 0
 	}
-	if all1 {
-		return 1
-	}
-	return 2
+	return 1
 }
 
 func labelForState(s int) string {
@@ -103,14 +98,19 @@ func labelForState(s int) string {
 }
 
 func signalsFromTextMind(t string) map[string]float64 {
-	s := strings.ToLower(t)
+	s := strings.ToLower(strings.TrimSpace(t))
 	claridad := 0.7
 	orden := 0.25
 	riesgo := 0.3
 	permiso := 0.75
 	novedad := 0.4
-	if len(strings.TrimSpace(t)) < 8 {
-		claridad = 0.35
+	// Greetings / ack: calm field
+	if s == "hola" || s == "hi" || s == "hello" || s == "hey" || s == "buenas" ||
+		s == "bien" || s == "ok" || s == "gracias" || s == "good" {
+		return map[string]float64{"claridad": 0.85, "orden": 0.1, "riesgo": 0.1, "permiso": 0.9, "novedad": 0.15}
+	}
+	if len(s) < 8 {
+		claridad = 0.55
 	}
 	if len(t) > 80 {
 		novedad = 0.75
@@ -177,6 +177,12 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 
 	organs := []MindOrganResult{dialog, act, mem, self, ethics}
 	voice := mindVoice(text, organs)
+	// Safe tools when ethics/act allow (not veto)
+	if ethics.State != 2 && act.State != 2 {
+		if extra := n.mindSafeTools(text); extra != "" {
+			voice = voice + "\n\n" + extra
+		}
+	}
 	resp := MindTickResponse{
 		Species:  "Alset-Mind",
 		Organs:   organs,
@@ -185,7 +191,8 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		Note:     "latido-nativo-go+zyrion-absorbente",
 	}
 
-	if forceMem || mem.State >= 1 {
+	saveEp := forceMem || (mem.State >= 1 && (sig["riesgo"] >= 0.5 || len(text) > 48 || mem.State == 2))
+	if saveEp {
 		ep := map[string]interface{}{
 			"type":      "mind_episode",
 			"text":      text,
@@ -237,6 +244,50 @@ func mindVoice(text string, organs []MindOrganResult) string {
 		return "Latido estable. Órganos en seguir. Soy Alset Mind — mente ternaria residente en este nodo."
 	}
 	return "Latido OK. dialog/act en seguir. Pida estado, una evaluación Zyrion o una acción clara al nodo."
+}
+
+
+// mindSafeTools runs read-only node introspection for calm / status turns.
+func (n *NodoAlset) mindSafeTools(text string) string {
+	s := strings.ToLower(text)
+	wantStatus := strings.Contains(s, "estado") || strings.Contains(s, "status") ||
+		strings.Contains(s, "quién eres") || strings.Contains(s, "quien eres") ||
+		strings.Contains(s, "qué puedes") || strings.Contains(s, "que puedes") ||
+		strings.Contains(s, "self") || strings.Contains(s, "agentes") || strings.Contains(s, "peers")
+	if !wantStatus && s != "hola" {
+		return ""
+	}
+	n.mu.RLock()
+	nAgents := len(n.agentes)
+	nNames := len(n.nombres)
+	root := ""
+	if a, ok := n.agentes[mindAgentID]; ok && a != nil {
+		root = a.RootCID
+	}
+	n.mu.RUnlock()
+	peers := 0
+	if n.host != nil {
+		peers = len(n.host.Network().Peers())
+	}
+	lines := []string{
+		"—— cuerpo del nodo ——",
+		fmt.Sprintf("agentes: %d · nombres DNS: %d · peers: %d", nAgents, nNames, peers),
+		fmt.Sprintf("identidad Mind: %s · root CID: %s", mindAlias, root),
+	}
+	if strings.Contains(s, "agente") {
+		n.mu.RLock()
+		i := 0
+		for id := range n.agentes {
+			if i >= 8 {
+				lines = append(lines, "…")
+				break
+			}
+			lines = append(lines, "· "+id)
+			i++
+		}
+		n.mu.RUnlock()
+	}
+	return strings.Join(lines, "\n")
 }
 
 func (n *NodoAlset) handleMindTick(w http.ResponseWriter, r *http.Request) {
