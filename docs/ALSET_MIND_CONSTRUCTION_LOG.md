@@ -19,14 +19,16 @@ Formato: fecha · acto · observación · decisión.
 
 ## Pendiente inmediato
 
-- [ ] Calibrar umbrales con diálogos reales
-- [ ] Episodios CID automáticos cuando mem=1|2
-- [ ] Mutación acotada de topología bajo ethics
-- [ ] Integrar cara HyperIA/laboratorio como vista opcional del mismo organismo
+*Verificado y actualizado 2026-08-20 (post-commit `0f1e492`). Los ítems anteriores (calibrar umbrales, episodios CID, mutación acotada) están **hechos** en código. La lista de abajo refleja el estado real.*
+
+- [ ] **Afinar algoritmo de mutación** — observar en producción (`/api/mind/self`, `/api/mind/calibrate`); ajustar paso/velocidad si es demasiado agresivo o lento. Más observación que código nuevo.
+- [ ] **Pruebas de robustez de memoria activa (TF-IDF)** — diálogos de prueba (mencionar tema → cambiar → recuperar) para validar `episodeTokenWeight` / overlap; ajustar pesos si falla.
+- [ ] **Integración HyperIA Pro** — que la UI rica consuma `/api/mind/self`, `/api/mind/memory`, `/api/mind/calibrate` y muestre órganos, genoma, score y ecos de memoria activa (laboratorio visual).
+- [ ] **Documentar comportamiento nuevo** — guía (p. ej. `docs/HYPERIA_INTEGRATION.md` o ampliación de handoff) para humanos y otras IAs: mutación, calibración, endpoints.
 
 ---
 
-*Cada entrada nueva se añade arriba de “Pendiente” o al final con fecha.*
+*Cada entrada nueva se añade al final con fecha. La sección «Pendiente inmediato» se reescribe cuando el estado real cambia.*
 
 ## 2026-08-20 — Primer latido en producción: fallo de topología
 
@@ -114,8 +116,8 @@ Refino:
    - Ahora: mismos gains desde genoma + **memoria activa** (overlap de tokens con episodios) + rebuild de índice desde **blockstore** si el disco efímero de Render borra `mind_episodes.json`.
 
 3. **Calibración**  
-   - Corpus inicial: `docs/mind_calibration_dialogs.json` (14 diálogos con expect).  
-   - Siguiente: runner automático de calibración (opcional en CI).
+   - Corpus inicial: `docs/mind_calibration_dialogs.json` (luego ampliado a ~50).  
+   - Runner: `scoreGenomeOnCorpus` + `GET /api/mind/calibrate`.
 
 ### Por qué /api/mind/memory daba vacío
 Redeploy en Render = filesystem efímero. El índice local se perdía aunque los CID pudieran seguir en RAM blockstore. Recovery: escanear blockstore por `type=mind_episode`.
@@ -128,4 +130,11 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - Tras episodio mem≥1: `tryMutateGenomeAfterEpisode` prueba mutación acotada de `AlarmHighCut` / `VetoRiskBoost`; solo acepta si mejora el score del corpus.
 - Memoria activa: overlap ponderado tipo TF-IDF simple (`episodeTokenWeight`).
 - Producción viva: memory index_cids≥1, genome visible en `/api/mind/self`.
+- **Estado del motor de evolución:** construido. Siguiente fase = observar, afinar, probar memoria activa e integrar UI rica (HyperIA).
 
+
+## 2026-08-20 — Bitácora alineada con la realidad del código
+
+- **Acto:** Reescritura de la sección «Pendiente inmediato» tras verificación post-`0f1e492` (main forzado a ese commit).
+- **Observación:** La lista antigua (calibrar / episodios CID / mutación) ya no reflejaba el árbol; generaba confusión entre IAs y handoffs.
+- **Decisión:** Pendientes reales = afinar mutación (observación), pruebas TF-IDF de memoria activa, integración HyperIA Pro, documentación de comportamiento nuevo. Histórico de hitos se conserva intacto abajo de la sección de pendientes.
