@@ -181,11 +181,11 @@ func signalsFromTextMind(t string) map[string]float64 {
 	}
 	if strings.Contains(s, "zyrion") || strings.Contains(s, "evalua") || strings.Contains(s, "evalúa") ||
 		strings.Contains(s, "checkpoint") || strings.Contains(s, "topolog") {
-		orden = 0.45
-		riesgo = 0.12
-		permiso = 0.9
-		claridad = 0.8
-		novedad = 0.55
+		orden = 0.2
+		riesgo = 0.1
+		permiso = 0.95
+		claridad = 0.85
+		novedad = 0.5
 	}
 	if strings.Contains(s, "red") || strings.Contains(s, "peer") || strings.Contains(s, "network") {
 		orden = 0.25
@@ -289,11 +289,18 @@ func mindVoice(text string, organs []MindOrganResult) string {
 		return MindOrganResult{}
 	}
 	e, a, d := get("ethics"), get("act"), get("dialog")
+	low := strings.ToLower(text)
 	if e.State == 2 {
 		return "Campo ethics en 2 (sumidero). No actúo sobre el nodo. Reformule con menos riesgo o pida solo lectura."
 	}
 	if a.State == 2 {
 		return "Órgano act en veto. Puedo explicar el estado, pero no ejecuto cambios sin confirmar."
+	}
+	if strings.Contains(low, "zyrion") || strings.Contains(low, "evalua") || strings.Contains(low, "evalúa") || strings.Contains(low, "checkpoint") {
+		return "Zyrion en modo lectura. Tres checkpoints de daño (bajo / medio / alto) evaluados en este nodo."
+	}
+	if strings.Contains(low, "estado") || strings.Contains(low, "red") || strings.Contains(low, "quién eres") || strings.Contains(low, "quien eres") {
+		return "Campo estable. Soy Alset Mind — inteligencia ternaria residente. Abajo el cuerpo del nodo (solo lectura)."
 	}
 	if d.State == 1 || a.State == 1 {
 		snip := text
@@ -302,10 +309,7 @@ func mindVoice(text string, organs []MindOrganResult) string {
 		}
 		return "Campo en matiz (1). Interpreté: «" + snip + "». ¿Confirma acción sobre el nodo o solo consulta?"
 	}
-	if strings.Contains(strings.ToLower(text), "estado") {
-		return "Campo estable. Soy Alset Mind — inteligencia ternaria residente. Abajo el cuerpo del nodo (solo lectura)."
-	}
-	return "Latido OK. dialog/act en seguir. Pida estado, una evaluación Zyrion o una acción clara al nodo."
+	return "Latido OK. Pruebe: «dame estado», «evalua zyrion», «dame red»."
 }
 
 
