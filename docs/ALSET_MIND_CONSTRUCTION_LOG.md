@@ -138,3 +138,10 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** Reescritura de la sección «Pendiente inmediato» tras verificación post-`0f1e492` (main forzado a ese commit).
 - **Observación:** La lista antigua (calibrar / episodios CID / mutación) ya no reflejaba el árbol; generaba confusión entre IAs y handoffs.
 - **Decisión:** Pendientes reales = afinar mutación (observación), pruebas TF-IDF de memoria activa, integración HyperIA Pro, documentación de comportamiento nuevo. Histórico de hitos se conserva intacto abajo de la sección de pendientes.
+
+## 2026-08-20 — Salto: laboratorio visual del organismo
+
+- **Acto:** Reescribir `/w/mind.app.ans` (`embedded/mind_index.html`) como laboratorio vivo.
+- **Observación:** El motor (tick, genoma, mutación, TF-IDF, calibrate, memory) ya existía; la cara solo mostraba órganos y voz. El organismo no se veía a sí mismo.
+- **Decisión:** UI consume `GET /api/mind/self`, `/memory`, `/calibrate` y el tick (memory_hint, note+genome_mut, episode_cid). Paneles: órganos, genoma ADN, score de corpus, ecos de memoria activa. Sin LLM; solo lectura del campo ternario.
+- **Pendiente HyperIA Pro:** esta cara es el puente mínimo; HyperIA puede reutilizar los mismos endpoints para una vista más rica.
