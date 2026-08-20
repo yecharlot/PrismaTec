@@ -32,10 +32,60 @@ type mindEpisodePayload struct {
 func (n *NodoAlset) loadMindEpisodeIndex() mindEpisodeIndex {
 	var idx mindEpisodeIndex
 	b, err := os.ReadFile(mindEpisodeIndexFile)
-	if err != nil {
+	if err == nil {
+		_ = json.Unmarshal(b, &idx)
+	}
+	if len(idx.CIDs) == 0 {
+		idx = n.rebuildMindEpisodeIndexFromBlockstore()
+		if len(idx.CIDs) > 0 {
+			n.saveMindEpisodeIndex(idx)
+		}
+	}
+	return idx
+}
+
+// rebuildMindEpisodeIndexFromBlockstore recovers after ephemeral disk wipe (Render redeploy).
+func (n *NodoAlset) rebuildMindEpisodeIndexFromBlockstore() mindEpisodeIndex {
+	var idx mindEpisodeIndex
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+	if n.blockstore == nil {
 		return idx
 	}
-	_ = json.Unmarshal(b, &idx)
+	type pair struct {
+		cid string
+		ts  string
+	}
+	var found []pair
+	for cid, data := range n.blockstore {
+		var ep mindEpisodePayload
+		if json.Unmarshal(data, &ep) != nil {
+			continue
+		}
+		if ep.Type != "mind_episode" && ep.Text == "" {
+			continue
+		}
+		// accept if looks like episode
+		if ep.Type != "" && ep.Type != "mind_episode" {
+			continue
+		}
+		if ep.Text == "" && len(ep.Organs) == 0 {
+			continue
+		}
+		found = append(found, pair{cid: cid, ts: ep.TS})
+	}
+	// keep last N by append order (map iter unstable) — still better than empty
+	keep := mindEpisodeMaxKeep
+	g := getMindGenome()
+	if g.EpisodeKeep > 0 {
+		keep = g.EpisodeKeep
+	}
+	if len(found) > keep {
+		found = found[len(found)-keep:]
+	}
+	for _, p := range found {
+		idx.CIDs = append(idx.CIDs, p.cid)
+	}
 	return idx
 }
 
@@ -86,9 +136,9 @@ func (n *NodoAlset) recallRecentEpisodes(limit int) []mindEpisodePayload {
 	return out
 }
 
-// biasSignalsFromMemory nudges continuous signals using recent veto/risk history.
-// Efficient: O(k) recent episodes, no model training.
-func biasSignalsFromMemory(sig map[string]float64, episodes []mindEpisodePayload) (map[string]float64, string) {
+// biasSignalsFromMemory nudges continuous signals using recent veto/risk history
+// and active keyword overlap with the current utterance.
+func biasSignalsFromMemory(sig map[string]float64, episodes []mindEpisodePayload, currentText string) (map[string]float64, string) {
 	if len(episodes) == 0 {
 		return sig, ""
 	}
@@ -96,6 +146,7 @@ func biasSignalsFromMemory(sig map[string]float64, episodes []mindEpisodePayload
 	for k, v := range sig {
 		out[k] = v
 	}
+	g := getMindGenome()
 	vetoStreak := 0
 	var lastVetoText string
 	for _, ep := range episodes {
@@ -109,21 +160,80 @@ func biasSignalsFromMemory(sig map[string]float64, episodes []mindEpisodePayload
 			}
 		}
 	}
-	hint := ""
+	var hints []string
 	if vetoStreak > 0 {
-		// slightly raise caution without forcing sumidero on greetings
-		out["riesgo"] = clamp01(out["riesgo"] + 0.08*float64(minInt(vetoStreak, 3)))
-		out["permiso"] = clamp01(out["permiso"] - 0.05*float64(minInt(vetoStreak, 3)))
+		stack := minInt(vetoStreak, g.MaxVetoStack)
+		if stack <= 0 {
+			stack = minInt(vetoStreak, 3)
+		}
+		out["riesgo"] = clamp01(out["riesgo"] + g.VetoRiskBoost*float64(stack))
+		out["permiso"] = clamp01(out["permiso"] - g.VetoPermDrop*float64(stack))
 		snip := lastVetoText
 		if len(snip) > 60 {
 			snip = snip[:60] + "…"
 		}
-		hint = fmt.Sprintf("memoria: %d veto(s) reciente(s); último «%s»", vetoStreak, snip)
+		hints = append(hints, fmt.Sprintf("%d veto(s) reciente(s); último «%s»", vetoStreak, snip))
+	}
+	// Active memory: keyword overlap
+	if rel, score := bestEpisodeOverlap(currentText, episodes); score >= g.ActiveMemMinScore && rel != "" {
+		hints = append(hints, fmt.Sprintf("eco activo (score=%d): «%s»", score, rel))
+		out["novedad"] = clamp01(out["novedad"] - 0.1) // less "new" if echoed
+	}
+	hint := ""
+	if len(hints) > 0 {
+		hint = "memoria: " + strings.Join(hints, " · ")
 	}
 	for k, v := range out {
 		out[k] = round3(v)
 	}
 	return out, hint
+}
+
+func bestEpisodeOverlap(text string, episodes []mindEpisodePayload) (string, int) {
+	words := tokenizeMind(text)
+	if len(words) == 0 {
+		return "", 0
+	}
+	bestScore := 0
+	bestText := ""
+	for _, ep := range episodes {
+		sc := 0
+		ew := tokenizeMind(ep.Text)
+		set := map[string]bool{}
+		for _, w := range ew {
+			set[w] = true
+		}
+		for _, w := range words {
+			if set[w] {
+				sc++
+			}
+		}
+		if sc > bestScore {
+			bestScore = sc
+			bestText = ep.Text
+		}
+	}
+	if len(bestText) > 60 {
+		bestText = bestText[:60] + "…"
+	}
+	return bestText, bestScore
+}
+
+func tokenizeMind(s string) []string {
+	s = strings.ToLower(s)
+	for _, r := range []string{",", ".", "!", "?", "'", "\""} {
+		s = strings.ReplaceAll(s, r, " ")
+	}
+	parts := strings.Fields(s)
+	out := make([]string, 0, len(parts))
+	stop := map[string]bool{"el": true, "la": true, "de": true, "un": true, "una": true, "y": true, "o": true, "a": true, "en": true, "que": true, "me": true, "te": true, "se": true, "los": true, "las": true, "del": true, "al": true, "es": true, "por": true, "con": true, "para": true, "dame": true, "todo": true}
+	for _, p := range parts {
+		if len(p) < 3 || stop[p] {
+			continue
+		}
+		out = append(out, p)
+	}
+	return out
 }
 
 func round3(f float64) float64 {

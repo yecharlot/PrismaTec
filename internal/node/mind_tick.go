@@ -44,10 +44,18 @@ func level03(f float64) int {
 		}
 		return int(f)
 	}
-	if f < 0.33 {
+	g := getMindGenome()
+	lo, hi := g.AlarmLowCut, g.AlarmHighCut
+	if lo <= 0 {
+		lo = 0.33
+	}
+	if hi <= lo {
+		hi = 0.66
+	}
+	if f < lo {
 		return 0
 	}
-	if f < 0.66 {
+	if f < hi {
 		return 1
 	}
 	return 2
@@ -59,10 +67,18 @@ func alarmHigh(f float64) int { return level03(f) }
 // alarmLow: low continuous = more alarm (2). Used for permiso, claridad.
 //  high permiso → 0 (safe); low permiso → 2 (unsafe).
 func alarmLow(f float64) int {
-	if f >= 0.66 {
+	g := getMindGenome()
+	lo, hi := g.AlarmLowCut, g.AlarmHighCut
+	if lo <= 0 {
+		lo = 0.33
+	}
+	if hi <= lo {
+		hi = 0.66
+	}
+	if f >= hi {
 		return 0
 	}
-	if f >= 0.33 {
+	if f >= lo {
 		return 1
 	}
 	return 2
@@ -225,7 +241,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	// Episodic memory (local index + CID blocks) biases the field — decentralized-ready
 	recent := n.recallRecentEpisodes(5)
 	memHint := ""
-	sig, memHint = biasSignalsFromMemory(sig, recent)
+	sig, memHint = biasSignalsFromMemory(sig, recent, text)
 	// Organs with polarity: H = high is alarm, L = low is alarm
 	// dialog: low clarity, high order, high risk → escalate
 	dialog := evalOrganPolar("dialog", sig["claridad"], sig["orden"], sig["riesgo"], "L", "H", "H")
@@ -492,6 +508,7 @@ func (n *NodoAlset) handleMindSelf(w http.ResponseWriter, r *http.Request) {
 		"root_cid":      root,
 		"organs":        []string{"dialog", "act", "mem", "self", "ethics"},
 		"episode_count": len(idx.CIDs),
+		"genome":        getMindGenome(),
 		"endpoints":     []string{"POST /api/mind/tick", "GET /api/mind/self", "GET /api/mind/memory", "POST /api/lispai"},
 		"docs":          []string{"docs/ALSET_MIND_THESIS.md", "docs/ALSET_MIND_HANDOFF.md", "docs/AI_COLLABORATION.md"},
 	})

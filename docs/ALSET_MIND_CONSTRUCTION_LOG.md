@@ -98,3 +98,25 @@ Refino:
 - GET /api/mind/memory — índice y resúmenes recientes.
 - Muestra de agentes con N/total.
 
+
+## 2026-08-20 — Respuesta a revisión: genoma mutable + memoria activa + recovery
+
+### Arquitectura (respuesta a DeepSeek/revisión)
+
+1. **mind_tick / órganos**  
+   - Antes: umbrales 0.33/0.66 **fijos** en código → mutación imposible sin redeploy.  
+   - Ahora: `MindGenome` en `mind_genome.json` (`AlarmLowCut`, `AlarmHighCut`, boosts de veto).  
+   - `level03` / `alarmLow` leen el genoma en runtime → **sí se puede mutar** sin refactor mayor.  
+   - Las *conexiones* entre órganos siguen siendo cableado fijo (dialog/act/mem/self/ethics); la mutación acotada empieza por **umbrales y gains**, no por rewiring arbitrario (más seguro bajo ethics).
+
+2. **biasSignalsFromMemory**  
+   - Antes: solo stack de vetos → riesgo↑ permiso↓.  
+   - Ahora: mismos gains desde genoma + **memoria activa** (overlap de tokens con episodios) + rebuild de índice desde **blockstore** si el disco efímero de Render borra `mind_episodes.json`.
+
+3. **Calibración**  
+   - Corpus inicial: `docs/mind_calibration_dialogs.json` (14 diálogos con expect).  
+   - Siguiente: runner automático de calibración (opcional en CI).
+
+### Por qué /api/mind/memory daba vacío
+Redeploy en Render = filesystem efímero. El índice local se perdía aunque los CID pudieran seguir en RAM blockstore. Recovery: escanear blockstore por `type=mind_episode`.
+

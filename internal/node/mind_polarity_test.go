@@ -32,7 +32,7 @@ func TestBiasMemoryRaisesRisk(t *testing.T) {
 		Text: "borra todo",
 		Organs: []MindOrganResult{{Name: "ethics", State: 2}},
 	}}
-	out, hint := biasSignalsFromMemory(sig, eps)
+	out, hint := biasSignalsFromMemory(sig, eps, "borra datos")
 	if out["riesgo"] <= sig["riesgo"] {
 		t.Fatal("risk should rise")
 	}
