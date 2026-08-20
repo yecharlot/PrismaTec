@@ -27,3 +27,11 @@ Formato: fecha · acto · observación · decisión.
 ---
 
 *Cada entrada nueva se añade arriba de “Pendiente” o al final con fecha.*
+
+## 2026-08-20 — Primer latido en producción: fallo de topología
+
+- **Síntoma:** `mind-latido` devolvía `error: faltan :entradas o :salidas` en todos los órganos.
+- **Causa:** `(list nombre :entradas (s1 s2 s3) …)` evaluaba `(s1 s2 s3)` como *llamada*, no como datos.
+- **Decisión:** `quote` en topología y entorno al estilo del DSL que ya funcionaba en curl.
+- **Continuidad:** creado `docs/ALSET_MIND_HANDOFF.md` para reanudar co-creación tras límites de sesión.
+

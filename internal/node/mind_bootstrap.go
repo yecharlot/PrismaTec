@@ -98,22 +98,18 @@ func (n *NodoAlset) seedMindLispGenome() {
 	if n.lisp == nil {
 		return
 	}
-	// Genome: helper to run a standard organ topology + mind-latido aggregator (symbolic).
+	// Topologies must use quote so (s1 s2 s3) is data, not a call.
 	cmds := []string{
-		`(defun mind-organ-topo (nombre)
-   (list nombre
-         :entradas (s1 s2 s3)
-         :salidas ((0 SEGUIR) (1 MATIZAR) (2 VETO))))`,
-		`(defun mind-eval-organ (nombre s1 s2 s3)
+		`(defun mind-eval-organ (s1 s2 s3)
    (evaluar-zyrion
-     (mind-organ-topo nombre)
+     (quote (ORG :entradas (s1 s2 s3) :salidas ((0 SEGUIR) (1 MATIZAR) (2 VETO))))
      (list (quote s1) s1 (quote s2) s2 (quote s3) s3)))`,
 		`(defun mind-latido (claridad orden_nodo riesgo permiso novedad)
-   (let* ((d (mind-eval-organ "dialog" claridad orden_nodo riesgo))
-          (a (mind-eval-organ "act" permiso riesgo orden_nodo))
-          (m (mind-eval-organ "mem" novedad claridad riesgo))
-          (s (mind-eval-organ "self" claridad riesgo permiso))
-          (e (mind-eval-organ "ethics" riesgo permiso orden_nodo)))
+   (let* ((d (mind-eval-organ claridad orden_nodo riesgo))
+          (a (mind-eval-organ permiso riesgo orden_nodo))
+          (m (mind-eval-organ novedad claridad riesgo))
+          (s (mind-eval-organ claridad riesgo permiso))
+          (e (mind-eval-organ riesgo permiso orden_nodo)))
      (list
        (list "species" "Alset-Mind")
        (list "dialog" d)
@@ -121,7 +117,7 @@ func (n *NodoAlset) seedMindLispGenome() {
        (list "mem" m)
        (list "self" s)
        (list "ethics" e)
-       (list "note" "campo-ternario-nativo-sin-LLM"))))`,
+       (list "note" "campo-ternario-nativo"))))`,
 	}
 	for _, c := range cmds {
 		if _, err := n.lisp.Eval(c); err != nil {
@@ -129,3 +125,4 @@ func (n *NodoAlset) seedMindLispGenome() {
 		}
 	}
 }
+
