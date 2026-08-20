@@ -17,6 +17,7 @@ CONTEXTO OBLIGATORIO — lee en este orden:
 
 CÓDIGO CLAVE:
 - internal/node/mind_tick.go — latido Go, polaridad, episodios CID, tools seguras
+- internal/node/mind_memory.go — índice episódico, bias, pulsos
 - internal/node/mind_bootstrap.go — agente mind.alset.ans, genoma Lisp, UI embed
 - internal/lisp/evaluar_zyrion.go — DSL Zyrion
 - internal/node/embedded/mind_index.html — cara /w/mind.app.ans

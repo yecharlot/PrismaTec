@@ -24,6 +24,7 @@ Este archivo existe para que la co-creación **no muera** cuando un chat, un mod
 | Genoma Lisp | `mind-latido`, `mind-eval-organ` |
 | Bug conocido (histórico) | topología sin `quote` → "faltan :entradas o :salidas" — corregido con quote |
 | API latido | POST /api/mind/tick · GET /api/mind/self |
+| Memoria | mind_episodes.json + bias de vetos + pulse mind_episode |
 | Siguiente prioridad | tools reales del nodo bajo act=0; topología salvadora; más órganos de dominio |
 
 4. **Regla de oro**  

@@ -74,3 +74,12 @@ Formato: fecha · acto · observación · decisión.
 - Señales de evaluación Zyrion tratadas como lectura segura (bajo riesgo).
 - Avance hacia el pacto: mente que opera el sustrato (Zyrion+cuerpo), no solo chatea.
 
+
+## 2026-08-20 — Memoria episódica + pulso + tests
+
+- Índice local `mind_episodes.json` (ring 32 CIDs) + bloques CID.
+- `biasSignalsFromMemory`: vetos recientes suben riesgo / bajan permiso; `memory_hint` en el latido.
+- Pulso `mind_episode` para peers (base de descentralización).
+- Tests: `mind_polarity_test.go` (absorbente, polaridad, bias).
+- Note del tick: `latido+memoria-episodica+zyrion`.
+

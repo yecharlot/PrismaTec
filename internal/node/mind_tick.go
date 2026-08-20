@@ -27,12 +27,13 @@ type MindOrganResult struct {
 
 // MindTickResponse is the field reading for one heartbeat.
 type MindTickResponse struct {
-	Species    string           `json:"species"`
-	Organs     []MindOrganResult `json:"organs"`
-	Voice      string           `json:"voice"`
-	EpisodeCID string           `json:"episode_cid,omitempty"`
-	MemState   int              `json:"mem_state"`
-	Note       string           `json:"note"`
+	Species     string            `json:"species"`
+	Organs      []MindOrganResult `json:"organs"`
+	Voice       string            `json:"voice"`
+	EpisodeCID  string            `json:"episode_cid,omitempty"`
+	MemState    int               `json:"mem_state"`
+	MemoryHint  string            `json:"memory_hint,omitempty"`
+	Note        string            `json:"note"`
 }
 
 // level03 maps [0,1] continuous to ternary intensity 0/1/2 (low/mid/high).
@@ -219,6 +220,10 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	for k, v := range override {
 		sig[k] = v
 	}
+	// Episodic memory (local index + CID blocks) biases the field — decentralized-ready
+	recent := n.recallRecentEpisodes(5)
+	memHint := ""
+	sig, memHint = biasSignalsFromMemory(sig, recent)
 	// Organs with polarity: H = high is alarm, L = low is alarm
 	// dialog: low clarity, high order, high risk → escalate
 	dialog := evalOrganPolar("dialog", sig["claridad"], sig["orden"], sig["riesgo"], "L", "H", "H")
@@ -245,12 +250,16 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			voice = voice + "\n\n" + extra
 		}
 	}
+	if memHint != "" {
+		voice = voice + "\n\n" + memoryHintLine(memHint)
+	}
 	resp := MindTickResponse{
-		Species:  "Alset-Mind",
-		Organs:   organs,
-		Voice:    voice,
-		MemState: mem.State,
-		Note:     "latido-nativo-go+zyrion-absorbente",
+		Species:    "Alset-Mind",
+		Organs:     organs,
+		Voice:      voice,
+		MemState:   mem.State,
+		MemoryHint: memHint,
+		Note:       "latido+memoria-episodica+zyrion",
 	}
 
 	saveEp := forceMem || (mem.State >= 1 && (sig["riesgo"] >= 0.5 || len(text) > 48 || mem.State == 2))
@@ -267,13 +276,19 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		raw, _ := json.Marshal(ep)
 		if cid, err := n.GenerarCID(raw); err == nil && cid != "" {
 			resp.EpisodeCID = cid
+			n.appendMindEpisodeCID(cid)
 			n.Auditoria("MIND_EPISODE", fmt.Sprintf("cid=%s mem=%d", cid, mem.State))
-			// Append episode ref on mind agent root as lightweight index (best-effort)
 			n.mu.Lock()
 			if a, ok := n.agentes[mindAgentID]; ok && a != nil {
 				a.UltimaActual = time.Now().Unix()
 			}
 			n.mu.Unlock()
+			// Decentralized hint: peers can observe mind_episode pulses
+			go n.BroadcastPulse("mind_episode", map[string]interface{}{
+				"cid":  cid,
+				"mem":  mem.State,
+				"text": text,
+			})
 		}
 	}
 	return resp
