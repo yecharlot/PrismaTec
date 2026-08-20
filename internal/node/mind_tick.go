@@ -175,10 +175,12 @@ func signalsFromTextMind(t string) map[string]float64 {
 		strings.Contains(s, "ejecuta") || strings.Contains(s, "agente") {
 		orden = 0.8
 	}
-	if strings.Contains(s, "estado") || strings.Contains(s, "status") {
+	if strings.Contains(s, "estado") || strings.Contains(s, "status") ||
+		strings.HasPrefix(s, "dame ") || s == "dame" {
 		orden = 0.2
 		riesgo = 0.15
 		permiso = 0.9
+		claridad = 0.8
 	}
 	if strings.Contains(s, "zyrion") || strings.Contains(s, "evalua") || strings.Contains(s, "evalúa") ||
 		strings.Contains(s, "checkpoint") || strings.Contains(s, "topolog") {
@@ -314,7 +316,8 @@ func mindVoice(text string, organs []MindOrganResult) string {
 	if strings.Contains(low, "zyrion") || strings.Contains(low, "evalua") || strings.Contains(low, "evalúa") || strings.Contains(low, "checkpoint") {
 		return "Zyrion en modo lectura. Tres checkpoints de daño (bajo / medio / alto) evaluados en este nodo."
 	}
-	if strings.Contains(low, "estado") || strings.Contains(low, "red") || strings.Contains(low, "quién eres") || strings.Contains(low, "quien eres") {
+	if strings.Contains(low, "estado") || strings.Contains(low, "red") || strings.HasPrefix(low, "dame ") ||
+		strings.Contains(low, "quién eres") || strings.Contains(low, "quien eres") {
 		return "Campo estable. Soy Alset Mind — inteligencia ternaria residente. Abajo el cuerpo del nodo (solo lectura)."
 	}
 	if d.State == 1 || a.State == 1 {
@@ -414,9 +417,9 @@ func (n *NodoAlset) mindBodySnapshot(s string) []string {
 	if len(apps) > 0 {
 		lines = append(lines, "apps: "+strings.Join(apps, ", "))
 	}
-	if strings.Contains(s, "agente") || strings.Contains(s, "estado") {
+	if strings.Contains(s, "agente") || strings.Contains(s, "estado") || strings.Contains(s, "todo") {
 		if len(agentIDs) > 0 {
-			lines = append(lines, "agentes: "+strings.Join(agentIDs, ", "))
+			lines = append(lines, fmt.Sprintf("agentes (muestra %d/%d): %s", len(agentIDs), nAgents, strings.Join(agentIDs, ", ")))
 		}
 	}
 	if strings.Contains(s, "nombre") || strings.Contains(s, "dns") {
@@ -480,14 +483,43 @@ func (n *NodoAlset) handleMindSelf(w http.ResponseWriter, r *http.Request) {
 		root = a.RootCID
 	}
 	n.mu.RUnlock()
+	idx := n.loadMindEpisodeIndex()
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"species":  "Alset-Mind",
-		"agent_id": mindAgentID,
-		"alias":    alias,
-		"root_cid": root,
-		"organs":   []string{"dialog", "act", "mem", "self", "ethics"},
-		"endpoints": []string{"POST /api/mind/tick", "GET /api/mind/self", "POST /api/lispai (mind-latido)"},
-		"docs":     []string{"docs/ALSET_MIND_THESIS.md", "docs/ALSET_MIND_HANDOFF.md", "docs/AI_COLLABORATION.md"},
+		"species":       "Alset-Mind",
+		"agent_id":      mindAgentID,
+		"alias":         alias,
+		"root_cid":      root,
+		"organs":        []string{"dialog", "act", "mem", "self", "ethics"},
+		"episode_count": len(idx.CIDs),
+		"endpoints":     []string{"POST /api/mind/tick", "GET /api/mind/self", "GET /api/mind/memory", "POST /api/lispai"},
+		"docs":          []string{"docs/ALSET_MIND_THESIS.md", "docs/ALSET_MIND_HANDOFF.md", "docs/AI_COLLABORATION.md"},
+	})
+}
+
+func (n *NodoAlset) handleMindMemory(w http.ResponseWriter, r *http.Request) {
+	idx := n.loadMindEpisodeIndex()
+	recent := n.recallRecentEpisodes(8)
+	summaries := make([]map[string]interface{}, 0, len(recent))
+	for i, ep := range recent {
+		ethics := 0
+		for _, o := range ep.Organs {
+			if o.Name == "ethics" {
+				ethics = o.State
+			}
+		}
+		summaries = append(summaries, map[string]interface{}{
+			"i":      i,
+			"text":   ep.Text,
+			"ts":     ep.TS,
+			"ethics": ethics,
+		})
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"index_cids": len(idx.CIDs),
+		"updated_at": idx.UpdatedAt,
+		"recent":     summaries,
+		"note":       "memoria episódica local; CIDs en blockstore del nodo",
 	})
 }

@@ -120,8 +120,14 @@ func biasSignalsFromMemory(sig map[string]float64, episodes []mindEpisodePayload
 		}
 		hint = fmt.Sprintf("memoria: %d veto(s) reciente(s); último «%s»", vetoStreak, snip)
 	}
-	// same-topic reinforcement: if current text echoes a past episode, bump novedad down (deja de ser nuevo)
+	for k, v := range out {
+		out[k] = round3(v)
+	}
 	return out, hint
+}
+
+func round3(f float64) float64 {
+	return float64(int(f*1000+0.5)) / 1000
 }
 
 func clamp01(f float64) float64 {

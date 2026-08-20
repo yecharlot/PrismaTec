@@ -338,6 +338,7 @@ func (n *NodoAlset) httpHandlers() httpapi.Handlers {
 	h.Extra["/api/admin/status"] = n.handleAdminStatus
 	h.Extra["/api/mind/tick"] = n.handleMindTick
 	h.Extra["/api/mind/self"] = n.handleMindSelf
+	h.Extra["/api/mind/memory"] = n.handleMindMemory
 
 	h.Extra["/api/apps/register"] = n.handleAppsRegister
 

@@ -83,3 +83,18 @@ Formato: fecha · acto · observación · decisión.
 - Tests: `mind_polarity_test.go` (absorbente, polaridad, bias).
 - Note del tick: `latido+memoria-episodica+zyrion`.
 
+
+## 2026-08-20 — Verificación en vivo + refinamiento
+
+Verificado en producción:
+- Memoria: contador de vetos 1→2→3; último texto actualizado; bias en riesgo (~0.23 tras vetos).
+- Sumidero: borra/elimina → ethics SUMIDERO + episodio CID.
+- Cuerpo: peer, 102 agentes, 6 apps, listen addr.
+- «dame red» lectura estable.
+
+Refino:
+- «dame todo» / «dame *» como lectura (sin matiz de confirmación).
+- Señales redondeadas a 3 decimales.
+- GET /api/mind/memory — índice y resúmenes recientes.
+- Muestra de agentes con N/total.
+
