@@ -43,3 +43,10 @@ Formato: fecha · acto · observación · decisión.
 - **Hecho:** `docs/AI_COLLABORATION.md` — cómo otra IA continúa el trabajo; roles Grok/Cursor/Claude.
 - **Nota:** el genoma Lisp sigue disponible; el camino de producción del UI es el tick Go (señales y env más fiables).
 
+
+## 2026-08-20 — Polaridad de señales (hola no es VETO)
+
+- **Bug:** `continuous→ternario` mapeaba valores altos (claridad 0.7, permiso 0.75) a estado **2**, y el absorbente convertía saludos en sumidero.
+- **Fix:** polaridad por ranura — `alarmHigh` (riesgo/orden) vs `alarmLow` (permiso/claridad).
+- **Criterio:** “borra contraseñas” → ethics 2; “hola” → órganos en 0 SEGUIR.
+

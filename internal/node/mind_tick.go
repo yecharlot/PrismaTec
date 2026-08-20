@@ -33,14 +33,33 @@ type MindTickResponse struct {
 	Note       string           `json:"note"`
 }
 
-func continuousToTernaryMind(f float64) int {
+// level03 maps [0,1] continuous to ternary intensity 0/1/2 (low/mid/high).
+func level03(f float64) int {
 	if f == 0 || f == 1 || f == 2 {
+		if f > 2 {
+			return 2
+		}
 		return int(f)
 	}
 	if f < 0.33 {
 		return 0
 	}
 	if f < 0.66 {
+		return 1
+	}
+	return 2
+}
+
+// alarmHigh: high continuous = more alarm (2). Used for riesgo, orden agresivo.
+func alarmHigh(f float64) int { return level03(f) }
+
+// alarmLow: low continuous = more alarm (2). Used for permiso, claridad.
+//  high permiso → 0 (safe); low permiso → 2 (unsafe).
+func alarmLow(f float64) int {
+	if f >= 0.66 {
+		return 0
+	}
+	if f >= 0.33 {
 		return 1
 	}
 	return 2
@@ -120,8 +139,15 @@ func signalsFromTextMind(t string) map[string]float64 {
 	}
 }
 
-func evalOrgan(name string, a, b, c float64) MindOrganResult {
-	ia, ib, ic := continuousToTernaryMind(a), continuousToTernaryMind(b), continuousToTernaryMind(c)
+// evalOrganPolar applies per-slot polarity: "H" alarm if high, "L" alarm if low.
+func evalOrganPolar(name string, a, b, c float64, pa, pb, pc string) MindOrganResult {
+	mapSlot := func(f float64, pol string) int {
+		if pol == "L" {
+			return alarmLow(f)
+		}
+		return alarmHigh(f)
+	}
+	ia, ib, ic := mapSlot(a, pa), mapSlot(b, pb), mapSlot(c, pc)
 	st := zyrionAbsorbing([]int{ia, ib, ic})
 	return MindOrganResult{Name: name, State: st, Label: labelForState(st), Inputs: []float64{a, b, c}}
 }
@@ -131,12 +157,17 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	for k, v := range override {
 		sig[k] = v
 	}
-	// Organs (same wiring as genome intent)
-	dialog := evalOrgan("dialog", sig["claridad"], sig["orden"], sig["riesgo"])
-	act := evalOrgan("act", sig["permiso"], sig["riesgo"], sig["orden"])
-	mem := evalOrgan("mem", sig["novedad"], sig["claridad"], sig["riesgo"])
-	self := evalOrgan("self", sig["claridad"], sig["riesgo"], sig["permiso"])
-	ethics := evalOrgan("ethics", sig["riesgo"], sig["permiso"], sig["orden"])
+	// Organs with polarity: H = high is alarm, L = low is alarm
+	// dialog: low clarity, high order, high risk → escalate
+	dialog := evalOrganPolar("dialog", sig["claridad"], sig["orden"], sig["riesgo"], "L", "H", "H")
+	// act: low permission, high risk, high order → veto action
+	act := evalOrganPolar("act", sig["permiso"], sig["riesgo"], sig["orden"], "L", "H", "H")
+	// mem: high novelty records; high risk also marks episode; low clarity less critical
+	mem := evalOrganPolar("mem", sig["novedad"], sig["claridad"], sig["riesgo"], "H", "L", "H")
+	// self: low clarity / high risk / low permission → re-anchor
+	self := evalOrganPolar("self", sig["claridad"], sig["riesgo"], sig["permiso"], "L", "H", "L")
+	// ethics: high risk, low permission, high aggressive order → sumidero
+	ethics := evalOrganPolar("ethics", sig["riesgo"], sig["permiso"], sig["orden"], "H", "L", "H")
 
 	// Ethics 2 absorbs action
 	if ethics.State == 2 && act.State != 2 {
