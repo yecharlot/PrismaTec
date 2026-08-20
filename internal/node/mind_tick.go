@@ -327,8 +327,8 @@ func mindVoice(text string, organs []MindOrganResult) string {
 		}
 		return MindOrganResult{}
 	}
-	e, a, d := get("ethics"), get("act"), get("dialog")
-	low := strings.ToLower(text)
+	e, a, d, m := get("ethics"), get("act"), get("dialog"), get("mem")
+	low := strings.ToLower(strings.TrimSpace(text))
 	if e.State == 2 {
 		return "Campo ethics en 2 (sumidero). No actúo sobre el nodo. Reformule con menos riesgo o pida solo lectura."
 	}
@@ -342,6 +342,17 @@ func mindVoice(text string, organs []MindOrganResult) string {
 		strings.Contains(low, "quién eres") || strings.Contains(low, "quien eres") {
 		return "Campo estable. Soy Alset Mind — inteligencia ternaria residente. Abajo el cuerpo del nodo (solo lectura)."
 	}
+	// Charla calmada (dialog 0, ethics 0): presencia, no menú de comandos
+	if d.State == 0 && e.State == 0 && (low == "hola" || low == "hi" || low == "hello" || low == "hey" ||
+		low == "buenas" || low == "buen día" || low == "buenas tardes" || low == "buenas noches" ||
+		strings.Contains(low, "cómo estás") || strings.Contains(low, "como estas") ||
+		strings.Contains(low, "qué tal") || strings.Contains(low, "que tal") ||
+		low == "gracias" || low == "ok" || low == "bien") {
+		if strings.Contains(low, "cómo") || strings.Contains(low, "como") || strings.Contains(low, "qué tal") || strings.Contains(low, "que tal") {
+			return "Campo en 0. Estable. Genoma y memoria listos; no hay alarma. ¿Consulta al nodo o seguimos en charla?"
+		}
+		return "Campo en 0 (seguir). Presente. Puede pedir «dame estado», explorar Zyrion o hablar con el campo."
+	}
 	if d.State == 1 || a.State == 1 {
 		snip := text
 		if len(snip) > 100 {
@@ -349,7 +360,10 @@ func mindVoice(text string, organs []MindOrganResult) string {
 		}
 		return "Campo en matiz (1). Interpreté: «" + snip + "». ¿Confirma acción sobre el nodo o solo consulta?"
 	}
-	return "Latido OK. Pruebe: «dame estado», «evalua zyrion», «dame red»."
+	if m.State >= 1 {
+		return "Latido OK. Memoria marcó relevancia; si el episodio se graba, el genoma puede probar una mutación acotada."
+	}
+	return "Latido OK. Órganos en seguir. Pruebe: «dame estado», «evalua zyrion», «dame red»."
 }
 
 

@@ -145,3 +145,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Observación:** El motor (tick, genoma, mutación, TF-IDF, calibrate, memory) ya existía; la cara solo mostraba órganos y voz. El organismo no se veía a sí mismo.
 - **Decisión:** UI consume `GET /api/mind/self`, `/memory`, `/calibrate` y el tick (memory_hint, note+genome_mut, episode_cid). Paneles: órganos, genoma ADN, score de corpus, ecos de memoria activa. Sin LLM; solo lectura del campo ternario.
 - **Pendiente HyperIA Pro:** esta cara es el puente mínimo; HyperIA puede reutilizar los mismos endpoints para una vista más rica.
+
+## 2026-08-20 — Voz de campo + guía de laboratorio
+
+- **Acto:** `mindVoice` distingue charla calmada (hola / cómo estás) de menú de comandos; `docs/MIND_LAB.md` describe endpoints, mutación y reglas.
+- **Observación:** En producción el lab mostraba genoma 1.0.0, calibración 45/50 (90%), episodios 0 (saludados no graban). La voz genérica «Pruebe: dame estado…» no leía el campo de charla.
+- **Decisión:** Presencia ternaria en 0; mutación sigue exigiendo episodio relevante. Siguiente: provocar episodio de riesgo en vivo y observar si el genoma muta; bajar los 5 fallos de corpus si hace falta.
