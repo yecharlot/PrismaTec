@@ -151,3 +151,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** `mindVoice` distingue charla calmada (hola / cómo estás) de menú de comandos; `docs/MIND_LAB.md` describe endpoints, mutación y reglas.
 - **Observación:** En producción el lab mostraba genoma 1.0.0, calibración 45/50 (90%), episodios 0 (saludados no graban). La voz genérica «Pruebe: dame estado…» no leía el campo de charla.
 - **Decisión:** Presencia ternaria en 0; mutación sigue exigiendo episodio relevante. Siguiente: provocar episodio de riesgo en vivo y observar si el genoma muta; bajar los 5 fallos de corpus si hace falta.
+
+## 2026-08-20 — Diálogo fluido anclado al campo
+
+- **Acto:** Ampliar `signalsFromTextMind` (charla, identidad, preguntas abiertas) y reescribir `mindVoice` para conversación corriente en español.
+- **Observación:** El lab y el motor existían; la voz seguía siendo menú de comandos. Faltaba el salto de *presencia dialogante* sin traicionar la especie.
+- **Decisión:** Bancos de respuesta deterministas según intención + estado de órganos (ethics/act primero). Tesis explícita si preguntan por LLM/GPT. No se añade API de modelo externo: el lenguaje sigue siendo sombra del campo ternario.

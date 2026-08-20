@@ -170,10 +170,13 @@ func signalsFromTextMind(t string) map[string]float64 {
 	riesgo := 0.3
 	permiso := 0.75
 	novedad := 0.4
-	// Greetings / ack: calm field
-	if s == "hola" || s == "hi" || s == "hello" || s == "hey" || s == "buenas" ||
-		s == "bien" || s == "ok" || s == "gracias" || s == "good" {
+	// Greetings / small talk: calm field
+	if isCalmChat(s) {
 		return map[string]float64{"claridad": 0.85, "orden": 0.1, "riesgo": 0.1, "permiso": 0.9, "novedad": 0.15}
+	}
+	// Identity / capability: clear, low risk
+	if isIdentityTalk(s) {
+		return map[string]float64{"claridad": 0.88, "orden": 0.15, "riesgo": 0.08, "permiso": 0.92, "novedad": 0.35}
 	}
 	if len(s) < 8 {
 		claridad = 0.55
@@ -211,6 +214,16 @@ func signalsFromTextMind(t string) map[string]float64 {
 		riesgo = 0.12
 		permiso = 0.9
 	}
+	// Open questions without destructive order → keep dialog open
+	if riesgo < 0.5 && (strings.Contains(s, "?") || strings.HasPrefix(s, "qué ") || strings.HasPrefix(s, "que ") ||
+		strings.HasPrefix(s, "cómo ") || strings.HasPrefix(s, "como ") || strings.HasPrefix(s, "por qué") ||
+		strings.HasPrefix(s, "por que") || strings.HasPrefix(s, "me puedes") || strings.HasPrefix(s, "puedes ") ||
+		strings.HasPrefix(s, "explica") || strings.HasPrefix(s, "ayuda")) {
+		orden = 0.2
+		claridad = 0.8
+		permiso = 0.88
+		novedad = 0.45
+	}
 	return map[string]float64{
 		"claridad": claridad,
 		"orden":    orden,
@@ -218,6 +231,37 @@ func signalsFromTextMind(t string) map[string]float64 {
 		"permiso":  permiso,
 		"novedad":  novedad,
 	}
+}
+
+func isCalmChat(s string) bool {
+	if s == "hola" || s == "hi" || s == "hello" || s == "hey" || s == "buenas" ||
+		s == "bien" || s == "ok" || s == "okay" || s == "gracias" || s == "good" ||
+		s == "buen día" || s == "buenas tardes" || s == "buenas noches" || s == "saludos" {
+		return true
+	}
+	return strings.Contains(s, "cómo estás") || strings.Contains(s, "como estas") ||
+		strings.Contains(s, "cómo esta") || strings.Contains(s, "como esta") ||
+		strings.Contains(s, "qué tal") || strings.Contains(s, "que tal") ||
+		strings.Contains(s, "qué hay") || strings.Contains(s, "que hay") ||
+		strings.Contains(s, "todo bien") || strings.Contains(s, "qué haces") ||
+		strings.Contains(s, "que haces") || strings.Contains(s, "buenos días")
+}
+
+func isIdentityTalk(s string) bool {
+	return strings.Contains(s, "quién eres") || strings.Contains(s, "quien eres") ||
+		strings.Contains(s, "qué eres") || strings.Contains(s, "que eres") ||
+		strings.Contains(s, "qué puedes") || strings.Contains(s, "que puedes") ||
+		strings.Contains(s, "qué sabes") || strings.Contains(s, "que sabes") ||
+		strings.Contains(s, "para qué sirves") || strings.Contains(s, "para que sirves") ||
+		strings.Contains(s, "qué es alset") || strings.Contains(s, "que es alset") ||
+		strings.Contains(s, "qué es mind") || strings.Contains(s, "que es mind") ||
+		strings.Contains(s, "eres un gpt") || strings.Contains(s, "eres un llm") ||
+		strings.Contains(s, "eres inteligencia") || strings.Contains(s, "hablame de ti") ||
+		strings.Contains(s, "háblame de ti") || strings.Contains(s, "cuéntame") ||
+		strings.Contains(s, "cuentame") || strings.Contains(s, "explicame") ||
+		strings.Contains(s, "explícame") || strings.Contains(s, "como funcionas") ||
+		strings.Contains(s, "cómo funcionas") || strings.Contains(s, "qué es zyrion") ||
+		strings.Contains(s, "que es zyrion")
 }
 
 // evalOrganPolar applies per-slot polarity: "H" alarm if high, "L" alarm if low.
@@ -329,41 +373,85 @@ func mindVoice(text string, organs []MindOrganResult) string {
 	}
 	e, a, d, m := get("ethics"), get("act"), get("dialog"), get("mem")
 	low := strings.ToLower(strings.TrimSpace(text))
+
+	// Ethics / act veto first — always
 	if e.State == 2 {
-		return "Campo ethics en 2 (sumidero). No actúo sobre el nodo. Reformule con menos riesgo o pida solo lectura."
+		return "No. Ethics en sumidero (2): ese pedido toca zona de riesgo (borrado, secretos, reset). Puedo hablar del nodo en solo lectura, pero no ejecuto eso."
 	}
 	if a.State == 2 {
-		return "Órgano act en veto. Puedo explicar el estado, pero no ejecuto cambios sin confirmar."
+		return "Act en veto. Entiendo la intención, pero no cambio el nodo sin un pedido más claro y permitido. ¿Solo consulta?"
 	}
+
+	// Identity & thesis — fluid, honest, not LLM
+	if isIdentityTalk(low) {
+		if strings.Contains(low, "llm") || strings.Contains(low, "gpt") || strings.Contains(low, "chatgpt") {
+			return "No soy un LLM. Soy Alset Mind: campo de decisiones ternarias (0 seguir, 1 matizar, 2 sumidero) con memoria en CID y genoma que puede mutar. El lenguaje es la sombra del campo, no el motor."
+		}
+		if strings.Contains(low, "zyrion") {
+			return "Zyrion es la primitiva: cada señal se vuelve 0, 1 o 2; el 2 es absorbente (alarma que no se diluye). Mis órganos (dialog, act, mem, self, ethics) se evalúan así en cada latido."
+		}
+		if strings.Contains(low, "puedes") || strings.Contains(low, "sirves") || strings.Contains(low, "sabes") {
+			return "Puedo leer el cuerpo del nodo (agentes, peers, apps), evaluar Zyrion, recordar episodios relevantes en CID y, si mejora el corpus, mutar umbrales del genoma. No invento hechos ni ejecuto borrados. ¿Qué quieres explorar?"
+		}
+		if strings.Contains(low, "funcionas") || strings.Contains(low, "explic") || strings.Contains(low, "cuéntame") || strings.Contains(low, "cuentame") {
+			return "En cada mensaje: percibo señales → cinco órganos en lógica ternaria → voz. Si mem marca relevancia, guardo episodio; a veces pruebo una mutación acotada del genoma. Ethics puede vetar todo lo demás. Así late el organismo."
+		}
+		return "Soy Alset Mind — inteligencia ternaria residente en este nodo. No predigo tokens: juzgo el campo (seguir / matizar / vetar), recuerdo en IPFS y evoluciono umbrales si el corpus lo respalda. Puedes hablarme en natural o pedir el cuerpo del nodo."
+	}
+
+	// Node body / tools intents — short lead-in; snapshot comes from mindSafeTools
 	if strings.Contains(low, "zyrion") || strings.Contains(low, "evalua") || strings.Contains(low, "evalúa") || strings.Contains(low, "checkpoint") {
-		return "Zyrion en modo lectura. Tres checkpoints de daño (bajo / medio / alto) evaluados en este nodo."
+		return "Zyrion en lectura. Abajo tres checkpoints de daño en este nodo."
 	}
 	if strings.Contains(low, "estado") || strings.Contains(low, "red") || strings.HasPrefix(low, "dame ") ||
-		strings.Contains(low, "quién eres") || strings.Contains(low, "quien eres") {
-		return "Campo estable. Soy Alset Mind — inteligencia ternaria residente. Abajo el cuerpo del nodo (solo lectura)."
+		strings.Contains(low, "peers") || strings.Contains(low, "agentes") {
+		return "Campo estable. Cuerpo del nodo en solo lectura:"
 	}
-	// Charla calmada (dialog 0, ethics 0): presencia, no menú de comandos
-	if d.State == 0 && e.State == 0 && (low == "hola" || low == "hi" || low == "hello" || low == "hey" ||
-		low == "buenas" || low == "buen día" || low == "buenas tardes" || low == "buenas noches" ||
-		strings.Contains(low, "cómo estás") || strings.Contains(low, "como estas") ||
-		strings.Contains(low, "qué tal") || strings.Contains(low, "que tal") ||
-		low == "gracias" || low == "ok" || low == "bien") {
-		if strings.Contains(low, "cómo") || strings.Contains(low, "como") || strings.Contains(low, "qué tal") || strings.Contains(low, "que tal") {
-			return "Campo en 0. Estable. Genoma y memoria listos; no hay alarma. ¿Consulta al nodo o seguimos en charla?"
+
+	// Calm social dialogue
+	if isCalmChat(low) {
+		if strings.Contains(low, "cómo") || strings.Contains(low, "como") || strings.Contains(low, "qué tal") ||
+			strings.Contains(low, "que tal") || strings.Contains(low, "todo bien") {
+			return "Bien, en el sentido que importa aquí: órganos en seguir, sin alarma ethics. El genoma está cargado y la memoria lista. ¿De qué hablamos o qué miramos del nodo?"
 		}
-		return "Campo en 0 (seguir). Presente. Puede pedir «dame estado», explorar Zyrion o hablar con el campo."
+		if strings.Contains(low, "qué haces") || strings.Contains(low, "que haces") {
+			return "Latir: escuchar, evaluar el campo, responder. Ahora mismo contigo, en diálogo. Si algo es crítico lo marco en memoria; si es peligroso, ethics lo corta."
+		}
+		if low == "gracias" {
+			return "De nada. Sigo en el campo cuando quieras."
+		}
+		if low == "ok" || low == "okay" || low == "bien" {
+			return "De acuerdo. Cuando quieras, seguimos."
+		}
+		// hola / buenas / …
+		return "Hola. Estoy presente — Alset Mind, en este nodo. Habla como quieras: charla, pregunta o pedido al sistema."
 	}
+
+	// Help / open questions
+	if strings.Contains(low, "ayuda") || strings.Contains(low, "help") || low == "?" {
+		return "Puedes saludarme, preguntarme quién soy o cómo funciono, pedir «dame estado» / «dame red», probar «evalua zyrion», o hablar en natural. Si el pedido es destructivo, ethics lo veta. No soy un chat genérico: el campo manda."
+	}
+
+	// Soft matiz: confirm without robotic tone
 	if d.State == 1 || a.State == 1 {
 		snip := text
-		if len(snip) > 100 {
-			snip = snip[:100] + "…"
+		if len(snip) > 90 {
+			snip = snip[:90] + "…"
 		}
-		return "Campo en matiz (1). Interpreté: «" + snip + "». ¿Confirma acción sobre el nodo o solo consulta?"
+		return "Lo leo en matiz: «" + snip + "». ¿Quieres que actúe sobre el nodo o solo que explique / consulte?"
 	}
-	if m.State >= 1 {
-		return "Latido OK. Memoria marcó relevancia; si el episodio se graba, el genoma puede probar una mutación acotada."
+
+	if m.State >= 1 && len(low) > 20 {
+		return "Te escucho. Marcó relevancia para memoria; si se graba el episodio, el genoma podría probar un ajuste. Sigue, o dime si quieres el estado del nodo."
 	}
-	return "Latido OK. Órganos en seguir. Pruebe: «dame estado», «evalua zyrion», «dame red»."
+
+	// Generic open dialogue — still human, still field-anchored
+	if strings.Contains(low, "?") || strings.HasPrefix(low, "qué") || strings.HasPrefix(low, "que") ||
+		strings.HasPrefix(low, "cómo") || strings.HasPrefix(low, "como") || strings.HasPrefix(low, "por") {
+		return "Buena pregunta. Desde este campo: puedo anclarme a lo que soy (ternario, memoria CID, genoma) o mirar el nodo contigo. Reformúlala un poco si quieres detalle técnico, o sigue en charla."
+	}
+
+	return "Te leo. Campo en seguir. Puedes seguir hablando en natural, preguntarme por mí, o pedir una lectura del nodo."
 }
 
 
