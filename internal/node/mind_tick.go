@@ -178,6 +178,14 @@ func signalsFromTextMind(t string) map[string]float64 {
 	if isIdentityTalk(s) {
 		return map[string]float64{"claridad": 0.88, "orden": 0.15, "riesgo": 0.08, "permiso": 0.92, "novedad": 0.35}
 	}
+	// Personal facts → calm + high novelty (episode worth saving)
+	if isPersonalFact(s) {
+		return map[string]float64{"claridad": 0.85, "orden": 0.15, "riesgo": 0.1, "permiso": 0.9, "novedad": 0.85}
+	}
+	// Memory queries → calm, seek recall
+	if isMemoryQuery(s) {
+		return map[string]float64{"claridad": 0.85, "orden": 0.12, "riesgo": 0.08, "permiso": 0.92, "novedad": 0.25}
+	}
 	if len(s) < 8 {
 		claridad = 0.55
 	}
@@ -283,9 +291,19 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		sig[k] = v
 	}
 	// Episodic memory (local index + CID blocks) biases the field — decentralized-ready
-	recent := n.recallRecentEpisodes(5)
+	recallN := 5
+	if isMemoryQuery(text) {
+		recallN = 24 // deeper look when user asks to remember
+	}
+	recent := n.recallRecentEpisodes(recallN)
 	memHint := ""
-	sig, memHint = biasSignalsFromMemory(sig, recent, text)
+	memSpeak := ""
+	sig, memHint, memSpeak = biasSignalsFromMemory(sig, recent, text)
+	// Personal facts → boost memory organ so we persist them
+	if isPersonalFact(text) {
+		sig["novedad"] = clamp01(sig["novedad"] + 0.35)
+		sig["claridad"] = clamp01(sig["claridad"] + 0.1)
+	}
 	// Organs with polarity: H = high is alarm, L = low is alarm
 	// dialog: low clarity, high order, high risk → escalate
 	dialog := evalOrganPolar("dialog", sig["claridad"], sig["orden"], sig["riesgo"], "L", "H", "H")
@@ -305,14 +323,14 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	}
 
 	organs := []MindOrganResult{dialog, act, mem, self, ethics}
-	voice := mindVoice(text, organs)
+	voice := mindVoice(text, organs, memSpeak)
 	// Safe tools when ethics/act allow (not veto)
 	if ethics.State != 2 && act.State != 2 {
 		if extra := n.mindSafeTools(text); extra != "" {
 			voice = voice + "\n\n" + extra
 		}
 	}
-	if memHint != "" {
+	if memHint != "" && memSpeak == "" {
 		voice = voice + "\n\n" + memoryHintLine(memHint)
 	}
 	resp := MindTickResponse{
@@ -324,7 +342,8 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		Note:       "latido+memoria-episodica+zyrion",
 	}
 
-	saveEp := forceMem || (mem.State >= 1 && (sig["riesgo"] >= 0.5 || len(text) > 48 || mem.State == 2))
+	saveEp := forceMem || isPersonalFact(text) ||
+		(mem.State >= 1 && (sig["riesgo"] >= 0.5 || len(text) > 48 || mem.State == 2 || isPersonalFact(text)))
 	if saveEp {
 		ep := map[string]interface{}{
 			"type":      "mind_episode",
@@ -362,7 +381,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	return resp
 }
 
-func mindVoice(text string, organs []MindOrganResult) string {
+func mindVoice(text string, organs []MindOrganResult, memSpeak string) string {
 	get := func(name string) MindOrganResult {
 		for _, o := range organs {
 			if o.Name == name {
@@ -380,6 +399,18 @@ func mindVoice(text string, organs []MindOrganResult) string {
 	}
 	if a.State == 2 {
 		return "Act en veto. Entiendo la intención, pero no cambio el nodo sin un pedido más claro y permitido. ¿Solo consulta?"
+	}
+
+	// Spoken episodic memory — the advantage over LLM context windows
+	if memSpeak != "" {
+		return memSpeak
+	}
+	// Confirm when user just declared a personal fact (will be saved as CID)
+	if isPersonalFact(low) {
+		if name := extractDeclaredName(text); name != "" {
+			return "Queda anotado en memoria episódica: te llamas " + name + ". Si más adelante preguntas «cómo me llamo», lo recuperaré desde el CID, no desde una ventana temporal."
+		}
+		return "Hecho personal marcado para memoria CID. Podré recuperarlo en latidos futuros aunque el chat se reinicie (mientras el bloque siga en el nodo)."
 	}
 
 	// Identity & thesis — fluid, honest, not LLM

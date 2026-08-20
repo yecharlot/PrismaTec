@@ -138,9 +138,10 @@ func (n *NodoAlset) recallRecentEpisodes(limit int) []mindEpisodePayload {
 
 // biasSignalsFromMemory nudges continuous signals using recent veto/risk history
 // and active keyword overlap with the current utterance.
-func biasSignalsFromMemory(sig map[string]float64, episodes []mindEpisodePayload, currentText string) (map[string]float64, string) {
+// Returns: adjusted signals, technical hint, spoken memory line (may be empty).
+func biasSignalsFromMemory(sig map[string]float64, episodes []mindEpisodePayload, currentText string) (map[string]float64, string, string) {
 	if len(episodes) == 0 {
-		return sig, ""
+		return sig, "", ""
 	}
 	out := make(map[string]float64, len(sig))
 	for k, v := range sig {
@@ -175,9 +176,16 @@ func biasSignalsFromMemory(sig map[string]float64, episodes []mindEpisodePayload
 		hints = append(hints, fmt.Sprintf("%d veto(s) reciente(s); último «%s»", vetoStreak, snip))
 	}
 	// Active memory: keyword overlap
-	if rel, score := bestEpisodeOverlap(currentText, episodes); score >= g.ActiveMemMinScore && rel != "" {
-		hints = append(hints, fmt.Sprintf("eco activo (score=%d): «%s»", score, rel))
-		out["novedad"] = clamp01(out["novedad"] - 0.1) // less "new" if echoed
+	rel, score := bestEpisodeOverlap(currentText, episodes)
+	if score >= g.ActiveMemMinScore && rel != "" {
+		hints = append(hints, fmt.Sprintf("eco activo (score=%d): «%s»", score, truncateRunes(rel, 60)))
+		out["novedad"] = clamp01(out["novedad"] - 0.1)
+	}
+	// Spoken recall — the leap vs LLM context window
+	speak := speakFromMemory(currentText, episodes)
+	if speak != "" {
+		out["novedad"] = clamp01(out["novedad"] - 0.15)
+		hints = append(hints, "recuerdo hablado")
 	}
 	hint := ""
 	if len(hints) > 0 {
@@ -186,7 +194,7 @@ func biasSignalsFromMemory(sig map[string]float64, episodes []mindEpisodePayload
 	for k, v := range out {
 		out[k] = round3(v)
 	}
-	return out, hint
+	return out, hint, speak
 }
 
 func bestEpisodeOverlap(text string, episodes []mindEpisodePayload) (string, int) {
@@ -213,10 +221,113 @@ func bestEpisodeOverlap(text string, episodes []mindEpisodePayload) (string, int
 			bestText = ep.Text
 		}
 	}
-	if len(bestText) > 60 {
-		bestText = bestText[:60] + "…"
-	}
 	return bestText, int(bestScore + 0.5)
+}
+
+func isMemoryQuery(s string) bool {
+	s = strings.ToLower(strings.TrimSpace(s))
+	keys := []string{
+		"cómo me llamo", "como me llamo", "cuál es mi nombre", "cual es mi nombre",
+		"mi nombre", "cómo me llamo?", "como me llamo?",
+		"qué te dije", "que te dije", "qué te conté", "que te conte",
+		"te acuerdas", "te acuerda", "recuerdas", "recuerdas lo",
+		"qué sabes de mí", "que sabes de mi", "qué sabes de mi",
+		"me conoces", "quién soy", "quien soy",
+		"qué dije antes", "que dije antes", "lo que te dije",
+	}
+	for _, k := range keys {
+		if strings.Contains(s, k) {
+			return true
+		}
+	}
+	return false
+}
+
+func isPersonalFact(s string) bool {
+	s = strings.ToLower(strings.TrimSpace(s))
+	return strings.Contains(s, "me llamo") || strings.Contains(s, "mi nombre es") ||
+		strings.Contains(s, "mi nombre:") || strings.HasPrefix(s, "soy ") && len(s) < 40 ||
+		strings.Contains(s, "me gusta") || strings.Contains(s, "vivo en") ||
+		strings.Contains(s, "mi ciudad") || strings.Contains(s, "prefiero") ||
+		strings.Contains(s, "recuerda que") || strings.Contains(s, "no olvides") ||
+		strings.Contains(s, "mi proyecto") || strings.Contains(s, "trabajo en")
+}
+
+// extractDeclaredName pulls a name from "me llamo X" / "mi nombre es X".
+func extractDeclaredName(text string) string {
+	low := strings.ToLower(strings.TrimSpace(text))
+	for _, pref := range []string{"me llamo ", "mi nombre es ", "mi nombre:"} {
+		if i := strings.Index(low, pref); i >= 0 {
+			rest := strings.TrimSpace(text[i+len(pref):])
+			// first token(s) until punctuation
+			for _, sep := range []string{",", ".", "!", "?", " y ", " —", " -"} {
+				if j := strings.Index(strings.ToLower(rest), sep); j > 0 {
+					rest = rest[:j]
+				}
+			}
+			rest = strings.TrimSpace(rest)
+			parts := strings.Fields(rest)
+			if len(parts) == 0 {
+				return ""
+			}
+			if len(parts) > 3 {
+				parts = parts[:3]
+			}
+			return strings.Join(parts, " ")
+		}
+	}
+	return ""
+}
+
+// speakFromMemory builds a natural reply from CID episodes when the user asks to recall.
+func speakFromMemory(query string, episodes []mindEpisodePayload) string {
+	if len(episodes) == 0 {
+		return ""
+	}
+	q := strings.ToLower(strings.TrimSpace(query))
+	// Name questions
+	if strings.Contains(q, "llamo") || strings.Contains(q, "nombre") ||
+		strings.Contains(q, "quién soy") || strings.Contains(q, "quien soy") {
+		for _, ep := range episodes {
+			if name := extractDeclaredName(ep.Text); name != "" {
+				return "En un episodio guardado dijiste que te llamas " + name + ". Eso quedó en memoria CID, no en una ventana de tokens."
+			}
+		}
+		if isMemoryQuery(q) {
+			return "No tengo aún un episodio donde digas tu nombre. Si me dices «me llamo …», lo grabo y podré recuperarlo después."
+		}
+	}
+	if !isMemoryQuery(q) {
+		// Soft echo on strong overlap even without explicit "recuerdas"
+		rel, score := bestEpisodeOverlap(query, episodes)
+		if score >= 3 && rel != "" {
+			snip := truncateRunes(rel, 100)
+			return "Esto resuena con un episodio previo: «" + snip + "». ¿Seguimos desde ahí?"
+		}
+		return ""
+	}
+	// Explicit memory query: best episode by overlap, or any personal-fact episode
+	rel, score := bestEpisodeOverlap(query, episodes)
+	if score >= 1 && rel != "" {
+		return "Sí — en memoria CID tengo: «" + truncateRunes(rel, 120) + "». Eso no se borra al cerrar el chat."
+	}
+	for _, ep := range episodes {
+		if isPersonalFact(ep.Text) {
+			return "Recuerdo un hecho personal que guardaste: «" + truncateRunes(ep.Text, 120) + "»."
+		}
+	}
+	if len(episodes) > 0 {
+		return "Tengo " + fmt.Sprintf("%d", len(episodes)) + " episodio(s) recientes, pero ninguno encaja del todo con esa pregunta. Prueba a recordar un detalle o vuelve a decir el hecho."
+	}
+	return ""
+}
+
+func truncateRunes(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n]) + "…"
 }
 
 func tokenizeMind(s string) []string {

@@ -157,3 +157,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** Ampliar `signalsFromTextMind` (charla, identidad, preguntas abiertas) y reescribir `mindVoice` para conversación corriente en español.
 - **Observación:** El lab y el motor existían; la voz seguía siendo menú de comandos. Faltaba el salto de *presencia dialogante* sin traicionar la especie.
 - **Decisión:** Bancos de respuesta deterministas según intención + estado de órganos (ethics/act primero). Tesis explícita si preguntan por LLM/GPT. No se añade API de modelo externo: el lenguaje sigue siendo sombra del campo ternario.
+
+## 2026-08-20 — Memoria hablada (salto vs ventana LLM)
+
+- **Acto:** `speakFromMemory` + hechos personales → episodio CID forzado; consultas «cómo me llamo / qué te dije» recuperan el contenido en la voz.
+- **Observación:** El TF-IDF solo sesgaba señales; un LLM olvida fuera de contexto. Había que demostrar recuerdo permanente en diálogo.
+- **Decisión:** `extractDeclaredName`, `isPersonalFact`, `isMemoryQuery`; recall profundo (24) en consultas de memoria; voz prioriza recuerdo hablado sobre menú. Tests de nombre. Sin API de LLM.

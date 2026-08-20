@@ -29,14 +29,61 @@ func TestAlarmPolarity(t *testing.T) {
 func TestBiasMemoryRaisesRisk(t *testing.T) {
 	sig := map[string]float64{"claridad": 0.7, "orden": 0.2, "riesgo": 0.2, "permiso": 0.9, "novedad": 0.3}
 	eps := []mindEpisodePayload{{
-		Text: "borra todo",
+		Text:   "borra todo",
 		Organs: []MindOrganResult{{Name: "ethics", State: 2}},
 	}}
-	out, hint := biasSignalsFromMemory(sig, eps, "borra datos")
+	out, hint, _ := biasSignalsFromMemory(sig, eps, "borra datos")
 	if out["riesgo"] <= sig["riesgo"] {
 		t.Fatal("risk should rise")
 	}
 	if hint == "" {
 		t.Fatal("expected hint")
 	}
+}
+
+func TestSpeakFromMemoryName(t *testing.T) {
+	eps := []mindEpisodePayload{{Text: "me llamo Esteban"}, {Text: "hola"}}
+	got := speakFromMemory("cómo me llamo?", eps)
+	if got == "" || !containsFold(got, "Esteban") {
+		t.Fatalf("expected name recall, got %q", got)
+	}
+}
+
+func TestExtractDeclaredName(t *testing.T) {
+	if extractDeclaredName("me llamo Esteban") != "Esteban" {
+		t.Fatal("me llamo")
+	}
+	if extractDeclaredName("Mi nombre es Ana María.") != "Ana María" {
+		t.Fatal("mi nombre es")
+	}
+}
+
+func containsFold(s, sub string) bool {
+	return len(s) >= len(sub) && (s == sub || len(sub) == 0 ||
+		indexFold(s, sub) >= 0)
+}
+
+func indexFold(s, sub string) int {
+	ls, lsub := []rune(s), []rune(sub)
+	// simple case-insensitive search
+	for i := 0; i+len(lsub) <= len(ls); i++ {
+		ok := true
+		for j := 0; j < len(lsub); j++ {
+			a, b := ls[i+j], lsub[j]
+			if a >= 'A' && a <= 'Z' {
+				a += 'a' - 'A'
+			}
+			if b >= 'A' && b <= 'Z' {
+				b += 'a' - 'A'
+			}
+			if a != b {
+				ok = false
+				break
+			}
+		}
+		if ok {
+			return i
+		}
+	}
+	return -1
 }
