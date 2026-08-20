@@ -194,10 +194,10 @@ func bestEpisodeOverlap(text string, episodes []mindEpisodePayload) (string, int
 	if len(words) == 0 {
 		return "", 0
 	}
-	bestScore := 0
+	bestScore := 0.0
 	bestText := ""
 	for _, ep := range episodes {
-		sc := 0
+		sc := 0.0
 		ew := tokenizeMind(ep.Text)
 		set := map[string]bool{}
 		for _, w := range ew {
@@ -205,7 +205,7 @@ func bestEpisodeOverlap(text string, episodes []mindEpisodePayload) (string, int
 		}
 		for _, w := range words {
 			if set[w] {
-				sc++
+				sc += episodeTokenWeight(w, episodes)
 			}
 		}
 		if sc > bestScore {
@@ -216,7 +216,7 @@ func bestEpisodeOverlap(text string, episodes []mindEpisodePayload) (string, int
 	if len(bestText) > 60 {
 		bestText = bestText[:60] + "…"
 	}
-	return bestText, bestScore
+	return bestText, int(bestScore + 0.5)
 }
 
 func tokenizeMind(s string) []string {

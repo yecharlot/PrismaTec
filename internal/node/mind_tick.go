@@ -307,6 +307,12 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 				"mem":  mem.State,
 				"text": text,
 			})
+			if mut := n.tryMutateGenomeAfterEpisode(mem.State); mut != nil {
+				// attach lightly in note only if accepted (avoid noisy voice)
+				if acc, _ := mut["accepted"].(bool); acc {
+					resp.Note = resp.Note + "+genome_mut"
+				}
+			}
 		}
 	}
 	return resp

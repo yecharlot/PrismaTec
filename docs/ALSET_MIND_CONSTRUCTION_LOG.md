@@ -120,3 +120,12 @@ Refino:
 ### Por qué /api/mind/memory daba vacío
 Redeploy en Render = filesystem efímero. El índice local se perdía aunque los CID pudieran seguir en RAM blockstore. Recovery: escanear blockstore por `type=mind_episode`.
 
+
+## 2026-08-20 — Ciclo mutación + calibración + TF-IDF
+
+- Corpus ampliado a ~50 diálogos (`docs/mind_calibration_dialogs.json` + embed).
+- `GET /api/mind/calibrate` — score del genoma actual vs corpus.
+- Tras episodio mem≥1: `tryMutateGenomeAfterEpisode` prueba mutación acotada de `AlarmHighCut` / `VetoRiskBoost`; solo acepta si mejora el score del corpus.
+- Memoria activa: overlap ponderado tipo TF-IDF simple (`episodeTokenWeight`).
+- Producción viva: memory index_cids≥1, genome visible en `/api/mind/self`.
+
