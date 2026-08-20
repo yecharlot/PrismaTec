@@ -24,10 +24,11 @@
 
 ## Fase 1 — Dominio LispAI (lengua materna)
 
-- [ ] Sub-corpus Lisp: `defun`, `let`, `if`/`cond`, `lambda`, `car`/`cdr`/`cons`, recursión.
-- [ ] Problemas Lisp con solución en el diálogo / conocimiento.
-- [ ] Evaluación de código Lisp bajo Zyrion (ethics sobre efectos).
-- [ ] Voz: preguntas Lisp recuperan conocimiento estructurado (no menú vacío).
+- [x] Sub-corpus Lisp: `defun`, `let`, `if`/`cond`, `lambda`, `car`/`cdr`/`cons`, `quote`, `nil`, `append`, `mapcar`, recursión (`mind_knowledge.json`).
+- [x] Problemas Lisp con solución: suma lista, length, factorial, reverse.
+- [x] Evaluación de código Lisp bajo Zyrion (entrada `lisp_eval`: forma + ethics).
+- [x] Voz: `speakFromKnowledge` recupera entradas Lisp/problemas.
+- [ ] Ampliar (macros, closures avanzados, más problemas) en iteraciones siguientes.
 
 ## Fase 2 — Fullstack y paradigmas
 
