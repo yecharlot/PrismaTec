@@ -1,0 +1,21 @@
+# Optional Blueprint — use if you create service from Blueprint
+# Dashboard settings that matter:
+#   Runtime: Docker
+#   Branch: main
+#   Health check path: /api/v2/info  (or /)
+#   Env: PORT is automatic; set SUPABASE_URL + SUPABASE_SERVICE_KEY for durable Mind memory
+
+services:
+  - type: web
+    name: prismatec
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    branch: main
+    healthCheckPath: /api/v2/info
+    envVars:
+      - key: RENDER
+        value: "true"
+      # Add in dashboard (secrets):
+      # SUPABASE_URL
+      # SUPABASE_SERVICE_KEY

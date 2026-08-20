@@ -198,3 +198,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Observación:** En Render el disco es efímero; sin Store durable (Supabase) el índice y los bloques se pierden en cada deploy.
 - **Decisión:** `GenerarCID` hace SaveBlock inmediato; `saveMindEpisodeIndex` escribe disco + `KeyMindEpisodes`. En producción: configurar `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` para que la memoria sobreviva redeploys.
 - **Archivos:** `mind_memory.go`, `node.go` GenerarCID, `persist.go` CargarEstado, `persistence/store.go` KeyMindEpisodes.
+
+## 2026-08-20 — Dockerfile endurecido para deploys Render
+
+- **Acto:** Dockerfile con GOPROXY, binario -ldflags -s -w, alpine 3.20 fijo, render.yaml de referencia.
+- **Observación:** Deploys fallaban / “service unavailable” en consola; el código compilaba en local. Causa típica: timeout/OOM en build libre de Render, no panic de Mind.
+- **Decisión:** Build más predecible; health check sugerido `/api/v2/info`. Si el dashboard sigue en unavailable, es cola/plataforma: reintentar, clear cache, o upgrade temporal de plan.
