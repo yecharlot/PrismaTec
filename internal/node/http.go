@@ -19,6 +19,7 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 	n.ensureStaticFiles()
 	n.ensureVeroAppFiles()
 	n.ensurePrismatecApp()
+	n.ensureMindApp()
 	mux := http.NewServeMux()
 	h := n.httpHandlers()
 	// Core API also registered via Backend adapter (crear-agente, listados, …)
@@ -63,6 +64,13 @@ func (n *NodoAlset) httpHandlers() httpapi.Handlers {
 		}
 		if alias == "prismatec" {
 			n.ensurePrismatecApp()
+			if _, err := os.Stat(appPath); err == nil {
+				http.ServeFile(w, r, appPath)
+				return
+			}
+		}
+		if alias == "mind" {
+			n.ensureMindApp()
 			if _, err := os.Stat(appPath); err == nil {
 				http.ServeFile(w, r, appPath)
 				return

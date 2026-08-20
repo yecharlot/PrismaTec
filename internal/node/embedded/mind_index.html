@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Alset Mind · IMind</title>
+<style>
+  :root {
+    --bg:#07070c; --card:#101018; --line:rgba(244,180,0,.18);
+    --gold:#f4b400; --text:#e8e8ef; --muted:#8b8b9a;
+    --0:#4caf50; --1:#ff9800; --2:#ff5252;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    min-height:100vh;font-family:Inter,system-ui,sans-serif;color:var(--text);
+    background:radial-gradient(ellipse at 30% 20%,#14141f,var(--bg));
+    display:flex;align-items:center;justify-content:center;padding:1rem;
+  }
+  .shell{
+    width:min(720px,100%);background:rgba(16,16,24,.95);
+    border:1px solid var(--line);border-radius:24px;padding:1.25rem 1.25rem 1rem;
+    box-shadow:0 24px 80px rgba(0,0,0,.55);
+  }
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1rem}
+  h1{font-size:1.25rem;font-weight:700;letter-spacing:-.02em}
+  h1 span{color:var(--gold)}
+  .tag{font-size:.65rem;color:var(--muted);margin-top:.25rem}
+  .badge{font-size:.65rem;padding:.25rem .6rem;border-radius:999px;border:1px solid var(--line);color:var(--gold)}
+  #log{
+    height:min(48vh,420px);overflow:auto;border-radius:16px;
+    background:#0a0a10;border:1px solid var(--line);padding:1rem;margin-bottom:1rem;
+    font-size:.9rem;line-height:1.5;
+  }
+  .msg{margin-bottom:.85rem}
+  .msg.user{color:#cfd0ff}
+  .msg.mind{color:var(--text)}
+  .msg .who{font-size:.65rem;color:var(--muted);margin-bottom:.2rem}
+  .field{
+    display:grid;grid-template-columns:repeat(5,1fr);gap:.35rem;margin:.5rem 0 .75rem;
+    font-size:.65rem;
+  }
+  .cell{
+    border-radius:10px;padding:.4rem;text-align:center;border:1px solid var(--line);background:#0d0d14;
+  }
+  .cell strong{display:block;font-size:.7rem;margin-bottom:.15rem}
+  .s0{color:var(--0)} .s1{color:var(--1)} .s2{color:var(--2)}
+  .row{display:flex;gap:.5rem}
+  input{
+    flex:1;border-radius:999px;border:1px solid var(--line);background:#0a0a10;
+    color:var(--text);padding:.75rem 1rem;font-size:.9rem;outline:none;
+  }
+  input:focus{border-color:var(--gold)}
+  button{
+    border:none;border-radius:999px;padding:.75rem 1.1rem;font-weight:700;cursor:pointer;
+    background:linear-gradient(135deg,#f4b400,#fb8c00);color:#0a0a0a;
+  }
+  button:disabled{opacity:.5;cursor:wait}
+  .hint{font-size:.7rem;color:var(--muted);margin-top:.65rem;text-align:center}
+</style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <h1>Alset <span>Mind</span></h1>
+        <div class="tag">Inteligencia ternaria residente · no un LLM disfrazado</div>
+      </div>
+      <div class="badge" id="status">semilla</div>
+    </header>
+    <div id="log"></div>
+    <div class="field" id="field">
+      <div class="cell" id="c-dialog"><strong>dialog</strong>—</div>
+      <div class="cell" id="c-act"><strong>act</strong>—</div>
+      <div class="cell" id="c-mem"><strong>mem</strong>—</div>
+      <div class="cell" id="c-self"><strong>self</strong>—</div>
+      <div class="cell" id="c-ethics"><strong>ethics</strong>—</div>
+    </div>
+    <div class="row">
+      <input id="inp" placeholder="Habla con el campo…" autocomplete="off"/>
+      <button id="send" type="button">Latido</button>
+    </div>
+    <p class="hint">Cada mensaje activa órganos Zyrion (0 seguir · 1 matizar · 2 veto). La voz lee el campo.</p>
+  </div>
+<script>
+const logEl = document.getElementById('log');
+const inp = document.getElementById('inp');
+const send = document.getElementById('send');
+
+function add(who, text) {
+  const d = document.createElement('div');
+  d.className = 'msg ' + who;
+  d.innerHTML = '<div class="who">' + (who === 'user' ? 'Tú' : 'Alset Mind') + '</div>' +
+    text.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  logEl.appendChild(d);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function signalsFromText(t) {
+  const s = t.toLowerCase();
+  let claridad = 0.7;
+  let orden = /crea|borra|elimina|registra|ejecuta|despliega|curl|api|agente/.test(s) ? 0.85 : 0.25;
+  let riesgo = /borra|elimina|reset|master|password|secret|rm /.test(s) ? 0.9 : 0.3;
+  let permiso = riesgo > 0.7 ? 0.2 : 0.75;
+  let novedad = t.length > 80 ? 0.7 : 0.4;
+  if (s.length < 8) claridad = 0.35;
+  return { claridad, orden, riesgo, permiso, novedad };
+}
+
+function paintOrgans(pairs) {
+  const map = {};
+  if (Array.isArray(pairs)) {
+    pairs.forEach(p => {
+      if (Array.isArray(p) && p.length >= 2) map[String(p[0])] = p[1];
+    });
+  }
+  ['dialog','act','mem','self','ethics'].forEach(k => {
+    const el = document.getElementById('c-' + k);
+    const v = map[k];
+    let label = '—', cls = '';
+    const sv = String(v);
+    if (/VETO|2|CHECKPOINT|BLOQUEO/i.test(sv)) { label = '2 VETO'; cls = 's2'; }
+    else if (/MATIZAR|1|REVISAR/i.test(sv)) { label = '1 MATIZAR'; cls = 's1'; }
+    else if (/SEGUIR|0|OK|APOPTOSIS|REPARACION/i.test(sv) || v === 0) { label = '0 SEGUIR'; cls = 's0'; }
+    else if (v !== undefined) { label = sv.substring(0, 18); }
+    el.innerHTML = '<strong>' + k + '</strong><span class="' + cls + '">' + label + '</span>';
+  });
+}
+
+function voiceFromField(pairs, userText) {
+  const map = {};
+  (pairs || []).forEach(p => { if (Array.isArray(p) && p.length >= 2) map[String(p[0])] = p[1]; });
+  const e = String(map.ethics || '');
+  const a = String(map.act || '');
+  const d = String(map.dialog || '');
+  if (/VETO|2/i.test(e)) {
+    return 'Campo ethics en 2 (sumidero). No actúo sobre el nodo. Reformule con menos riesgo o pida solo lectura.';
+  }
+  if (/VETO|2/i.test(a)) {
+    return 'Órgano act en veto. Puedo explicar el estado del nodo, pero no ejecuto cambios sin matizar el pedido.';
+  }
+  if (/MATIZAR|1/i.test(d) || /MATIZAR|1/i.test(a)) {
+    return 'Campo en matiz (1). Intentó: «' + userText.slice(0, 120) + '». ¿Confirma acción sobre el nodo o solo consulta?';
+  }
+  return 'Latido OK. dialog/act en seguir. Soy Alset Mind — mente ternaria residente. Pida estado, Zyrion o una acción clara al nodo.';
+}
+
+async function latido() {
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  add('user', text);
+  send.disabled = true;
+  const sig = signalsFromText(text);
+  const cmd = `(mind-latido ${sig.claridad} ${sig.orden} ${sig.riesgo} ${sig.permiso} ${sig.novedad})`;
+  try {
+    const res = await fetch('/api/lispai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cmd })
+    });
+    const data = await res.json();
+    if (data.error) {
+      add('mind', 'Genoma aún no cargado o error Lisp: ' + data.error);
+      document.getElementById('status').textContent = 'error';
+    } else {
+      const r = data.resultado;
+      paintOrgans(Array.isArray(r) ? r : []);
+      add('mind', voiceFromField(Array.isArray(r) ? r : [], text));
+      document.getElementById('status').textContent = 'vivo';
+    }
+  } catch (e) {
+    add('mind', 'Sin contacto con el nodo: ' + e.message);
+  }
+  send.disabled = false;
+  inp.focus();
+}
+
+send.addEventListener('click', latido);
+inp.addEventListener('keydown', e => { if (e.key === 'Enter') latido(); });
+add('mind', 'Semilla activa. Cinco órganos Zyrion en el campo. Escriba y pulse Latido.');
+</script>
+</body>
+</html>
