@@ -185,3 +185,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Decisión:** Seguir sembrando conocimiento estructurado; generación autónoma de código queda para Fase 5 con tool explícita.
 - **Archivos:** `embedded/mind_knowledge.json`, corpus + embed, `ALSET_MIND_TRAINING_PLAN.md`, bitácora.
 - **Próximo paso:** Fase 2 (patrones / Go-Python) o más Lisp avanzado según prioridad.
+
+## 2026-08-20 — Fix Render 502: respetar $PORT
+
+- **Acto:** `cmd/prisma-tec/main.go` lee `PORT` del entorno antes de argv/8080.
+- **Observación:** Tras deploys recientes, https://prismatec.onrender.com devolvía 502; el binario compila y arranca en local (Mind semilla OK). Render asigna puerto dinámico vía env; escuchar solo 8080 puede dejar el proxy sin backend.
+- **Decisión:** Prioridad PORT env → argv → 8080. Si sigue 502, revisar logs de build/runtime en el dashboard (OOM, health check).
