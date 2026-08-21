@@ -430,3 +430,22 @@ func TestMetaMemoryTalk(t *testing.T) {
 		t.Fatalf("should not quote raw episode: %s", got)
 	}
 }
+
+func TestPhase2FullstackKnowledge(t *testing.T) {
+	cases := []struct{ q, must string }{
+		{"qué es factory", "Factory"},
+		{"qué es una goroutine", "goroutine"},
+		{"qué es python", "Python"},
+		{"qué es rest", "REST"},
+		{"global interpreter lock", "GIL"},
+		{"patrón observer", "Observer"},
+		{"qué es mvc", "MVC"},
+		{"async await", "async"},
+	}
+	for _, c := range cases {
+		got := speakFromKnowledge(c.q)
+		if got == "" || !strings.Contains(got, c.must) {
+			t.Errorf("%q: want snippet %q, got %q", c.q, c.must, got)
+		}
+	}
+}

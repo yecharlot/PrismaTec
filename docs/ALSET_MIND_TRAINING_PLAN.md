@@ -32,9 +32,10 @@
 
 ## Fase 2 — Fullstack y paradigmas
 
-- [ ] Patrones: Singleton, Factory, Observer, MVC (ejemplos multi-lenguaje).
-- [ ] Lenguajes: Go, Python, JS — sintaxis, errores, concurrencia.
-- [ ] Arquitectura: REST, microservicios, auth, datos.
+- [x] Patrones: Singleton, Factory, Observer, MVC, Strategy (ejemplos ligados al nodo).
+- [x] Lenguajes: Go (goroutines, channels, interfaces), Python (GIL, decorators, comprehensions), JS (event loop, async).
+- [x] Arquitectura: REST, microservicios, auth, persistencia SQL/KV vs CID.
+- [ ] Profundizar con problemas guiados multi-lenguaje (iteración siguiente).
 
 ## Fase 3 — IA convencional vs naturaleza ternaria
 
@@ -94,5 +95,5 @@ Completado como base para el polímata (no sustituye las fases de corpus):
 - [x] Recall «Sí, te llamas X.»
 - [x] Frases incompletas sin matiz de acción
 
-**Siguiente conocimiento:** retomar **Fase 2** (patrones / Go-Python) según `docs/ALSET_MIND_ROADMAP.md` § P1.
+**Siguiente conocimiento:** **Fase 3** (IA convencional vs Zyrion) o problemas guiados multi-lenguaje. Ver `docs/ALSET_MIND_ROADMAP.md`.
 

@@ -565,5 +565,203 @@
       "cons car cdr ejemplo"
     ],
     "text": "Listas: (cons 1 (cons 2 nil)), (car x), (cdr x). mapcar aplica una función a cada elemento. Para datos de topología usa quote. El intérprete del nodo es el motor simbólico; Mind lo invoca vía LispAI cuando el intent es evaluar Zyrion, no en cada saludo."
+  },
+  {
+    "type": "patron_diseno",
+    "keys": [
+      "factory",
+      "patrón factory",
+      "patron factory",
+      "fábrica",
+      "factory pattern",
+      "qué es factory"
+    ],
+    "text": "Factory: una función o tipo crea objetos sin que el cliente fije la clase concreta. En Go suele ser NewX(cfg) que devuelve una interfaz. Útil cuando hay varias implementaciones (p. ej. store local vs remoto) y ethics debe ver el mismo contrato."
+  },
+  {
+    "type": "patron_diseno",
+    "keys": [
+      "observer",
+      "patrón observer",
+      "patron observer",
+      "publicador suscriptor",
+      "pub sub",
+      "qué es observer"
+    ],
+    "text": "Observer: sujetos notifican a suscriptores cuando cambia el estado. En este nodo se parece a los pulsos (mind_episode, peer events): quien escucha reacciona sin acoplarse al emisor. Cuidado con bucles de notificación bajo ethics."
+  },
+  {
+    "type": "patron_diseno",
+    "keys": [
+      "mvc",
+      "modelo vista controlador",
+      "patrón mvc",
+      "patron mvc",
+      "qué es mvc"
+    ],
+    "text": "MVC separa datos (modelo), presentación (vista) y orquestación (controlador). En Alset: el modelo es genoma + episodios + corpus; la vista es mind_index; el controlador es el latido y los handlers HTTP. No mezclar mutación de genoma en la capa de pintura de UI."
+  },
+  {
+    "type": "patron_diseno",
+    "keys": [
+      "strategy",
+      "patrón strategy",
+      "patron strategy",
+      "estrategia"
+    ],
+    "text": "Strategy: intercambiar algoritmos detrás de la misma interfaz. Ejemplo ternario: distintos órganos evalúan con la misma firma 0/1/2. El cliente elige la estrategia (o el campo la elige) sin reescribir el flujo del latido."
+  },
+  {
+    "type": "prog_go",
+    "keys": [
+      "goroutine",
+      "goroutines",
+      "concurrencia go",
+      "qué es una goroutine",
+      "que es una goroutine"
+    ],
+    "text": "Una goroutine es un hilo ligero de Go lanzado con go f(). Comparte el espacio de memoria del proceso: coordina con channels o mutex, no con variables sueltas. En el nodo, el latido Mind no debe spawnear trabajo libre sin context y sin pasar por ethics si muta estado."
+  },
+  {
+    "type": "prog_go",
+    "keys": [
+      "channel go",
+      "channels go",
+      "canal go",
+      "select go",
+      "qué es un channel"
+    ],
+    "text": "Los channels comunican goroutines: ch := make(chan T) o con buffer. Prefiere ownership claro (quien envía, quien cierra). select elige entre varios casos. No bloquees el latido HTTP esperando un channel sin timeout de context."
+  },
+  {
+    "type": "prog_go",
+    "keys": [
+      "interface go",
+      "interfaces go",
+      "qué es una interface en go",
+      "contrato go"
+    ],
+    "text": "En Go las interfaces son implícitas: si implementas los métodos, cumples el contrato. Ideal para Store, transport o evaluadores Zyrion intercambiables. Evita interfaces gordas; preferir pocas métodos y ethics alrededor de las implementaciones peligrosas."
+  },
+  {
+    "type": "prog_python",
+    "keys": [
+      "python",
+      "qué es python",
+      "que es python",
+      "lenguaje python"
+    ],
+    "text": "Python es un lenguaje de alto nivel, tipado dinámico, muy usado en scripts, datos e IA convencional. Aquí no es el motor de Alset Mind (el latido es Go nativo), pero el corpus puede explicar Python para enseñar y contrastar: legibilidad frente a control explícito de concurrencia en Go."
+  },
+  {
+    "type": "prog_python",
+    "keys": [
+      "list comprehension",
+      "comprensión de listas",
+      "listas por comprensión python"
+    ],
+    "text": "Comprensión de listas: [f(x) for x in xs if pred(x)]. Compacto y legible. Equivalente aproximado en Lisp: mapcar + filter. No uses comprensiones enormes anidadas: pierdes la claridad que Python promete."
+  },
+  {
+    "type": "prog_python",
+    "keys": [
+      "gil python",
+      "global interpreter lock",
+      "concurrencia python"
+    ],
+    "text": "El GIL (Global Interpreter Lock) en CPython hace que solo un hilo ejecute bytecode a la vez. Para CPU-bound se usan procesos (multiprocessing) o código nativo; para I/O, async o hilos bastan. Go no tiene GIL: las goroutines sí comparten CPU de forma cooperativa/preemptiva del runtime."
+  },
+  {
+    "type": "prog_python",
+    "keys": [
+      "decorator python",
+      "decoradores python",
+      "qué es un decorator"
+    ],
+    "text": "Un decorator en Python envuelve una función para añadir comportamiento (@auth, @cache). Es azúcar sobre funciones de orden superior — idea cercana a middleware HTTP o a un órgano que envuelve act con ethics."
+  },
+  {
+    "type": "prog_js",
+    "keys": [
+      "javascript",
+      "qué es javascript",
+      "que es javascript",
+      "js async",
+      "promesas javascript",
+      "async await"
+    ],
+    "text": "JavaScript en el navegador y en Node es orientado a eventos. Promesas y async/await modelan I/O no bloqueante. La UI de Mind (mind_index) usa fetch async; el juicio ternario sigue en el servidor Go, no en el JS del cliente."
+  },
+  {
+    "type": "prog_js",
+    "keys": [
+      "event loop",
+      "bucle de eventos",
+      "callback hell"
+    ],
+    "text": "El event loop de JS procesa la cola de macrotasks/microtasks: no hay paralelismo real de CPU en un solo hilo, pero sí concurrencia de I/O. Evita callback hell con async/await. No pongas lógica de ethics del nodo en el cliente: el servidor decide el 2."
+  },
+  {
+    "type": "arquitectura",
+    "keys": [
+      "rest",
+      "api rest",
+      "qué es rest",
+      "que es rest",
+      "endpoints rest"
+    ],
+    "text": "REST organiza recursos con HTTP (GET lectura, POST creación, etc.) y URLs estables. En PrismaTec: /api/mind/tick, /api/mind/self, /api/mind/memory. Preferir verbos claros, JSON predecible y auth donde el endpoint muta."
+  },
+  {
+    "type": "arquitectura",
+    "keys": [
+      "microservicios",
+      "microservicio",
+      "qué son microservicios",
+      "monolito vs microservicios"
+    ],
+    "text": "Microservicios: servicios desplegables por separado que colaboran por red. El monolito es más simple de razonar; los microservicios escalan equipos y fallos aislados a costa de latencia y consistencia. Un nodo Alset puede ser un servicio; el enjambre, muchos."
+  },
+  {
+    "type": "arquitectura",
+    "keys": [
+      "auth",
+      "autenticación",
+      "autorización",
+      "jwt",
+      "api key",
+      "qué es autenticación"
+    ],
+    "text": "Autenticación: quién eres. Autorización: qué puedes hacer. Tokens, sesiones o API keys deben vivir en variables de entorno, nunca en el corpus ni en commits. En el nodo, bootstrap y admin exigen secreto; el diálogo Mind no sustituye auth de escritura peligrosa."
+  },
+  {
+    "type": "arquitectura",
+    "keys": [
+      "base de datos",
+      "sql vs nosql",
+      "persistencia",
+      "qué base de datos"
+    ],
+    "text": "SQL destaca en relaciones y transacciones; documentos/KV en flexibilidad y escala horizontal. Alset Mind mezcla: blockstore content-addressed (CID) para episodios y hechos, más índices locales. La elección depende del invariante: ¿necesitas joins o direcciones por hash?"
+  },
+  {
+    "type": "algoritmos",
+    "keys": [
+      "ordenación",
+      "sort",
+      "quicksort",
+      "mergesort",
+      "algoritmo de ordenación"
+    ],
+    "text": "Ordenar: mergesort O(n log n) estable y predecible; quicksort rápido en promedio, peor O(n²). En la práctica usa la biblioteca del lenguaje (sort.Slice en Go, list.sort en Python) salvo que el ejercicio pida implementar el algoritmo."
+  },
+  {
+    "type": "algoritmos",
+    "keys": [
+      "búsqueda binaria",
+      "binary search",
+      "busqueda binaria"
+    ],
+    "text": "Búsqueda binaria: sobre una secuencia ordenada, descarta la mitad en cada paso — O(log n). Requisito: orden. Si no hay orden, primero ordena o usa un mapa hash O(1) promedio."
   }
 ]

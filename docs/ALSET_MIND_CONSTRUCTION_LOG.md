@@ -287,3 +287,11 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** Corpus `qué es un llm`; umbral de knowledge más bajo en definiciones cortas. `isMetaMemoryTalk` + respuestas naturales a «recuerdas todo?» / «cuál es tu memoria». `isWorldFact` no captura preguntas. Recall de nombre desde episodio sin citar texto crudo.
 - **Observación (prod):** «que es un LLM» caía en diálogo genérico; «cual es tu memoria» se grababa como hecho del mundo.
 - **Archivos:** mind_knowledge.go, mind_knowledge.json, mind_memory.go, tests, bitácora.
+
+
+## 2026-08-21 — Training Fase 2 (fullstack / paradigmas)
+
+- **Acto:** +19 entradas en mind_knowledge.json (patrones Factory/Observer/MVC/Strategy, Go goroutine/channel/interface, Python, JS, REST/microservicios/auth/persistencia, algoritmos). Ideas por dominio. Tests TestPhase2FullstackKnowledge.
+- **Decisión:** Conocimiento curado, no generacion libre. Total corpus ~77.
+- **Proximo:** Fase 3 (IA vs Zyrion) o problemas multi-lenguaje; Supabase durable.
+- **Archivos:** mind_knowledge.json, mind_compose.go, tests, TRAINING_PLAN, ROADMAP, bitacora.

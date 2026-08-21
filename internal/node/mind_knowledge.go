@@ -52,8 +52,11 @@ func speakFromKnowledge(query string) string {
 			if k == "" {
 				continue
 			}
-			if q == k || strings.Contains(q, k) {
-				sc += 5 + len([]rune(k))/4
+			if q == k {
+				sc += 12 + len([]rune(k))/2
+			} else if strings.Contains(q, k) {
+				// Prefer longer keys so "gil python" beats bare "python"
+				sc += 5 + len([]rune(k))/2
 			} else if strings.Contains(k, q) && len(q) > 4 {
 				sc += 3
 			}

@@ -14,7 +14,7 @@ Este documento es el mapa de avance. La bitácora detallada sigue en `ALSET_MIND
 |------|--------|
 | Latido nativo Go + 7 órganos | Operativo |
 | Memoria episódica CID + bias + dedup de nombre | Operativo |
-| Corpus curado + `speakFromKnowledge` | Operativo |
+| Corpus curado + `speakFromKnowledge` | Operativo (Fase 2 fullstack sembrada) |
 | Compositor mem ∩ corpus → ideas | Operativo |
 | Voz natural (sin jerga de laboratorio) | Operativo (iteración 2026-08-21) |
 | UI laboratorio `/w/mind.app.ans` | Operativo |
@@ -59,7 +59,7 @@ Código clave: `internal/node/mind_tick.go`, `mind_compose.go`, `mind_memory.go`
 
 | # | Ítem | Notas |
 |---|------|--------|
-| P1.1 | Training **Fase 2** — patrones / Go / Python | `ALSET_MIND_TRAINING_PLAN.md` |
+| P1.1 | Training **Fase 2** — patrones / Go / Python | **Hecho 2026-08-21** — +19 entradas corpus (77 total) |
 | P1.2 | Training **Fase 3** — IA convencional vs Zyrion | Reforzar identidad de especie en corpus |
 | P1.3 | Más entradas de corpus + plantillas «Se me ocurre…» | Solo conocimiento curado; sin API LLM |
 | P1.4 | Multi-hit de corpus (2 entradas rankeadas) | Composición más rica sin alucinar |

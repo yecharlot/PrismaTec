@@ -141,6 +141,12 @@ func ideaFromCross(userText, memSpeak, knowSpeak string) string {
 		return "Se me ocurre dejar lo destructivo fuera del diálogo fluido; si vuelve, se frena con claridad, sin diluirlo."
 	case strings.Contains(u, "cid") || strings.Contains(u, "ipfs") || strings.Contains(u, "blockstore"):
 		return "Se me ocurre guardar cada hecho tuyo de forma recuperable, sin depender de que el chat siga abierto."
+	case strings.Contains(u, "python") || strings.Contains(u, "gil") || strings.Contains(u, "decorator"):
+		return "Se me ocurre contrastar lo que cuentas de Python con cómo Go resuelve lo mismo en este nodo: explícito, con context y ethics alrededor."
+	case strings.Contains(u, "factory") || strings.Contains(u, "observer") || strings.Contains(u, "mvc") || strings.Contains(u, "singleton") || strings.Contains(u, "strategy"):
+		return "Se me ocurre anclar ese patrón a un ejemplo del nodo (handlers, órganos, pulsos) para que no quede solo teoría."
+	case strings.Contains(u, "rest") || strings.Contains(u, "microservicio") || strings.Contains(u, "auth"):
+		return "Se me ocurre mirar qué endpoint del nodo ya ilustra esa idea y qué debería quedar solo lectura frente a lo que exige permiso."
 	case strings.Contains(u, "red") || strings.Contains(u, "nodo"):
 		return "Se me ocurre observar el nodo en solo lectura antes de proponer cambios; la malla se mira, no se reescribe desde la charla."
 	default:

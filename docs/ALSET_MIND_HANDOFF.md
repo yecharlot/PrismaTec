@@ -26,7 +26,7 @@ Este archivo existe para que la co-creación **no muera** cuando un chat, un mod
 | Bug conocido (histórico) | topología sin `quote` → "faltan :entradas o :salidas" — corregido con quote |
 | API latido | POST /api/mind/tick · GET /api/mind/self |
 | Memoria | mind_episodes.json + bias de vetos + pulse mind_episode |
-| Siguiente prioridad | ver `docs/ALSET_MIND_ROADMAP.md` — P0 prod (cold start, Supabase, regresión); luego P1 Fase 2 training / P2 tools seguras |
+| Siguiente prioridad | ver `docs/ALSET_MIND_ROADMAP.md` — P0 prod (cold start, Supabase, regresión); P1.2 Fase 3 / P0.3 Supabase / P2 tools seguras |
 
 4. **Regla de oro**  
    Si el asistente “olvida”, **no se improvisar de cero**: se lee el repo.  
@@ -42,7 +42,7 @@ Siguiente: [escribe aquí la tarea].
 No trates Mind como un LLM wrapper; especie ternaria Zyrion.
 ```
 
-Última actualización: 2026-08-21 — voz natural + roadmap documentado (`ALSET_MIND_ROADMAP.md`); 7 órganos; lab UI.
+Última actualización: 2026-08-21 — Training Fase 2 (corpus fullstack); voz natural; roadmap.
 
 
 ## DeepSeek / contexto largo
