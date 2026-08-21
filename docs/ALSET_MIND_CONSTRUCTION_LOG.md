@@ -28,6 +28,13 @@ Formato: fecha · acto · observación · decisión.
 
 ---
 
+## 2026-08-21 — Corpus de programación (bloque B)
+
+- **Acto:** Primer bloque curado prog_lisp / prog_go / prog_ethics / prog_alset en `mind_knowledge.json` (19 entradas).
+- **Alcance:** evaluar-zyrion+quote, defun, agentes, mind tick API, paquetes Go del nodo, handlers, context, CID, mutex, ethics de código, RootCID/apps, checkpoint, cómo ampliar corpus, tests.
+- **No es:** generador de módulos enteros por predicción de tokens. Es recuperación simbólica determinista + narrativa para ethics.
+- **Test:** `TestProgrammingCorpusBlock`.
+
 ## 2026-08-21 — Curiosidad + humor activos en la voz + corpus filosófico
 
 - **Acto:** curiosity/humor dejan de ser solo labels: se **añaden** a la voz (pregunta abierta / tinte ligero) sin sustituir conocimiento ni identidad.

@@ -109,3 +109,22 @@ func TestCuriosityAndHumorActive(t *testing.T) {
 		t.Fatalf("expected consciencia entry")
 	}
 }
+
+func TestProgrammingCorpusBlock(t *testing.T) {
+	cases := []struct {
+		q, sub string
+	}{
+		{"cómo usar evaluar-zyrion", "quote"},
+		{"dónde está el código mind", "mind_tick"},
+		{"sql injection seguridad go", "vetar"},
+		{"cómo registrar app rootcid", "register-name"},
+		{"añadir conocimiento al corpus", "mind_knowledge"},
+		{"generar cid blockstore", "GenerarCID"},
+	}
+	for _, c := range cases {
+		got := speakFromKnowledge(c.q)
+		if got == "" || !strings.Contains(strings.ToLower(got), strings.ToLower(c.sub)) {
+			t.Errorf("%q: expected knowledge containing %q, got %q", c.q, c.sub, got)
+		}
+	}
+}

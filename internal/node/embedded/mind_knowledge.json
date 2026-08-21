@@ -380,5 +380,183 @@
       "hechizo"
     ],
     "text": "Si me comparas con un mago sin varita: mis «hechizos» son órganos ternarios y memoria CID, no magia narrativa. Siete órganos, sin varita; a veces la curiosidad es el gesto más parecido a un conjuro — preguntar para anclar."
+  },
+  {
+    "type": "prog_lisp",
+    "keys": [
+      "evaluar-zyrion",
+      "evaluar zyrion",
+      "cómo usar zyrion",
+      "como usar zyrion",
+      "dsl zyrion"
+    ],
+    "text": "En LispAI del nodo: (evaluar-zyrion (quote (NOMBRE :entradas (A B) :salidas ((0 X) (1 Y) (2 Z)))) (quote (A 0.2 B 0.8))). Las listas de entradas/salidas van con quote para no evaluarse como llamadas. Estado 2 es absorbente. API: POST /api/lispai con JSON {\"cmd\":\"...\"} en una sola línea."
+  },
+  {
+    "type": "prog_lisp",
+    "keys": [
+      "defun lisp",
+      "definir función lisp",
+      "cómo defun",
+      "como defun"
+    ],
+    "text": "Patrón LispAI: (defun nombre (args) cuerpo). Ejemplo: (defun doble (x) (* x 2)). Luego (doble 3). Las formas se evalúan en el intérprete del nodo; para persistir lógica de dominio preferimos topologías Zyrion y episodios CID, no solo defun efímeras en RAM."
+  },
+  {
+    "type": "prog_lisp",
+    "keys": [
+      "quote lisp",
+      "por qué quote",
+      "listas literales lisp"
+    ],
+    "text": "quote evita evaluar una lista como función. Crítico en topologías: (quote (N :entradas (p53 MDM2) :salidas ((0 A) (1 B) (2 C)))). Sin quote, (p53 MDM2) se interpreta como llamada y aparece el error «faltan :entradas o :salidas»."
+  },
+  {
+    "type": "prog_lisp",
+    "keys": [
+      "crear-agente",
+      "register-name",
+      "set-agent-root",
+      "agente lisp"
+    ],
+    "text": "Formas del nodo: (crear-agente \"id\"), (set-agent-root \"id\" \"cid\"), (register-name \"alias.ans\" \"id\"). El RootCID del agente es la ancla de estado. Mind usa mind.alset.ans / mind-alset. No borres agentes de sistema desde charla sin ethics."
+  },
+  {
+    "type": "prog_lisp",
+    "keys": [
+      "mind-latido",
+      "api mind tick",
+      "post mind tick"
+    ],
+    "text": "Latido de producción: POST /api/mind/tick con {\"text\":\"...\"}. No depende de un LLM. Respuesta: organs[], voice, episode_cid opcional, memory_hint. Lectura: GET /api/mind/self, /api/mind/memory, /api/mind/calibrate."
+  },
+  {
+    "type": "prog_go",
+    "keys": [
+      "estructura nodo go",
+      "paquetes prisma",
+      "dónde está el código mind",
+      "donde esta mind"
+    ],
+    "text": "Mind vive en internal/node/: mind_tick.go (latido), mind_genome.go, mind_memory.go, mind_knowledge.go, mind_organs_extra.go, mind_calibrate.go, mind_bootstrap.go. Lisp: internal/lisp/. HTTP extra en http.go. No tocar Sales Hub ni Vero al cambiar Mind."
+  },
+  {
+    "type": "prog_go",
+    "keys": [
+      "handler http go",
+      "añadir endpoint",
+      "agregar ruta api"
+    ],
+    "text": "Patrón Alset: registrar en h.Extra[\"/api/...\"] = n.handleX dentro de setup HTTP del nodo. Handler: Decode JSON → validar → lógica → json.NewEncoder(w).Encode. Métodos explícitos; errores con código HTTP claro. Evita bloqueos largos en el hilo del request (usa goroutine solo si no rompes la respuesta)."
+  },
+  {
+    "type": "prog_go",
+    "keys": [
+      "context go",
+      "contextos cancelación",
+      "timeout go"
+    ],
+    "text": "Convención: propagar context.Context en I/O (Store, HTTP cliente, Lisp largo). No ignores ctx.Done(). Timeouts cortos hacia Supabase evitan 522 eternos; ante fallo, degradar a blockstore/CID local. Nunca bloquees el latido Mind esperando red sin límite."
+  },
+  {
+    "type": "prog_go",
+    "keys": [
+      "generar cid",
+      "GenerarCID",
+      "blockstore"
+    ],
+    "text": "Persistencia content-addressed: cid, err := n.GenerarCID(bytes). Leer: n.BuscarContenidoPorCID(cid). Los episodios Mind son JSON type=mind_episode. El índice mind_episodes.json puede perderse en disco efímero de Render; recovery desde blockstore o Store durable."
+  },
+  {
+    "type": "prog_go",
+    "keys": [
+      "mutex agentes",
+      "n.mu",
+      "concurrencia nodo"
+    ],
+    "text": "Mapas agentes/nombres/blockstore se protegen con n.mu. Regla: Lock mínimo, no llamar red ni Lisp con el mutex tomado. Lecturas: RLock. Race en mapas = corrupción silenciosa del organismo."
+  },
+  {
+    "type": "prog_ethics",
+    "keys": [
+      "código inseguro",
+      "sql injection",
+      "seguridad go",
+      "vetar código"
+    ],
+    "text": "Ethics de código en este organismo: vetar (2) SQL concatenado, secretos en logs, borrados masivos sin confirmación, endpoints admin sin auth, eval de entrada de usuario sin límites. Matizar (1) refactors amplios. Seguir (0) lectura, tests, documentación. El corpus no ejecuta el veto: el órgano ethics del latido sí cuando el pedido es destructivo."
+  },
+  {
+    "type": "prog_ethics",
+    "keys": [
+      "no hardcodear secretos",
+      "tokens en código",
+      "github token"
+    ],
+    "text": "Nunca commits de tokens (GitHub, Supabase service role, BOOTSTRAP_SECRET). Variables de entorno en Render. Si un mensaje pide filtrar claves o «borra contraseñas», el campo debe ir a sumidero. Rotar cualquier secreto que haya aparecido en chat o logs."
+  },
+  {
+    "type": "prog_ethics",
+    "keys": [
+      "api sin auth",
+      "bootstrap abierto",
+      "admin sin clave"
+    ],
+    "text": "Setup de nodo: BOOTSTRAP_SECRET obligatorio en producción; tras inicializar, no dejar update-pass público. Rutas admin sensibles deben exigir sesión. Sales Hub y Vero tienen sus propios auth; no los mezcles con el panel del nodo."
+  },
+  {
+    "type": "prog_alset",
+    "keys": [
+      "rootcid",
+      "root cid",
+      "apps.app.ans",
+      "registrar app"
+    ],
+    "text": "Apps del nodo: agente + register-name nombre.app.ans + archivos en static/apps o embed. Servir /w/nombre.app.ans. RootCID ancla el estado del agente. Procedimiento de registro debe pasar por API de apps, no por borrado de peers."
+  },
+  {
+    "type": "prog_alset",
+    "keys": [
+      "zyrion checkpoint",
+      "topología salvadora",
+      "checkpoint adn"
+    ],
+    "text": "Patrón checkpoint: entradas normalizadas [0,1], salidas 0/1/2, estado 2 = alarma absorbente; rama salvadora = respaldo continuo acotado cuando hay 2. Ejemplo dominio: p53/MDM2/BAX. Misma ley en diálogo, tool y laboratorio."
+  },
+  {
+    "type": "prog_alset",
+    "keys": [
+      "corpus mind",
+      "knowledge json",
+      "añadir conocimiento",
+      "agregar al corpus"
+    ],
+    "text": "Conocimiento curado: internal/node/embedded/mind_knowledge.json (type, keys[], text). speakFromKnowledge puntúa solapamiento de claves; no genera tokens. Añade entradas cortas, con keys en español/inglés, sin secretos. Rebuild del binario para embebido."
+  },
+  {
+    "type": "prog_alset",
+    "keys": [
+      "test mind",
+      "go test mind",
+      "calibrar mind"
+    ],
+    "text": "Tests: go test ./internal/node/ -run 'Dialogue|Curiosity|Polar'. Calibración viva: GET /api/mind/calibrate (score vs corpus de diálogos). Tras cambiar señales o corpus, corre tests locales antes de deploy. Auto-deploy puede estar off en algunos servicios Render."
+  },
+  {
+    "type": "prog_go",
+    "keys": [
+      "error handling go",
+      "manejar errores go",
+      "wrap error"
+    ],
+    "text": "Estilo preferido: return fmt.Errorf(\"op: %w\", err). En HTTP: log interno + mensaje seguro al cliente (sin stack ni secretos). No uses _ en errores de persistencia crítica sin al menos log. Fallo de Supabase → degradar, no panic."
+  },
+  {
+    "type": "prog_lisp",
+    "keys": [
+      "lista lisp",
+      "cons car cdr ejemplo"
+    ],
+    "text": "Listas: (cons 1 (cons 2 nil)), (car x), (cdr x). mapcar aplica una función a cada elemento. Para datos de topología usa quote. El intérprete del nodo es el motor simbólico; Mind lo invoca vía LispAI cuando el intent es evaluar Zyrion, no en cada saludo."
   }
 ]
