@@ -248,3 +248,10 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Decisión:** Ethics 2 y destructive nunca componen. Saludos/identidad/hechos personales siguen rutas clásicas. Curiosity colorea el puente. Tests de regresión + compose.
 - **Archivos:** `internal/node/mind_compose.go` (nuevo), `mind_tick.go`, `mind_dialogue_test.go`, bitácora, handoff.
 - **Próximo paso:** Observar en producción tras deploy; ampliar plantillas de idea y, si hace falta, multi-hit de corpus.
+
+## 2026-08-21 — Fix: nombre interrogativo ≠ declaración; preguntas compuestas
+
+- **Acto:** `isPersonalFact` ya no captura «cómo/como me llamo»; `extractDeclaredName` rechaza interrogativos y tokens basura («y qué es»). `isMemoryQuery` no confunde «mi nombre es X y el tuyo…». `answerCompoundQuestion` + `splitUserSegments` integran memoria + corpus en un solo turno. `mindVoice`: memory query antes de personal fact.
+- **Observación (prod):** «cómo me llamo y qué es quote» guardaba nombre «y qué es»; «como me llamo» respondía «Hecho personal marcado» en vez de Esteban.
+- **Decisión:** Separar declaración vs pregunta; compuesto = dos intenciones unidas con conector natural + idea bridge.
+- **Archivos:** mind_memory.go, mind_tick.go, mind_compose.go, mind_dialogue_test.go, bitácora.

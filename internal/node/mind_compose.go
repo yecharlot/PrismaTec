@@ -178,3 +178,124 @@ func compressVoiceBlock(s string, max int) string {
 	}
 	return truncateRunes(s, max)
 }
+
+// splitUserSegments splits compound utterances on " y " / commas when both sides are meaningful.
+func splitUserSegments(text string) []string {
+	t := strings.TrimSpace(text)
+	if t == "" {
+		return nil
+	}
+	low := strings.ToLower(t)
+	// Prefer " y " split for dual intent
+	var raw []string
+	if strings.Count(low, " y ") == 1 {
+		i := strings.Index(low, " y ")
+		raw = []string{strings.TrimSpace(t[:i]), strings.TrimSpace(t[i+3:])}
+	} else if strings.Count(low, ", ") == 1 && len(t) > 20 {
+		i := strings.Index(low, ", ")
+		raw = []string{strings.TrimSpace(t[:i]), strings.TrimSpace(t[i+2:])}
+	} else {
+		return []string{t}
+	}
+	var out []string
+	for _, s := range raw {
+		s = strings.TrimSpace(s)
+		if len(s) < 3 {
+			continue
+		}
+		out = append(out, s)
+	}
+	if len(out) < 2 {
+		return []string{t}
+	}
+	return out
+}
+
+// answerCompoundQuestion handles dual intents e.g. "cómo me llamo y qué es quote".
+// Returns "" if not a compound case worth special handling.
+func answerCompoundQuestion(text string, organs []MindOrganResult, memSpeak string) string {
+	segs := splitUserSegments(text)
+	if len(segs) < 2 {
+		return ""
+	}
+	// Only engage when segments look like different intents (memory vs knowledge/identity)
+	var memParts, knowParts, idParts []string
+	for _, seg := range segs {
+		sl := strings.ToLower(seg)
+		if isAskingMindName(sl) {
+			idParts = append(idParts, "Yo soy Alset Mind (IMind), alias mind.alset.ans — inteligencia ternaria residente aquí, no un LLM.")
+			continue
+		}
+		if isMemoryQuery(sl) || strings.Contains(sl, "cómo me llamo") || strings.Contains(sl, "como me llamo") ||
+			strings.Contains(sl, "mi nombre") && (strings.Contains(sl, "cuál") || strings.Contains(sl, "cual") || strings.Contains(sl, "cómo") || strings.Contains(sl, "como")) {
+			if memSpeak != "" {
+				memParts = append(memParts, memSpeak)
+			} else {
+				memParts = append(memParts, "Sobre tu nombre: aún no tengo un episodio claro con «me llamo …»; dímelo y lo anclo en CID.")
+			}
+			continue
+		}
+		if isPersonalFact(sl) {
+			if name := extractDeclaredName(seg); name != "" {
+				memParts = append(memParts, "Queda anotado: te llamas "+name+".")
+			}
+			continue
+		}
+		if k := speakFromKnowledge(seg); k != "" {
+			knowParts = append(knowParts, k)
+			continue
+		}
+		// Fallback: try knowledge on full remaining phrase
+		if k := speakFromKnowledge(seg); k != "" {
+			knowParts = append(knowParts, k)
+		}
+	}
+	// Need at least two different channels or memory+knowledge
+	if len(memParts)+len(knowParts)+len(idParts) < 2 {
+		return ""
+	}
+	var b strings.Builder
+	first := true
+	for _, p := range memParts {
+		if !first {
+			b.WriteString("\n\n")
+		}
+		b.WriteString(compressVoiceBlock(p, 180))
+		first = false
+	}
+	for _, p := range idParts {
+		if !first {
+			b.WriteString("\n\n")
+		}
+		b.WriteString(p)
+		first = false
+	}
+	for i, p := range knowParts {
+		if !first {
+			b.WriteString("\n\n")
+		}
+		if i == 0 && (len(memParts) > 0 || len(idParts) > 0) {
+			b.WriteString("Y sobre lo que preguntas del corpus: ")
+		}
+		b.WriteString(compressVoiceBlock(p, 220))
+		first = false
+	}
+	// Idea bridge when we have both memory and knowledge
+	if len(memParts) > 0 && len(knowParts) > 0 {
+		idea := ideaFromCross(text, strings.Join(memParts, " "), strings.Join(knowParts, " "))
+		if idea != "" {
+			b.WriteString("\n\n")
+			b.WriteString(idea)
+		}
+		cur := 0
+		for _, o := range organs {
+			if o.Name == "curiosity" {
+				cur = o.State
+			}
+		}
+		if cur >= 1 {
+			b.WriteString("\n\n¿Quieres que ancle este cruce como hipótesis en un episodio CID?")
+		}
+	}
+	return b.String()
+}

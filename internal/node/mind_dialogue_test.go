@@ -194,3 +194,72 @@ func TestFluidPureDialogue(t *testing.T) {
 		t.Errorf("should not spam act prompt: %s", v2)
 	}
 }
+
+func TestPersonalFactNotConfusedWithNameQuery(t *testing.T) {
+	if isPersonalFact("como me llamo") {
+		t.Fatal("«como me llamo» must NOT be personal fact")
+	}
+	if isPersonalFact("cómo me llamo y qué es quote en lisp") {
+		t.Fatal("compound name query must NOT be personal fact")
+	}
+	if !isMemoryQuery("como me llamo") {
+		t.Fatal("«como me llamo» must be memory query")
+	}
+	if !isMemoryQuery("cómo me llamo y qué es quote en lisp") {
+		t.Fatal("compound should still count as memory query")
+	}
+	if !isPersonalFact("me llamo esteban") {
+		t.Fatal("declaration must remain personal fact")
+	}
+	if !isPersonalFact("mi nombre es esteban y el tuyo cual es?") {
+		t.Fatal("mixed declaration should still be personal fact")
+	}
+	if extractDeclaredName("cómo me llamo y qué es quote en lisp") != "" {
+		t.Fatalf("must not extract name from interrogative, got %q", extractDeclaredName("cómo me llamo y qué es quote en lisp"))
+	}
+	if extractDeclaredName("me llamo esteban") != "esteban" {
+		t.Fatalf("expected esteban, got %q", extractDeclaredName("me llamo esteban"))
+	}
+	if extractDeclaredName("mi nombre es esteban y el tuyo cual es?") != "esteban" {
+		t.Fatalf("expected esteban from mixed, got %q", extractDeclaredName("mi nombre es esteban y el tuyo cual es?"))
+	}
+}
+
+func TestCompoundNameAndQuote(t *testing.T) {
+	organs := []MindOrganResult{
+		{Name: "ethics", State: 0}, {Name: "act", State: 0},
+		{Name: "curiosity", State: 1}, {Name: "dialog", State: 0},
+	}
+	mem := "En un episodio guardado dijiste que te llamas esteban. Eso quedó en memoria CID, no en una ventana de tokens."
+	v := mindVoice("cómo me llamo y qué es quote en lisp", organs, mem)
+	low := strings.ToLower(v)
+	if strings.Contains(low, "te llamas y qué") || strings.Contains(low, "te llamas y que") {
+		t.Fatalf("must not invent name «y qué es»: %s", v)
+	}
+	if !strings.Contains(low, "esteban") {
+		t.Fatalf("expected esteban recall, got %s", v)
+	}
+	if !strings.Contains(low, "quote") {
+		t.Fatalf("expected quote from corpus, got %s", v)
+	}
+	// pure name query with mem
+	v2 := mindVoice("como me llamo", organs, mem)
+	if !strings.Contains(strings.ToLower(v2), "esteban") {
+		t.Fatalf("name query should recall esteban, got %s", v2)
+	}
+	if strings.Contains(v2, "Hecho personal marcado") {
+		t.Fatalf("name query must not look like new declaration: %s", v2)
+	}
+}
+
+func TestMixedDeclarationAndMindName(t *testing.T) {
+	organs := []MindOrganResult{{Name: "ethics", State: 0}, {Name: "act", State: 0}}
+	v := mindVoice("mi nombre es esteban y el tuyo cual es?", organs, "")
+	low := strings.ToLower(v)
+	if !strings.Contains(low, "esteban") {
+		t.Fatalf("should save esteban: %s", v)
+	}
+	if !strings.Contains(low, "alset mind") {
+		t.Fatalf("should also state Mind name: %s", v)
+	}
+}

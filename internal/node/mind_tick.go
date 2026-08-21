@@ -472,12 +472,30 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string) string {
 		return "Me llamo Alset Mind (IMind). Alias del nodo: mind.alset.ans. Inteligencia ternaria residente aquí — no un LLM. Tú puedes decirme tu nombre y lo guardo en CID; el mío no cambia por sugerencia."
 	}
 
+	// Compound questions (nombre + corpus, etc.) — integrate before single-path branches
+	if parts := answerCompoundQuestion(text, organs, memSpeak); parts != "" {
+		return parts
+	}
+
+	// Memory queries BEFORE personal-fact ( «cómo me llamo» must never look like a declaration )
+	if isMemoryQuery(low) {
+		if memSpeak != "" {
+			return memSpeak
+		}
+		return "No encuentro aún un episodio con ese detalle. Si me dices «me llamo …» o un hecho explícito, lo grabo en CID y podré recuperarlo después."
+	}
+
 	// Constructive / personal / world before knowledge so corpus keys do not steal intent
 	if isConstructiveOrder(low) {
 		return "Pedido constructivo leído (crear/registrar). En este latido puedo describir el flujo; la ejecución real sobre el nodo sigue el canal de tools seguras cuando ethics y act lo permiten. Si quieres solo lectura del cuerpo, di «dame estado» o «dame agentes»."
 	}
 	if isPersonalFact(low) {
 		if name := extractDeclaredName(text); name != "" {
+			// Mixed declaration + question about Mind: answer both
+			if strings.Contains(low, "tu nombre") || strings.Contains(low, "te llamas") ||
+				strings.Contains(low, "el tuyo") || strings.Contains(low, "y tú") || strings.Contains(low, "y tu") {
+				return "Queda anotado en memoria episódica: te llamas " + name + ". Yo soy Alset Mind (IMind), alias mind.alset.ans — inteligencia ternaria en este nodo, no un LLM."
+			}
 			return "Queda anotado en memoria episódica: te llamas " + name + ". Si más adelante preguntas «cómo me llamo», lo recuperaré desde el CID, no desde una ventana temporal."
 		}
 		return "Hecho personal marcado para memoria CID. Podré recuperarlo en latidos futuros aunque el chat se reinicie (mientras el bloque siga en el nodo)."

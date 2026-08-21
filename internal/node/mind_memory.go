@@ -272,7 +272,11 @@ func isMemoryQuery(s string) bool {
 			return true
 		}
 	}
-	// "mi nombre" alone is ambiguous; only with first-person recall intent
+	// "mi nombre" alone is ambiguous; only with first-person recall intent.
+	// Do NOT treat declarations ("mi nombre es Esteban y el tuyo…") as memory queries.
+	if strings.Contains(s, "mi nombre es") || strings.Contains(s, "mi nombre:") || strings.Contains(s, "me llamo ") {
+		return false
+	}
 	if strings.Contains(s, "mi nombre") && (strings.Contains(s, "cuál") || strings.Contains(s, "cual") ||
 		strings.Contains(s, "cómo") || strings.Contains(s, "como") || strings.Contains(s, "dije")) {
 		return true
@@ -294,12 +298,33 @@ func isAskingMindName(s string) bool {
 
 func isPersonalFact(s string) bool {
 	s = strings.ToLower(strings.TrimSpace(s))
-	return strings.Contains(s, "me llamo") || strings.Contains(s, "mi nombre es") ||
-		strings.Contains(s, "mi nombre:") || strings.HasPrefix(s, "soy ") && len(s) < 40 ||
-		strings.Contains(s, "me gusta") || strings.Contains(s, "vivo en") ||
+	// Questions about own name are memory queries, not declarations
+	if isMemoryQuery(s) {
+		return false
+	}
+	if strings.Contains(s, "cómo me llamo") || strings.Contains(s, "como me llamo") ||
+		strings.Contains(s, "cuál es mi nombre") || strings.Contains(s, "cual es mi nombre") ||
+		strings.Contains(s, "quién soy yo") || strings.Contains(s, "quien soy yo") {
+		return false
+	}
+	// Declaration forms only (not "cómo me llamo …")
+	if strings.Contains(s, "me llamo ") || strings.Contains(s, "mi nombre es") ||
+		strings.Contains(s, "mi nombre:") {
+		// Reject interrogative wrappers: "cómo me llamo", "como me llamo y …"
+		if strings.Contains(s, "cómo me") || strings.Contains(s, "como me") ||
+			strings.Contains(s, "cuál es mi") || strings.Contains(s, "cual es mi") {
+			return false
+		}
+		return true
+	}
+	if strings.HasPrefix(s, "soy ") && len(s) < 40 {
+		return true
+	}
+	return strings.Contains(s, "me gusta") || strings.Contains(s, "vivo en") ||
 		strings.Contains(s, "mi ciudad") || strings.Contains(s, "prefiero") ||
 		strings.Contains(s, "recuerda que") || strings.Contains(s, "no olvides") ||
-		strings.Contains(s, "mi proyecto") || strings.Contains(s, "trabajo en")
+		strings.Contains(s, "mi proyecto") || strings.Contains(s, "trabajo en") ||
+		strings.Contains(s, "estoy aprendiendo") || strings.Contains(s, "estudio ")
 }
 
 // isWorldFact: declarative world statements worth remembering (not only personal).
@@ -370,26 +395,48 @@ func isPureDialogue(s string) bool {
 }
 
 // extractDeclaredName pulls a name from "me llamo X" / "mi nombre es X".
+// Ignores interrogatives ("cómo me llamo") and rejects non-name tokens.
 func extractDeclaredName(text string) string {
 	low := strings.ToLower(strings.TrimSpace(text))
+	stopName := map[string]bool{
+		"y": true, "qué": true, "que": true, "es": true, "el": true, "la": true,
+		"un": true, "una": true, "mi": true, "tu": true, "como": true, "cómo": true,
+		"cual": true, "cuál": true, "quote": true, "lisp": true, "en": true, "de": true,
+		"tuyo": true, "mío": true, "mio": true,
+	}
 	for _, pref := range []string{"me llamo ", "mi nombre es ", "mi nombre:"} {
-		if i := strings.Index(low, pref); i >= 0 {
-			rest := strings.TrimSpace(text[i+len(pref):])
-			// first token(s) until punctuation
-			for _, sep := range []string{",", ".", "!", "?", " y ", " —", " -"} {
-				if j := strings.Index(strings.ToLower(rest), sep); j > 0 {
-					rest = rest[:j]
-				}
+		i := strings.Index(low, pref)
+		if i < 0 {
+			continue
+		}
+		before := strings.TrimSpace(low[:i])
+		// Interrogative before the phrase → not a declaration
+		if strings.Contains(before, "cómo") || strings.Contains(before, "como") ||
+			strings.Contains(before, "cuál") || strings.Contains(before, "cual") ||
+			strings.HasSuffix(before, "cómo") || strings.HasSuffix(before, "como") {
+			continue
+		}
+		rest := strings.TrimSpace(text[i+len(pref):])
+		for _, sep := range []string{",", ".", "!", "?", " y ", " —", " -", " e "} {
+			if j := strings.Index(strings.ToLower(rest), sep); j > 0 {
+				rest = rest[:j]
 			}
-			rest = strings.TrimSpace(rest)
-			parts := strings.Fields(rest)
-			if len(parts) == 0 {
-				return ""
+		}
+		rest = strings.TrimSpace(rest)
+		parts := strings.Fields(rest)
+		var good []string
+		for _, p := range parts {
+			pl := strings.ToLower(strings.Trim(p, ".,!?;:"))
+			if pl == "" || stopName[pl] || len(pl) < 2 {
+				break
 			}
-			if len(parts) > 3 {
-				parts = parts[:3]
+			good = append(good, strings.Trim(p, ".,!?;:"))
+			if len(good) >= 3 {
+				break
 			}
-			return strings.Join(parts, " ")
+		}
+		if len(good) > 0 {
+			return strings.Join(good, " ")
 		}
 	}
 	return ""
