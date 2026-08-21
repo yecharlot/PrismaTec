@@ -276,3 +276,8 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** Crear `docs/ALSET_MIND_ROADMAP.md` (hitos de diálogo cerrados + P0/P1/P2/P3). Actualizar HANDOFF (siguiente prioridad + fuente de verdad) y TRAINING_PLAN (track diálogo).
 - **Decisión:** El roadmap es el mapa; el construction log sigue siendo la bitácora fina.
 - **Archivos:** `docs/ALSET_MIND_ROADMAP.md`, HANDOFF, TRAINING_PLAN, bitácora.
+
+## 2026-08-21 — P0.2 cold start UI + P0.4 regression pack
+
+- **Acto:** `mind_index.html`: `readJsonSafe`, `postMindTick` con un reintento tras 1.2s si 502/body no JSON; warm-up de `/api/mind/self` al cargar; mensajes de error sin `JSON.parse…`. `TestDialogueRegressionPack` cubre nombre, dedup, incompleto, capacidades y veto natural.
+- **Archivos:** `embedded/mind_index.html`, `mind_dialogue_test.go`, bitácora, roadmap.

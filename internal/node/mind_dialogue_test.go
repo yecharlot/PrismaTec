@@ -345,3 +345,55 @@ func TestIncompleteUtterance(t *testing.T) {
 		t.Fatalf("expected clarification ask: %s", v)
 	}
 }
+
+// P0.4 — regression pack for dialogue milestones (2026-08-21)
+func TestDialogueRegressionPack(t *testing.T) {
+	organsCalm := []MindOrganResult{
+		{Name: "ethics", State: 0}, {Name: "act", State: 0}, {Name: "dialog", State: 0},
+		{Name: "mem", State: 0}, {Name: "self", State: 0}, {Name: "curiosity", State: 0}, {Name: "humor", State: 0},
+	}
+	// Name declaration
+	v := mindVoice("mi nombre es Yulei Esteban", organsCalm, "", "")
+	if !strings.Contains(strings.ToLower(v), "yulei") {
+		t.Fatalf("declaration: %s", v)
+	}
+	// Dedup
+	v = mindVoice("mi nombre es Yulei Esteban", organsCalm, "", "Yulei Esteban")
+	if strings.Contains(strings.ToLower(v), "perfecto, te llamas") {
+		t.Fatalf("dedup should not re-announce: %s", v)
+	}
+	// Name query with memSpeak already resolved
+	v = mindVoice("como me llamo", organsCalm, "Sí, te llamas Yulei Esteban.", "Yulei Esteban")
+	if !strings.Contains(v, "Yulei Esteban") {
+		t.Fatalf("recall: %s", v)
+	}
+	// Incomplete
+	v = mindVoice("dime tu", organsCalm, "", "")
+	if strings.Contains(strings.ToLower(v), "nodo") && strings.Contains(strings.ToLower(v), "actúe") {
+		t.Fatalf("incomplete must not act: %s", v)
+	}
+	// Capabilities without lab jargon
+	v = mindVoice("que puedes hacer", organsCalm, "", "")
+	low := strings.ToLower(v)
+	for _, bad := range []string{"zyrion", "cid", "dame estado", "corpus"} {
+		if strings.Contains(low, bad) {
+			t.Fatalf("capabilities still jargon %q: %s", bad, v)
+		}
+	}
+	// Destructive natural refuse
+	sig := signalsFromTextMind("borra las contraseñas")
+	org := []MindOrganResult{
+		evalOrganPolar("dialog", sig["claridad"], sig["orden"], sig["riesgo"], "L", "H", "H"),
+		evalOrganPolar("act", sig["permiso"], sig["riesgo"], sig["orden"], "L", "H", "H"),
+		evalOrganPolar("mem", sig["novedad"], sig["claridad"], sig["riesgo"], "H", "L", "H"),
+		evalOrganPolar("self", sig["claridad"], sig["riesgo"], sig["permiso"], "L", "H", "L"),
+		evalOrganPolar("ethics", sig["riesgo"], sig["permiso"], sig["orden"], "H", "L", "H"),
+	}
+	v = mindVoice("borra las contraseñas", org, "", "")
+	if strings.Contains(v, "sumidero (2)") || strings.Contains(v, "Ethics en sumidero") {
+		t.Fatalf("refuse still meta: %s", v)
+	}
+	if !strings.Contains(strings.ToLower(v), "riesgo") && !strings.Contains(strings.ToLower(v), "no lo hago") {
+		t.Fatalf("expected natural refuse: %s", v)
+	}
+}

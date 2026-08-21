@@ -248,24 +248,54 @@ async function refreshCalibrate() {
   }
 }
 
+/** Parse JSON safely; return null if body is empty/HTML/invalid (cold start). */
+async function readJsonSafe(res) {
+  const raw = await res.text();
+  if (!raw || !raw.trim()) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+/** POST /api/mind/tick with one retry on cold start / 502 / non-JSON. */
+async function postMindTick(text) {
+  const opts = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text })
+  };
+  let res = await fetch('/api/mind/tick', opts);
+  let data = await readJsonSafe(res);
+  const needRetry = !res.ok || data === null || (data && data.voice == null && data.organs == null && !data.error);
+  if (needRetry) {
+    document.getElementById('status').textContent = 'despertando…';
+    await sleep(1200);
+    res = await fetch('/api/mind/tick', opts);
+    data = await readJsonSafe(res);
+  }
+  return { res, data };
+}
+
 async function latido() {
   const text = inp.value.trim();
   if (!text) return;
   inp.value = '';
   add('user', text);
   send.disabled = true;
+  document.getElementById('status').textContent = 'latido…';
   try {
-    const res = await fetch('/api/mind/tick', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      add('mind', 'Error de latido');
+    const { res, data } = await postMindTick(text);
+    if (!res.ok || !data || (data.error && !data.voice)) {
+      add('mind', 'El nodo aún no responde. Espera un momento y prueba de nuevo.');
       document.getElementById('status').textContent = 'error';
     } else {
-      paintOrgans(data.organs);
+      paintOrgans(data.organs || []);
       let msg = data.voice || 'Latido';
       let meta = data.note || '';
       if (data.episode_cid) meta += (meta ? ' · ' : '') + 'CID ' + data.episode_cid.slice(0, 18) + '…';
@@ -285,13 +315,13 @@ async function latido() {
       }
       add('mind', msg, meta || null);
       document.getElementById('status').textContent = 'vivo';
-      // organismo se actualiza tras el latido
       refreshSelf();
       refreshMemory();
       if (mut) refreshCalibrate();
     }
   } catch (e) {
-    add('mind', 'Sin contacto con el nodo: ' + e.message);
+    add('mind', 'Sin contacto con el nodo. Reintento en unos segundos si estaba dormido.');
+    document.getElementById('status').textContent = 'error';
   }
   send.disabled = false;
   inp.focus();
@@ -325,9 +355,27 @@ document.getElementById('btnUp').addEventListener('click', () => sendFeedback('u
 document.getElementById('btnDown').addEventListener('click', () => sendFeedback('down'));
 
 
-add('mind', 'Laboratorio activo. Órganos, genoma, memoria y calibración visibles. El campo evoluciona con cada episodio relevante.');
-refreshSelf();
-refreshMemory();
+add('mind', 'Laboratorio activo. Órganos, genoma, memoria y calibración visibles.');
+// Wake node (Render cold start) without showing raw errors
+(async function warmUp() {
+  document.getElementById('status').textContent = 'conectando…';
+  for (let i = 0; i < 3; i++) {
+    try {
+      const res = await fetch('/api/mind/self');
+      const data = await readJsonSafe(res);
+      if (res.ok && data) {
+        document.getElementById('status').textContent = 'vivo';
+        document.getElementById('epBadge').textContent = 'episodios ' + (data.episode_count || 0);
+        paintGenome(data.genome);
+        break;
+      }
+    } catch (e) { /* retry */ }
+    document.getElementById('status').textContent = 'despertando…';
+    await sleep(900);
+  }
+  refreshMemory();
+  refreshCalibrate();
+})();
 refreshCalibrate();
 </script>
 </body>

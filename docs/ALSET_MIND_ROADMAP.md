@@ -51,9 +51,9 @@ Código clave: `internal/node/mind_tick.go`, `mind_compose.go`, `mind_memory.go`
 | # | Ítem | Criterio de hecho |
 |---|------|-------------------|
 | P0.1 | Observar compositor + voz natural en Render | Diálogos reales sin regresión de ethics/veto |
-| P0.2 | Cold start JSON en primer `hola` | Documentar o mitigar (wake/retry en UI) |
+| P0.2 | Cold start JSON en primer `hola` | **Hecho 2026-08-21** — retry + warm-up en `mind_index.html` |
 | P0.3 | Supabase para episodios durables | `GET /api/mind/memory` sobrevive redeploy |
-| P0.4 | Suite de regresión de diálogo ampliada | Casos nombre / compuesto / incompleto / veto en CI local |
+| P0.4 | Suite de regresión de diálogo ampliada | **Parcial** — `TestDialogueRegressionPack` (+ tests previos del día) |
 
 ### P1 — Diálogo y polímata (medio plazo)
 
