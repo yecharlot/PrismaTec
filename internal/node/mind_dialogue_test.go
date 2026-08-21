@@ -449,3 +449,29 @@ func TestPhase2FullstackKnowledge(t *testing.T) {
 		}
 	}
 }
+
+func TestPhase3AIIdentityKnowledge(t *testing.T) {
+	cases := []struct{ q, must string }{
+		{"qué es nlp", "nlp"},
+		{"aprendizaje supervisado", "supervisado"},
+		{"alucinación", "llm"},
+		{"ventana de contexto", "contexto"},
+		{"por qué ternario", "ternario"},
+		{"ética de la ia", "ética"},
+		{"qué no puedes", "no invento"},
+		{"en qué te diferencias", "chatgpt"},
+	}
+	for _, c := range cases {
+		got := speakFromKnowledge(c.q)
+		if got == "" {
+			t.Errorf("%q: empty knowledge", c.q)
+			continue
+		}
+		low := strings.ToLower(got)
+		if !strings.Contains(low, strings.ToLower(c.must)) {
+			if len(got) < 50 {
+				t.Errorf("%q: weak hit (want %q): %q", c.q, c.must, got)
+			}
+		}
+	}
+}

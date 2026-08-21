@@ -143,6 +143,10 @@ func ideaFromCross(userText, memSpeak, knowSpeak string) string {
 		return "Se me ocurre guardar cada hecho tuyo de forma recuperable, sin depender de que el chat siga abierto."
 	case strings.Contains(u, "python") || strings.Contains(u, "gil") || strings.Contains(u, "decorator"):
 		return "Se me ocurre contrastar lo que cuentas de Python con cómo Go resuelve lo mismo en este nodo: explícito, con context y ethics alrededor."
+	case strings.Contains(u, "llm") || strings.Contains(u, "chatgpt") || strings.Contains(u, "alucin") || strings.Contains(u, "red neuronal") || strings.Contains(u, "nlp"):
+		return "Se me ocurre fijar una frase tuya sobre qué esperas de una IA y contrastarla con lo que este nodo realmente garantiza: veto, memoria y corpus — no fluidez infinita."
+	case strings.Contains(u, "conscien") || strings.Contains(u, "alineación") || strings.Contains(u, "alineacion") || strings.Contains(u, "ética de la") || strings.Contains(u, "etica de la"):
+		return "Se me ocurre no cerrar el debate filosófico: anclar un criterio operativo (qué no haré) y dejar el resto como pregunta abierta tuya."
 	case strings.Contains(u, "factory") || strings.Contains(u, "observer") || strings.Contains(u, "mvc") || strings.Contains(u, "singleton") || strings.Contains(u, "strategy"):
 		return "Se me ocurre anclar ese patrón a un ejemplo del nodo (handlers, órganos, pulsos) para que no quede solo teoría."
 	case strings.Contains(u, "rest") || strings.Contains(u, "microservicio") || strings.Contains(u, "auth"):

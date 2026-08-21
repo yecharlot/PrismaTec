@@ -295,3 +295,11 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Decisión:** Conocimiento curado, no generacion libre. Total corpus ~77.
 - **Proximo:** Fase 3 (IA vs Zyrion) o problemas multi-lenguaje; Supabase durable.
 - **Archivos:** mind_knowledge.json, mind_compose.go, tests, TRAINING_PLAN, ROADMAP, bitacora.
+
+
+## 2026-08-21 — Training Fase 3 (IA convencional vs Zyrion)
+
+- **Acto:** +13 entradas: redes/supervisado/NLP/entrenamiento, vs ChatGPT, alucinacion, ventana de contexto, ternario, consciencia, etica/alineacion, limites, agencia, organos, naturaleza de especie. Ideas de cruce IA. TestPhase3AIIdentityKnowledge.
+- **Decision:** Identidad por conocimiento curado, no por prompt de sistema LLM.
+- **Proximo:** Fase 4 algoritmos o tools seguras / Supabase.
+- **Archivos:** mind_knowledge.json, mind_compose.go, tests, TRAINING_PLAN, ROADMAP, HANDOFF, bitacora.

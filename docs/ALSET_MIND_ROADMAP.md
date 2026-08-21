@@ -60,7 +60,7 @@ Código clave: `internal/node/mind_tick.go`, `mind_compose.go`, `mind_memory.go`
 | # | Ítem | Notas |
 |---|------|--------|
 | P1.1 | Training **Fase 2** — patrones / Go / Python | **Hecho 2026-08-21** — +19 entradas corpus (77 total) |
-| P1.2 | Training **Fase 3** — IA convencional vs Zyrion | Reforzar identidad de especie en corpus |
+| P1.2 | Training **Fase 3** — IA convencional vs Zyrion | **Hecho 2026-08-21** — +13 entradas (~90 total) |
 | P1.3 | Más entradas de corpus + plantillas «Se me ocurre…» | Solo conocimiento curado; sin API LLM |
 | P1.4 | Multi-hit de corpus (2 entradas rankeadas) | Composición más rica sin alucinar |
 | P1.5 | UI: ocultar o colapsar `note` técnico del latido | La cara puede mostrar menos “lab” al usuario final |

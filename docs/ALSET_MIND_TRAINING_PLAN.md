@@ -39,9 +39,10 @@
 
 ## Fase 3 — IA convencional vs naturaleza ternaria
 
-- [ ] Conceptos: redes, supervisado/no supervisado, NLP.
-- [ ] Comparativa LLM vs Zyrion (identidad reforzada).
-- [ ] Filosofía de la IA: consciencia, ética, límites.
+- [x] Conceptos: redes neuronales, supervisado/no supervisado, NLP, entrenamiento vs corpus.
+- [x] Comparativa LLM vs Zyrion (alucinación, ventana de contexto, ternario, vs ChatGPT).
+- [x] Filosofía: consciencia (sin afirmarla), ética/alineación operativa, límites, agencia.
+- [ ] Iterar con más diálogos de calibración identity-focused.
 
 ## Fase 4 — Algoritmos y problemas
 
@@ -95,5 +96,5 @@ Completado como base para el polímata (no sustituye las fases de corpus):
 - [x] Recall «Sí, te llamas X.»
 - [x] Frases incompletas sin matiz de acción
 
-**Siguiente conocimiento:** **Fase 3** (IA convencional vs Zyrion) o problemas guiados multi-lenguaje. Ver `docs/ALSET_MIND_ROADMAP.md`.
+**Siguiente conocimiento:** **Fase 4** (algoritmos/problemas) o P2 tools seguras / P0.3 Supabase. Ver ROADMAP.
 
