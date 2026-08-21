@@ -266,6 +266,7 @@ func isMemoryQuery(s string) bool {
 		"qué dije antes", "que dije antes", "lo que te dije",
 		"cómo es la ", "como es la ", "cómo es el ", "como es el ",
 		"qué te dije de", "que te dije de", "de qué color", "de que color",
+		"ya te dije", "te dije mi", "te dije el", "recuerdas mi nombre", "recuerdas como me",
 	}
 	for _, k := range keys {
 		if strings.Contains(s, k) {
@@ -503,6 +504,9 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 		}
 		rel, score := bestEpisodeOverlap(query, episodes)
 		if score >= need && rel != "" {
+			if name := extractDeclaredName(rel); name != "" {
+				return "Sí, te llamas " + name + "."
+			}
 			snip := truncateRunes(rel, 100)
 			return "Me suena esto: «" + snip + "». ¿Seguimos por ahí?"
 		}
@@ -511,6 +515,9 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 	// Explicit memory query: best episode by overlap, world facts, personal facts
 	rel, score := bestEpisodeOverlap(query, episodes)
 	if score >= 1 && rel != "" {
+		if name := extractDeclaredName(rel); name != "" {
+			return "Sí, te llamas " + name + "."
+		}
 		return "Sí, recuerdo: «" + truncateRunes(rel, 120) + "»."
 	}
 	for _, ep := range episodes {

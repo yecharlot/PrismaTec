@@ -265,3 +265,8 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 
 - **Acto:** Quitar jerga de laboratorio en la voz al usuario: sin «memoria CID», «episodio guardado», «Ethics sumidero (2)», «Idea:», «Y sobre lo que preguntas del corpus». Recall de nombre → «Te llamas X.» Declaración → «Perfecto, te llamas X. Lo recordaré.» Ideas → «Se me ocurre…»
 - **Archivos:** mind_memory.go, mind_tick.go, mind_compose.go, tests, bitácora.
+
+## 2026-08-21 — Voz: recall de nombre natural, capacidades y frases incompletas
+
+- **Acto:** `speakFromMemory` extrae nombre del episodio → «Sí, te llamas X.» (sin citar el texto crudo). Capacidades y ayuda sin menú técnico. `isIncompleteUtterance` evita el matiz «¿actúo sobre el nodo?» ante «dime tu». `looksLikeNodeAction` restringe el matiz a pedidos reales.
+- **Archivos:** mind_memory.go, mind_tick.go, tests, bitácora.

@@ -314,3 +314,34 @@ func TestNaturalKnowledgeVoice(t *testing.T) {
 		t.Fatalf("should not be menu-like: %s", got)
 	}
 }
+
+func TestNaturalNameRecallFromEpisode(t *testing.T) {
+	eps := []mindEpisodePayload{{Text: "mi nombre es Yulei Esteban"}}
+	got := speakFromMemory("ya te dije mi nombre", eps)
+	if !strings.Contains(got, "Yulei Esteban") {
+		t.Fatalf("expected name, got %s", got)
+	}
+	if strings.Contains(got, "«") || strings.Contains(strings.ToLower(got), "episodio") {
+		t.Fatalf("should not quote raw episode: %s", got)
+	}
+	got2 := speakFromMemory("como me llamo", eps)
+	if !strings.Contains(got2, "Yulei Esteban") {
+		t.Fatalf("name query: %s", got2)
+	}
+}
+
+func TestIncompleteUtterance(t *testing.T) {
+	if !isIncompleteUtterance("dime tu") {
+		t.Fatal("dime tu should be incomplete")
+	}
+	organs := []MindOrganResult{
+		{Name: "ethics", State: 0}, {Name: "act", State: 1}, {Name: "dialog", State: 1},
+	}
+	v := mindVoice("dime tu", organs, "", "")
+	if strings.Contains(strings.ToLower(v), "actúe") || strings.Contains(strings.ToLower(v), "nodo") {
+		t.Fatalf("incomplete should not ask to act on node: %s", v)
+	}
+	if !strings.Contains(strings.ToLower(v), "completas") && !strings.Contains(strings.ToLower(v), "sigo") {
+		t.Fatalf("expected clarification ask: %s", v)
+	}
+}

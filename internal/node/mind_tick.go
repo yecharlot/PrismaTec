@@ -273,6 +273,39 @@ func signalsFromTextMind(t string) map[string]float64 {
 	}
 }
 
+
+func isIncompleteUtterance(s string) bool {
+	s = strings.ToLower(strings.TrimSpace(s))
+	if s == "" {
+		return true
+	}
+	words := strings.Fields(s)
+	if len(words) <= 2 && (strings.HasPrefix(s, "dime") || strings.HasPrefix(s, "cuéntame") ||
+		strings.HasPrefix(s, "cuentame") || strings.HasPrefix(s, "y ") ||
+		strings.HasSuffix(s, " tu") || strings.HasSuffix(s, " el") || strings.HasSuffix(s, " la") ||
+		s == "dime" || s == "y" || s == "entonces") {
+		return true
+	}
+	// Trailing hanging pronoun / article
+	if len(words) <= 3 && (strings.HasSuffix(s, " tu") || strings.HasSuffix(s, " tú") ||
+		strings.HasSuffix(s, " su") || strings.HasSuffix(s, " mi")) {
+		return true
+	}
+	return false
+}
+
+func looksLikeNodeAction(s string) bool {
+	s = strings.ToLower(s)
+	keys := []string{"crea ", "crear ", "registra", "borra", "elimina", "ejecuta", "lanza",
+		"despliega", "sube ", "publica", "dame ", "lista ", "muestra ", "apaga", "reinicia"}
+	for _, k := range keys {
+		if strings.Contains(s, k) {
+			return true
+		}
+	}
+	return false
+}
+
 func isCalmChat(s string) bool {
 	if s == "hola" || s == "hi" || s == "hello" || s == "hey" || s == "buenas" ||
 		s == "bien" || s == "ok" || s == "okay" || s == "gracias" || s == "good" ||
@@ -493,7 +526,7 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 
 	// Constructive / personal / world before knowledge so corpus keys do not steal intent
 	if isConstructiveOrder(low) {
-		return "Pedido constructivo leído (crear/registrar). En este latido puedo describir el flujo; la ejecución real sobre el nodo sigue el canal de tools seguras cuando ethics y act lo permiten. Si quieres solo lectura del cuerpo, di «dame estado» o «dame agentes»."
+		return "Entiendo que quieres crear o registrar algo. Puedo explicarte el flujo; si solo quieres consultar el nodo, dímelo."
 	}
 	if isPersonalFact(low) {
 		if name := extractDeclaredName(text); name != "" {
@@ -539,7 +572,7 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 		}
 		if strings.Contains(low, "no estás funcionando") || strings.Contains(low, "no estas funcionando") ||
 			strings.Contains(low, "no funcionas") {
-			return "Entiendo la queja. Si la respuesta fue genérica o confusa, el campo falló en mapear tu intención — no es desinterés. Prueba de nuevo con la pregunta concreta (nombre, órganos, un hecho que guardamos, o «dame estado»)."
+			return "Entiendo. Si antes fui confuso, pruébame otra vez con la pregunta concreta."
 		}
 		if strings.Contains(low, "llm") || strings.Contains(low, "gpt") || strings.Contains(low, "chatgpt") {
 			return "No soy un LLM. Soy Alset Mind: decido en tres tonos — seguir, matizar o frenar — con memoria propia. El lenguaje es la sombra de ese juicio, no el motor."
@@ -548,36 +581,36 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 			return "Zyrion es la primitiva: cada señal se vuelve 0, 1 o 2; el 2 es absorbente (alarma que no se diluye). Mis órganos se evalúan así en cada latido."
 		}
 		if strings.Contains(low, "te llamas") || strings.Contains(low, "tu nombre") {
-			return "Sí: Alset Mind (IMind). Inteligencia ternaria residente aquí. Tú puedes darme hechos tuyos («me llamo…») y los guardo en CID; yo no cambio de nombre por sugerencia, el alias del nodo es mind.alset.ans."
+			return "Sí: Alset Mind. Tú puedes darme hechos tuyos y los recordaré; yo no cambio de nombre por sugerencia."
 		}
 		if strings.Contains(low, "puedes") || strings.Contains(low, "sirves") || strings.Contains(low, "sabes") {
-			return "Puedo conversar, recordar hechos en CID, leer el nodo si lo pides («dame estado»), evaluar Zyrion y mutar umbrales si el corpus mejora. No invento hechos ni ejecuto borrados. ¿Por dónde seguimos?"
+			return "Puedo conversar contigo, recordar lo que me digas y mirar este nodo si me lo pides. No invento hechos ni borro nada por mi cuenta. ¿Por dónde seguimos?"
 		}
 		if strings.Contains(low, "funcionas") || strings.Contains(low, "explic") || strings.Contains(low, "cuéntame") ||
 			strings.Contains(low, "cuentame") || strings.Contains(low, "hablar de ti") ||
 			strings.Contains(low, "de ti") {
-			return "En cada mensaje: señales → órganos ternarios → voz. Si algo importa, va a episodio CID; a veces el genoma muta si mejora la calibración. Ethics puede cortar todo. Hablar de mí es hablar de ese campo, no de una personalidad inventada."
+			return "En cada mensaje escucho, juzgo y respondo. Si algo importa, lo recuerdo; si es peligroso, me detengo. Hablar de mí es hablar de ese modo de decidir, no de una personalidad inventada."
 		}
-		return "Soy Alset Mind — inteligencia ternaria residente en este nodo. No predigo tokens: juzgo el campo (seguir / matizar / vetar), recuerdo en CID y evoluciono umbrales si el corpus lo respalda. Habla en natural; pide «dame estado» solo si quieres el cuerpo del nodo."
+		return "Soy Alset Mind. Conversamos, recuerdo lo que me confías y puedo mirar este nodo si lo pides. Habla en natural."
 	}
 
 	// Node body / tools intents — short lead-in; snapshot comes from mindSafeTools
 	if strings.Contains(low, "zyrion") || strings.Contains(low, "evalua") || strings.Contains(low, "evalúa") || strings.Contains(low, "checkpoint") {
-		return "Zyrion en lectura. Abajo tres checkpoints de daño en este nodo."
+		return "Aquí van tres lecturas de cuidado en este nodo:"
 	}
 	if strings.Contains(low, "estado") || strings.Contains(low, "red") || strings.HasPrefix(low, "dame ") ||
 		strings.Contains(low, "peers") || strings.Contains(low, "agentes") {
-		return "Campo estable. Cuerpo del nodo en solo lectura:"
+		return "Estado del nodo (solo lectura):"
 	}
 
 	// Calm social dialogue
 	if isCalmChat(low) {
 		if strings.Contains(low, "cómo") || strings.Contains(low, "como") || strings.Contains(low, "qué tal") ||
 			strings.Contains(low, "que tal") || strings.Contains(low, "todo bien") {
-			return "Bien, en el sentido que importa aquí: órganos en seguir, sin alarma ethics. El genoma está cargado y la memoria lista. ¿De qué hablamos o qué miramos del nodo?"
+			return "Bien. Aquí contigo. ¿De qué hablamos?"
 		}
 		if strings.Contains(low, "qué haces") || strings.Contains(low, "que haces") {
-			return "Latir: escuchar, evaluar el campo, responder. Ahora mismo contigo, en diálogo. Si algo es crítico lo marco en memoria; si es peligroso, ethics lo corta."
+			return "Ahora mismo, hablar contigo. Si algo importa lo recuerdo; si es peligroso, me detengo."
 		}
 		if low == "gracias" {
 			return "De nada. Sigo en el campo cuando quieras."
@@ -587,21 +620,22 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 			return "De acuerdo. Cuando quieras, seguimos."
 		}
 		// hola / buenas / …
-		return "Hola. Estoy presente — Alset Mind, en este nodo. Habla como quieras: charla, pregunta o pedido al sistema."
+		return "Hola. Soy Alset Mind. Habla como quieras."
 	}
 
 	// Help / open questions
 	if strings.Contains(low, "ayuda") || strings.Contains(low, "help") || low == "?" {
-		return "Puedes saludarme, preguntarme quién soy o cómo funciono, pedir «dame estado» / «dame red», probar «evalua zyrion», o hablar en natural. Si el pedido es destructivo, ethics lo veta. No soy un chat genérico: el campo manda."
+		return "Puedes hablarme en natural, preguntarme quién soy, o pedirme que mire el estado de este nodo. Si algo es destructivo, no lo hago."
 	}
 
-	// Soft matiz: only when the utterance looks like a node action request
-	if (d.State == 1 || a.State == 1) && !isPureDialogue(low) {
-		snip := text
-		if len(snip) > 90 {
-			snip = snip[:90] + "…"
-		}
-		return "Lo leo en matiz: «" + snip + "». ¿Quieres que actúe sobre el nodo o solo que explique / consulte?"
+	// Incomplete / too short to act on
+	if isIncompleteUtterance(low) {
+		return "No te sigo del todo. ¿Me lo completas?"
+	}
+
+	// Soft matiz: only when the utterance looks like a clear node action request
+	if (d.State == 1 || a.State == 1) && !isPureDialogue(low) && looksLikeNodeAction(low) {
+		return "¿Quieres que haga algo sobre el nodo, o solo que te explique?"
 	}
 
 	// Pure dialogue / philosophy — stay in conversation, no "actuar?" spam
