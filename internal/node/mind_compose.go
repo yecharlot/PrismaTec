@@ -122,10 +122,27 @@ func ideaFromCross(userText, memSpeak, knowSpeak string) string {
 		return "Idea: anclar identidad (tuya en CID, la mía en el agente) y usar self=0 como criterio de coherencia en los próximos turnos."
 	case strings.Contains(u, "vida") || strings.Contains(u, "pensamiento") || strings.Contains(u, "conscien") || strings.Contains(u, "filosof"):
 		return "Idea: no resolver la metafísica; fijar una frase tuya en CID y contrastarla en el próximo latido con el campo 0/1/2 — eso es filosofía operativa aquí."
-	case strings.Contains(u, "código") || strings.Contains(u, "codigo") || strings.Contains(u, "go ") || strings.Contains(u, "función") || strings.Contains(u, "funcion"):
-		return "Idea: convertir el recuerdo en un criterio de prueba (entrada → órgano esperado) y añadirlo mentalmente al corpus de calibración."
-	case strings.Contains(u, "red") || strings.Contains(u, "peer") || strings.Contains(u, "nodo"):
-		return "Idea: si el episodio habla del cuerpo del nodo, el siguiente paso seguro es solo lectura («dame estado» / «dame red»), no mutación libre."
+	case strings.Contains(u, "goroutine") || strings.Contains(u, "canal") || strings.Contains(u, "channel") ||
+		(strings.Contains(u, "go ") && (strings.Contains(u, "concurr") || strings.Contains(u, "routine"))):
+		return "Idea: modelar la concurrencia que comentas como órganos en paralelo bajo un ethics compartido — el 2 de uno no debería tumbar todo el campo sin veto explícito."
+	case strings.Contains(u, "código") || strings.Contains(u, "codigo") || strings.Contains(u, "golang") ||
+		strings.Contains(u, "función") || strings.Contains(u, "funcion") || strings.Contains(u, "error handling") ||
+		strings.Contains(u, "interface") || strings.Contains(u, "struct"):
+		return "Idea: convertir el recuerdo en un criterio de prueba (entrada → órgano esperado) y añadirlo mentalmente al corpus de calibración; en Go eso se parece a un test de tabla."
+	case strings.Contains(u, "libp2p") || strings.Contains(u, "gossip") || strings.Contains(u, "dht") ||
+		strings.Contains(u, "peer") || strings.Contains(u, "malla") || strings.Contains(u, "red p2p") ||
+		(strings.Contains(u, "red") && (strings.Contains(u, "nodo") || strings.Contains(u, "peer") || strings.Contains(u, "cid"))):
+		return "Idea: si el episodio habla del cuerpo de red, el siguiente paso seguro es solo lectura («dame red» / «dame peers»); cualquier mutación de malla debe pasar ethics antes que act."
+	case strings.Contains(u, "ethics") || strings.Contains(u, "ética") || strings.Contains(u, "etica") ||
+		strings.Contains(u, "veto") || strings.Contains(u, "sumidero") || strings.Contains(u, "permiso"):
+		return "Idea: usar ethics como contrato explícito — lo que ya vetaste queda en CID como sesgo de riesgo, no como castigo eterno a la charla calmada."
+	case strings.Contains(u, "seguridad") || strings.Contains(u, "secreto") || strings.Contains(u, "borra") ||
+		strings.Contains(u, "password") || strings.Contains(u, "contraseña"):
+		return "Idea: mantener destructivo fuera del diálogo fluido; si reaparece, ethics 2 + episodio, sin diluir el veto en promedios."
+	case strings.Contains(u, "cid") || strings.Contains(u, "ipfs") || strings.Contains(u, "blockstore"):
+		return "Idea: tratar cada hecho tuyo como bloque content-addressed — recuperable sin depender de la ventana del chat."
+	case strings.Contains(u, "red") || strings.Contains(u, "nodo"):
+		return "Idea: mirar el cuerpo del nodo en solo lectura antes de proponer cambios; la malla se observa, no se reescribe desde la charla."
 	default:
 		return "Idea: unir lo recordado con lo del corpus en una sola frase que quieras conservar; si me la dictas, la marco para CID."
 	}
@@ -134,14 +151,45 @@ func ideaFromCross(userText, memSpeak, knowSpeak string) string {
 func softKnowledgeFollowUp(low string, curiosity int) string {
 	if curiosity >= 2 {
 		if strings.Contains(low, "lisp") || strings.Contains(low, "quote") {
-			return "¿Quieres un mini-ejemplo evaluable en el nodo, o bastó la explicación?"
+			return "Si te sirve, podemos bajar a un ejemplo mínimo en el nodo; si no, seguimos en la idea."
 		}
 		if strings.Contains(low, "zyrion") {
-			return "¿Probamos «evalua zyrion» en vivo o seguimos en diálogo?"
+			return "Cuando quieras, lo contrastamos con un checkpoint en vivo; no hace falta menú."
 		}
-		return "¿Hay un matiz tuyo que deba quedar en memoria episódica?"
+		if strings.Contains(low, "red") || strings.Contains(low, "peer") {
+			return "Si quieres el cuerpo de la malla, dímelo en natural; no hace falta invocar comandos."
+		}
+		return "Si hay un matiz que deba sobrevivir al chat, dímelo y lo anclo en CID."
 	}
-	return "Si quieres profundidad, pide otro ángulo o un hecho para anclar."
+	if curiosity == 1 {
+		return "Puedo ampliar el ángulo o quedarnos aquí; tú marcas el ritmo."
+	}
+	return ""
+}
+
+// naturalKnowledgeVoice turns a corpus hit into conversational prose (not a help card).
+func naturalKnowledgeVoice(userText, know string, curiosity int) string {
+	low := strings.ToLower(strings.TrimSpace(userText))
+	know = strings.TrimSpace(know)
+	if know == "" {
+		return ""
+	}
+	var lead string
+	switch {
+	case strings.Contains(low, "qué es") || strings.Contains(low, "que es") || strings.Contains(low, "explica"):
+		lead = ""
+	case strings.Contains(low, "cómo") || strings.Contains(low, "como"):
+		lead = "Mirándolo desde el corpus del nodo: "
+	case strings.Contains(low, "por qué") || strings.Contains(low, "porque"):
+		lead = "La lectura que tengo es esta: "
+	default:
+		lead = ""
+	}
+	out := lead + know
+	if fu := softKnowledgeFollowUp(low, curiosity); fu != "" {
+		out = out + "\n\n" + fu
+	}
+	return out
 }
 
 func fluidPureDialogue(low string, curiosity int) string {

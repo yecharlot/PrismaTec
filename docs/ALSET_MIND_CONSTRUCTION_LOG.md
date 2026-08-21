@@ -255,3 +255,8 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Observación (prod):** «cómo me llamo y qué es quote» guardaba nombre «y qué es»; «como me llamo» respondía «Hecho personal marcado» en vez de Esteban.
 - **Decisión:** Separar declaración vs pregunta; compuesto = dos intenciones unidas con conector natural + idea bridge.
 - **Archivos:** mind_memory.go, mind_tick.go, mind_compose.go, mind_dialogue_test.go, bitácora.
+
+## 2026-08-21 — Dedup de nombre + ideas por dominio + corpus natural
+
+- **Acto:** `knownUserNameFromEpisodes` / `isDuplicateNameDeclaration`: no re-grabar el mismo nombre; voz «Ya te tenía como X». Más plantillas `ideaFromCross` (red/libp2p, Go, ethics, seguridad, CID). `naturalKnowledgeVoice` + follow-ups menos menú.
+- **Archivos:** mind_memory.go, mind_tick.go, mind_compose.go, mind_dialogue_test.go, bitácora.

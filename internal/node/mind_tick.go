@@ -339,11 +339,13 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		recallN = 24 // deeper look when user asks to remember
 	}
 	recent := n.recallRecentEpisodes(recallN)
+	knownName := knownUserNameFromEpisodes(recent)
 	memHint := ""
 	memSpeak := ""
 	sig, memHint, memSpeak = biasSignalsFromMemory(sig, recent, text)
 	// Personal / world facts → boost memory organ so we persist them
-	if isPersonalFact(text) || isWorldFact(text) {
+	// Skip novelty boost when re-declaring the same known name (dedup)
+	if isWorldFact(text) || (isPersonalFact(text) && !isDuplicateNameDeclaration(text, knownName)) {
 		sig["novedad"] = clamp01(sig["novedad"] + 0.35)
 		sig["claridad"] = clamp01(sig["claridad"] + 0.1)
 	}
@@ -369,7 +371,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	}
 
 	organs := []MindOrganResult{dialog, act, mem, self, ethics, curiosity, humor}
-	voice := mindVoice(text, organs, memSpeak)
+	voice := mindVoice(text, organs, memSpeak, knownName)
 	// Soft organs APPEND tint/question — never replace solid knowledge/identity/memory answers
 	if ethics.State != 2 {
 		low := strings.ToLower(text)
@@ -404,8 +406,11 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		Note:       "latido+memoria+compose+curiosity+humor+zyrion",
 	}
 
-	saveEp := forceMem || isPersonalFact(text) || isWorldFact(text) ||
-		(mem.State >= 1 && (sig["riesgo"] >= 0.5 || len(text) > 48 || mem.State == 2 || isPersonalFact(text) || isWorldFact(text)))
+	// Dedup: do not re-save the same declared name as a new episode
+	dupName := isDuplicateNameDeclaration(text, knownName)
+	saveEp := forceMem || isWorldFact(text) ||
+		(isPersonalFact(text) && !dupName) ||
+		(mem.State >= 1 && !dupName && (sig["riesgo"] >= 0.5 || len(text) > 48 || mem.State == 2 || isWorldFact(text)))
 	if saveEp {
 		ep := map[string]interface{}{
 			"type":      "mind_episode",
@@ -443,7 +448,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	return resp
 }
 
-func mindVoice(text string, organs []MindOrganResult, memSpeak string) string {
+func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName string) string {
 	get := func(name string) MindOrganResult {
 		for _, o := range organs {
 			if o.Name == name {
@@ -491,9 +496,16 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string) string {
 	}
 	if isPersonalFact(low) {
 		if name := extractDeclaredName(text); name != "" {
-			// Mixed declaration + question about Mind: answer both
-			if strings.Contains(low, "tu nombre") || strings.Contains(low, "te llamas") ||
-				strings.Contains(low, "el tuyo") || strings.Contains(low, "y tú") || strings.Contains(low, "y tu") {
+			mixed := strings.Contains(low, "tu nombre") || strings.Contains(low, "te llamas") ||
+				strings.Contains(low, "el tuyo") || strings.Contains(low, "y tú") || strings.Contains(low, "y tu")
+			// Dedup: same name already in episodic memory
+			if knownName != "" && namesEqual(name, knownName) {
+				if mixed {
+					return "Ya te tenía como " + knownName + " en memoria CID. Yo soy Alset Mind (IMind), alias mind.alset.ans — inteligencia ternaria en este nodo, no un LLM."
+				}
+				return "Ya te tenía como " + knownName + " en memoria CID; no hace falta volver a grabarlo. Si preguntas «cómo me llamo», lo recupero del mismo episodio."
+			}
+			if mixed {
 				return "Queda anotado en memoria episódica: te llamas " + name + ". Yo soy Alset Mind (IMind), alias mind.alset.ans — inteligencia ternaria en este nodo, no un LLM."
 			}
 			return "Queda anotado en memoria episódica: te llamas " + name + ". Si más adelante preguntas «cómo me llamo», lo recuperaré desde el CID, no desde una ventana temporal."
@@ -514,9 +526,9 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string) string {
 	if memSpeak != "" {
 		return memSpeak
 	}
-	// Curated polymath knowledge (structured JSON, not token prediction)
+	// Curated polymath knowledge — natural phrasing, not a menu card
 	if know != "" {
-		return know
+		return naturalKnowledgeVoice(text, know, get("curiosity").State)
 	}
 
 	// Identity & thesis — fluid, honest, not LLM

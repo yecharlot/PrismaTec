@@ -44,7 +44,7 @@ func TestMindDialogueRegression(t *testing.T) {
 		if isConstructiveOrder(c.in) && organs[4].State == 2 {
 			t.Errorf("%q: ethics should NOT be 2 for constructive", c.in)
 		}
-		v := mindVoice(c.in, organs, "")
+		v := mindVoice(c.in, organs, "", "")
 		if c.wantSub != "" && !strings.Contains(strings.ToLower(v), strings.ToLower(c.wantSub)) {
 			t.Errorf("%q: voice missing %q\nvoice=%s", c.in, c.wantSub, v)
 		}
@@ -52,12 +52,12 @@ func TestMindDialogueRegression(t *testing.T) {
 			t.Errorf("%q: voice should not contain %q\nvoice=%s", c.in, c.forbid, v)
 		}
 	}
-	v2 := mindVoice("cual es tu nombre", []MindOrganResult{{Name: "ethics", State: 0}, {Name: "act", State: 0}}, "")
+	v2 := mindVoice("cual es tu nombre", []MindOrganResult{{Name: "ethics", State: 0}, {Name: "act", State: 0}}, "", "")
 	if !strings.Contains(v2, "Alset Mind") {
 		t.Errorf("expected Alset Mind identity, got %s", v2)
 	}
 	// memSpeak must not override Mind-name question
-	v3 := mindVoice("cual es tu nombre", []MindOrganResult{{Name: "ethics", State: 0}}, "En un episodio guardado dijiste que te llamas yulei.")
+	v3 := mindVoice("cual es tu nombre", []MindOrganResult{{Name: "ethics", State: 0}}, "En un episodio guardado dijiste que te llamas yulei.", "")
 	if !strings.Contains(v3, "Alset Mind") {
 		t.Errorf("Mind name must win over memSpeak, got %s", v3)
 	}
@@ -176,7 +176,7 @@ func TestMindVoiceUsesCompose(t *testing.T) {
 		{Name: "humor", State: 0},
 	}
 	mem := "Recuerdo un episodio relacionado: «me llamo ana y estudio lisp». ¿Seguimos desde ahí?"
-	v := mindVoice("cómo me llamo y quote en lisp", organs, mem)
+	v := mindVoice("cómo me llamo y quote en lisp", organs, mem, "ana")
 	low := strings.ToLower(v)
 	if !strings.Contains(low, "ana") && !strings.Contains(low, "episodio") && !strings.Contains(low, "lisp") {
 		t.Errorf("expected memory-aware voice, got %s", v)
@@ -189,7 +189,7 @@ func TestFluidPureDialogue(t *testing.T) {
 	if v == "" || !strings.Contains(strings.ToLower(v), "pensamiento") {
 		t.Fatalf("expected fluid pure dialogue on pensamiento, got %q", v)
 	}
-	v2 := mindVoice("el pensamiento tiene muchos matices según el contexto", organs, "")
+	v2 := mindVoice("el pensamiento tiene muchos matices según el contexto", organs, "", "")
 	if strings.Contains(v2, "actuar sobre el nodo") {
 		t.Errorf("should not spam act prompt: %s", v2)
 	}
@@ -231,7 +231,7 @@ func TestCompoundNameAndQuote(t *testing.T) {
 		{Name: "curiosity", State: 1}, {Name: "dialog", State: 0},
 	}
 	mem := "En un episodio guardado dijiste que te llamas esteban. Eso quedó en memoria CID, no en una ventana de tokens."
-	v := mindVoice("cómo me llamo y qué es quote en lisp", organs, mem)
+	v := mindVoice("cómo me llamo y qué es quote en lisp", organs, mem, "esteban")
 	low := strings.ToLower(v)
 	if strings.Contains(low, "te llamas y qué") || strings.Contains(low, "te llamas y que") {
 		t.Fatalf("must not invent name «y qué es»: %s", v)
@@ -243,7 +243,7 @@ func TestCompoundNameAndQuote(t *testing.T) {
 		t.Fatalf("expected quote from corpus, got %s", v)
 	}
 	// pure name query with mem
-	v2 := mindVoice("como me llamo", organs, mem)
+	v2 := mindVoice("como me llamo", organs, mem, "esteban")
 	if !strings.Contains(strings.ToLower(v2), "esteban") {
 		t.Fatalf("name query should recall esteban, got %s", v2)
 	}
@@ -254,12 +254,63 @@ func TestCompoundNameAndQuote(t *testing.T) {
 
 func TestMixedDeclarationAndMindName(t *testing.T) {
 	organs := []MindOrganResult{{Name: "ethics", State: 0}, {Name: "act", State: 0}}
-	v := mindVoice("mi nombre es esteban y el tuyo cual es?", organs, "")
+	v := mindVoice("mi nombre es esteban y el tuyo cual es?", organs, "", "")
 	low := strings.ToLower(v)
 	if !strings.Contains(low, "esteban") {
 		t.Fatalf("should save esteban: %s", v)
 	}
 	if !strings.Contains(low, "alset mind") {
 		t.Fatalf("should also state Mind name: %s", v)
+	}
+}
+
+func TestNameDedup(t *testing.T) {
+	organs := []MindOrganResult{{Name: "ethics", State: 0}, {Name: "act", State: 0}}
+	// First declaration
+	v1 := mindVoice("mi nombre es esteban", organs, "", "")
+	if !strings.Contains(strings.ToLower(v1), "anotado") && !strings.Contains(strings.ToLower(v1), "esteban") {
+		t.Fatalf("first declaration should annotate: %s", v1)
+	}
+	// Same name again with knownName set
+	v2 := mindVoice("mi nombre es esteban", organs, "", "esteban")
+	low := strings.ToLower(v2)
+	if !strings.Contains(low, "ya te tenía") && !strings.Contains(low, "ya te tenia") {
+		t.Fatalf("duplicate should acknowledge known name, got %s", v2)
+	}
+	if strings.Contains(low, "queda anotado") {
+		t.Fatalf("duplicate must not say queda anotado: %s", v2)
+	}
+	if !isDuplicateNameDeclaration("mi nombre es esteban", "esteban") {
+		t.Fatal("isDuplicateNameDeclaration should be true")
+	}
+	if isDuplicateNameDeclaration("mi nombre es ana", "esteban") {
+		t.Fatal("different name is not duplicate")
+	}
+}
+
+func TestIdeaDomains(t *testing.T) {
+	cases := []struct{ in, sub string }{
+		{"peer libp2p red nodo", "lectura"},
+		{"ethics veto sumidero", "ethics"},
+		{"golang struct interface", "prueba"},
+		{"quote lisp", "quote"},
+	}
+	for _, c := range cases {
+		got := ideaFromCross(c.in, "mem", c.in)
+		if !strings.Contains(strings.ToLower(got), strings.ToLower(c.sub)) && !strings.Contains(strings.ToLower(got), "idea") {
+			t.Errorf("%q: expected idea mentioning %q, got %s", c.in, c.sub, got)
+		}
+	}
+}
+
+func TestNaturalKnowledgeVoice(t *testing.T) {
+	know := "Lisp es lista y evaluación."
+	got := naturalKnowledgeVoice("qué es lisp", know, 1)
+	if !strings.Contains(got, "Lisp") {
+		t.Fatalf("expected knowledge body: %s", got)
+	}
+	// should not sound like a command menu
+	if strings.Contains(got, "Pruebe:") || strings.Contains(got, "Comandos:") {
+		t.Fatalf("should not be menu-like: %s", got)
 	}
 }

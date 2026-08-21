@@ -442,6 +442,28 @@ func extractDeclaredName(text string) string {
 	return ""
 }
 
+// knownUserNameFromEpisodes returns the most recent declared user name in episodes, if any.
+func knownUserNameFromEpisodes(episodes []mindEpisodePayload) string {
+	for _, ep := range episodes {
+		if name := extractDeclaredName(ep.Text); name != "" {
+			return name
+		}
+	}
+	return ""
+}
+
+func namesEqual(a, b string) bool {
+	return strings.EqualFold(strings.TrimSpace(a), strings.TrimSpace(b))
+}
+
+func isDuplicateNameDeclaration(text, knownName string) bool {
+	if knownName == "" {
+		return false
+	}
+	name := extractDeclaredName(text)
+	return name != "" && namesEqual(name, knownName)
+}
+
 // speakFromMemory builds a natural reply from CID episodes when the user asks to recall.
 func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 	if len(episodes) == 0 {
