@@ -401,7 +401,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		Voice:      voice,
 		MemState:   mem.State,
 		MemoryHint: memHint,
-		Note:       "latido+memoria+curiosity+humor+zyrion",
+		Note:       "latido+memoria+compose+curiosity+humor+zyrion",
 	}
 
 	saveEp := forceMem || isPersonalFact(text) || isWorldFact(text) ||
@@ -472,15 +472,10 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string) string {
 		return "Me llamo Alset Mind (IMind). Alias del nodo: mind.alset.ans. Inteligencia ternaria residente aquí — no un LLM. Tú puedes decirme tu nombre y lo guardo en CID; el mío no cambia por sugerencia."
 	}
 
-	// Spoken episodic memory — the advantage over LLM context windows
-	if memSpeak != "" {
-		return memSpeak
+	// Constructive / personal / world before knowledge so corpus keys do not steal intent
+	if isConstructiveOrder(low) {
+		return "Pedido constructivo leído (crear/registrar). En este latido puedo describir el flujo; la ejecución real sobre el nodo sigue el canal de tools seguras cuando ethics y act lo permiten. Si quieres solo lectura del cuerpo, di «dame estado» o «dame agentes»."
 	}
-	// Curated polymath knowledge (structured JSON, not token prediction)
-	if know := speakFromKnowledge(text); know != "" {
-		return know
-	}
-	// Confirm when user just declared a personal fact (will be saved as CID)
 	if isPersonalFact(low) {
 		if name := extractDeclaredName(text); name != "" {
 			return "Queda anotado en memoria episódica: te llamas " + name + ". Si más adelante preguntas «cómo me llamo», lo recuperaré desde el CID, no desde una ventana temporal."
@@ -491,9 +486,19 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string) string {
 		return "Queda anclado como hecho en memoria episódica (CID). Si más tarde preguntas por ello, lo recuperaré desde el bloque, no desde una ventana temporal."
 	}
 
-	// Constructive orders: acknowledge without false SUMIDERO
-	if isConstructiveOrder(low) {
-		return "Pedido constructivo leído (crear/registrar). En este latido puedo describir el flujo; la ejecución real sobre el nodo sigue el canal de tools seguras cuando ethics y act lo permiten. Si quieres solo lectura del cuerpo, di «dame estado» o «dame agentes»."
+	// Dual recall + fluid composition (memory ∩ corpus → ideas). Falls through if empty.
+	know := speakFromKnowledge(text)
+	if composed := composeFluidVoice(text, organs, memSpeak, know); composed != "" {
+		return composed
+	}
+
+	// Spoken episodic memory — the advantage over LLM context windows
+	if memSpeak != "" {
+		return memSpeak
+	}
+	// Curated polymath knowledge (structured JSON, not token prediction)
+	if know != "" {
+		return know
 	}
 
 	// Identity & thesis — fluid, honest, not LLM

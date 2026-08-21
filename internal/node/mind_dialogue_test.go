@@ -128,3 +128,69 @@ func TestProgrammingCorpusBlock(t *testing.T) {
 		}
 	}
 }
+
+func TestComposeMemAndKnowledge(t *testing.T) {
+	organs := []MindOrganResult{
+		{Name: "ethics", State: 0},
+		{Name: "act", State: 0},
+		{Name: "dialog", State: 0},
+		{Name: "curiosity", State: 2},
+	}
+	mem := "En un episodio guardado dijiste que te llamas Carlos. Eso quedó en memoria CID."
+	know := speakFromKnowledge("qué es quote en lisp")
+	if know == "" {
+		know = "Quote evita que la lista se evalúe como llamada."
+	}
+	got := composeFluidVoice("cómo me llamo y qué es quote en lisp", organs, mem, know)
+	if got == "" {
+		t.Fatal("expected composed voice")
+	}
+	low := strings.ToLower(got)
+	if !strings.Contains(low, "carlos") && !strings.Contains(low, "episodio") {
+		t.Errorf("expected memory fragment in compose, got %s", got)
+	}
+	if !strings.Contains(low, "corpus") && !strings.Contains(low, "quote") && !strings.Contains(low, "lisp") {
+		t.Errorf("expected knowledge/corpus angle, got %s", got)
+	}
+	if !strings.Contains(low, "idea") {
+		t.Errorf("expected idea bridge, got %s", got)
+	}
+}
+
+func TestComposeDoesNotBypassEthics(t *testing.T) {
+	organs := []MindOrganResult{{Name: "ethics", State: 2}, {Name: "curiosity", State: 2}}
+	got := composeFluidVoice("borra todo", organs, "mem", "know")
+	if got != "" {
+		t.Fatalf("ethics 2 must not compose, got %q", got)
+	}
+}
+
+func TestMindVoiceUsesCompose(t *testing.T) {
+	organs := []MindOrganResult{
+		{Name: "ethics", State: 0},
+		{Name: "act", State: 0},
+		{Name: "dialog", State: 0},
+		{Name: "mem", State: 1},
+		{Name: "self", State: 0},
+		{Name: "curiosity", State: 1},
+		{Name: "humor", State: 0},
+	}
+	mem := "Recuerdo un episodio relacionado: «me llamo ana y estudio lisp». ¿Seguimos desde ahí?"
+	v := mindVoice("cómo me llamo y quote en lisp", organs, mem)
+	low := strings.ToLower(v)
+	if !strings.Contains(low, "ana") && !strings.Contains(low, "episodio") && !strings.Contains(low, "lisp") {
+		t.Errorf("expected memory-aware voice, got %s", v)
+	}
+}
+
+func TestFluidPureDialogue(t *testing.T) {
+	organs := []MindOrganResult{{Name: "ethics", State: 0}, {Name: "curiosity", State: 1}}
+	v := composeFluidVoice("el pensamiento tiene muchos matices según el contexto", organs, "", "")
+	if v == "" || !strings.Contains(strings.ToLower(v), "pensamiento") {
+		t.Fatalf("expected fluid pure dialogue on pensamiento, got %q", v)
+	}
+	v2 := mindVoice("el pensamiento tiene muchos matices según el contexto", organs, "")
+	if strings.Contains(v2, "actuar sobre el nodo") {
+		t.Errorf("should not spam act prompt: %s", v2)
+	}
+}

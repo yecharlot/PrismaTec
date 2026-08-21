@@ -240,3 +240,11 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Decisión:** Soft organs + auto-calibración acotada (±0.02). Conocimiento y corpus ampliados.
 - **Archivos:** mind_genome.go, mind_organs_extra.go, mind_tick.go, mind_memory.go, http.go, mind_index.html, knowledge, corpus.
 - **Próximo paso:** Probar en producción tras deploy; afinar umbrales con feedback real.
+
+## 2026-08-21 — Diálogo fluido: compositor memoria ∩ corpus
+
+- **Acto:** `mind_compose.go` — `composeFluidVoice` cruza memoria episódica (`memSpeak`) y corpus (`speakFromKnowledge`) para proponer ideas estructuradas (plantillas, no LLM). `mindVoice` reordenado: constructive/personal/world antes del corpus; dual-channel primero en el compositor.
+- **Observación:** Antes la voz era excluyente (memoria O corpus O plantilla). Eso impedía fluidez y generación de ideas por cruce.
+- **Decisión:** Ethics 2 y destructive nunca componen. Saludos/identidad/hechos personales siguen rutas clásicas. Curiosity colorea el puente. Tests de regresión + compose.
+- **Archivos:** `internal/node/mind_compose.go` (nuevo), `mind_tick.go`, `mind_dialogue_test.go`, bitácora, handoff.
+- **Próximo paso:** Observar en producción tras deploy; ampliar plantillas de idea y, si hace falta, multi-hit de corpus.
