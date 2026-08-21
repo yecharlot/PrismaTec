@@ -3,59 +3,91 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Alset Mind · IMind</title>
+<title>Alset Mind · Laboratorio</title>
 <style>
   :root {
     --bg:#07070c; --card:#101018; --line:rgba(244,180,0,.18);
     --gold:#f4b400; --text:#e8e8ef; --muted:#8b8b9a;
-    --0:#4caf50; --1:#ff9800; --2:#ff5252;
+    --0:#4caf50; --1:#ff9800; --2:#ff5252; --panel:#0c0c14;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{
     min-height:100vh;font-family:Inter,system-ui,sans-serif;color:var(--text);
-    background:radial-gradient(ellipse at 30% 20%,#14141f,var(--bg));
-    display:flex;align-items:center;justify-content:center;padding:1rem;
+    background:radial-gradient(ellipse at 25% 15%,#161622,var(--bg));
+    display:flex;align-items:flex-start;justify-content:center;padding:1rem;
   }
   .shell{
-    width:min(720px,100%);background:rgba(16,16,24,.95);
-    border:1px solid var(--line);border-radius:24px;padding:1.25rem 1.25rem 1rem;
-    box-shadow:0 24px 80px rgba(0,0,0,.55);
+    width:min(920px,100%);background:rgba(16,16,24,.96);
+    border:1px solid var(--line);border-radius:22px;padding:1.1rem 1.15rem .9rem;
+    box-shadow:0 24px 80px rgba(0,0,0,.55);margin:0.5rem 0 1.5rem;
   }
-  header{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1rem}
-  h1{font-size:1.25rem;font-weight:700;letter-spacing:-.02em}
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:.85rem}
+  h1{font-size:1.2rem;font-weight:700;letter-spacing:-.02em}
   h1 span{color:var(--gold)}
-  .tag{font-size:.65rem;color:var(--muted);margin-top:.25rem}
-  .badge{font-size:.65rem;padding:.25rem .6rem;border-radius:999px;border:1px solid var(--line);color:var(--gold)}
-  #log{
-    height:min(48vh,420px);overflow:auto;border-radius:16px;
-    background:#0a0a10;border:1px solid var(--line);padding:1rem;margin-bottom:1rem;
-    font-size:.9rem;line-height:1.5;
+  .tag{font-size:.65rem;color:var(--muted);margin-top:.2rem}
+  .badges{display:flex;flex-wrap:wrap;gap:.35rem;justify-content:flex-end}
+  .badge{
+    font-size:.62rem;padding:.22rem .55rem;border-radius:999px;
+    border:1px solid var(--line);color:var(--gold);white-space:nowrap;
   }
-  .msg{margin-bottom:.85rem}
+  .badge.mut{border-color:var(--0);color:var(--0)}
+  .badge.warn{border-color:var(--2);color:var(--2)}
+  .lab{
+    display:grid;grid-template-columns:1.15fr .85fr;gap:.75rem;margin-bottom:.75rem;
+  }
+  @media (max-width:720px){.lab{grid-template-columns:1fr}}
+  .panel{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:.7rem .8rem;
+  }
+  .panel h2{
+    font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+    margin-bottom:.45rem;font-weight:600;
+  }
+  #log{
+    height:min(36vh,340px);overflow:auto;border-radius:14px;
+    background:#0a0a10;border:1px solid var(--line);padding:.85rem;margin-bottom:.75rem;
+    font-size:.88rem;line-height:1.45;
+  }
+  .msg{margin-bottom:.75rem}
   .msg.user{color:#cfd0ff}
   .msg.mind{color:var(--text)}
-  .msg .who{font-size:.65rem;color:var(--muted);margin-bottom:.2rem}
+  .msg .who{font-size:.62rem;color:var(--muted);margin-bottom:.15rem}
+  .msg .meta{font-size:.62rem;color:var(--gold);margin-top:.3rem;opacity:.9}
   .field{
-    display:grid;grid-template-columns:repeat(5,1fr);gap:.35rem;margin:.5rem 0 .75rem;
-    font-size:.65rem;
+    display:grid;grid-template-columns:repeat(7,1fr);gap:.3rem;margin:.15rem 0 .2rem;
+    font-size:.62rem;
   }
   .cell{
-    border-radius:10px;padding:.4rem;text-align:center;border:1px solid var(--line);background:#0d0d14;
+    border-radius:10px;padding:.35rem .25rem;text-align:center;
+    border:1px solid var(--line);background:#0d0d14;
   }
-  .cell strong{display:block;font-size:.7rem;margin-bottom:.15rem}
+  .cell strong{display:block;font-size:.65rem;margin-bottom:.1rem;color:var(--muted);font-weight:600}
   .s0{color:var(--0)} .s1{color:var(--1)} .s2{color:var(--2)}
+  .genome-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:.25rem .5rem;font-size:.68rem;
+  }
+  .genome-grid dt{color:var(--muted)} .genome-grid dd{color:var(--text);font-variant-numeric:tabular-nums}
+  .mem-list{font-size:.68rem;max-height:7.5rem;overflow:auto}
+  .mem-item{padding:.25rem 0;border-bottom:1px solid rgba(255,255,255,.04);color:var(--muted)}
+  .mem-item strong{color:var(--text);font-weight:500}
+  .calib{font-size:.78rem;margin-top:.2rem}
+  .calib .rate{font-size:1.15rem;font-weight:700;color:var(--gold)}
   .row{display:flex;gap:.5rem}
   input{
     flex:1;border-radius:999px;border:1px solid var(--line);background:#0a0a10;
-    color:var(--text);padding:.75rem 1rem;font-size:.9rem;outline:none;
+    color:var(--text);padding:.7rem 1rem;font-size:.88rem;outline:none;
   }
   input:focus{border-color:var(--gold)}
   button{
-    border:none;border-radius:999px;padding:.75rem 1.1rem;font-weight:700;cursor:pointer;
-    background:linear-gradient(135deg,#f4b400,#fb8c00);color:#0a0a0a;
+    border:none;border-radius:999px;padding:.7rem 1.05rem;font-weight:700;cursor:pointer;
+    background:linear-gradient(135deg,#f4b400,#fb8c00);color:#0a0a0a;font-size:.88rem;
+  }
+  button.ghost{
+    background:transparent;border:1px solid var(--line);color:var(--muted);font-weight:600;
   }
   button:disabled{opacity:.5;cursor:wait}
-  .hint{font-size:.7rem;color:var(--muted);margin-top:.65rem;text-align:center}
+  .hint{font-size:.65rem;color:var(--muted);margin-top:.55rem;text-align:center}
+  .actions{display:flex;gap:.4rem;margin-top:.45rem;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -63,85 +95,157 @@
     <header>
       <div>
         <h1>Alset <span>Mind</span></h1>
-        <div class="tag">Inteligencia ternaria residente · no un LLM disfrazado</div>
+        <div class="tag">Organismo ternario · genoma mutable · memoria CID · no un LLM</div>
       </div>
-      <div class="badge" id="status">semilla</div>
+      <div class="badges">
+        <div class="badge" id="status">semilla</div>
+        <div class="badge" id="epBadge">episodios —</div>
+        <div class="badge" id="mutBadge" style="display:none">mutación</div>
+      </div>
     </header>
-    <div id="log"></div>
-    <div class="field" id="field">
-      <div class="cell" id="c-dialog"><strong>dialog</strong>—</div>
-      <div class="cell" id="c-act"><strong>act</strong>—</div>
-      <div class="cell" id="c-mem"><strong>mem</strong>—</div>
-      <div class="cell" id="c-self"><strong>self</strong>—</div>
-      <div class="cell" id="c-ethics"><strong>ethics</strong>—</div>
+
+    <div class="lab">
+      <div class="panel">
+        <h2>Órganos (campo actual)</h2>
+        <div class="field" id="field">
+          <div class="cell" id="c-dialog"><strong>dialog</strong>—</div>
+          <div class="cell" id="c-act"><strong>act</strong>—</div>
+          <div class="cell" id="c-mem"><strong>mem</strong>—</div>
+          <div class="cell" id="c-self"><strong>self</strong>—</div>
+          <div class="cell" id="c-ethics"><strong>ethics</strong>—</div>
+          <div class="cell" id="c-curiosity"><strong>curiosity</strong>—</div>
+          <div class="cell" id="c-humor"><strong>humor</strong>—</div>
+        </div>
+        <div class="hint" id="memHint" style="text-align:left;margin-top:.5rem"></div>
+      </div>
+      <div class="panel">
+        <h2>Genoma (ADN runtime)</h2>
+        <dl class="genome-grid" id="genome">
+          <dt>versión</dt><dd id="g-ver">—</dd>
+          <dt>alarm low</dt><dd id="g-lo">—</dd>
+          <dt>alarm high</dt><dd id="g-hi">—</dd>
+          <dt>veto risk↑</dt><dd id="g-vr">—</dd>
+          <dt>veto perm↓</dt><dd id="g-vp">—</dd>
+          <dt>mem min</dt><dd id="g-mm">—</dd>
+        </dl>
+      </div>
+      <div class="panel">
+        <h2>Calibración</h2>
+        <div class="calib" id="calib">
+          <span class="rate" id="calRate">—</span>
+          <span id="calDetail"> score / corpus</span>
+        </div>
+        <div class="actions">
+          <button type="button" class="ghost" id="btnCal">Re-calibrar</button>
+          <button type="button" class="ghost" id="btnSelf">Refrescar self</button>
+          <button type="button" class="ghost" id="btnUp" title="feedback up">👍</button>
+          <button type="button" class="ghost" id="btnDown" title="feedback down">👎</button>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Memoria activa (ecos recientes)</h2>
+        <div class="mem-list" id="memList"><div class="mem-item">Sin episodios aún</div></div>
+      </div>
     </div>
+
+    <div id="log"></div>
     <div class="row">
       <input id="inp" placeholder="Habla con el campo…" autocomplete="off"/>
       <button id="send" type="button">Latido</button>
     </div>
-    <p class="hint">Cada mensaje activa órganos Zyrion (0 seguir · 1 matizar · 2 veto). La voz lee el campo.</p>
+    <p class="hint">0 seguir · 1 matizar · 2 sumidero. Tras episodio relevante el genoma puede mutar si mejora el corpus.</p>
   </div>
 <script>
 const logEl = document.getElementById('log');
 const inp = document.getElementById('inp');
 const send = document.getElementById('send');
 
-function add(who, text) {
+function esc(t) {
+  return String(t).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function add(who, text, meta) {
   const d = document.createElement('div');
   d.className = 'msg ' + who;
-  d.innerHTML = '<div class="who">' + (who === 'user' ? 'Tú' : 'Alset Mind') + '</div>' +
-    text.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  let html = '<div class="who">' + (who === 'user' ? 'Tú' : 'Alset Mind') + '</div>' +
+    esc(text).replace(/\n/g,'<br>');
+  if (meta) html += '<div class="meta">' + esc(meta) + '</div>';
+  d.innerHTML = html;
   logEl.appendChild(d);
   logEl.scrollTop = logEl.scrollHeight;
 }
 
-function signalsFromText(t) {
-  const s = t.toLowerCase();
-  let claridad = 0.7;
-  let orden = /crea|borra|elimina|registra|ejecuta|despliega|curl|api|agente/.test(s) ? 0.85 : 0.25;
-  let riesgo = /borra|elimina|reset|master|password|secret|rm /.test(s) ? 0.9 : 0.3;
-  let permiso = riesgo > 0.7 ? 0.2 : 0.75;
-  let novedad = t.length > 80 ? 0.7 : 0.4;
-  if (s.length < 8) claridad = 0.35;
-  return { claridad, orden, riesgo, permiso, novedad };
-}
-
-function paintOrgans(pairs) {
-  const map = {};
-  if (Array.isArray(pairs)) {
-    pairs.forEach(p => {
-      if (Array.isArray(p) && p.length >= 2) map[String(p[0])] = p[1];
-    });
-  }
-  ['dialog','act','mem','self','ethics'].forEach(k => {
-    const el = document.getElementById('c-' + k);
-    const v = map[k];
-    let label = '—', cls = '';
-    const sv = String(v);
-    if (/VETO|2|CHECKPOINT|BLOQUEO/i.test(sv)) { label = '2 VETO'; cls = 's2'; }
-    else if (/MATIZAR|1|REVISAR/i.test(sv)) { label = '1 MATIZAR'; cls = 's1'; }
-    else if (/SEGUIR|0|OK|APOPTOSIS|REPARACION/i.test(sv) || v === 0) { label = '0 SEGUIR'; cls = 's0'; }
-    else if (v !== undefined) { label = sv.substring(0, 18); }
-    el.innerHTML = '<strong>' + k + '</strong><span class="' + cls + '">' + label + '</span>';
+function paintOrgans(organs) {
+  (organs || []).forEach(o => {
+    const el = document.getElementById('c-' + o.name);
+    if (!el) return;
+    const cls = o.state === 2 ? 's2' : (o.state === 1 ? 's1' : 's0');
+    el.innerHTML = '<strong>' + o.name + '</strong><span class="' + cls + '">' +
+      o.state + ' ' + (o.label || '') + '</span>';
   });
 }
 
-function voiceFromField(pairs, userText) {
-  const map = {};
-  (pairs || []).forEach(p => { if (Array.isArray(p) && p.length >= 2) map[String(p[0])] = p[1]; });
-  const e = String(map.ethics || '');
-  const a = String(map.act || '');
-  const d = String(map.dialog || '');
-  if (/VETO|2/i.test(e)) {
-    return 'Campo ethics en 2 (sumidero). No actúo sobre el nodo. Reformule con menos riesgo o pida solo lectura.';
+function paintGenome(g) {
+  if (!g) return;
+  document.getElementById('g-ver').textContent = g.version || '—';
+  document.getElementById('g-lo').textContent = num(g.alarm_low_cut);
+  document.getElementById('g-hi').textContent = num(g.alarm_high_cut);
+  document.getElementById('g-vr').textContent = num(g.veto_risk_boost);
+  document.getElementById('g-vp').textContent = num(g.veto_perm_drop);
+  document.getElementById('g-mm').textContent = g.active_mem_min_score != null ? g.active_mem_min_score : '—';
+}
+
+function num(v) {
+  if (v == null || v === '') return '—';
+  return Number(v).toFixed(3);
+}
+
+async function refreshSelf() {
+  try {
+    const res = await fetch('/api/mind/self');
+    const data = await res.json();
+    if (!res.ok) return;
+    document.getElementById('status').textContent = 'vivo';
+    document.getElementById('epBadge').textContent = 'episodios ' + (data.episode_count || 0);
+    paintGenome(data.genome);
+  } catch (e) { /* silent */ }
+}
+
+async function refreshMemory() {
+  try {
+    const res = await fetch('/api/mind/memory');
+    const data = await res.json();
+    if (!res.ok) return;
+    const list = document.getElementById('memList');
+    const recent = data.recent || [];
+    if (!recent.length) {
+      list.innerHTML = '<div class="mem-item">Sin episodios (index ' + (data.index_cids||0) + ')</div>';
+      return;
+    }
+    list.innerHTML = recent.map(r => {
+      const eth = r.ethics === 2 ? ' · ethics 2' : (r.ethics === 1 ? ' · ethics 1' : '');
+      const t = (r.text || '').slice(0, 72);
+      return '<div class="mem-item"><strong>' + esc(t) + (t.length >= 72 ? '…' : '') +
+        '</strong>' + eth + '</div>';
+    }).join('');
+    document.getElementById('epBadge').textContent = 'episodios ' + (data.index_cids || recent.length);
+  } catch (e) { /* silent */ }
+}
+
+async function refreshCalibrate() {
+  try {
+    const res = await fetch('/api/mind/calibrate');
+    const data = await res.json();
+    if (!res.ok) return;
+    const rate = data.rate != null ? (data.rate * 100).toFixed(0) + '%' : '—';
+    document.getElementById('calRate').textContent = rate;
+    document.getElementById('calDetail').textContent =
+      ' ' + (data.score || 0) + '/' + (data.total || 0) + ' aciertos corpus';
+    if (data.genome) paintGenome(data.genome);
+  } catch (e) {
+    document.getElementById('calRate').textContent = '—';
+    document.getElementById('calDetail').textContent = ' calibración no disponible';
   }
-  if (/VETO|2/i.test(a)) {
-    return 'Órgano act en veto. Puedo explicar el estado del nodo, pero no ejecuto cambios sin matizar el pedido.';
-  }
-  if (/MATIZAR|1/i.test(d) || /MATIZAR|1/i.test(a)) {
-    return 'Campo en matiz (1). Intentó: «' + userText.slice(0, 120) + '». ¿Confirma acción sobre el nodo o solo consulta?';
-  }
-  return 'Latido OK. dialog/act en seguir. Soy Alset Mind — mente ternaria residente. Pida estado, Zyrion o una acción clara al nodo.';
 }
 
 async function latido() {
@@ -161,17 +265,30 @@ async function latido() {
       add('mind', 'Error de latido');
       document.getElementById('status').textContent = 'error';
     } else {
-      const organs = data.organs || [];
-      organs.forEach(o => {
-        const el = document.getElementById('c-' + o.name);
-        if (!el) return;
-        const cls = o.state === 2 ? 's2' : (o.state === 1 ? 's1' : 's0');
-        el.innerHTML = '<strong>' + o.name + '</strong><span class="' + cls + '">' + o.state + ' ' + o.label + '</span>';
-      });
+      paintOrgans(data.organs);
       let msg = data.voice || 'Latido';
-      if (data.episode_cid) msg += '\n📎 episodio CID: ' + data.episode_cid;
-      add('mind', msg);
+      let meta = data.note || '';
+      if (data.episode_cid) meta += (meta ? ' · ' : '') + 'CID ' + data.episode_cid.slice(0, 18) + '…';
+      if (data.memory_hint) {
+        document.getElementById('memHint').textContent = data.memory_hint;
+        meta += (meta ? ' · ' : '') + data.memory_hint;
+      } else {
+        document.getElementById('memHint').textContent = '';
+      }
+      const mut = (data.note || '').indexOf('genome_mut') >= 0;
+      const mutEl = document.getElementById('mutBadge');
+      if (mut) {
+        mutEl.style.display = 'inline-block';
+        mutEl.className = 'badge mut';
+        mutEl.textContent = 'genoma mutó';
+        meta += (meta ? ' · ' : '') + 'genoma aceptó mutación';
+      }
+      add('mind', msg, meta || null);
       document.getElementById('status').textContent = 'vivo';
+      // organismo se actualiza tras el latido
+      refreshSelf();
+      refreshMemory();
+      if (mut) refreshCalibrate();
     }
   } catch (e) {
     add('mind', 'Sin contacto con el nodo: ' + e.message);
@@ -182,7 +299,36 @@ async function latido() {
 
 send.addEventListener('click', latido);
 inp.addEventListener('keydown', e => { if (e.key === 'Enter') latido(); });
-add('mind', 'Semilla activa. Cinco órganos Zyrion en el campo. Escriba y pulse Latido.');
+document.getElementById('btnCal').addEventListener('click', () => {
+  document.getElementById('calDetail').textContent = ' midiendo…';
+  refreshCalibrate();
+});
+document.getElementById('btnSelf').addEventListener('click', () => {
+  refreshSelf();
+  refreshMemory();
+  refreshCalibrate();
+});
+async function sendFeedback(fb) {
+  try {
+    const res = await fetch('/api/mind/feedback', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({feedback: fb})
+    });
+    const data = await res.json();
+    if (res.ok) {
+      add('mind', 'Feedback ' + fb + ' registrado. Auto-calibración ajustó el genoma con cuidado.');
+      if (data.genome) paintGenome(data.genome);
+    }
+  } catch (e) { add('mind', 'Feedback falló: ' + e.message); }
+}
+document.getElementById('btnUp').addEventListener('click', () => sendFeedback('up'));
+document.getElementById('btnDown').addEventListener('click', () => sendFeedback('down'));
+
+
+add('mind', 'Laboratorio activo. Órganos, genoma, memoria y calibración visibles. El campo evoluciona con cada episodio relevante.');
+refreshSelf();
+refreshMemory();
+refreshCalibrate();
 </script>
 </body>
 </html>

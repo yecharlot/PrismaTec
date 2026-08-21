@@ -55,7 +55,7 @@ func (n *NodoAlset) ensureMindApp() {
 		"primitive":   "zyrion-0-1-2-absorbing",
 		"agent_id":    mindAgentID,
 		"alias":       mindAlias,
-		"organs":      []string{"dialog", "act", "mem", "self", "ethics"},
+		"organs":      []string{"dialog", "act", "mem", "self", "ethics", "curiosity", "humor"},
 		"thesis":      "docs/ALSET_MIND_THESIS.md",
 		"born":        time.Now().UTC().Format(time.RFC3339),
 		"voice":       "symbolic-field-reading",

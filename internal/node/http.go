@@ -49,8 +49,13 @@ func (n *NodoAlset) httpHandlers() httpapi.Handlers {
 			return
 		}
 		alias := strings.TrimSuffix(parts[2], ".app.ans")
+		// Always refresh first-party Mind UI from embed (avoid stale static in Docker image)
+		if alias == "mind" {
+			n.ensureMindApp()
+		}
 		appPath := filepath.Join(StaticDir, "apps", alias, "index.html")
 		if _, err := os.Stat(appPath); err == nil {
+			w.Header().Set("Cache-Control", "no-store")
 			http.ServeFile(w, r, appPath)
 			return
 		}
