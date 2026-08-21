@@ -6,46 +6,55 @@ import (
 	"strings"
 )
 
-// evaluateCuriosity: unknown / novel topics outside knowledge+memory → ask to learn.
-// 0 quiet · 1 mild · 2 strong urge to ask (never absorbs ethics).
+// evaluateCuriosity: novel / reflective topics → urge to ask (never absorbs ethics).
+// 0 quiet · 1 mild follow-up · 2 strong open question.
+// Knowledge does not kill curiosity: a solid answer can still invite a follow-up.
 func evaluateCuriosity(text string, memSpeak string, g MindGenome) MindOrganResult {
 	s := strings.ToLower(strings.TrimSpace(text))
 	score := 0.0
-	// known knowledge or memory → low curiosity
-	if speakFromKnowledge(text) != "" || memSpeak != "" {
-		return MindOrganResult{Name: "curiosity", State: 0, Label: labelForOrgan("curiosity", 0), Inputs: []float64{0, 0, 0}}
-	}
-	if isCalmChat(s) || isIdentityTalk(s) || isMemoryQuery(s) || isPersonalFact(s) {
+	words := tokenizeMind(s)
+	if isCalmChat(s) || isMemoryQuery(s) || isPersonalFact(s) || isDestructiveOrder(s) {
 		return MindOrganResult{Name: "curiosity", State: 0, Label: labelForOrgan("curiosity", 0), Inputs: []float64{0.1, 0, 0}}
 	}
-	// explicit teaching invitation
 	if strings.Contains(s, "sabes qué") || strings.Contains(s, "sabes que") ||
 		strings.Contains(s, "te cuento") || strings.Contains(s, "descubr") ||
 		strings.Contains(s, "documental") || strings.Contains(s, "aprendí") ||
 		strings.Contains(s, "aprendi") || strings.Contains(s, "me enteré") {
-		score = 0.85
+		score = 0.9
 	}
-	// long novel statement without our domain keywords
-	words := tokenizeMind(s)
-	if len(words) >= 4 {
-		score += 0.35
-	}
-	if len(s) > 60 {
-		score += 0.2
-	}
-	// domain we don't cover yet (physics, biology, etc.)
-	unknown := []string{"agujero negro", "agujeros negros", "cuántica", "adn", "galaxia",
-		"neurociencia", "bitcoin", "blockchain", "filosofía de", "filosofia de",
-		"relatividad", "dinosaurio", "océano", "oceano"}
-	for _, u := range unknown {
-		if strings.Contains(s, u) {
-			score = 0.9
+	reflect := []string{"metáfora", "metafora", "significa", "existencia", "consciencia",
+		"conciencia", "pensamiento", "el todo", "esencia", "humano", "vivimos",
+		"primero debemos", "la vida es", "como si", "pareces", "eres como"}
+	for _, r := range reflect {
+		if strings.Contains(s, r) {
+			score += 0.45
 			break
 		}
 	}
+	if len(words) >= 4 {
+		score += 0.3
+	}
+	if len(s) > 50 {
+		score += 0.15
+	}
+	unknown := []string{"agujero negro", "agujeros negros", "cuántica", "galaxia",
+		"neurociencia", "bitcoin", "blockchain", "filosofía de", "filosofia de",
+		"relatividad", "dinosaurio", "océano", "oceano", "mito", "poesía", "poesia"}
+	for _, u := range unknown {
+		if strings.Contains(s, u) {
+			score = 0.92
+			break
+		}
+	}
+	if speakFromKnowledge(text) != "" && score < 0.5 {
+		score = 0.42
+	}
+	if memSpeak != "" && score < 0.35 {
+		score = 0.3
+	}
 	cut := g.CuriosityCut
 	if cut <= 0 {
-		cut = 0.55
+		cut = 0.4
 	}
 	st := 0
 	if score >= cut+0.25 {
@@ -56,12 +65,13 @@ func evaluateCuriosity(text string, memSpeak string, g MindGenome) MindOrganResu
 	return MindOrganResult{Name: "curiosity", State: st, Label: labelForOrgan("curiosity", st), Inputs: []float64{score, cut, float64(len(words))}}
 }
 
-// evaluateHumor: comic intent in user message.
+// evaluateHumor: comic intent or playful comparison in user message.
 func evaluateHumor(text string, g MindGenome) MindOrganResult {
 	s := strings.ToLower(strings.TrimSpace(text))
 	score := 0.0
 	keys := []string{"jaja", "jeje", "haha", "lol", "chiste", "broma", "risa", "😂", "😄",
-		"qué hace un", "que hace un", "por qué los", "por que los", "knock", "punchline"}
+		"qué hace un", "que hace un", "por qué los", "por que los", "knock", "punchline",
+		"eres como", "pareces un", "sin varita", "sin varitas", "harry potter", "mago"}
 	for _, k := range keys {
 		if strings.Contains(s, k) {
 			score = 0.85
@@ -74,7 +84,7 @@ func evaluateHumor(text string, g MindGenome) MindOrganResult {
 	}
 	cut := g.HumorCut
 	if cut <= 0 {
-		cut = 0.5
+		cut = 0.3
 	}
 	st := 0
 	if score >= cut+0.25 {
@@ -85,28 +95,47 @@ func evaluateHumor(text string, g MindGenome) MindOrganResult {
 	return MindOrganResult{Name: "humor", State: st, Label: labelForOrgan("humor", st), Inputs: []float64{score, cut, 0}}
 }
 
+// curiosityVoice returns a follow-up question to APPEND (never replaces a solid answer).
 func curiosityVoice(text string, st int) string {
+	if st <= 0 {
+		return ""
+	}
+	low := strings.ToLower(text)
 	if st >= 2 {
-		return "Eso no está en mi conocimiento curado ni en episodios recientes. ¿Me cuentas un poco más? Si lo explicas, puedo guardarlo en memoria CID y aprender en este nodo."
+		if strings.Contains(low, "metáfora") || strings.Contains(low, "metafora") || strings.Contains(low, "la vida es") {
+			return "¿Qué significa para ti esa imagen — qué parte quieres que ancle en memoria CID?"
+		}
+		if strings.Contains(low, "humano") {
+			return "¿Qué rasgo humano te importa más contrastar con este organismo ternario?"
+		}
+		if strings.Contains(low, "consciencia") || strings.Contains(low, "conciencia") {
+			return "¿Hablas de consciencia como experiencia subjetiva o como capacidad de monitorear el propio proceso?"
+		}
+		return "¿Quieres profundizar y lo anclo en un episodio CID, o preferimos otro ángulo?"
 	}
-	if st == 1 {
-		return "Me suena a terreno nuevo para este organismo. Si quieres, profundiza y lo anclo en un episodio."
+	// mild
+	if strings.Contains(low, "pensamiento") || strings.Contains(low, "todo") || strings.Contains(low, "exist") {
+		return "Si quieres, formula una frase que deba recordar tal cual."
 	}
-	return ""
+	return "Puedo guardar un matiz tuyo en CID si lo dejas explícito."
 }
 
+// humorVoice: light tint line to APPEND when humor organ is active.
 func humorVoice(text string, st int) string {
+	if st <= 0 {
+		return ""
+	}
+	low := strings.ToLower(text)
 	if st >= 2 {
-		low := strings.ToLower(text)
-		if strings.Contains(low, "abeja") && strings.Contains(low, "gimnasio") {
-			return "¡Zum-ba! Buena. El campo registró humor alto — ¿tienes otra?"
+		if strings.Contains(low, "varita") || strings.Contains(low, "mago") || strings.Contains(low, "harry") {
+			return "Prefiero verme como un mago con siete órganos y sin varita: el hechizo más útil suele ser una pregunta bien puesta."
 		}
-		return "Ja — el órgano humor está en 2. Buena esa. ¿Sigues en tono ligero o volvemos a lo serio del nodo?"
+		if strings.Contains(low, "abeja") && strings.Contains(low, "gimnasio") {
+			return "¡Zum-ba! Humor en 2 — ¿tienes otra?"
+		}
+		return "El órgano humor marcó 2: tono ligero admitido. Seguimos en el campo sin disfrazar el juicio 0/1/2."
 	}
-	if st == 1 {
-		return "Sonrisa registrada (humor 1). Sigo en el campo — puedes seguir con el chiste o cambiar de tema."
-	}
-	return ""
+	return "Sonrisa breve (humor 1). El campo sigue en serio cuando haga falta."
 }
 
 // handleMindFeedback: POST {"feedback":"up"|"down"} for auto-calibration.

@@ -370,12 +370,20 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 
 	organs := []MindOrganResult{dialog, act, mem, self, ethics, curiosity, humor}
 	voice := mindVoice(text, organs, memSpeak)
-	// Soft organs color voice when ethics allows
+	// Soft organs APPEND tint/question — never replace solid knowledge/identity/memory answers
 	if ethics.State != 2 {
+		low := strings.ToLower(text)
 		if hv := humorVoice(text, humor.State); hv != "" {
-			voice = hv
-		} else if cv := curiosityVoice(text, curiosity.State); cv != "" && memSpeak == "" {
-			voice = cv
+			playfulLead := humor.State >= 2 && (strings.Contains(low, "mago") || strings.Contains(low, "varita") ||
+				strings.Contains(low, "harry") || strings.Contains(low, "chiste") || strings.Contains(low, "jaja"))
+			if playfulLead && speakFromKnowledge(text) == "" && memSpeak == "" && !isIdentityTalk(low) {
+				voice = hv
+			} else {
+				voice = voice + "\n\n" + hv
+			}
+		}
+		if cv := curiosityVoice(text, curiosity.State); cv != "" {
+			voice = voice + "\n\n" + cv
 		}
 	}
 	// Safe tools when ethics/act allow (not veto)

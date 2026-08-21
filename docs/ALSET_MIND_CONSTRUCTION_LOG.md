@@ -28,6 +28,14 @@ Formato: fecha · acto · observación · decisión.
 
 ---
 
+## 2026-08-21 — Curiosidad + humor activos en la voz + corpus filosófico
+
+- **Acto:** curiosity/humor dejan de ser solo labels: se **añaden** a la voz (pregunta abierta / tinte ligero) sin sustituir conocimiento ni identidad.
+- **Corpus:** entradas humano, consciencia, existencia, mente, ética, pensamiento, metáfora, mago/varita.
+- **Genoma:** CuriosityCut 0.40, HumorCut 0.30 por defecto.
+- **Decisión:** órganos blandos colorean el campo; no generan tokens libres ni anulan ethics.
+- **Tests:** TestCuriosityAndHumorActive + regresión de diálogo.
+
 ## 2026-08-21 — Diálogo: identidad, hechos y sin sobre-veto
 
 - **Síntoma (conversación real):** «cuántos órganos» genérico; «cuál es tu nombre» devolvía el nombre del usuario; «crea un agente» caía en SUMIDERO por bias de vetos previos; filosofía terminaba en «¿actuar sobre el nodo?»; hechos tipo «la rana es naranja…» no se anclaban bien.

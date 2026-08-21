@@ -78,3 +78,34 @@ func TestVetoBiasDoesNotPoisonCalmChat(t *testing.T) {
 		t.Errorf("destructive should get veto boost")
 	}
 }
+
+func TestCuriosityAndHumorActive(t *testing.T) {
+	g := defaultMindGenome()
+	// metaphor should raise curiosity
+	c := evaluateCuriosity("la vida es una metáfora lúcida", "", g)
+	if c.State < 1 {
+		t.Fatalf("curiosity should activate on metaphor, got %d", c.State)
+	}
+	q := curiosityVoice("la vida es una metáfora lúcida", 2)
+	if q == "" || !strings.Contains(q, "?") {
+		t.Fatalf("curiosity voice should ask a question: %q", q)
+	}
+	// humor on wizard comparison
+	h := evaluateHumor("eres como harry potter un mago sin varitas", g)
+	if h.State < 1 {
+		t.Fatalf("humor should activate on mago/varita, got %d", h.State)
+	}
+	hv := humorVoice("eres como harry potter un mago sin varitas", 2)
+	if hv == "" || !strings.Contains(strings.ToLower(hv), "órgano") && !strings.Contains(strings.ToLower(hv), "varita") {
+		t.Fatalf("humor voice expected playful: %q", hv)
+	}
+	// knowledge for humano
+	know := speakFromKnowledge("qué es un humano")
+	if know == "" || !strings.Contains(strings.ToLower(know), "humano") {
+		t.Fatalf("expected human definition from corpus, got %q", know)
+	}
+	know2 := speakFromKnowledge("qué es la consciencia")
+	if know2 == "" {
+		t.Fatalf("expected consciencia entry")
+	}
+}

@@ -36,8 +36,8 @@ func defaultMindGenome() MindGenome {
 		MaxVetoStack:         3,
 		EpisodeKeep:          32,
 		ActiveMemMinScore:    1,
-		CuriosityCut:         0.55,
-		HumorCut:             0.50,
+		CuriosityCut:         0.40,
+		HumorCut:             0.30,
 		MemoryActiveWeight:   0.7,
 		AutoCalibrateEnabled: true,
 	}
@@ -62,10 +62,10 @@ func loadMindGenomeFromDisk() {
 	}
 	// fill new fields if missing from old JSON
 	if g.CuriosityCut <= 0 {
-		g.CuriosityCut = 0.55
+		g.CuriosityCut = 0.40
 	}
 	if g.HumorCut <= 0 {
-		g.HumorCut = 0.50
+		g.HumorCut = 0.30
 	}
 	if g.MemoryActiveWeight <= 0 {
 		g.MemoryActiveWeight = 0.7
