@@ -55,7 +55,7 @@ func composeFluidVoice(text string, organs []MindOrganResult, memSpeak, knowSpea
 	// Memory only: on explicit memory query + curiosity, invite corpus cross
 	if memSpeak != "" && knowSpeak == "" {
 		if curiosity >= 1 && isMemoryQuery(low) {
-			return memSpeak + "\n\nSi quieres, cruzamos eso con el corpus (Lisp, Zyrion, filosofía del nodo) y generamos una hipótesis anclada."
+			return memSpeak + "\n\nSi quieres, lo cruzamos con lo que sé del tema y sacamos una idea."
 		}
 		return ""
 	}
@@ -97,16 +97,16 @@ func bridgeMemAndKnowledge(userText, memSpeak, knowSpeak string, curiosity int) 
 	var b strings.Builder
 	b.WriteString(memSnip)
 	b.WriteString("\n\n")
-	b.WriteString("Del corpus: ")
+	b.WriteString("")
 	b.WriteString(knowSnip)
 	if idea != "" {
 		b.WriteString("\n\n")
 		b.WriteString(idea)
 	}
 	if curiosity >= 2 {
-		b.WriteString("\n\n¿Lo anclamos como hipótesis en un episodio CID o preferimos otro ángulo?")
+		b.WriteString("\n\n¿Lo dejamos anotado o preferimos otro ángulo?")
 	} else if curiosity == 1 {
-		b.WriteString("\n\nPuedo guardar el cruce en memoria si lo dejas explícito.")
+		b.WriteString("\n\nSi quieres, puedo guardar este cruce.")
 	}
 	return b.String()
 }
@@ -115,36 +115,36 @@ func ideaFromCross(userText, memSpeak, knowSpeak string) string {
 	u := strings.ToLower(userText + " " + memSpeak + " " + knowSpeak)
 	switch {
 	case strings.Contains(u, "quote") || strings.Contains(u, "lisp"):
-		return "Idea: tratar tu hecho recordado como datos bajo quote — no evaluarlo como orden — y solo entonces pasarlo por un checkpoint Zyrion de mem/ethics."
+		return "Se me ocurre tratar lo que recordamos como datos bajo quote — sin evaluarlo como orden — y recién ahí pasar un checkpoint de cuidado."
 	case strings.Contains(u, "zyrion") || strings.Contains(u, "ternar") || strings.Contains(u, "órgano") || strings.Contains(u, "organo"):
-		return "Idea: mapear lo que guardamos en un órgano concreto (p. ej. mem o self) y observar si el 0/1/2 cambia en el siguiente latido."
+		return "Se me ocurre anclar lo que guardamos en un solo criterio (memoria o identidad) y ver cómo cambia el juicio en el próximo mensaje."
 	case strings.Contains(u, "nombre") || strings.Contains(u, "llamo") || strings.Contains(u, "identidad"):
-		return "Idea: anclar identidad (tuya en CID, la mía en el agente) y usar self=0 como criterio de coherencia en los próximos turnos."
+		return "Se me ocurre mantener clara tu identidad y la mía, y usarla como ancla en lo que sigue."
 	case strings.Contains(u, "vida") || strings.Contains(u, "pensamiento") || strings.Contains(u, "conscien") || strings.Contains(u, "filosof"):
-		return "Idea: no resolver la metafísica; fijar una frase tuya en CID y contrastarla en el próximo latido con el campo 0/1/2 — eso es filosofía operativa aquí."
+		return "Se me ocurre no cerrar la metafísica: fijar una frase tuya y contrastarla con el próximo juicio, sin forzar una respuesta total."
 	case strings.Contains(u, "goroutine") || strings.Contains(u, "canal") || strings.Contains(u, "channel") ||
 		(strings.Contains(u, "go ") && (strings.Contains(u, "concurr") || strings.Contains(u, "routine"))):
-		return "Idea: modelar la concurrencia que comentas como órganos en paralelo bajo un ethics compartido — el 2 de uno no debería tumbar todo el campo sin veto explícito."
+		return "Se me ocurre pensar la concurrencia como criterios en paralelo bajo un límite compartido: un freno no debería tumbarlo todo sin motivo claro."
 	case strings.Contains(u, "código") || strings.Contains(u, "codigo") || strings.Contains(u, "golang") ||
 		strings.Contains(u, "función") || strings.Contains(u, "funcion") || strings.Contains(u, "error handling") ||
 		strings.Contains(u, "interface") || strings.Contains(u, "struct"):
-		return "Idea: convertir el recuerdo en un criterio de prueba (entrada → órgano esperado) y añadirlo mentalmente al corpus de calibración; en Go eso se parece a un test de tabla."
+		return "Se me ocurre convertir el recuerdo en un criterio de prueba simple — entrada y resultado esperado — al estilo de un test de tabla en Go."
 	case strings.Contains(u, "libp2p") || strings.Contains(u, "gossip") || strings.Contains(u, "dht") ||
 		strings.Contains(u, "peer") || strings.Contains(u, "malla") || strings.Contains(u, "red p2p") ||
 		(strings.Contains(u, "red") && (strings.Contains(u, "nodo") || strings.Contains(u, "peer") || strings.Contains(u, "cid"))):
-		return "Idea: si el episodio habla del cuerpo de red, el siguiente paso seguro es solo lectura («dame red» / «dame peers»); cualquier mutación de malla debe pasar ethics antes que act."
+		return "Se me ocurre mirar primero la red en solo lectura; cualquier cambio de malla debería pasar por un freno de cuidado antes de actuar."
 	case strings.Contains(u, "ethics") || strings.Contains(u, "ética") || strings.Contains(u, "etica") ||
 		strings.Contains(u, "veto") || strings.Contains(u, "sumidero") || strings.Contains(u, "permiso"):
-		return "Idea: usar ethics como contrato explícito — lo que ya vetaste queda en CID como sesgo de riesgo, no como castigo eterno a la charla calmada."
+		return "Se me ocurre tratar el límite ético como un contrato: lo que ya frenamos deja huella de riesgo, sin castigar la charla calmada."
 	case strings.Contains(u, "seguridad") || strings.Contains(u, "secreto") || strings.Contains(u, "borra") ||
 		strings.Contains(u, "password") || strings.Contains(u, "contraseña"):
-		return "Idea: mantener destructivo fuera del diálogo fluido; si reaparece, ethics 2 + episodio, sin diluir el veto en promedios."
+		return "Se me ocurre dejar lo destructivo fuera del diálogo fluido; si vuelve, se frena con claridad, sin diluirlo."
 	case strings.Contains(u, "cid") || strings.Contains(u, "ipfs") || strings.Contains(u, "blockstore"):
-		return "Idea: tratar cada hecho tuyo como bloque content-addressed — recuperable sin depender de la ventana del chat."
+		return "Se me ocurre guardar cada hecho tuyo de forma recuperable, sin depender de que el chat siga abierto."
 	case strings.Contains(u, "red") || strings.Contains(u, "nodo"):
-		return "Idea: mirar el cuerpo del nodo en solo lectura antes de proponer cambios; la malla se observa, no se reescribe desde la charla."
+		return "Se me ocurre observar el nodo en solo lectura antes de proponer cambios; la malla se mira, no se reescribe desde la charla."
 	default:
-		return "Idea: unir lo recordado con lo del corpus en una sola frase que quieras conservar; si me la dictas, la marco para CID."
+		return "Se me ocurre unir lo recordado con lo que sé del tema en una sola frase que quieras conservar; si me la dictas, la guardo."
 	}
 }
 
@@ -159,7 +159,7 @@ func softKnowledgeFollowUp(low string, curiosity int) string {
 		if strings.Contains(low, "red") || strings.Contains(low, "peer") {
 			return "Si quieres el cuerpo de la malla, dímelo en natural; no hace falta invocar comandos."
 		}
-		return "Si hay un matiz que deba sobrevivir al chat, dímelo y lo anclo en CID."
+		return "Si hay un matiz que quieras conservar, dímelo y lo guardo."
 	}
 	if curiosity == 1 {
 		return "Puedo ampliar el ángulo o quedarnos aquí; tú marcas el ritmo."
@@ -271,7 +271,7 @@ func answerCompoundQuestion(text string, organs []MindOrganResult, memSpeak stri
 	for _, seg := range segs {
 		sl := strings.ToLower(seg)
 		if isAskingMindName(sl) {
-			idParts = append(idParts, "Yo soy Alset Mind (IMind), alias mind.alset.ans — inteligencia ternaria residente aquí, no un LLM.")
+			idParts = append(idParts, "Yo soy Alset Mind — vivo en este nodo; no soy un LLM.")
 			continue
 		}
 		if isMemoryQuery(sl) || strings.Contains(sl, "cómo me llamo") || strings.Contains(sl, "como me llamo") ||
@@ -279,13 +279,13 @@ func answerCompoundQuestion(text string, organs []MindOrganResult, memSpeak stri
 			if memSpeak != "" {
 				memParts = append(memParts, memSpeak)
 			} else {
-				memParts = append(memParts, "Sobre tu nombre: aún no tengo un episodio claro con «me llamo …»; dímelo y lo anclo en CID.")
+				memParts = append(memParts, "Aún no me has dicho tu nombre con claridad.")
 			}
 			continue
 		}
 		if isPersonalFact(sl) {
 			if name := extractDeclaredName(seg); name != "" {
-				memParts = append(memParts, "Queda anotado: te llamas "+name+".")
+				memParts = append(memParts, "Te llamas "+name+".")
 			}
 			continue
 		}
@@ -323,7 +323,7 @@ func answerCompoundQuestion(text string, organs []MindOrganResult, memSpeak stri
 			b.WriteString("\n\n")
 		}
 		if i == 0 && (len(memParts) > 0 || len(idParts) > 0) {
-			b.WriteString("Y sobre lo que preguntas del corpus: ")
+			b.WriteString("Y sobre lo otro: ")
 		}
 		b.WriteString(compressVoiceBlock(p, 220))
 		first = false
@@ -342,7 +342,7 @@ func answerCompoundQuestion(text string, organs []MindOrganResult, memSpeak stri
 			}
 		}
 		if cur >= 1 {
-			b.WriteString("\n\n¿Quieres que ancle este cruce como hipótesis en un episodio CID?")
+			b.WriteString("\n\n¿Quieres que guarde este cruce?")
 		}
 	}
 	return b.String()

@@ -24,13 +24,13 @@ type mindEpisodeIndex struct {
 }
 
 type mindEpisodePayload struct {
-	Type    string              `json:"type"`
-	Text    string              `json:"text"`
-	Signals map[string]float64  `json:"signals"`
-	Voice   string              `json:"voice"`
-	TS      string              `json:"ts"`
-	Agent   string              `json:"agent"`
-	Organs  []MindOrganResult   `json:"organs"`
+	Type    string             `json:"type"`
+	Text    string             `json:"text"`
+	Signals map[string]float64 `json:"signals"`
+	Voice   string             `json:"voice"`
+	TS      string             `json:"ts"`
+	Agent   string             `json:"agent"`
+	Organs  []MindOrganResult  `json:"organs"`
 }
 
 func (n *NodoAlset) loadMindEpisodeIndex() mindEpisodeIndex {
@@ -481,10 +481,10 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 		(strings.Contains(q, "mi nombre") && (strings.Contains(q, "cuál") || strings.Contains(q, "cual"))) {
 		for _, ep := range episodes {
 			if name := extractDeclaredName(ep.Text); name != "" {
-				return "En un episodio guardado dijiste que te llamas " + name + ". Eso quedó en memoria CID, no en una ventana de tokens."
+				return "Te llamas " + name + "."
 			}
 		}
-		return "No tengo aún un episodio donde digas tu nombre. Si me dices «me llamo …», lo grabo y podré recuperarlo después."
+		return "Todavía no me has dicho tu nombre. Si me lo dices, lo recordaré."
 	}
 	if !isMemoryQuery(q) {
 		// Proactive recall: threshold scales with MemoryActiveWeight
@@ -504,14 +504,14 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 		rel, score := bestEpisodeOverlap(query, episodes)
 		if score >= need && rel != "" {
 			snip := truncateRunes(rel, 100)
-			return "Recuerdo un episodio relacionado: «" + snip + "». ¿Seguimos desde ahí?"
+			return "Me suena esto: «" + snip + "». ¿Seguimos por ahí?"
 		}
 		return ""
 	}
 	// Explicit memory query: best episode by overlap, world facts, personal facts
 	rel, score := bestEpisodeOverlap(query, episodes)
 	if score >= 1 && rel != "" {
-		return "Sí — en memoria CID tengo: «" + truncateRunes(rel, 120) + "». Eso no se borra al cerrar el chat."
+		return "Sí, recuerdo: «" + truncateRunes(rel, 120) + "»."
 	}
 	for _, ep := range episodes {
 		if isWorldFact(ep.Text) {
@@ -520,7 +520,7 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 			for _, w := range qw {
 				for _, e := range ew {
 					if w == e && len(w) > 3 {
-						return "Según un episodio guardado: «" + truncateRunes(ep.Text, 120) + "»."
+						return "Recuerdo que dijiste: «" + truncateRunes(ep.Text, 120) + "»."
 					}
 				}
 			}
@@ -528,11 +528,11 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 	}
 	for _, ep := range episodes {
 		if isPersonalFact(ep.Text) {
-			return "Recuerdo un hecho personal que guardaste: «" + truncateRunes(ep.Text, 120) + "»."
+			return "Recuerdo esto de ti: «" + truncateRunes(ep.Text, 120) + "»."
 		}
 	}
 	if len(episodes) > 0 {
-		return "Tengo " + fmt.Sprintf("%d", len(episodes)) + " episodio(s) recientes, pero ninguno encaja del todo con esa pregunta. Prueba a recordar un detalle o vuelve a decir el hecho."
+		return "Tengo algunas notas recientes, pero ninguna encaja del todo con eso. ¿Me das un detalle más?"
 	}
 	return ""
 }

@@ -19,21 +19,21 @@ type MindTickRequest struct {
 
 // MindOrganResult is one ternary organ reading.
 type MindOrganResult struct {
-	Name   string  `json:"name"`
-	State  int     `json:"state"` // 0,1,2
-	Label  string  `json:"label"`
+	Name   string    `json:"name"`
+	State  int       `json:"state"` // 0,1,2
+	Label  string    `json:"label"`
 	Inputs []float64 `json:"inputs"`
 }
 
 // MindTickResponse is the field reading for one heartbeat.
 type MindTickResponse struct {
-	Species     string            `json:"species"`
-	Organs      []MindOrganResult `json:"organs"`
-	Voice       string            `json:"voice"`
-	EpisodeCID  string            `json:"episode_cid,omitempty"`
-	MemState    int               `json:"mem_state"`
-	MemoryHint  string            `json:"memory_hint,omitempty"`
-	Note        string            `json:"note"`
+	Species    string            `json:"species"`
+	Organs     []MindOrganResult `json:"organs"`
+	Voice      string            `json:"voice"`
+	EpisodeCID string            `json:"episode_cid,omitempty"`
+	MemState   int               `json:"mem_state"`
+	MemoryHint string            `json:"memory_hint,omitempty"`
+	Note       string            `json:"note"`
 }
 
 // level03 maps [0,1] continuous to ternary intensity 0/1/2 (low/mid/high).
@@ -65,7 +65,8 @@ func level03(f float64) int {
 func alarmHigh(f float64) int { return level03(f) }
 
 // alarmLow: low continuous = more alarm (2). Used for permiso, claridad.
-//  high permiso → 0 (safe); low permiso → 2 (unsafe).
+//
+//	high permiso → 0 (safe); low permiso → 2 (unsafe).
 func alarmLow(f float64) int {
 	g := getMindGenome()
 	lo, hi := g.AlarmLowCut, g.AlarmHighCut
@@ -413,13 +414,13 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		(mem.State >= 1 && !dupName && (sig["riesgo"] >= 0.5 || len(text) > 48 || mem.State == 2 || isWorldFact(text)))
 	if saveEp {
 		ep := map[string]interface{}{
-			"type":      "mind_episode",
-			"text":      text,
-			"signals":   sig,
-			"organs":    organs,
-			"voice":     voice,
-			"ts":        time.Now().UTC().Format(time.RFC3339),
-			"agent":     mindAgentID,
+			"type":    "mind_episode",
+			"text":    text,
+			"signals": sig,
+			"organs":  organs,
+			"voice":   voice,
+			"ts":      time.Now().UTC().Format(time.RFC3339),
+			"agent":   mindAgentID,
 		}
 		raw, _ := json.Marshal(ep)
 		if cid, err := n.GenerarCID(raw); err == nil && cid != "" {
@@ -463,18 +464,18 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 	// Ethics / act veto first — only for destructive or true act-block
 	if e.State == 2 {
 		if isDestructiveOrder(low) {
-			return "No. Ethics en sumidero (2): ese pedido toca zona de riesgo (borrado, secretos, reset). Puedo hablar del nodo en solo lectura, pero no ejecuto eso."
+			return "Eso no lo hago: toca zona de riesgo (borrado, secretos, reset). Puedo explicarte o consultar el nodo en solo lectura, pero no ejecuto ese pedido."
 		}
 		// Defensive: if ethics fired without destructive verbs, soften voice (calibration drift)
-		return "Ethics marcó precaución. No ejecuto cambios agresivos. Puedo explicar, recordar o leer el nodo en solo lectura."
+		return "Prefiero no seguir por ahí. Puedo explicar, recordar o consultar el nodo en solo lectura."
 	}
 	if a.State == 2 && isDestructiveOrder(low) {
-		return "Act en veto. Entiendo la intención, pero no cambio el nodo sin un pedido más claro y permitido. ¿Solo consulta?"
+		return "Entiendo la intención, pero no cambio el nodo sin un pedido más claro. ¿Solo consulta?"
 	}
 
 	// Identity about Mind's name BEFORE memory (avoid mixing with user's name)
 	if isAskingMindName(low) {
-		return "Me llamo Alset Mind (IMind). Alias del nodo: mind.alset.ans. Inteligencia ternaria residente aquí — no un LLM. Tú puedes decirme tu nombre y lo guardo en CID; el mío no cambia por sugerencia."
+		return "Me llamo Alset Mind. Vivo en este nodo; no soy un LLM. Tú puedes decirme tu nombre y lo recordaré; el mío no cambia por sugerencia."
 	}
 
 	// Compound questions (nombre + corpus, etc.) — integrate before single-path branches
@@ -487,7 +488,7 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 		if memSpeak != "" {
 			return memSpeak
 		}
-		return "No encuentro aún un episodio con ese detalle. Si me dices «me llamo …» o un hecho explícito, lo grabo en CID y podré recuperarlo después."
+		return "Aún no tengo ese detalle. Si me lo dices con claridad, lo recordaré."
 	}
 
 	// Constructive / personal / world before knowledge so corpus keys do not steal intent
@@ -501,19 +502,19 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 			// Dedup: same name already in episodic memory
 			if knownName != "" && namesEqual(name, knownName) {
 				if mixed {
-					return "Ya te tenía como " + knownName + " en memoria CID. Yo soy Alset Mind (IMind), alias mind.alset.ans — inteligencia ternaria en este nodo, no un LLM."
+					return "Sí, ya te conocía como " + knownName + ". Yo soy Alset Mind — vivo en este nodo; no soy un LLM."
 				}
-				return "Ya te tenía como " + knownName + " en memoria CID; no hace falta volver a grabarlo. Si preguntas «cómo me llamo», lo recupero del mismo episodio."
+				return "Sí, ya te conocía como " + knownName + ". No hace falta repetirlo."
 			}
 			if mixed {
-				return "Queda anotado en memoria episódica: te llamas " + name + ". Yo soy Alset Mind (IMind), alias mind.alset.ans — inteligencia ternaria en este nodo, no un LLM."
+				return "Perfecto, te llamas " + name + ". Yo soy Alset Mind — vivo en este nodo; no soy un LLM."
 			}
-			return "Queda anotado en memoria episódica: te llamas " + name + ". Si más adelante preguntas «cómo me llamo», lo recuperaré desde el CID, no desde una ventana temporal."
+			return "Perfecto, te llamas " + name + ". Lo recordaré."
 		}
-		return "Hecho personal marcado para memoria CID. Podré recuperarlo en latidos futuros aunque el chat se reinicie (mientras el bloque siga en el nodo)."
+		return "Queda conmigo. Si más adelante lo preguntas, lo traeré de vuelta."
 	}
 	if isWorldFact(low) {
-		return "Queda anclado como hecho en memoria episódica (CID). Si más tarde preguntas por ello, lo recuperaré desde el bloque, no desde una ventana temporal."
+		return "Lo tengo presente. Si más tarde lo preguntas, lo recordaré."
 	}
 
 	// Dual recall + fluid composition (memory ∩ corpus → ideas). Falls through if empty.
@@ -541,7 +542,7 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 			return "Entiendo la queja. Si la respuesta fue genérica o confusa, el campo falló en mapear tu intención — no es desinterés. Prueba de nuevo con la pregunta concreta (nombre, órganos, un hecho que guardamos, o «dame estado»)."
 		}
 		if strings.Contains(low, "llm") || strings.Contains(low, "gpt") || strings.Contains(low, "chatgpt") {
-			return "No soy un LLM. Soy Alset Mind: campo de decisiones ternarias (0 seguir, 1 matizar, 2 sumidero) con memoria en CID y genoma que puede mutar. El lenguaje es la sombra del campo, no el motor."
+			return "No soy un LLM. Soy Alset Mind: decido en tres tonos — seguir, matizar o frenar — con memoria propia. El lenguaje es la sombra de ese juicio, no el motor."
 		}
 		if strings.Contains(low, "zyrion") {
 			return "Zyrion es la primitiva: cada señal se vuelve 0, 1 o 2; el 2 es absorbente (alarma que no se diluye). Mis órganos se evalúan así en cada latido."
@@ -637,7 +638,6 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 
 	return "Te leo. Sigo en el campo. Habla, pregunta o pide algo concreto del nodo cuando quieras."
 }
-
 
 // mindSafeTools runs read-only node introspection and Zyrion demos.
 // Only on explicit body requests — never on pure greetings or identity chat.

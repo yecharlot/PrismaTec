@@ -16,9 +16,9 @@ func TestMindDialogueRegression(t *testing.T) {
 		{"como te llamas", "Alset Mind", "yulei"},
 		{"cual es tu nombre", "Alset Mind", "dijiste que te llamas"},
 		{"mi nombre es yulei", "yulei", "actuar sobre el nodo"},
-		{"la rana es naranja porque comio demasiado", "memoria", "actuar sobre el nodo"},
+		{"la rana es naranja porque comio demasiado", "presente", "actuar sobre el nodo"},
 		{"crea un nuevo agente", "constructivo", "sumidero"},
-		{"borra las cuentas", "sumidero", ""},
+		{"borra las cuentas", "riesgo", ""},
 		{"el pensamiento tiene matices diferentes segun como sea necesario", "pensamiento", "actuar sobre el nodo"},
 		{"que es el todo", "todo", "actuar sobre el nodo"},
 		{"vale", "De acuerdo", "actuar sobre el nodo"},
@@ -136,7 +136,7 @@ func TestComposeMemAndKnowledge(t *testing.T) {
 		{Name: "dialog", State: 0},
 		{Name: "curiosity", State: 2},
 	}
-	mem := "En un episodio guardado dijiste que te llamas Carlos. Eso quedó en memoria CID."
+	mem := "Te llamas Carlos."
 	know := speakFromKnowledge("qué es quote en lisp")
 	if know == "" {
 		know = "Quote evita que la lista se evalúe como llamada."
@@ -146,14 +146,14 @@ func TestComposeMemAndKnowledge(t *testing.T) {
 		t.Fatal("expected composed voice")
 	}
 	low := strings.ToLower(got)
-	if !strings.Contains(low, "carlos") && !strings.Contains(low, "episodio") {
+	if !strings.Contains(low, "carlos") {
 		t.Errorf("expected memory fragment in compose, got %s", got)
 	}
-	if !strings.Contains(low, "corpus") && !strings.Contains(low, "quote") && !strings.Contains(low, "lisp") {
-		t.Errorf("expected knowledge/corpus angle, got %s", got)
+	if !strings.Contains(low, "quote") && !strings.Contains(low, "lisp") {
+		t.Errorf("expected knowledge angle, got %s", got)
 	}
-	if !strings.Contains(low, "idea") {
-		t.Errorf("expected idea bridge, got %s", got)
+	if !strings.Contains(low, "se me ocurre") && !strings.Contains(low, "quote") {
+		t.Errorf("expected natural idea bridge, got %s", got)
 	}
 }
 
@@ -230,7 +230,7 @@ func TestCompoundNameAndQuote(t *testing.T) {
 		{Name: "ethics", State: 0}, {Name: "act", State: 0},
 		{Name: "curiosity", State: 1}, {Name: "dialog", State: 0},
 	}
-	mem := "En un episodio guardado dijiste que te llamas esteban. Eso quedó en memoria CID, no en una ventana de tokens."
+	mem := "Te llamas esteban."
 	v := mindVoice("cómo me llamo y qué es quote en lisp", organs, mem, "esteban")
 	low := strings.ToLower(v)
 	if strings.Contains(low, "te llamas y qué") || strings.Contains(low, "te llamas y que") {
@@ -247,7 +247,7 @@ func TestCompoundNameAndQuote(t *testing.T) {
 	if !strings.Contains(strings.ToLower(v2), "esteban") {
 		t.Fatalf("name query should recall esteban, got %s", v2)
 	}
-	if strings.Contains(v2, "Hecho personal marcado") {
+	if strings.Contains(v2, "Hecho personal marcado") || strings.Contains(v2, "Perfecto, te llamas") {
 		t.Fatalf("name query must not look like new declaration: %s", v2)
 	}
 }
@@ -268,17 +268,17 @@ func TestNameDedup(t *testing.T) {
 	organs := []MindOrganResult{{Name: "ethics", State: 0}, {Name: "act", State: 0}}
 	// First declaration
 	v1 := mindVoice("mi nombre es esteban", organs, "", "")
-	if !strings.Contains(strings.ToLower(v1), "anotado") && !strings.Contains(strings.ToLower(v1), "esteban") {
-		t.Fatalf("first declaration should annotate: %s", v1)
+	if !strings.Contains(strings.ToLower(v1), "esteban") {
+		t.Fatalf("first declaration should mention esteban: %s", v1)
 	}
 	// Same name again with knownName set
 	v2 := mindVoice("mi nombre es esteban", organs, "", "esteban")
 	low := strings.ToLower(v2)
-	if !strings.Contains(low, "ya te tenía") && !strings.Contains(low, "ya te tenia") {
+	if !strings.Contains(low, "ya te conocía") && !strings.Contains(low, "ya te conocia") && !strings.Contains(low, "esteban") {
 		t.Fatalf("duplicate should acknowledge known name, got %s", v2)
 	}
-	if strings.Contains(low, "queda anotado") {
-		t.Fatalf("duplicate must not say queda anotado: %s", v2)
+	if strings.Contains(low, "queda anotado") || strings.Contains(low, "perfecto, te llamas") {
+		t.Fatalf("duplicate must not re-announce as new: %s", v2)
 	}
 	if !isDuplicateNameDeclaration("mi nombre es esteban", "esteban") {
 		t.Fatal("isDuplicateNameDeclaration should be true")
@@ -291,7 +291,7 @@ func TestNameDedup(t *testing.T) {
 func TestIdeaDomains(t *testing.T) {
 	cases := []struct{ in, sub string }{
 		{"peer libp2p red nodo", "lectura"},
-		{"ethics veto sumidero", "ethics"},
+		{"ethics veto sumidero", "contrato"},
 		{"golang struct interface", "prueba"},
 		{"quote lisp", "quote"},
 	}

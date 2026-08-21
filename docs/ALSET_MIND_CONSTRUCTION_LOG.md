@@ -260,3 +260,8 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 
 - **Acto:** `knownUserNameFromEpisodes` / `isDuplicateNameDeclaration`: no re-grabar el mismo nombre; voz «Ya te tenía como X». Más plantillas `ideaFromCross` (red/libp2p, Go, ethics, seguridad, CID). `naturalKnowledgeVoice` + follow-ups menos menú.
 - **Archivos:** mind_memory.go, mind_tick.go, mind_compose.go, mind_dialogue_test.go, bitácora.
+
+## 2026-08-21 — Voz natural: menos meta, más conversación
+
+- **Acto:** Quitar jerga de laboratorio en la voz al usuario: sin «memoria CID», «episodio guardado», «Ethics sumidero (2)», «Idea:», «Y sobre lo que preguntas del corpus». Recall de nombre → «Te llamas X.» Declaración → «Perfecto, te llamas X. Lo recordaré.» Ideas → «Se me ocurre…»
+- **Archivos:** mind_memory.go, mind_tick.go, mind_compose.go, tests, bitácora.
