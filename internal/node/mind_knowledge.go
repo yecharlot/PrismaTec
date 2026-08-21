@@ -74,7 +74,12 @@ func speakFromKnowledge(query string) string {
 			bestText = e.Text
 		}
 	}
-	if bestScore >= 3 && bestText != "" {
+	need := 3
+	ql := strings.ToLower(strings.TrimSpace(query))
+	if len([]rune(ql)) < 28 || strings.Contains(ql, "llm") || strings.Contains(ql, "qué es") || strings.Contains(ql, "que es") {
+		need = 2
+	}
+	if bestScore >= need && bestText != "" {
 		return bestText
 	}
 	return ""

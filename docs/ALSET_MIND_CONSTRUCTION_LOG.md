@@ -281,3 +281,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 
 - **Acto:** `mind_index.html`: `readJsonSafe`, `postMindTick` con un reintento tras 1.2s si 502/body no JSON; warm-up de `/api/mind/self` al cargar; mensajes de error sin `JSON.parse…`. `TestDialogueRegressionPack` cubre nombre, dedup, incompleto, capacidades y veto natural.
 - **Archivos:** `embedded/mind_index.html`, `mind_dialogue_test.go`, bitácora, roadmap.
+
+## 2026-08-21 — Fix: LLM definition + meta-memoria
+
+- **Acto:** Corpus `qué es un llm`; umbral de knowledge más bajo en definiciones cortas. `isMetaMemoryTalk` + respuestas naturales a «recuerdas todo?» / «cuál es tu memoria». `isWorldFact` no captura preguntas. Recall de nombre desde episodio sin citar texto crudo.
+- **Observación (prod):** «que es un LLM» caía en diálogo genérico; «cual es tu memoria» se grababa como hecho del mundo.
+- **Archivos:** mind_knowledge.go, mind_knowledge.json, mind_memory.go, tests, bitácora.

@@ -397,3 +397,36 @@ func TestDialogueRegressionPack(t *testing.T) {
 		t.Fatalf("expected natural refuse: %s", v)
 	}
 }
+
+func TestLLMDefinitionKnowledge(t *testing.T) {
+	got := speakFromKnowledge("que es un llm")
+	if got == "" || !strings.Contains(strings.ToLower(got), "llm") {
+		t.Fatalf("expected LLM definition, got %q", got)
+	}
+	if strings.Contains(strings.ToLower(got), "te leo en diálogo") {
+		t.Fatalf("should not be pure dialogue fallback: %q", got)
+	}
+}
+
+func TestMetaMemoryTalk(t *testing.T) {
+	if !isMetaMemoryTalk("recuerdas todo?") {
+		t.Fatal("recuerdas todo should be meta memory")
+	}
+	if !isMetaMemoryTalk("cual es tu memoria") {
+		t.Fatal("cual es tu memoria should be meta memory")
+	}
+	if isWorldFact("cual es tu memoria") {
+		t.Fatal("should not be world fact")
+	}
+	if isWorldFact("que es un llm") {
+		t.Fatal("que es un llm should not be world fact")
+	}
+	eps := []mindEpisodePayload{{Text: "mi nombre es Yulei Esteban"}}
+	got := speakFromMemory("recuerdas todo?", eps)
+	if !strings.Contains(got, "Yulei Esteban") {
+		t.Fatalf("meta memory should mention name: %s", got)
+	}
+	if strings.Contains(got, "«") {
+		t.Fatalf("should not quote raw episode: %s", got)
+	}
+}

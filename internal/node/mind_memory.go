@@ -250,6 +250,21 @@ func bestEpisodeOverlap(text string, episodes []mindEpisodePayload) (string, int
 	return bestText, int(bestScore + 0.5)
 }
 
+func isMetaMemoryTalk(s string) bool {
+	s = strings.ToLower(strings.TrimSpace(s))
+	keys := []string{
+		"tu memoria", "mi memoria", "recuerdas todo", "qué recuerdas", "que recuerdas",
+		"cuál es tu memoria", "cual es tu memoria", "esa es tu memoria", "tienes memoria",
+		"cómo es tu memoria", "como es tu memoria", "qué guardas", "que guardas",
+	}
+	for _, k := range keys {
+		if strings.Contains(s, k) {
+			return true
+		}
+	}
+	return false
+}
+
 func isMemoryQuery(s string) bool {
 	s = strings.ToLower(strings.TrimSpace(s))
 	// Never treat questions about Mind's own name as user-memory queries
@@ -267,6 +282,9 @@ func isMemoryQuery(s string) bool {
 		"cómo es la ", "como es la ", "cómo es el ", "como es el ",
 		"qué te dije de", "que te dije de", "de qué color", "de que color",
 		"ya te dije", "te dije mi", "te dije el", "recuerdas mi nombre", "recuerdas como me",
+		"recuerdas todo", "qué recuerdas", "que recuerdas", "cuál es tu memoria", "cual es tu memoria",
+		"tu memoria", "esa es tu memoria", "cómo es tu memoria", "como es tu memoria",
+		"tienes memoria", "qué guardas", "que guardas",
 	}
 	for _, k := range keys {
 		if strings.Contains(s, k) {
@@ -331,7 +349,12 @@ func isPersonalFact(s string) bool {
 // isWorldFact: declarative world statements worth remembering (not only personal).
 func isWorldFact(s string) bool {
 	s = strings.ToLower(strings.TrimSpace(s))
-	if isCalmChat(s) || isIdentityTalk(s) || isMemoryQuery(s) {
+	if isCalmChat(s) || isIdentityTalk(s) || isMemoryQuery(s) || isMetaMemoryTalk(s) {
+		return false
+	}
+	if strings.HasPrefix(s, "qué ") || strings.HasPrefix(s, "que ") ||
+		strings.HasPrefix(s, "cuál ") || strings.HasPrefix(s, "cual ") ||
+		strings.HasPrefix(s, "cómo ") || strings.HasPrefix(s, "como ") {
 		return false
 	}
 	if strings.Contains(s, "borra") || strings.Contains(s, "elimina") || strings.Contains(s, "reset") {
@@ -474,6 +497,18 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 	// Never answer with the user's name when they ask Mind's name
 	if isAskingMindName(q) {
 		return ""
+	}
+	// Meta-questions about memory itself
+	if isMetaMemoryTalk(q) {
+		name := knownUserNameFromEpisodes(episodes)
+		n := len(episodes)
+		if name != "" {
+			return "Recuerdo lo que marcamos como importante. Por ejemplo, te llamas " + name + ". No guardo todo el chat palabra por palabra."
+		}
+		if n > 0 {
+			return "Tengo algunas notas de lo que hablamos, pero aún no un nombre tuyo claro. Si me lo dices, lo recordaré."
+		}
+		return "Todavía no tengo mucho guardado. Si me dices algo claro, lo recordaré."
 	}
 	// First-person name recall only
 	if strings.Contains(q, "cómo me llamo") || strings.Contains(q, "como me llamo") ||

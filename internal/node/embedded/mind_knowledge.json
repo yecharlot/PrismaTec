@@ -16,9 +16,16 @@
       "vs chatgpt",
       "no soy un llm",
       "predicción de tokens",
-      "caja negra"
+      "caja negra",
+      "qué es un llm",
+      "que es un llm",
+      "qué es llm",
+      "que es llm",
+      "llm",
+      "modelo de lenguaje",
+      "qué es un modelo de lenguaje"
     ],
-    "text": "Un LLM predice el siguiente token por probabilidad. Yo evalúo un campo: señales continuas, cinco órganos ternarios, ethics con veto absorbente, memoria content-addressed. Ellos optimizan fluidez; yo optimizo decisión rastreable y memoria dueña del nodo."
+    "text": "Un LLM (large language model) predice el siguiente token por probabilidad. Yo no: evalúo un campo de señales, decido en tres tonos (seguir, matizar o frenar) y recuerdo hechos con dueño en este nodo. Ellos optimizan fluidez; yo, decisión rastreable."
   },
   {
     "type": "lisp_basico",
