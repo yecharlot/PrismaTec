@@ -28,6 +28,13 @@ Formato: fecha · acto · observación · decisión.
 
 ---
 
+## 2026-08-21 — Diálogo: identidad, hechos y sin sobre-veto
+
+- **Síntoma (conversación real):** «cuántos órganos» genérico; «cuál es tu nombre» devolvía el nombre del usuario; «crea un agente» caía en SUMIDERO por bias de vetos previos; filosofía terminaba en «¿actuar sobre el nodo?»; hechos tipo «la rana es naranja…» no se anclaban bien.
+- **Causa:** `speakFromMemory` trataba cualquier «nombre» como nombre del usuario; bias de veto contaminaba charla calmada; `orden` alto en «crea» activaba ethics absorbente; voz de matiz aplicada a diálogo puro.
+- **Decisión:** separar `isAskingMindName` vs memoria de usuario; veto-bias solo si el texto actual es destructivo; `isConstructiveOrder` / `isWorldFact` / `isPureDialogue`; voz de órganos y filosofía sin spam de acción; tests `mind_dialogue_test.go`.
+- **Meta:** organismo ternario que conversa y recuerda en CID sin parecer chatbot ni policía falso.
+
 *Cada entrada nueva se añade al final con fecha. La sección «Pendiente inmediato» se reescribe cuando el estado real cambia.*
 
 ## 2026-08-20 — Primer latido en producción: fallo de topología

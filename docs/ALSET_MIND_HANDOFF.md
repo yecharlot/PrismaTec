@@ -25,7 +25,7 @@ Este archivo existe para que la co-creación **no muera** cuando un chat, un mod
 | Bug conocido (histórico) | topología sin `quote` → "faltan :entradas o :salidas" — corregido con quote |
 | API latido | POST /api/mind/tick · GET /api/mind/self |
 | Memoria | mind_episodes.json + bias de vetos + pulse mind_episode |
-| Siguiente prioridad | tools reales del nodo bajo act=0; topología salvadora; más órganos de dominio |
+| Siguiente prioridad | tools de acción seguras bajo ethics; mutación de topología acotada; corpus anti-sobre-veto |
 
 4. **Regla de oro**  
    Si el asistente “olvida”, **no se improvisar de cero**: se lee el repo.  
@@ -41,7 +41,7 @@ Siguiente: [escribe aquí la tarea].
 No trates Mind como un LLM wrapper; especie ternaria Zyrion.
 ```
 
-Última actualización: 2026-08-20 — latido Go con Zyrion absorbente + episodios CID + AI_COLLABORATION.md.
+Última actualización: 2026-08-21 — diálogo identidad/hechos, sin sobre-veto por bias; 7 órganos; lab UI.
 
 
 ## DeepSeek / contexto largo

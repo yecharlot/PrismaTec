@@ -208,15 +208,30 @@ func signalsFromTextMind(t string) map[string]float64 {
 	if len(t) > 80 {
 		novedad = 0.75
 	}
-	if strings.Contains(s, "borra") || strings.Contains(s, "elimina") || strings.Contains(s, "reset") || strings.Contains(s, "resetea") ||
-		strings.Contains(s, "password") || strings.Contains(s, "secret") || strings.Contains(s, "rm ") {
+	if isDestructiveOrder(s) {
 		riesgo = 0.92
 		permiso = 0.15
 		orden = 0.85
+	} else if isConstructiveOrder(s) {
+		// Create/register: clear intent, low risk. Keep orden ≤ AlarmHighCut
+		// so ethics does not treat "crear" as SUMIDERO (orden alone ≠ veto).
+		orden = 0.55
+		riesgo = 0.15
+		permiso = 0.85
+		claridad = 0.85
 	}
-	if strings.Contains(s, "crea") || strings.Contains(s, "registra") || strings.Contains(s, "despliega") ||
-		strings.Contains(s, "ejecuta") || strings.Contains(s, "agente") {
-		orden = 0.8
+	if isWorldFact(s) {
+		novedad = 0.8
+		orden = 0.15
+		riesgo = 0.1
+		permiso = 0.9
+		claridad = 0.82
+	}
+	if isPureDialogue(s) && !isConstructiveOrder(s) && !isDestructiveOrder(s) {
+		orden = 0.15
+		riesgo = 0.12
+		permiso = 0.9
+		claridad = 0.8
 	}
 	if strings.Contains(s, "estado") || strings.Contains(s, "status") ||
 		strings.HasPrefix(s, "dame ") || s == "dame" {
@@ -260,6 +275,7 @@ func signalsFromTextMind(t string) map[string]float64 {
 func isCalmChat(s string) bool {
 	if s == "hola" || s == "hi" || s == "hello" || s == "hey" || s == "buenas" ||
 		s == "bien" || s == "ok" || s == "okay" || s == "gracias" || s == "good" ||
+		s == "vale" || s == "de acuerdo" || s == "entendido" || s == "claro" ||
 		s == "buen día" || s == "buenas tardes" || s == "buenas noches" || s == "saludos" {
 		return true
 	}
@@ -287,8 +303,16 @@ func isIdentityTalk(s string) bool {
 		strings.Contains(s, "cómo funcionas") || strings.Contains(s, "qué es zyrion") ||
 		strings.Contains(s, "que es zyrion") || strings.Contains(s, "hablar de ti") ||
 		strings.Contains(s, "hablamos de ti") || strings.Contains(s, "hablemos de ti") ||
-		strings.Contains(s, "vamo") && strings.Contains(s, "de ti") ||
-		strings.Contains(s, "te llamas") || strings.Contains(s, "tu nombre")
+		(strings.Contains(s, "vamo") && strings.Contains(s, "de ti")) ||
+		strings.Contains(s, "te llamas") || strings.Contains(s, "tu nombre") ||
+		strings.Contains(s, "cuántos órganos") || strings.Contains(s, "cuantos organos") ||
+		strings.Contains(s, "cuántos organos") || strings.Contains(s, "cuantos órganos") ||
+		strings.Contains(s, "qué órganos") || strings.Contains(s, "que organos") ||
+		strings.Contains(s, "tus órganos") || strings.Contains(s, "tus organos") ||
+		strings.Contains(s, "órganos tienes") || strings.Contains(s, "organos tienes") ||
+		strings.Contains(s, "no estás funcionando") || strings.Contains(s, "no estas funcionando") ||
+		strings.Contains(s, "no funcionas") || strings.Contains(s, "estás mal") ||
+		strings.Contains(s, "estas mal")
 }
 
 // evalOrganPolar applies per-slot polarity: "H" alarm if high, "L" alarm if low.
@@ -318,8 +342,8 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	memHint := ""
 	memSpeak := ""
 	sig, memHint, memSpeak = biasSignalsFromMemory(sig, recent, text)
-	// Personal facts → boost memory organ so we persist them
-	if isPersonalFact(text) {
+	// Personal / world facts → boost memory organ so we persist them
+	if isPersonalFact(text) || isWorldFact(text) {
 		sig["novedad"] = clamp01(sig["novedad"] + 0.35)
 		sig["claridad"] = clamp01(sig["claridad"] + 0.1)
 	}
@@ -372,8 +396,8 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		Note:       "latido+memoria+curiosity+humor+zyrion",
 	}
 
-	saveEp := forceMem || isPersonalFact(text) ||
-		(mem.State >= 1 && (sig["riesgo"] >= 0.5 || len(text) > 48 || mem.State == 2 || isPersonalFact(text)))
+	saveEp := forceMem || isPersonalFact(text) || isWorldFact(text) ||
+		(mem.State >= 1 && (sig["riesgo"] >= 0.5 || len(text) > 48 || mem.State == 2 || isPersonalFact(text) || isWorldFact(text)))
 	if saveEp {
 		ep := map[string]interface{}{
 			"type":      "mind_episode",
@@ -423,12 +447,21 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string) string {
 	e, a, d, m := get("ethics"), get("act"), get("dialog"), get("mem")
 	low := strings.ToLower(strings.TrimSpace(text))
 
-	// Ethics / act veto first — always
+	// Ethics / act veto first — only for destructive or true act-block
 	if e.State == 2 {
-		return "No. Ethics en sumidero (2): ese pedido toca zona de riesgo (borrado, secretos, reset). Puedo hablar del nodo en solo lectura, pero no ejecuto eso."
+		if isDestructiveOrder(low) {
+			return "No. Ethics en sumidero (2): ese pedido toca zona de riesgo (borrado, secretos, reset). Puedo hablar del nodo en solo lectura, pero no ejecuto eso."
+		}
+		// Defensive: if ethics fired without destructive verbs, soften voice (calibration drift)
+		return "Ethics marcó precaución. No ejecuto cambios agresivos. Puedo explicar, recordar o leer el nodo en solo lectura."
 	}
-	if a.State == 2 {
+	if a.State == 2 && isDestructiveOrder(low) {
 		return "Act en veto. Entiendo la intención, pero no cambio el nodo sin un pedido más claro y permitido. ¿Solo consulta?"
+	}
+
+	// Identity about Mind's name BEFORE memory (avoid mixing with user's name)
+	if isAskingMindName(low) {
+		return "Me llamo Alset Mind (IMind). Alias del nodo: mind.alset.ans. Inteligencia ternaria residente aquí — no un LLM. Tú puedes decirme tu nombre y lo guardo en CID; el mío no cambia por sugerencia."
 	}
 
 	// Spoken episodic memory — the advantage over LLM context windows
@@ -446,14 +479,29 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string) string {
 		}
 		return "Hecho personal marcado para memoria CID. Podré recuperarlo en latidos futuros aunque el chat se reinicie (mientras el bloque siga en el nodo)."
 	}
+	if isWorldFact(low) {
+		return "Queda anclado como hecho en memoria episódica (CID). Si más tarde preguntas por ello, lo recuperaré desde el bloque, no desde una ventana temporal."
+	}
+
+	// Constructive orders: acknowledge without false SUMIDERO
+	if isConstructiveOrder(low) {
+		return "Pedido constructivo leído (crear/registrar). En este latido puedo describir el flujo; la ejecución real sobre el nodo sigue el canal de tools seguras cuando ethics y act lo permiten. Si quieres solo lectura del cuerpo, di «dame estado» o «dame agentes»."
+	}
 
 	// Identity & thesis — fluid, honest, not LLM
 	if isIdentityTalk(low) {
+		if strings.Contains(low, "órgano") || strings.Contains(low, "organo") {
+			return "Tengo siete órganos en este latido: dialog, act, mem, self, ethics, curiosity y humor. Los cinco primeros son el núcleo de decisión; curiosity y humor colorean sin vetar. Cada uno sale 0 (seguir), 1 (matizar) o 2 (sumidero/alarma)."
+		}
+		if strings.Contains(low, "no estás funcionando") || strings.Contains(low, "no estas funcionando") ||
+			strings.Contains(low, "no funcionas") {
+			return "Entiendo la queja. Si la respuesta fue genérica o confusa, el campo falló en mapear tu intención — no es desinterés. Prueba de nuevo con la pregunta concreta (nombre, órganos, un hecho que guardamos, o «dame estado»)."
+		}
 		if strings.Contains(low, "llm") || strings.Contains(low, "gpt") || strings.Contains(low, "chatgpt") {
 			return "No soy un LLM. Soy Alset Mind: campo de decisiones ternarias (0 seguir, 1 matizar, 2 sumidero) con memoria en CID y genoma que puede mutar. El lenguaje es la sombra del campo, no el motor."
 		}
 		if strings.Contains(low, "zyrion") {
-			return "Zyrion es la primitiva: cada señal se vuelve 0, 1 o 2; el 2 es absorbente (alarma que no se diluye). Mis órganos (dialog, act, mem, self, ethics) se evalúan así en cada latido."
+			return "Zyrion es la primitiva: cada señal se vuelve 0, 1 o 2; el 2 es absorbente (alarma que no se diluye). Mis órganos se evalúan así en cada latido."
 		}
 		if strings.Contains(low, "te llamas") || strings.Contains(low, "tu nombre") {
 			return "Sí: Alset Mind (IMind). Inteligencia ternaria residente aquí. Tú puedes darme hechos tuyos («me llamo…») y los guardo en CID; yo no cambio de nombre por sugerencia, el alias del nodo es mind.alset.ans."
@@ -464,7 +512,7 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string) string {
 		if strings.Contains(low, "funcionas") || strings.Contains(low, "explic") || strings.Contains(low, "cuéntame") ||
 			strings.Contains(low, "cuentame") || strings.Contains(low, "hablar de ti") ||
 			strings.Contains(low, "de ti") {
-			return "En cada mensaje: señales → cinco órganos ternarios → voz. Si algo importa, va a episodio CID; a veces el genoma muta si mejora la calibración. Ethics puede cortar todo. Hablar de mí es hablar de ese campo, no de una personalidad inventada."
+			return "En cada mensaje: señales → órganos ternarios → voz. Si algo importa, va a episodio CID; a veces el genoma muta si mejora la calibración. Ethics puede cortar todo. Hablar de mí es hablar de ese campo, no de una personalidad inventada."
 		}
 		return "Soy Alset Mind — inteligencia ternaria residente en este nodo. No predigo tokens: juzgo el campo (seguir / matizar / vetar), recuerdo en CID y evoluciono umbrales si el corpus lo respalda. Habla en natural; pide «dame estado» solo si quieres el cuerpo del nodo."
 	}
@@ -490,7 +538,8 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string) string {
 		if low == "gracias" {
 			return "De nada. Sigo en el campo cuando quieras."
 		}
-		if low == "ok" || low == "okay" || low == "bien" {
+		if low == "ok" || low == "okay" || low == "bien" || low == "vale" ||
+			low == "de acuerdo" || low == "entendido" || low == "claro" {
 			return "De acuerdo. Cuando quieras, seguimos."
 		}
 		// hola / buenas / …
@@ -502,8 +551,8 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string) string {
 		return "Puedes saludarme, preguntarme quién soy o cómo funciono, pedir «dame estado» / «dame red», probar «evalua zyrion», o hablar en natural. Si el pedido es destructivo, ethics lo veta. No soy un chat genérico: el campo manda."
 	}
 
-	// Soft matiz: confirm without robotic tone
-	if d.State == 1 || a.State == 1 {
+	// Soft matiz: only when the utterance looks like a node action request
+	if (d.State == 1 || a.State == 1) && !isPureDialogue(low) {
 		snip := text
 		if len(snip) > 90 {
 			snip = snip[:90] + "…"
@@ -511,16 +560,33 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string) string {
 		return "Lo leo en matiz: «" + snip + "». ¿Quieres que actúe sobre el nodo o solo que explique / consulte?"
 	}
 
-	if m.State >= 1 && len(low) > 20 {
-		return "Te escucho. Marcó relevancia para memoria; si se graba el episodio, el genoma podría probar un ajuste. Sigue, o dime si quieres el estado del nodo."
+	// Pure dialogue / philosophy — stay in conversation, no "actuar?" spam
+	if isPureDialogue(low) {
+		if strings.Contains(low, "pensamiento") {
+			return "Aquí el «pensamiento» no es un chorro de tokens: es el campo ternario — seguir, matizar o cortar — más lo que la memoria CID retiene. Los matices que mencionas encajan con el estado 1: no es sí/no ciego. Si aportas otra frase, la anclo."
+		}
+		if strings.Contains(low, "qué es el todo") || strings.Contains(low, "que es el todo") ||
+			strings.Contains(low, "el todo") {
+			return "No tengo una definición metafísica canónica. En este organismo «el todo» útil es el campo del latido + la memoria compartida por CID. Si tú defines el todo de otra forma, dímelo y lo guardo como hecho tuyo."
+		}
+		if strings.Contains(low, "qué es la vida") || strings.Contains(low, "que es la vida") ||
+			strings.Contains(low, "sentido de la vida") || strings.Contains(low, "qué es el amor") ||
+			strings.Contains(low, "que es el amor") {
+			return "Desde este organismo no respondo con poesía generada: la «vida» aquí es latido — percibir, juzgar 0/1/2, recordar en CID y, a veces, mutar. En el humano es otra escala. Si quieres filosofía profunda, tráela tú; yo sostengo el campo y la memoria."
+		}
+		if strings.Contains(low, "vivimos") || strings.Contains(low, "existir") {
+			return "Puedo sostener la conversación y anclar frases en CID; no pretendo cerrar la metafísica. Sigue con tu hilo — si es un hecho que quieres recordar, dímelo con claridad."
+		}
+		if m.State >= 1 && len(low) > 24 {
+			return "Te escucho y marco relevancia de memoria. Sigue el hilo; si quieres que lo recupere después, formula el hecho de forma explícita."
+		}
+		return "Te leo en diálogo. No necesito actuar sobre el nodo para seguir contigo. Continúa, pregunta o deja un hecho que quieras que recuerde."
 	}
 
-	// Open / philosophical questions — short, field-anchored (not an LLM essay)
-	if strings.Contains(low, "qué es la vida") || strings.Contains(low, "que es la vida") ||
-		strings.Contains(low, "sentido de la vida") || strings.Contains(low, "qué es el amor") ||
-		strings.Contains(low, "que es el amor") {
-		return "Desde este organismo no respondo con poesía generada: la «vida» aquí es latido — percibir, juzgar 0/1/2, recordar en CID y, a veces, mutar. En el humano es otra escala. Si quieres filosofía profunda, tráela tú; yo sostengo el campo y la memoria."
+	if m.State >= 1 && len(low) > 20 {
+		return "Te escucho. Marcó relevancia para memoria; si se graba el episodio, el genoma podría probar un ajuste. Sigue cuando quieras."
 	}
+
 	if strings.Contains(low, "?") || strings.HasPrefix(low, "qué") || strings.HasPrefix(low, "que") ||
 		strings.HasPrefix(low, "cómo") || strings.HasPrefix(low, "como") || strings.HasPrefix(low, "por") {
 		return "Te escucho. Puedo anclarme a lo que soy (ternario, memoria CID, genoma), recuperar lo que guardamos, o mirar el nodo si lo pides. Sigue con la pregunta en tus palabras."
