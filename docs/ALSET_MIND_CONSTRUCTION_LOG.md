@@ -270,3 +270,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 
 - **Acto:** `speakFromMemory` extrae nombre del episodio → «Sí, te llamas X.» (sin citar el texto crudo). Capacidades y ayuda sin menú técnico. `isIncompleteUtterance` evita el matiz «¿actúo sobre el nodo?» ante «dime tu». `looksLikeNodeAction` restringe el matiz a pedidos reales.
 - **Archivos:** mind_memory.go, mind_tick.go, tests, bitácora.
+
+## 2026-08-21 — Roadmap documentado
+
+- **Acto:** Crear `docs/ALSET_MIND_ROADMAP.md` (hitos de diálogo cerrados + P0/P1/P2/P3). Actualizar HANDOFF (siguiente prioridad + fuente de verdad) y TRAINING_PLAN (track diálogo).
+- **Decisión:** El roadmap es el mapa; el construction log sigue siendo la bitácora fina.
+- **Archivos:** `docs/ALSET_MIND_ROADMAP.md`, HANDOFF, TRAINING_PLAN, bitácora.

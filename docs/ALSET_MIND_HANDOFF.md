@@ -8,6 +8,7 @@ Este archivo existe para que la co-creación **no muera** cuando un chat, un mod
    - `docs/ALSET_MIND_THESIS.md` — qué es la especie
    - `docs/ALSET_MIND_CONSTRUCTION_LOG.md` — qué se hizo y qué falta
    - `docs/ALSET_MIND_HANDOFF.md` — este puente
+   - `docs/ALSET_MIND_ROADMAP.md` — roadmap de hitos
    - `internal/node/mind_bootstrap.go` — genoma vivo
    - `internal/node/embedded/mind_index.html` — cara del organismo
 
@@ -25,7 +26,7 @@ Este archivo existe para que la co-creación **no muera** cuando un chat, un mod
 | Bug conocido (histórico) | topología sin `quote` → "faltan :entradas o :salidas" — corregido con quote |
 | API latido | POST /api/mind/tick · GET /api/mind/self |
 | Memoria | mind_episodes.json + bias de vetos + pulse mind_episode |
-| Siguiente prioridad | observar compositor mem∩corpus en prod; tools de acción seguras bajo ethics; mutación topología |
+| Siguiente prioridad | ver `docs/ALSET_MIND_ROADMAP.md` — P0 prod (cold start, Supabase, regresión); luego P1 Fase 2 training / P2 tools seguras |
 
 4. **Regla de oro**  
    Si el asistente “olvida”, **no se improvisar de cero**: se lee el repo.  
@@ -35,13 +36,13 @@ Este archivo existe para que la co-creación **no muera** cuando un chat, un mod
 
 ```text
 Proyecto: Alset Mind en yecharlot/PrismaTec.
-Lee docs/ALSET_MIND_THESIS.md, CONSTRUCTION_LOG.md, HANDOFF.md.
+Lee docs/ALSET_MIND_THESIS.md, CONSTRUCTION_LOG.md, HANDOFF.md, ROADMAP.md.
 Estado: organismo con mind-latido + UI /w/mind.app.ans.
 Siguiente: [escribe aquí la tarea].
 No trates Mind como un LLM wrapper; especie ternaria Zyrion.
 ```
 
-Última actualización: 2026-08-21 — compositor fluido mem∩corpus + ideas; 7 órganos; lab UI.
+Última actualización: 2026-08-21 — voz natural + roadmap documentado (`ALSET_MIND_ROADMAP.md`); 7 órganos; lab UI.
 
 
 ## DeepSeek / contexto largo

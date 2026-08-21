@@ -48,3 +48,7 @@ El filesystem de Render se borra en cada deploy. Para que los episodios CID y el
 3. Sin Supabase, la memoria solo dura mientras el proceso viva (o en disco local en desarrollo).
 
 Tras un deploy con Supabase, `GET /api/mind/memory` debe listar episodios previos.
+
+## Roadmap
+
+Avance y próximos hitos: [ALSET_MIND_ROADMAP.md](ALSET_MIND_ROADMAP.md).

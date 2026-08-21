@@ -80,3 +80,19 @@
 ---
 
 *Actualizar checkboxes al cerrar cada hito. No saltar a Fase 5 sin base sólida en 1–3.*
+
+---
+
+## Track paralelo: diálogo natural (2026-08-21)
+
+Completado como base para el polímata (no sustituye las fases de corpus):
+
+- [x] Compositor memoria ∩ corpus
+- [x] Declaración vs pregunta de nombre; preguntas compuestas
+- [x] Dedup de nombre conocido
+- [x] Voz sin jerga de laboratorio
+- [x] Recall «Sí, te llamas X.»
+- [x] Frases incompletas sin matiz de acción
+
+**Siguiente conocimiento:** retomar **Fase 2** (patrones / Go-Python) según `docs/ALSET_MIND_ROADMAP.md` § P1.
+

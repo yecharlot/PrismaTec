@@ -8,6 +8,8 @@ Red peer-to-peer en Go: nodos libp2p, agentes, apps por CID, **LispAI**, lógica
 | LispAI y Zyrion | [docs/LISPAI.md](docs/LISPAI.md) |
 | Auth, módulos, API v2 | [docs/API_AUTH_MODULES_V2.md](docs/API_AUTH_MODULES_V2.md) |
 | Arquitectura | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Alset Mind — roadmap | [docs/ALSET_MIND_ROADMAP.md](docs/ALSET_MIND_ROADMAP.md) |
+| Alset Mind — handoff | [docs/ALSET_MIND_HANDOFF.md](docs/ALSET_MIND_HANDOFF.md) |
 | Landing | https://yecharlot.github.io/PrismaTec/ |
 | Relay en vivo | https://prismatec.onrender.com |
 | API v2 info | https://prismatec.onrender.com/api/v2/info |
