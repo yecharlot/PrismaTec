@@ -360,11 +360,16 @@ func isWorldFact(s string) bool {
 	if strings.Contains(s, "borra") || strings.Contains(s, "elimina") || strings.Contains(s, "reset") {
 		return false
 	}
-	// "X es Y" / "X son Y" / "porque"
+	// "X es Y" / "X son Y" / "porque" / longer free claims
 	if strings.Contains(s, " es ") || strings.Contains(s, " son ") || strings.Contains(s, " porque ") ||
 		strings.Contains(s, " está ") || strings.Contains(s, " estan ") || strings.Contains(s, " están ") {
 		words := strings.Fields(s)
 		return len(words) >= 4 && len(s) >= 16
+	}
+	// General declarative mass: enough words, no interrogative mark
+	words := strings.Fields(s)
+	if !strings.Contains(s, "?") && len(words) >= 8 && len(s) >= 36 {
+		return true
 	}
 	return false
 }

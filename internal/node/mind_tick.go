@@ -406,11 +406,23 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 
 	organs := []MindOrganResult{dialog, act, mem, self, ethics, curiosity, humor}
 	knowHit := speakFromKnowledge(text)
+	// Escape hatch: no corpus hit + declarative novelty → raise memory organ
+	if shouldCaptureEscape(text, knowHit) {
+		sig["novedad"] = clamp01(sig["novedad"] + 0.4)
+		mem = evalOrganPolar("mem", sig["novedad"], sig["claridad"], sig["riesgo"], "H", "L", "H")
+		// refresh organs slice mem slot
+		for i := range organs {
+			if organs[i].Name == "mem" {
+				organs[i] = mem
+			}
+		}
+	}
 	voice := ""
-	if isConfirmationPrompt(text) {
+	// Generalized intents (structural) before brittle phrase lists
+	if isEpistemicCheck(text) || isConfirmationPrompt(text) {
 		voice = n.confirmMindThread(text)
 	}
-	if voice == "" && isContinuePrompt(text) {
+	if voice == "" && (isElaborationRequest(text) || isContinuePrompt(text)) {
 		voice = n.continueMindThread(text)
 	}
 	if voice == "" {
@@ -441,7 +453,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	if memHint != "" && memSpeak == "" {
 		voice = voice + "\n\n" + memoryHintLine(memHint)
 	}
-	if !isContinuePrompt(text) && !isConfirmationPrompt(text) {
+	if !isContinuePrompt(text) && !isConfirmationPrompt(text) && !isElaborationRequest(text) && !isEpistemicCheck(text) {
 		n.rememberMindThread(text, knowHit, memSpeak, voice)
 	}
 	resp := MindTickResponse{
@@ -455,9 +467,10 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 
 	// Dedup: do not re-save the same declared name as a new episode
 	dupName := isDuplicateNameDeclaration(text, knownName)
-	saveEp := forceMem || isWorldFact(text) ||
+	escapeCap := shouldCaptureEscape(text, knowHit) && !dupName
+	saveEp := forceMem || isWorldFact(text) || escapeCap ||
 		(isPersonalFact(text) && !dupName) ||
-		(mem.State >= 1 && !dupName && (sig["riesgo"] >= 0.5 || len(text) > 48 || mem.State == 2 || isWorldFact(text)))
+		(mem.State >= 1 && !dupName && (sig["riesgo"] >= 0.5 || len(text) > 48 || mem.State == 2 || isWorldFact(text) || escapeCap))
 	if saveEp {
 		ep := map[string]interface{}{
 			"type":    "mind_episode",
@@ -561,6 +574,10 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 	}
 	if isWorldFact(low) {
 		return "Lo tengo presente. Si más tarde lo preguntas, lo recordaré."
+	}
+	// Generalized escape: not in corpus, but statement-like → memory owns it
+	if isNovelDeclarative(low) && speakFromKnowledge(text) == "" {
+		return "No lo tenía catalogado en el corpus. Lo marco como hecho relevante; si más adelante lo preguntas, lo traeré desde memoria."
 	}
 
 	// Dual recall + fluid composition (memory ∩ corpus → ideas). Falls through if empty.

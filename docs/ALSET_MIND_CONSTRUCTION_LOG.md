@@ -314,3 +314,10 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 
 - **Acto:** `isConfirmationPrompt` («estás seguro») reafirma nombre/hecho del hilo. Continue acepta «amplia el punto» / «no entiendo…». Hilo de nombre no salta a corpus ajeno. Tokens débiles (estas/seguro) no disparan consciencia. `te llamas` en extractDeclaredName.
 - **Archivos:** mind_continuity.go, mind_knowledge.go, mind_memory.go, mind_tick.go, tests, bitácora.
+
+
+## 2026-08-22 — Generalización: escape → órganos → memoria
+
+- **Acto:** mind_capture.go: isElaborationRequest, isEpistemicCheck, isNovelDeclarative, shouldCaptureEscape. Novedad y saveEp cuando el corpus no cubre. isWorldFact claims largos. Principio en ROADMAP.
+- **Decisión:** menos parches por frase; el patrón y la memoria cierran el hueco.
+- **Archivos:** mind_capture.go, mind_tick.go, mind_memory.go, tests, ROADMAP, bitácora.

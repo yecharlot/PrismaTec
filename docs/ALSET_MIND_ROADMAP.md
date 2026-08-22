@@ -85,6 +85,14 @@ Código clave: `internal/node/mind_tick.go`, `mind_compose.go`, `mind_memory.go`
 
 ---
 
+## Principio de generalización (2026-08-22)
+
+Las correcciones **no** deben ser listas interminables de frases concretas.
+- **Corpus:** vasto y general + particularidades relevantes (curado).
+- **Intenciones transversales:** elaboración, chequeo epistémico, hechos nuevos — detectores **estructurales**.
+- **Escape:** si el corpus no cubre un enunciado relevante, los órganos (sobre todo **mem**/novedad) lo capturan y va a **memoria episódica**.
+- Un fallo en un ejemplo debe generalizarse al **patrón**, no solo al string.
+
 ## Principios que no se negocian
 
 1. **No es un LLM wrapper** — el lenguaje es sombra del campo ternario.

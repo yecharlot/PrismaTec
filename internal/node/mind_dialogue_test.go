@@ -542,3 +542,45 @@ func TestEstasSeguroNotConsciousness(t *testing.T) {
 		t.Fatalf("estas seguro must not hit consciousness corpus: %q", got)
 	}
 }
+
+func TestGeneralizedElaboration(t *testing.T) {
+	cases := []string{
+		"amplia el punto",
+		"no entiendo amplia el punto",
+		"más detalle por favor",
+		"profundiza",
+		"no me queda claro",
+	}
+	for _, c := range cases {
+		if !isElaborationRequest(c) && !isContinuePrompt(c) {
+			t.Errorf("expected elaboration: %q", c)
+		}
+	}
+	if isElaborationRequest("qué es lisp") || isElaborationRequest("que es un llm") {
+		t.Fatal("lookups must not be elaborations")
+	}
+}
+
+func TestGeneralizedEpistemic(t *testing.T) {
+	for _, c := range []string{"estas seguro", "estás seguro", "en serio", "de verdad", "confirmas"} {
+		if !isEpistemicCheck(c) && !isConfirmationPrompt(c) {
+			t.Errorf("epistemic: %q", c)
+		}
+	}
+	if isEpistemicCheck("qué es la consciencia") {
+		t.Fatal("domain question is not epistemic check")
+	}
+}
+
+func TestNovelDeclarativeCapture(t *testing.T) {
+	s := "hoy trabajo en una granja de café en las montañas del sur"
+	if !isNovelDeclarative(s) && !isWorldFact(s) {
+		t.Fatalf("should capture novel declarative: %q", s)
+	}
+	if !shouldCaptureEscape(s, "") {
+		t.Fatal("escape capture should trigger without corpus hit")
+	}
+	if shouldCaptureEscape(s, "algo del corpus") {
+		t.Fatal("no escape when corpus hits")
+	}
+}
