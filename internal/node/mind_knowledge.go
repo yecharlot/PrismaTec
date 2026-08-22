@@ -124,21 +124,38 @@ func speakFromKnowledge(query string) string {
 				sc += 3
 			}
 		}
-		// token overlap with keys and type (+ edit-distance-1 for short tokens)
+		// token overlap with keys and type (skip stopwords / weak fillers)
+		weakTok := map[string]bool{
+			"estas": true, "estás": true, "esto": true, "esta": true, "este": true,
+			"seguro": true, "ser": true, "eres": true, "tiene": true, "tienen": true,
+			"como": true, "cómo": true, "qué": true, "que": true, "cual": true, "cuál": true,
+			"para": true, "por": true, "con": true, "una": true, "unos": true, "algo": true,
+		}
 		for _, w := range tokenizeMind(q) {
+			if weakTok[w] || len([]rune(w)) < 4 {
+				continue
+			}
 			for _, k := range e.Keys {
 				kl := strings.ToLower(k)
 				if strings.Contains(kl, w) {
-					sc++
-				}
-				for _, kw := range strings.Fields(kl) {
-					if len([]rune(w)) >= 3 && editDistanceOne(w, kw) {
-						sc += 4
-					}
+					sc += 2
 				}
 			}
 			if strings.Contains(e.Type, w) {
 				sc++
+			}
+		}
+		// Fuzzy only for single-token queries (typos like npl)
+		if len(strings.Fields(q)) == 1 {
+			w := strings.Fields(q)[0]
+			if len([]rune(w)) >= 3 && !weakTok[w] {
+				for _, k := range e.Keys {
+					for _, kw := range strings.Fields(strings.ToLower(k)) {
+						if editDistanceOne(w, kw) {
+							sc += 4
+						}
+					}
+				}
 			}
 		}
 		if sc > bestScore {

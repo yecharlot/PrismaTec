@@ -7,21 +7,52 @@ func isContinuePrompt(s string) bool {
 	if s == "" {
 		return false
 	}
+	// strip soft lead-ins: "no entiendo …", "no me queda …"
+	for _, lead := range []string{"no entiendo ", "no comprendo ", "no me queda claro ", "no me queda ", "es que "} {
+		if strings.HasPrefix(s, lead) {
+			s = strings.TrimSpace(s[len(lead):])
+			break
+		}
+	}
 	keys := []string{
 		"amplia el angulo", "amplía el ángulo", "amplia el ángulo", "amplía el angulo",
-		"amplia el tema", "amplía el tema", "profundiza", "cuéntame más", "cuentame mas",
+		"amplia el punto", "amplía el punto", "amplia el tema", "amplía el tema",
+		"amplia un poco", "amplía un poco", "profundiza", "cuéntame más", "cuentame mas",
 		"cuentame más", "cuéntame mas", "más sobre eso", "mas sobre eso", "más sobre ello",
 		"sigue con eso", "sigue con ello", "sigue el hilo", "desarrolla", "expande",
 		"más detalle", "mas detalle", "otro ángulo", "otro angulo", "retoma", "retomemos",
-		"desde la memoria", "desde el corpus", "continúa", "continua",
+		"desde la memoria", "desde el corpus", "continúa", "continua", "explica mejor",
+		"no entiendo", "más claro", "mas claro",
 	}
 	for _, k := range keys {
 		if s == k || strings.HasPrefix(s, k+" ") || strings.Contains(s, k) {
 			return true
 		}
 	}
-	// short "amplia" / "sigue" alone
 	if s == "amplia" || s == "amplía" || s == "sigue" || s == "continúa" || s == "continua" {
+		return true
+	}
+	// "amplia el X" / "amplía el X"
+	if strings.HasPrefix(s, "amplia ") || strings.HasPrefix(s, "amplía ") {
+		return true
+	}
+	return false
+}
+
+// isConfirmationPrompt: user asks if the last claim is right (name, fact).
+func isConfirmationPrompt(s string) bool {
+	s = strings.ToLower(strings.TrimSpace(s))
+	keys := []string{
+		"estás seguro", "estas seguro", "está seguro", "esta seguro",
+		"seguro?", "seguro de eso", "en serio", "de verdad", "confirmas",
+		"es cierto", "lo confirmas", "seguro seguro",
+	}
+	for _, k := range keys {
+		if s == k || strings.Contains(s, k) {
+			return true
+		}
+	}
+	if s == "seguro" || s == "seguro?" {
 		return true
 	}
 	return false
@@ -33,7 +64,7 @@ func (n *NodoAlset) rememberMindThread(query, know, mem, voice string) {
 	}
 	n.mindLastMu.Lock()
 	defer n.mindLastMu.Unlock()
-	if query != "" && !isContinuePrompt(query) {
+	if query != "" && !isContinuePrompt(query) && !isConfirmationPrompt(query) {
 		n.mindLastQuery = query
 	}
 	if know != "" {
@@ -47,16 +78,62 @@ func (n *NodoAlset) rememberMindThread(query, know, mem, voice string) {
 	}
 }
 
+func (n *NodoAlset) confirmMindThread(text string) string {
+	if n == nil {
+		return ""
+	}
+	n.mindLastMu.Lock()
+	q, k, m, v := n.mindLastQuery, n.mindLastKnow, n.mindLastMem, n.mindLastVoice
+	n.mindLastMu.Unlock()
+	// Prefer name from memory episodes text
+	if name := extractDeclaredName(m); name != "" {
+		return "Sí: te llamas " + name + ". Lo tengo de lo que me dijiste, no lo estoy inventando."
+	}
+	if name := extractDeclaredName(q); name != "" {
+		return "Sí: te llamas " + name + ". Lo anoté cuando me lo dijiste."
+	}
+	if name := extractDeclaredName(v); name != "" {
+		return "Sí: te llamas " + name + "."
+	}
+	if m != "" {
+		return "Sí, me baso en lo que guardamos: «" + truncateRunes(m, 100) + "»."
+	}
+	if k != "" {
+		return "Sí, eso sale del corpus curado de este nodo — no es una predicción suelta."
+	}
+	if v != "" {
+		snip := compressVoiceBlock(v, 120)
+		return "Sí, me mantengo en lo último que dije: " + snip
+	}
+	return "No tengo un hecho reciente que confirmar. Si me dices el detalle, lo anclo."
+}
+
 func (n *NodoAlset) continueMindThread(text string) string {
 	if n == nil {
 		return ""
 	}
 	n.mindLastMu.Lock()
-	q, k, m := n.mindLastQuery, n.mindLastKnow, n.mindLastMem
+	q, k, m, v := n.mindLastQuery, n.mindLastKnow, n.mindLastMem, n.mindLastVoice
 	n.mindLastMu.Unlock()
 	low := strings.ToLower(text)
 	wantMem := strings.Contains(low, "memoria") || strings.Contains(low, "recuerdo")
 	wantCorp := strings.Contains(low, "corpus") || strings.Contains(low, "conocimiento")
+
+	// If last thread was identity/name, stay on name — don't jump to unrelated corpus
+	nameQ := strings.Contains(strings.ToLower(q), "nombre") || strings.Contains(strings.ToLower(q), "llamo") ||
+		extractDeclaredName(q) != "" || extractDeclaredName(m) != "" || extractDeclaredName(v) != ""
+	if nameQ && !wantCorp {
+		name := extractDeclaredName(m)
+		if name == "" {
+			name = extractDeclaredName(q)
+		}
+		if name == "" {
+			name = extractDeclaredName(v)
+		}
+		if name != "" {
+			return "Sobre tu nombre: te llamas " + name + ". Lo guardé cuando me lo dijiste; si preguntas «cómo me llamo», vuelvo a ese hecho — no a una ventana de chat."
+		}
+	}
 
 	if wantMem && m != "" {
 		return "Desde lo que recordamos:\n\n" + m
@@ -75,6 +152,9 @@ func (n *NodoAlset) continueMindThread(text string) string {
 	}
 	if m != "" {
 		return "Siguiendo desde lo recordado:\n\n" + m
+	}
+	if v != "" {
+		return "Siguiendo el hilo:\n\n" + compressVoiceBlock(v, 280)
 	}
 	return "No tengo aún un hilo claro que ampliar. Pregunta por un tema o un hecho que hayamos guardado."
 }

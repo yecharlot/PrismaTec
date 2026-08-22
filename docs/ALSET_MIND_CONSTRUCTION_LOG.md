@@ -309,3 +309,8 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 
 - **Acto:** `normalizeKnowledgeQuery` (npl→nlp, etc.) + edit-distance-1. `mindLast*` en nodo + `continueMindThread` / `isContinuePrompt` (amplía, desde memoria/corpus). Follow-ups y curiosity sin pitch CID repetido.
 - **Archivos:** mind_knowledge.go, mind_continuity.go, mind_tick.go, node.go, mind_compose.go, mind_organs_extra.go, tests, bitácora.
+
+## 2026-08-22 — Confirmación + ampliar punto + menos falsos positivos corpus
+
+- **Acto:** `isConfirmationPrompt` («estás seguro») reafirma nombre/hecho del hilo. Continue acepta «amplia el punto» / «no entiendo…». Hilo de nombre no salta a corpus ajeno. Tokens débiles (estas/seguro) no disparan consciencia. `te llamas` en extractDeclaredName.
+- **Archivos:** mind_continuity.go, mind_knowledge.go, mind_memory.go, mind_tick.go, tests, bitácora.

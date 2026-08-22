@@ -407,7 +407,10 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	organs := []MindOrganResult{dialog, act, mem, self, ethics, curiosity, humor}
 	knowHit := speakFromKnowledge(text)
 	voice := ""
-	if isContinuePrompt(text) {
+	if isConfirmationPrompt(text) {
+		voice = n.confirmMindThread(text)
+	}
+	if voice == "" && isContinuePrompt(text) {
 		voice = n.continueMindThread(text)
 	}
 	if voice == "" {
@@ -438,7 +441,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	if memHint != "" && memSpeak == "" {
 		voice = voice + "\n\n" + memoryHintLine(memHint)
 	}
-	if !isContinuePrompt(text) {
+	if !isContinuePrompt(text) && !isConfirmationPrompt(text) {
 		n.rememberMindThread(text, knowHit, memSpeak, voice)
 	}
 	resp := MindTickResponse{

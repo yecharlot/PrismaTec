@@ -428,7 +428,7 @@ func extractDeclaredName(text string) string {
 		"cual": true, "cuál": true, "quote": true, "lisp": true, "en": true, "de": true,
 		"tuyo": true, "mío": true, "mio": true,
 	}
-	for _, pref := range []string{"me llamo ", "mi nombre es ", "mi nombre:"} {
+	for _, pref := range []string{"me llamo ", "mi nombre es ", "mi nombre:", "te llamas "} {
 		i := strings.Index(low, pref)
 		if i < 0 {
 			continue

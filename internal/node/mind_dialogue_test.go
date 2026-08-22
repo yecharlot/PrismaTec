@@ -508,3 +508,37 @@ func TestContinueMindThread(t *testing.T) {
 		t.Fatal("empty continue from memoria request")
 	}
 }
+
+func TestConfirmationName(t *testing.T) {
+	n := &NodoAlset{}
+	n.rememberMindThread("hola mi nombre es esteban y el tuyo cual es", "", "", "Perfecto, te llamas esteban. Yo soy Alset Mind.")
+	got := n.confirmMindThread("estas seguro")
+	if !strings.Contains(strings.ToLower(got), "esteban") {
+		t.Fatalf("confirm should restate name, got %q", got)
+	}
+	if strings.Contains(strings.ToLower(got), "consciencia") || strings.Contains(strings.ToLower(got), "qualia") {
+		t.Fatalf("must not answer consciencia: %q", got)
+	}
+}
+
+func TestContinueAmpliaElPunto(t *testing.T) {
+	if !isContinuePrompt("no entiendo amplia el punto") {
+		t.Fatal("should detect continua after lead-in")
+	}
+	if !isContinuePrompt("amplia el punto") {
+		t.Fatal("amplia el punto")
+	}
+	n := &NodoAlset{}
+	n.rememberMindThread("mi nombre es esteban", "", "mi nombre es esteban", "Perfecto, te llamas esteban.")
+	got := n.continueMindThread("no entiendo amplia el punto")
+	if !strings.Contains(strings.ToLower(got), "esteban") {
+		t.Fatalf("continue on name thread: %q", got)
+	}
+}
+
+func TestEstasSeguroNotConsciousness(t *testing.T) {
+	got := speakFromKnowledge("estas seguro")
+	if strings.Contains(strings.ToLower(got), "consciencia") || strings.Contains(strings.ToLower(got), "qualia") {
+		t.Fatalf("estas seguro must not hit consciousness corpus: %q", got)
+	}
+}
