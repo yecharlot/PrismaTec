@@ -459,6 +459,9 @@ func (n *NodoAlset) registerGenHTTP(extra map[string]http.HandlerFunc) {
 	extra["/api/gen/observe"] = n.handleGenObserve
 	extra["/api/gen/arrive"] = n.handleGenArrive
 	extra["/api/gen/explore"] = n.handleGenExplore
+	extra["/api/gen/service"] = n.handleGenServiceAPI
+	extra["/g/"] = n.handleGenPublicServe
+	extra["/work/"] = n.handleGenPublicServe
 }
 
 func (n *NodoAlset) handleGenList(w http.ResponseWriter, r *http.Request) {

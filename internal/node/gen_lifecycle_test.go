@@ -178,3 +178,30 @@ func TestExploreFrontierRecordsHallazgo(t *testing.T) {
 		t.Fatal("expected findings after explore")
 	}
 }
+
+func TestGenDeployService(t *testing.T) {
+	n := &NodoAlset{
+		gens:       make(map[string]*agents.AlsetGen),
+		nombres:    make(map[string]string),
+		agentes:    make(map[string]*Agente),
+		blockstore: make(map[string][]byte),
+	}
+	if _, err := n.CreateAlsetGen("portal", "", "seed", "serve test"); err != nil {
+		t.Fatal(err)
+	}
+	res, err := n.DeployGenService("portal", "/work/portal/", "", "Portal test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res["ok"] != true {
+		t.Fatalf("%v", res)
+	}
+	cid, _ := res["service_cid"].(string)
+	if cid == "" {
+		t.Fatal("expected service cid")
+	}
+	data, err := n.BuscarContenidoPorCID(cid)
+	if err != nil || !strings.Contains(string(data), "Portal test") {
+		t.Fatalf("page content missing: %v %s", err, string(data)[:80])
+	}
+}

@@ -106,7 +106,10 @@ func (n *NodoAlset) ExploreFrontier(key, rawURL, mission string) (map[string]int
 		"note":         "exploración no invasiva (GET acotado); el gen no aterriza ni muta el destino",
 	}
 	if mission == "service" {
-		out["service_note"] = "misión service: registra disponibilidad en la frontera; no ejecuta mutaciones remotas"
+		out["service_note"] = "misión service: informe de frontera + superficie local /work/{gen}/"
+		if srv, err := n.DeployGenService(key, "", "", "Servicio · "+key); err == nil {
+			out["service"] = srv
+		}
 	}
 	go n.BroadcastPulse("GEN_EXPLORE", map[string]interface{}{
 		"key": key, "url": safe, "mission": mission, "status": resp.StatusCode,

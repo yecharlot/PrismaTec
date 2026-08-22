@@ -718,7 +718,7 @@ func (n *NodoAlset) mindSafeTools(text string) string {
 	wantGen := strings.Contains(s, "gen ") || strings.Contains(s, "gens") || strings.Contains(s, "células") ||
 		strings.Contains(s, "celulas") || strings.Contains(s, "alset-gen") || strings.Contains(s, "semilla") ||
 		strings.Contains(s, "explora") || strings.Contains(s, "explorar") || strings.Contains(s, "lista gen") ||
-		strings.Contains(s, "listar gen") || strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen")
+		strings.Contains(s, "listar gen") || strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") || strings.Contains(s, "sirve gen") || strings.Contains(s, "servir gen") || strings.Contains(s, "pon a servir")
 	if !wantStatus && !wantZyrion && !wantGen {
 		return ""
 	}
@@ -744,7 +744,7 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 	lines := []string{"—— Alset-Gen (células) ——"}
 	n.ensureGens()
 
-	if strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") {
+	if strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") || strings.Contains(s, "sirve gen") || strings.Contains(s, "servir gen") || strings.Contains(s, "pon a servir") {
 		name := extractGenNameFromText(s)
 		if name == "" {
 			name = "mind-seed"
@@ -779,6 +779,20 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 					lines = append(lines, "informe: "+sn)
 				}
 			}
+		}
+	}
+
+	if strings.Contains(s, "sirve") || strings.Contains(s, "servir") || strings.Contains(s, "pon a servir") {
+		name := extractGenNameFromText(s)
+		if name == "" {
+			name = "demo-cell"
+		}
+		short := strings.TrimSuffix(normalizeGenKey(name), ".ans")
+		res, err := n.DeployGenService(name, "/work/"+short+"/", "", "Servicio · "+name)
+		if err != nil {
+			lines = append(lines, "servicio: "+err.Error())
+		} else {
+			lines = append(lines, fmt.Sprintf("sirviendo %v en %v", res["key"], res["service_path"]))
 		}
 	}
 
