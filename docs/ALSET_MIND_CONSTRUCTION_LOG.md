@@ -303,3 +303,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Decision:** Identidad por conocimiento curado, no por prompt de sistema LLM.
 - **Proximo:** Fase 4 algoritmos o tools seguras / Supabase.
 - **Archivos:** mind_knowledge.json, mind_compose.go, tests, TRAINING_PLAN, ROADMAP, HANDOFF, bitacora.
+
+
+## 2026-08-22 — Continuidad de hilo + typos + menos estribillo
+
+- **Acto:** `normalizeKnowledgeQuery` (npl→nlp, etc.) + edit-distance-1. `mindLast*` en nodo + `continueMindThread` / `isContinuePrompt` (amplía, desde memoria/corpus). Follow-ups y curiosity sin pitch CID repetido.
+- **Archivos:** mind_knowledge.go, mind_continuity.go, mind_tick.go, node.go, mind_compose.go, mind_organs_extra.go, tests, bitácora.

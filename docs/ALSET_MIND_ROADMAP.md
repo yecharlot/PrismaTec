@@ -16,7 +16,8 @@ Este documento es el mapa de avance. La bitácora detallada sigue en `ALSET_MIND
 | Memoria episódica CID + bias + dedup de nombre | Operativo |
 | Corpus curado + `speakFromKnowledge` | Operativo (Fase 2 fullstack sembrada) |
 | Compositor mem ∩ corpus → ideas | Operativo |
-| Voz natural (sin jerga de laboratorio) | Operativo (iteración 2026-08-21) |
+| Voz natural (sin jerga de laboratorio) | Operativo |
+| Continuidad de hilo + typos corpus | Operativo (2026-08-22) |
 | UI laboratorio `/w/mind.app.ans` | Operativo |
 | Training plan Fase 0–1 (Lisp base) | Hecho |
 | Tools de acción seguras bajo ethics | Pendiente |

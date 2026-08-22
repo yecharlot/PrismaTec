@@ -32,6 +32,69 @@ func loadMindKnowledge() []mindKnowledgeEntry {
 	return mindKnowledgeCache
 }
 
+
+// normalizeKnowledgeQuery fixes common typos before corpus overlap.
+func normalizeKnowledgeQuery(q string) string {
+	q = strings.ToLower(strings.TrimSpace(q))
+	reps := []struct{ a, b string }{
+		{"npl", "nlp"},
+		{"lnp", "nlp"},
+		{"lln", "llm"},
+		{"lmm", "llm"},
+		{"chatgtp", "chatgpt"},
+		{"chatgt", "chatgpt"},
+		{"zyron", "zyrion"},
+		{"zyron", "zyrion"},
+		{"gorutine", "goroutine"},
+		{"gorutines", "goroutines"},
+		{"microservcio", "microservicio"},
+		{"autentificacion", "autenticación"},
+		{"conscienca", "consciencia"},
+		{"concienica", "consciencia"},
+		{"ternaro", "ternario"},
+		{"alucinacion", "alucinación"},
+	}
+	for _, r := range reps {
+		q = strings.ReplaceAll(q, r.a, r.b)
+	}
+	return q
+}
+
+func editDistanceOne(a, b string) bool {
+	if a == b {
+		return true
+	}
+	ra, rb := []rune(a), []rune(b)
+	na, nb := len(ra), len(rb)
+	if na > nb {
+		ra, rb = rb, ra
+		na, nb = nb, na
+	}
+	if nb-na > 1 {
+		return false
+	}
+	i, j, edits := 0, 0, 0
+	for i < na && j < nb {
+		if ra[i] != rb[j] {
+			edits++
+			if edits > 1 {
+				return false
+			}
+			if na == nb {
+				i++
+			}
+			j++
+			continue
+		}
+		i++
+		j++
+	}
+	if j < nb || i < na {
+		edits++
+	}
+	return edits <= 1
+}
+
 // speakFromKnowledge retrieves structured polymath knowledge by key/token overlap.
 // Not an LLM: fixed curated entries, ranked by match strength.
 func speakFromKnowledge(query string) string {
@@ -39,7 +102,7 @@ func speakFromKnowledge(query string) string {
 	if len(entries) == 0 {
 		return ""
 	}
-	q := strings.ToLower(strings.TrimSpace(query))
+	q := normalizeKnowledgeQuery(query)
 	if q == "" {
 		return ""
 	}
@@ -61,11 +124,17 @@ func speakFromKnowledge(query string) string {
 				sc += 3
 			}
 		}
-		// token overlap with keys and type
+		// token overlap with keys and type (+ edit-distance-1 for short tokens)
 		for _, w := range tokenizeMind(q) {
 			for _, k := range e.Keys {
-				if strings.Contains(strings.ToLower(k), w) {
+				kl := strings.ToLower(k)
+				if strings.Contains(kl, w) {
 					sc++
+				}
+				for _, kw := range strings.Fields(kl) {
+					if len([]rune(w)) >= 3 && editDistanceOne(w, kw) {
+						sc += 4
+					}
 				}
 			}
 			if strings.Contains(e.Type, w) {
@@ -83,6 +152,49 @@ func speakFromKnowledge(query string) string {
 		need = 2
 	}
 	if bestScore >= need && bestText != "" {
+		return bestText
+	}
+	return ""
+}
+
+// relatedKnowledge finds another corpus entry near the last topic (for "amplía el ángulo").
+func relatedKnowledge(lastQuery, lastKnow string) string {
+	entries := loadMindKnowledge()
+	if len(entries) == 0 || lastKnow == "" {
+		return ""
+	}
+	q := normalizeKnowledgeQuery(lastQuery)
+	bestScore := 0
+	bestText := ""
+	for _, e := range entries {
+		if strings.TrimSpace(e.Text) == strings.TrimSpace(lastKnow) {
+			continue
+		}
+		sc := 0
+		for _, k := range e.Keys {
+			k = strings.ToLower(k)
+			if k != "" && (strings.Contains(q, k) || strings.Contains(k, q) || strings.Contains(strings.ToLower(lastKnow), k)) {
+				sc += 4 + len([]rune(k))/3
+			}
+		}
+		// same type as best previous match boosts continuity
+		for _, w := range tokenizeMind(q + " " + lastKnow) {
+			if len(w) < 4 {
+				continue
+			}
+			if strings.Contains(strings.ToLower(e.Text), w) {
+				sc += 2
+			}
+			if strings.Contains(e.Type, w) {
+				sc += 2
+			}
+		}
+		if sc > bestScore {
+			bestScore = sc
+			bestText = e.Text
+		}
+	}
+	if bestScore >= 4 && bestText != "" {
 		return bestText
 	}
 	return ""

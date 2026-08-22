@@ -88,6 +88,13 @@ type NodoAlset struct {
 
 	// Persistencia pluggable (Local o Supabase)
 	store persistence.Store
+
+	// Continuidad de diálogo Mind (último tema corpus/memoria)
+	mindLastMu    sync.Mutex
+	mindLastQuery string
+	mindLastKnow  string
+	mindLastMem   string
+	mindLastVoice string
 }
 
 type BlockInfo struct {

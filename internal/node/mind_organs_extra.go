@@ -101,23 +101,24 @@ func curiosityVoice(text string, st int) string {
 		return ""
 	}
 	low := strings.ToLower(text)
+	// Skip on continue prompts and pure knowledge one-liners — avoid double refrain
+	if isContinuePrompt(low) {
+		return ""
+	}
 	if st >= 2 {
 		if strings.Contains(low, "metáfora") || strings.Contains(low, "metafora") || strings.Contains(low, "la vida es") {
-			return "¿Qué significa para ti esa imagen — qué parte quieres que ancle en memoria CID?"
+			return "¿Qué parte de esa imagen te importa conservar?"
 		}
 		if strings.Contains(low, "humano") {
-			return "¿Qué rasgo humano te importa más contrastar con este organismo ternario?"
+			return "¿Qué rasgo humano quieres contrastar con este organismo?"
 		}
 		if strings.Contains(low, "consciencia") || strings.Contains(low, "conciencia") {
-			return "¿Hablas de consciencia como experiencia subjetiva o como capacidad de monitorear el propio proceso?"
+			return "¿Lo planteas como experiencia subjetiva o como proceso que se puede observar?"
 		}
-		return "¿Quieres profundizar y lo anclo en un episodio CID, o preferimos otro ángulo?"
+		// no generic CID pitch
+		return ""
 	}
-	// mild
-	if strings.Contains(low, "pensamiento") || strings.Contains(low, "todo") || strings.Contains(low, "exist") {
-		return "Si quieres, formula una frase que deba recordar tal cual."
-	}
-	return "Puedo guardar un matiz tuyo en CID si lo dejas explícito."
+	return ""
 }
 
 // humorVoice: light tint line to APPEND when humor organ is active.

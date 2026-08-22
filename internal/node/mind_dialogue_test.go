@@ -475,3 +475,36 @@ func TestPhase3AIIdentityKnowledge(t *testing.T) {
 		}
 	}
 }
+
+func TestTypoNLPKnowledge(t *testing.T) {
+	got := speakFromKnowledge("que es npl")
+	if got == "" || !strings.Contains(strings.ToLower(got), "nlp") {
+		t.Fatalf("npl typo should resolve to NLP knowledge, got %q", got)
+	}
+}
+
+func TestContinuePrompt(t *testing.T) {
+	if !isContinuePrompt("amplia el angulo") {
+		t.Fatal("amplia el angulo")
+	}
+	if !isContinuePrompt("amplía el ángulo") {
+		t.Fatal("amplía el ángulo")
+	}
+	if isContinuePrompt("qué es lisp") {
+		t.Fatal("not a continue prompt")
+	}
+}
+
+func TestContinueMindThread(t *testing.T) {
+	n := &NodoAlset{}
+	n.rememberMindThread("alucinación", speakFromKnowledge("alucinación"), "", "prev")
+	got := n.continueMindThread("amplia el angulo")
+	if got == "" || strings.Contains(strings.ToLower(got), "no tengo aún un hilo") {
+		t.Fatalf("expected continuation, got %q", got)
+	}
+	got2 := n.continueMindThread("desde la memoria")
+	// may fall back to corpus if no mem — still non-empty
+	if got2 == "" {
+		t.Fatal("empty continue from memoria request")
+	}
+}

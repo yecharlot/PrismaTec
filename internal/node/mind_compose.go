@@ -159,20 +159,14 @@ func ideaFromCross(userText, memSpeak, knowSpeak string) string {
 }
 
 func softKnowledgeFollowUp(low string, curiosity int) string {
+	// Only rare, topic-specific nudges — never the same refrain every turn
 	if curiosity >= 2 {
 		if strings.Contains(low, "lisp") || strings.Contains(low, "quote") {
-			return "Si te sirve, podemos bajar a un ejemplo mínimo en el nodo; si no, seguimos en la idea."
+			return "Si quieres, bajamos a un ejemplo mínimo; si no, seguimos."
 		}
 		if strings.Contains(low, "zyrion") {
-			return "Cuando quieras, lo contrastamos con un checkpoint en vivo; no hace falta menú."
+			return "Cuando quieras lo contrastamos en vivo."
 		}
-		if strings.Contains(low, "red") || strings.Contains(low, "peer") {
-			return "Si quieres el cuerpo de la malla, dímelo en natural; no hace falta invocar comandos."
-		}
-		return "Si hay un matiz que quieras conservar, dímelo y lo guardo."
-	}
-	if curiosity == 1 {
-		return "Puedo ampliar el ángulo o quedarnos aquí; tú marcas el ritmo."
 	}
 	return ""
 }
@@ -215,8 +209,8 @@ func fluidPureDialogue(low string, curiosity int) string {
 		return "Puedo sostener la conversación y anclar frases en CID; no pretendo cerrar la metafísica. Sigue con tu hilo — si es un hecho que quieres recordar, dímelo con claridad."
 	case strings.Contains(low, "idea") || strings.Contains(low, "propon") || strings.Contains(low, "invent"):
 		return "Puedo proponer ideas solo como cruce de lo que ya guardamos (episodios) y el corpus curado — no alucino fuera de eso. Cuéntame un hecho o un tema y lo compongo."
-	case strings.Contains(low, "continúa") || strings.Contains(low, "continua") || strings.Contains(low, "sigue") || strings.Contains(low, "y luego"):
-		return "Sigo contigo en el mismo hilo. Si hubo un episodio reciente relevante, dímelo o pregunta «qué te dije» para recuperarlo; si no, avanza la idea en tus palabras."
+	case strings.Contains(low, "continúa") || strings.Contains(low, "continua") || strings.Contains(low, "sigue") || strings.Contains(low, "y luego") || strings.Contains(low, "amplia") || strings.Contains(low, "amplía"):
+		return "Sigo en el hilo. Si el tema venía del corpus o de un recuerdo, dilo con una palabra clave y lo retomo; si no, avanza tú la idea."
 	case len(low) > 40 && curiosity >= 1:
 		return "Te leo en diálogo abierto. El campo está en seguir. Si hay algo que deba sobrevivir al chat, formula el hecho de forma explícita y lo marco para CID."
 	case len(low) > 24:

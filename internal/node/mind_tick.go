@@ -405,7 +405,14 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	}
 
 	organs := []MindOrganResult{dialog, act, mem, self, ethics, curiosity, humor}
-	voice := mindVoice(text, organs, memSpeak, knownName)
+	knowHit := speakFromKnowledge(text)
+	voice := ""
+	if isContinuePrompt(text) {
+		voice = n.continueMindThread(text)
+	}
+	if voice == "" {
+		voice = mindVoice(text, organs, memSpeak, knownName)
+	}
 	// Soft organs APPEND tint/question — never replace solid knowledge/identity/memory answers
 	if ethics.State != 2 {
 		low := strings.ToLower(text)
@@ -430,6 +437,9 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	}
 	if memHint != "" && memSpeak == "" {
 		voice = voice + "\n\n" + memoryHintLine(memHint)
+	}
+	if !isContinuePrompt(text) {
+		n.rememberMindThread(text, knowHit, memSpeak, voice)
 	}
 	resp := MindTickResponse{
 		Species:    "Alset-Mind",
