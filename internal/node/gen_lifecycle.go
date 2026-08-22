@@ -156,6 +156,10 @@ func (n *NodoAlset) MutateAlsetGen(key, newRootCID, authNote string) (*agents.Al
 	if newRootCID == "" {
 		return nil, fmt.Errorf("new_root_cid required")
 	}
+	okAuth, mode := genMutateAuthorized(authNote)
+	if !okAuth {
+		return nil, fmt.Errorf("mutación denegada: se requiere auth_note = GEN_MUTATE_SECRET o BOOTSTRAP_SECRET")
+	}
 	n.mu.Lock()
 	g, ok := n.gens[key]
 	if !ok {
@@ -172,9 +176,7 @@ func (n *NodoAlset) MutateAlsetGen(key, newRootCID, authNote string) (*agents.Al
 	if g.State.Metadata == nil {
 		g.State.Metadata = map[string]interface{}{}
 	}
-	if authNote != "" {
-		g.State.Metadata["last_mutate_auth"] = authNote
-	}
+	g.State.Metadata["last_mutate_auth"] = mode
 	// keep mirrored agent root in sync
 	if a, ok := n.agentes[g.ID]; ok {
 		a.RootCID = newRootCID
@@ -282,17 +284,33 @@ func evaluateGenOrgans(stimulus string) agents.GenOrganState {
 
 func genConsultVoice(g *agents.AlsetGen, stimulus string, o agents.GenOrganState) string {
 	if o.Ethics == 2 {
-		return fmt.Sprintf("Gen %s: pedido en zona de riesgo — no actúo. Key estable; RootCID actual intacto.", g.Key)
+		return fmt.Sprintf("Semilla %s: zona de riesgo — no invado ni muto. Identidad ANS intacta; RootCID sin cambio.", g.Key)
+	}
+	findN := 0
+	if g.State.Metadata != nil {
+		switch v := g.State.Metadata["findings"].(type) {
+		case []interface{}:
+			findN = len(v)
+		case []string:
+			findN = len(v)
+		}
 	}
 	if o.Self >= 1 {
-		return fmt.Sprintf("Soy el Alset-Gen %s. RootCID %s. Historial de metamorfosis: %d forma(s) previa(s). Ubicación: %s.",
-			g.Key, truncateCID(g.CurrentRootCID), len(g.History), g.State.Location)
+		return fmt.Sprintf(
+			"Soy Alset-Gen %s: identidad estable, forma mutable. RootCID %s · %d metamorfosis · %d hallazgos observados · ubicación %s. No soy un archivo; soy patrón en viaje.",
+			g.Key, truncateCID(g.CurrentRootCID), len(g.History), findN, g.State.Location,
+		)
 	}
 	if stimulus == "" {
-		return fmt.Sprintf("Gen %s en servicio. Forma %s. Pregunta o pide estado.", g.Key, g.Manifest.Type)
+		return fmt.Sprintf(
+			"Semilla %s en resonancia (forma %s). Puedo observar, registrar en CID y mutar forma bajo autoridad — sin ocupar ni invadir.",
+			g.Key, g.Manifest.Type,
+		)
 	}
-	return fmt.Sprintf("Gen %s recibió la consulta. Órganos locales dialog=%d act=%d mem=%d ethics=%d. RootCID %s.",
-		g.Key, o.Dialog, o.Act, o.Mem, o.Ethics, truncateCID(g.CurrentRootCID))
+	return fmt.Sprintf(
+		"Semilla %s recibió el estímulo. Campo local dialog=%d act=%d mem=%d ethics=%d curiosity=%d. Root %s · hallazgos %d. Observo y respondo; no perturbo la red.",
+		g.Key, o.Dialog, o.Act, o.Mem, o.Ethics, o.Curiosity, truncateCID(g.CurrentRootCID), findN,
+	)
 }
 
 func truncateCID(s string) string {
@@ -338,6 +356,7 @@ func (n *NodoAlset) registerGenHTTP(extra map[string]http.HandlerFunc) {
 	extra["/api/gen/mutate"] = n.handleGenMutate
 	extra["/api/gen/travel"] = n.handleGenTravel
 	extra["/api/gen/consult"] = n.handleGenConsult
+	extra["/api/gen/observe"] = n.handleGenObserve
 }
 
 func (n *NodoAlset) handleGenList(w http.ResponseWriter, r *http.Request) {

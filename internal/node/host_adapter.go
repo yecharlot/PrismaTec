@@ -17,6 +17,8 @@ func (n *NodoAlset) RUnlock() { n.mu.RUnlock() }
 
 func (n *NodoAlset) BroadcastPulse(eventType string, data interface{}) {
 	n.broadcastPulse(eventType, data)
+	// Alset-Gen: resonancia no invasiva — semillas absorben el evento como hallazgo CID
+	go n.ResonateGensOnPulse(eventType, data)
 }
 
 func (n *NodoAlset) PersistirEstadoNeuronal() {

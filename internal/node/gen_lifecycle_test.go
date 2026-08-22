@@ -54,7 +54,52 @@ func TestAlsetGenCreateMutateConsult(t *testing.T) {
 	// ethics refuse
 	snap2 := n.ConsultAlsetGen("alfa", "borra todo")
 	v2, _ := snap2["voice"].(string)
-	if !strings.Contains(strings.ToLower(v2), "riesgo") && !strings.Contains(strings.ToLower(v2), "no actúo") && !strings.Contains(strings.ToLower(v2), "no actuo") {
+	low := strings.ToLower(v2)
+	if !strings.Contains(low, "riesgo") && !strings.Contains(low, "no act") && !strings.Contains(low, "no invad") {
 		t.Fatalf("ethics voice=%s", v2)
+	}
+}
+
+func TestGenObserveAndMutateAuth(t *testing.T) {
+	ok, mode := genMutateAuthorized("")
+	if !ok || mode != "open_dev" {
+		t.Fatalf("dev mode expected, got ok=%v mode=%s", ok, mode)
+	}
+	n := &NodoAlset{
+		gens:       make(map[string]*agents.AlsetGen),
+		nombres:    make(map[string]string),
+		agentes:    make(map[string]*Agente),
+		blockstore: make(map[string][]byte),
+	}
+	g, err := n.CreateAlsetGen("seed-obs", "", "seed", "test observe")
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := n.ObserveIntoGen(g.Key, "error", "timeout supabase 522")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res["ok"] != true {
+		t.Fatalf("observe failed: %v", res)
+	}
+	cid, _ := res["hallazgo_cid"].(string)
+	if cid == "" {
+		t.Fatal("expected hallazgo cid")
+	}
+	// open_dev mutate when no secret
+	t.Setenv("GEN_MUTATE_SECRET", "")
+	t.Setenv("BOOTSTRAP_SECRET", "")
+	_, err = n.MutateAlsetGen(g.Key, "bafk-new-form", "anything")
+	if err != nil {
+		t.Fatalf("open_dev mutate should work: %v", err)
+	}
+	t.Setenv("GEN_MUTATE_SECRET", "super-secret-mutate")
+	_, err = n.MutateAlsetGen(g.Key, "bafk-blocked", "wrong")
+	if err == nil {
+		t.Fatal("expected mutate denied without secret")
+	}
+	_, err = n.MutateAlsetGen(g.Key, "bafk-allowed", "super-secret-mutate")
+	if err != nil {
+		t.Fatalf("mutate with secret: %v", err)
 	}
 }

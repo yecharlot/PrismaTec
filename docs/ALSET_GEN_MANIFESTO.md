@@ -1,67 +1,96 @@
-# MANIFIESTO ALSET: LA PIEDRA ANGULAR DEL FUTURO TECNOLÓGICO
+# MANIFIESTO ALSET-GEN: LA SEMILLA
 
-**Versión:** 1.0  
+**Versión:** 1.1  
 **Fecha:** 2026-08-22  
 **Autor:** Prism@.TEC Core Technology (PTCT)  
-**Estado en repo:** semilla implementada (G0–G1) — ver `docs/ALSET_GEN_ROADMAP.md`
-
-## Propósito
-
-Definir la arquitectura, filosofía e implementación de **Alset-Gen**, la unidad fundamental del ecosistema digital descentralizado.
-
-> Alset Mind y Alset-Gen **no son lo mismo**. Mind es el cerebro que orquesta; Gen es la célula madre digital que viaja, muta y sirve.
+**Estado en repo:** G0–G2 sembrados — ver `docs/ALSET_GEN_ROADMAP.md`
 
 ---
 
-## Prólogo
+## Visión (la semilla)
 
-No estamos construyendo solo una IA conversacional. Alset-Gen es una **célula madre digital**: identidad estable (key ANS), naturaleza mutable (RootCID), memoria en CIDs, viaje autónomo y metamorfosis gobernada (solo entidades autorizadas, p. ej. Alset Mind / nodo operador).
+El **gen Alset** es una **célula madre digital**: una semilla fractal que no es ni un programa ni un dato suelto, sino un **patrón de crecimiento**.
+
+- Viaja por la red como una sonda autónoma: no necesita ser alojada como un servicio monolítico.
+- Puede alimentarse de **errores y tráfico** (observación no invasiva → hallazgos CID) para adaptar su forma.
+- **No ocupa el centro**: no invade; observa, registra en CIDs y comunica sin perturbar.
+- Contiene el todo en la parte: **fractalidad** alineada a Zyrion (0 seguir · 1 matizar · 2 sumidero).
+- Puede **mutar su RootCID** manteniendo la **identidad ANS** (key estable) y cambiando la **esencia**.
+- Escucha **pulsos**; resonancia local, no dominación de la red.
+- La inteligencia del ecosistema no está solo en un servidor: está en el **viaje**, la **metamorfosis** y la **resonancia**.
+
+> Alset Mind y Alset-Gen **no son lo mismo**.  
+> **Mind** orquesta, dialoga y veta.  
+> **Gen** es la célula que viaja, muta y observa.
+
+---
 
 ## Principios
 
 | Principio | Descripción |
 |-----------|-------------|
-| Identidad estable, naturaleza mutable | La key es eterna; el RootCID es efímero. |
-| Metamorfosis gobernada | Solo entidades autorizadas pueden iniciar mutación. |
-| Memoria inmutable | Cada transformación queda en CIDs (historial). |
-| Viaje autónomo | El gen se mueve / registra ubicación sin ser “transportado” a mano. |
-| Resonancia local | Reacciona a pulsos sin tumbar la red. |
-| Servicio durante el viaje | Puede responder consultas mientras se mueve. |
-| No invasivo | Observa, registra, comunica. |
-| Fractalidad implosiva | Esencia mínima (patrón); expansión bajo demanda (horizonte). |
+| Identidad estable, naturaleza mutable | Key ANS eterna; RootCID efímero. |
+| Metamorfosis gobernada | Solo auth válida (G2+) muta RootCID. |
+| Memoria inmutable | Hallazgos y transformaciones en CIDs. |
+| Viaje autónomo | Ubicación (G1 stub → G3 hop P2P). |
+| Resonancia local | Pulsos del nodo sin tumbar la red. |
+| Servicio en el viaje | CONSULTA mientras se mueve. |
+| No invasivo | Observa y registra; no reescribe estado ajeno. |
+| Fractalidad | Patrón mínimo; expansión bajo demanda. |
+
+---
 
 ## Núcleo
 
-**Inmutable:** key ANS, material criptográfico del nodo anfitrión (firma), historial de RootCIDs.  
-**Mutable:** RootCID actual, manifiesto, estado local, memoria episódica del gen.
+**Inmutable:** key ANS, origen, historial de RootCIDs.  
+**Mutable:** RootCID actual, manifiesto, estado, hallazgos (`findings` / `episode_cids`).
 
-**Órganos (herencia conceptual de Mind):** dialog, act, mem, self, ethics, curiosity, humor — valores 0/1/2.
+**Órganos locales (0/1/2):** dialog, act, mem, self, ethics, curiosity, humor.
 
-**Pulsos:** CONSULTA, MUTATE_ROOTCID, ESTADO, HALLAZGO (y lifecycle: GEN_CREATED, GEN_MUTATED, GEN_TRAVEL).
+**Pulsos:** CONSULTA, MUTATE_ROOTCID, ESTADO, HALLAZGO, GEN_CREATED, GEN_MUTATED, GEN_TRAVEL.
+
+---
 
 ## Ciclo de vida
 
-1. **Creación** — key + RootCID inicial + registro ANS.  
-2. **Viaje** — ubicación / peers (G1 stub → G3 completo).  
-3. **Mutación** — MUTATE_ROOTCID validado → nuevo RootCID + historial.  
-4. **Servicio** — responde CONSULTA.  
-5. **Retorno / permanencia / absorción** — horizonte.
+1. Creación — key + RootCID (manifiesto sellado).  
+2. Viaje — ubicación (stub → peers).  
+3. Mutación — nuevo RootCID + historial (G2 secret).  
+4. Observación — hallazgo CID (errores/tráfico/manual).  
+5. Servicio — CONSULTA + órganos.  
+6. Resonancia — `ResonateGensOnPulse` selectivo.
 
-## Relación con el ecosistema
+---
 
-| Componente | Rol |
-|------------|-----|
-| Alset Mind | Orquesta creación/monitor/mutación (voz + tools futuras). |
-| ANS | key → identidad / agente ancla. |
-| Pulse / libp2p | Comunicación y descubrimiento. |
-| IPFS / blockstore | RootCIDs y manifiestos. |
-| LispAI | Lógica opcional ligada al RootCID (horizonte). |
+## Implementación
 
-## Implementación en este repo
+| Pieza | Ruta |
+|-------|------|
+| Tipos | `internal/agents/gen.go` |
+| Ciclo de vida | `internal/node/gen_lifecycle.go` |
+| Semilla (observe, auth, resonancia) | `internal/node/gen_seed.go` |
+| Persistencia | `gen_registry.json` + blockstore |
 
-- Tipos: `internal/agents/gen.go`
-- Ciclo de vida en nodo: `internal/node/gen_lifecycle.go`
-- API: `POST /api/gen/create`, `POST /api/gen/mutate`, `POST /api/gen/travel`, `POST /api/gen/consult`, `GET /api/gen`, `GET /api/gen/{key}`
-- Persistencia local: `gen_registry.json` (+ CIDs de manifiesto en blockstore)
+### API
 
-*Documento vivo — alineado al manifiesto v1.0 del 2026-08-22.*
+| Método | Ruta |
+|--------|------|
+| GET | `/api/gen` |
+| POST | `/api/gen/create` |
+| POST | `/api/gen/mutate` — `auth_note` = `GEN_MUTATE_SECRET` o `BOOTSTRAP_SECRET` si existen |
+| POST | `/api/gen/travel` |
+| POST | `/api/gen/consult` |
+| POST | `/api/gen/observe` |
+
+### Entorno
+
+- `GEN_MUTATE_SECRET` (preferido) o `BOOTSTRAP_SECRET`.  
+- Sin secret: modo `open_dev` (solo desarrollo).
+
+---
+
+## Honestidad de la semilla
+
+No es un crawler web mágico ni un LLM. Travel P2P real (G3), Lisp en la forma (G4) y orquestación Mind (G5) siguen en el roadmap. Cada fase debe demostrarse con **curl y CID**.
+
+*Documento vivo — visión única de la semilla Alset en la red.*

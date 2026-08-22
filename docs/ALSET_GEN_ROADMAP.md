@@ -1,17 +1,22 @@
-# Alset-Gen — Roadmap de implementación
+# Alset-Gen — Roadmap
 
 Alineado a `docs/ALSET_GEN_MANIFESTO.md`. **No sustituye a Alset Mind.**
 
 | Fase | Contenido | Estado |
 |------|-----------|--------|
-| **G0** | Manifiesto en repo + tipos `AlsetGen` | Hecho 2026-08-22 |
-| **G1** | Crear / mutar / viajar (stub) / consultar + API + persistencia local + pulsos | Hecho 2026-08-22 |
-| **G2** | Auth firme de mutación (firma operador / Mind tool) | Pendiente |
+| **G0** | Manifiesto + tipos `AlsetGen` | Hecho |
+| **G1** | Crear / mutar / viajar (stub) / consultar + API + persistencia + pulsos | Hecho en prod |
+| **G1.5** | Observación no invasiva (`/api/gen/observe` + resonancia a pulsos) | Hecho 2026-08-22 |
+| **G2** | Auth de mutación (`GEN_MUTATE_SECRET` / `BOOTSTRAP_SECRET`) | Hecho (sin secret = open_dev) |
 | **G3** | Travel real entre peers + ANS de ubicación | Pendiente |
-| **G4** | Lógica Lisp ligada a RootCID + fractal implosivo | Pendiente |
-| **G5** | Orquestación desde Alset Mind (tool segura bajo ethics) | Pendiente |
+| **G4** | Lógica Lisp / forma ligada a RootCID + fractal | Pendiente |
+| **G5** | Orquestación desde Alset Mind (tool bajo ethics) | Pendiente |
 
-## API G1
+## Principio
+
+La semilla **observa y registra**; no es un crawler agresivo ni un LLM. Cada paso debe poder demostrarse con curl y CID.
+
+## API
 
 | Método | Ruta | Body |
 |--------|------|------|
@@ -20,7 +25,9 @@ Alineado a `docs/ALSET_GEN_MANIFESTO.md`. **No sustituye a Alset Mind.**
 | POST | `/api/gen/mutate` | `{ "key", "new_root_cid", "auth_note?" }` |
 | POST | `/api/gen/travel` | `{ "key", "target?" }` |
 | POST | `/api/gen/consult` | `{ "key", "stimulus?" }` |
+| POST | `/api/gen/observe` | `{ "key", "source?", "detail?" }` |
 
-## Principio
+## Producción
 
-Mind sigue intacto. Gen es registro paralelo (`n.gens`) con espejo opcional en `agentes` para balance/root.
+- Host: `https://prismatec.onrender.com`
+- Definir `GEN_MUTATE_SECRET` en Render para cerrar mutaciones abiertas.

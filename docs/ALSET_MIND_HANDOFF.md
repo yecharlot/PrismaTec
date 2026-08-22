@@ -43,7 +43,7 @@ Siguiente: [escribe aquí la tarea].
 No trates Mind como un LLM wrapper; especie ternaria Zyrion.
 ```
 
-Última actualización: 2026-08-21 — Training Fase 3 (IA vs Zyrion); corpus ~90; voz natural.
+Última actualización: 2026-08-22 — Gen G1.5/G2 (observe + mutate auth); Mind intacto. Ver ALSET_GEN_*.md.
 
 
 ## DeepSeek / contexto largo
