@@ -12,6 +12,7 @@ Alineado a `docs/ALSET_GEN_MANIFESTO.md`. **No sustituye a Alset Mind.**
 | **G3** | Travel + ANS location + HTTP hop `/api/gen/arrive` | Hecho 2026-08-22 |
 | **G3.5** | Explore frontera URL (sin nodo Alset) + Mind gestiona gens | Hecho 2026-08-22 |
 | **G3.6** | Servicio en frontera local `/work/{gen}/` y `/g/{gen}/` | Hecho 2026-08-23 |
+| **G3.7** | Persistencia autónoma: frontier package CID + revive | Hecho 2026-08-23 |
 | **G4** | Lógica Lisp / forma ligada a RootCID + fractal | Pendiente |
 | **G5** | Orquestación desde Alset Mind (tool bajo ethics) | Pendiente |
 

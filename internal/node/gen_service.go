@@ -79,7 +79,7 @@ func (n *NodoAlset) DeployGenService(key, mountPath, pageHTML, title string) (ma
 		"key": outKey, "path": mountPath, "cid": cid,
 	})
 
-	return map[string]interface{}{
+	out := map[string]interface{}{
 		"ok":           true,
 		"key":          outKey,
 		"mission":      "service",
@@ -91,7 +91,13 @@ func (n *NodoAlset) DeployGenService(key, mountPath, pageHTML, title string) (ma
 			"/work/" + strings.TrimSuffix(key, ".ans") + "/",
 		},
 		"note": "el gen sirve en la frontera del nodo Alset; no inyecta páginas en dominios ajenos",
-	}, nil
+	}
+	// Autonomous package: content-addressed survival unit
+	if sealed, err := n.SealFrontierPackage(outKey); err == nil {
+		out["package_cid"] = sealed["package_cid"]
+		out["autonomy"] = "package_cid permite revive en cualquier nodo Alset"
+	}
+	return out, nil
 }
 
 func normalizeServicePath(path, key string) string {

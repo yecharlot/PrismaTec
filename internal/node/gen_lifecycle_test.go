@@ -205,3 +205,43 @@ func TestGenDeployService(t *testing.T) {
 		t.Fatalf("page content missing: %v %s", err, string(data)[:80])
 	}
 }
+
+func TestGenFrontierPackageAutonomy(t *testing.T) {
+	n := &NodoAlset{
+		gens:       make(map[string]*agents.AlsetGen),
+		nombres:    make(map[string]string),
+		agentes:    make(map[string]*Agente),
+		blockstore: make(map[string][]byte),
+	}
+	if _, err := n.CreateAlsetGen("autonomo", "", "seed", "pkg test"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := n.DeployGenService("autonomo", "/work/autonomo/", "<html><body>hola autonomo</body></html>", "Auto"); err != nil {
+		t.Fatal(err)
+	}
+	sealed, err := n.SealFrontierPackage("autonomo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkgCID, _ := sealed["package_cid"].(string)
+	if pkgCID == "" {
+		t.Fatal("empty package cid")
+	}
+	// wipe gen from memory
+	n.mu.Lock()
+	delete(n.gens, "autonomo.ans")
+	n.mu.Unlock()
+	rev, err := n.ReviveFromPackageCID(pkgCID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rev["ok"] != true {
+		t.Fatalf("%v", rev)
+	}
+	n.mu.RLock()
+	_, ok := n.gens["autonomo.ans"]
+	n.mu.RUnlock()
+	if !ok {
+		t.Fatal("gen not revived")
+	}
+}

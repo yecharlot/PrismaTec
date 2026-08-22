@@ -94,3 +94,15 @@ El **gen Alset** es una **célula madre digital**: una semilla fractal que no es
 No es un crawler web mágico ni un LLM. Travel P2P real (G3), Lisp en la forma (G4) y orquestación Mind (G5) siguen en el roadmap. Cada fase debe demostrarse con **curl y CID**.
 
 *Documento vivo — visión única de la semilla Alset en la red.*
+
+
+## Persistencia autónoma (G3.7)
+
+La semilla no debe depender de un solo contenedor Render.
+
+1. **Frontier package** — JSON content-addressed (`type: alset_gen_frontier_package`) con identidad, historial, HTML de servicio embebido.
+2. **`package_cid`** — quien guarda este CID puede **revivir** la célula en cualquier nodo Alset (`POST /api/gen/revive`).
+3. **Store `KeyGens`** — registro del nodo (Supabase/local).
+4. **Espejo** `static/gens/{name}/` — ayuda en el proceso local.
+
+No es magia: la autonomía es **content-addressed**. Sin el CID ni una copia del bloque, no hay resurrección. Con el CID, no hace falta el nodo original.
