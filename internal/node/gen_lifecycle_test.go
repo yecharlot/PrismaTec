@@ -140,3 +140,41 @@ func TestGenTravelArriveHop(t *testing.T) {
 		t.Fatalf("arrive root=%s", got.CurrentRootCID)
 	}
 }
+
+func TestExploreURLValidation(t *testing.T) {
+	if _, err := validatePublicExploreURL("http://127.0.0.1/secret"); err == nil {
+		t.Fatal("expected block localhost")
+	}
+	if _, err := validatePublicExploreURL("https://192.168.1.1/"); err == nil {
+		t.Fatal("expected block private")
+	}
+	if _, err := validatePublicExploreURL("https://example.com/path"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestExploreFrontierRecordsHallazgo(t *testing.T) {
+	n := &NodoAlset{
+		gens:       make(map[string]*agents.AlsetGen),
+		nombres:    make(map[string]string),
+		agentes:    make(map[string]*Agente),
+		blockstore: make(map[string][]byte),
+	}
+	if _, err := n.CreateAlsetGen("scout", "", "seed", "frontier"); err != nil {
+		t.Fatal(err)
+	}
+	res, err := n.ExploreFrontier("scout", "https://example.com", "explore")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res["ok"] != true {
+		t.Fatalf("%v", res)
+	}
+	n.mu.RLock()
+	g := n.gens["scout.ans"]
+	findings := g.State.Metadata["findings"]
+	n.mu.RUnlock()
+	if findings == nil {
+		t.Fatal("expected findings after explore")
+	}
+}

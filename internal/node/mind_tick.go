@@ -715,7 +715,11 @@ func (n *NodoAlset) mindSafeTools(text string) string {
 		strings.HasPrefix(s, "dame ") || s == "dame"
 	wantZyrion := strings.Contains(s, "zyrion") || strings.Contains(s, "evalua") ||
 		strings.Contains(s, "evalúa") || strings.Contains(s, "checkpoint") || strings.Contains(s, "topolog")
-	if !wantStatus && !wantZyrion {
+	wantGen := strings.Contains(s, "gen ") || strings.Contains(s, "gens") || strings.Contains(s, "células") ||
+		strings.Contains(s, "celulas") || strings.Contains(s, "alset-gen") || strings.Contains(s, "semilla") ||
+		strings.Contains(s, "explora") || strings.Contains(s, "explorar") || strings.Contains(s, "lista gen") ||
+		strings.Contains(s, "listar gen") || strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen")
+	if !wantStatus && !wantZyrion && !wantGen {
 		return ""
 	}
 
@@ -726,7 +730,116 @@ func (n *NodoAlset) mindSafeTools(text string) string {
 	if wantZyrion {
 		lines = append(lines, n.mindZyrionDemo(s)...)
 	}
+	if wantGen {
+		lines = append(lines, n.mindGenTools(text)...)
+	}
 	return strings.Join(lines, "\n")
+}
+
+
+// mindGenTools: Mind orchestrates Alset-Gen (list/create/explore/consult) under ethics.
+// Mutate still requires GEN_MUTATE_SECRET via API — Mind does not bypass G2.
+func (n *NodoAlset) mindGenTools(text string) []string {
+	s := strings.ToLower(strings.TrimSpace(text))
+	lines := []string{"—— Alset-Gen (células) ——"}
+	n.ensureGens()
+
+	if strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") {
+		name := extractGenNameFromText(s)
+		if name == "" {
+			name = "mind-seed"
+		}
+		g, err := n.CreateAlsetGen(name, "", "seed", "creado por Alset Mind")
+		if err != nil {
+			lines = append(lines, "crear: "+err.Error())
+		} else {
+			lines = append(lines, fmt.Sprintf("creada %s · root %s", g.Key, truncateCID(g.CurrentRootCID)))
+		}
+	}
+
+	if strings.Contains(s, "explora") || strings.Contains(s, "explorar") {
+		u := extractURLFromText(text)
+		name := extractGenNameFromText(s)
+		if name == "" {
+			name = "demo-cell"
+		}
+		if u == "" {
+			lines = append(lines, "exploración: indica una URL https pública")
+		} else {
+			res, err := n.ExploreFrontier(name, u, "explore")
+			if err != nil {
+				lines = append(lines, "explorar: "+err.Error())
+			} else {
+				lines = append(lines, fmt.Sprintf("frontera %v · status %v · hallazgo %v",
+					res["url"], res["status"], res["hallazgo_cid"]))
+				if sn, _ := res["snippet"].(string); sn != "" {
+					if len(sn) > 160 {
+						sn = sn[:160] + "…"
+					}
+					lines = append(lines, "informe: "+sn)
+				}
+			}
+		}
+	}
+
+	list := n.listGens()
+	lines = append(lines, fmt.Sprintf("células en este nodo: %d", len(list)))
+	for i, g := range list {
+		if i >= 8 {
+			lines = append(lines, "…")
+			break
+		}
+		mission := ""
+		if g.State.Metadata != nil {
+			if m, ok := g.State.Metadata["mission"].(string); ok {
+				mission = m
+			}
+		}
+		lines = append(lines, fmt.Sprintf("- %s loc=%s mission=%s root=%s",
+			g.Key, g.State.Location, mission, truncateCID(g.CurrentRootCID)))
+	}
+
+	if strings.Contains(s, "consulta gen") || strings.Contains(s, "estado del gen") {
+		name := extractGenNameFromText(s)
+		if name == "" && len(list) > 0 {
+			name = list[0].Key
+		}
+		if name != "" {
+			snap := n.ConsultAlsetGen(name, "quién eres")
+			if v, ok := snap["voice"].(string); ok && v != "" {
+				lines = append(lines, "voz: "+v)
+			}
+		}
+	}
+	return lines
+}
+
+func extractURLFromText(text string) string {
+	for _, w := range strings.Fields(text) {
+		if strings.HasPrefix(w, "http://") || strings.HasPrefix(w, "https://") {
+			return strings.Trim(w, ".,);]")
+		}
+	}
+	return ""
+}
+
+func extractGenNameFromText(s string) string {
+	for _, pfx := range []string{"gen ", "célula ", "celula ", "semilla "} {
+		if i := strings.Index(s, pfx); i >= 0 {
+			rest := strings.TrimSpace(s[i+len(pfx):])
+			rest = strings.TrimPrefix(rest, "a explorar ")
+			rest = strings.TrimPrefix(rest, "explorar ")
+			rest = strings.TrimPrefix(rest, "a ")
+			fields := strings.Fields(rest)
+			if len(fields) > 0 {
+				name := strings.Trim(fields[0], ".,;:\"'")
+				if name != "a" && name != "en" && name != "con" && !strings.HasPrefix(name, "http") {
+					return name
+				}
+			}
+		}
+	}
+	return ""
 }
 
 func (n *NodoAlset) mindBodySnapshot(s string) []string {
