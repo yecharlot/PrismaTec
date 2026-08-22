@@ -129,3 +129,7 @@ Tras cada hito: actualizar **este roadmap** (checkboxes mentales / mover filas),
 | `AI_COLLABORATION.md` | Roles multi-IA |
 
 *Documento vivo — 2026-08-21.*
+
+## Alset-Gen (capa distinta)
+
+Ver `docs/ALSET_GEN_MANIFESTO.md` y `docs/ALSET_GEN_ROADMAP.md`. G0–G1 sembrados 2026-08-22. Mind orquesta; Gen viaja/muta.

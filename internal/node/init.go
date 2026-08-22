@@ -17,6 +17,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/discovery/mdns"
 
+	"redalset/internal/agents"
 	"redalset/internal/lisp"
 )
 
@@ -45,6 +46,7 @@ func (n *NodoAlset) Init() {
 	n.ctx = context.Background()
 	n.blockstore = make(map[string][]byte)
 	n.agentes = make(map[string]*Agente)
+	n.gens = make(map[string]*agents.AlsetGen)
 	n.nombres = make(map[string]string)
 	n.pendingInferences = make(map[string]chan InferenceResponse)
 	n.pendingMemoryQueries = make(map[string]chan MemoryResponse)
@@ -57,6 +59,7 @@ func (n *NodoAlset) Init() {
 	n.syncManager = n.InitSyncManager()
 
 	n.CargarEstado()
+	n.loadGensFromDisk()
 	n.neuralState = &NeuralState{
 		MembranePotential: 0,
 		LastSpikeTime:     0,

@@ -9,6 +9,7 @@ Este archivo existe para que la co-creación **no muera** cuando un chat, un mod
    - `docs/ALSET_MIND_CONSTRUCTION_LOG.md` — qué se hizo y qué falta
    - `docs/ALSET_MIND_HANDOFF.md` — este puente
    - `docs/ALSET_MIND_ROADMAP.md` — roadmap de hitos
+   - `docs/ALSET_GEN_MANIFESTO.md` — célula Alset-Gen (distinta de Mind)
    - `internal/node/mind_bootstrap.go` — genoma vivo
    - `internal/node/embedded/mind_index.html` — cara del organismo
 

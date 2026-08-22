@@ -24,6 +24,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/host"
 
+	"redalset/internal/agents"
 	"redalset/internal/config"
 	"redalset/internal/lisp"
 	"redalset/internal/persistence"
@@ -61,6 +62,7 @@ type NodoAlset struct {
 	host                 host.Host
 	ctx                  context.Context
 	agentes              map[string]*Agente
+	gens                 map[string]*agents.AlsetGen // Alset-Gen cells (manifesto)
 	mu                   sync.RWMutex
 	lisp                 *lisp.Evaluator
 	kademlia             *dht.IpfsDHT

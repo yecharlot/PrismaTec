@@ -327,3 +327,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** `extractDeclaredName` corta en fórmulas sociales («mucho gusto», etc.). Corpus social. `extractTopicFocus` para «sigue ese tema de X» prioriza X sobre hilo de nombre pegajoso.
 - **Observación:** «Esteban mucho gusto» como nombre; «qué es mucho gusto» vacío; seguir tema mezclaba límites/ethics.
 - **Archivos:** mind_memory.go, mind_continuity.go, mind_capture.go, mind_knowledge.json, tests, bitácora.
+
+
+## 2026-08-22 — Alset-Gen G0–G1 (manifiesto aterrizado)
+
+- **Acto:** Manifiesto en docs. Tipos AlsetGen. Ciclo crear/mutar/viajar-stub/consultar. API /api/gen/*. Persistencia gen_registry.json. Pulsos GEN_*. Mind no modificado en voz/latido.
+- **Archivos:** agents/gen.go, node/gen_lifecycle.go, http/init/node wiring, docs ALSET_GEN_*, tests.
