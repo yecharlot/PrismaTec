@@ -103,3 +103,40 @@ func TestGenObserveAndMutateAuth(t *testing.T) {
 		t.Fatalf("mutate with secret: %v", err)
 	}
 }
+
+func TestGenTravelArriveHop(t *testing.T) {
+	n := &NodoAlset{
+		gens:       make(map[string]*agents.AlsetGen),
+		nombres:    make(map[string]string),
+		agentes:    make(map[string]*Agente),
+		blockstore: make(map[string][]byte),
+	}
+	g, err := n.CreateAlsetGen("viajero", "", "seed", "hop test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = n.TravelAlsetGenTo(g.Key, "peer-north", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	n.mu.Lock()
+	loc := n.gens[g.Key].State.Location
+	st := n.gens[g.Key].State.Metadata["travel_status"]
+	n.mu.Unlock()
+	if loc != "peer-north" {
+		t.Fatalf("location=%s", loc)
+	}
+	if st != "announced" {
+		t.Fatalf("status=%v", st)
+	}
+	// arrive path
+	clone := *g
+	clone.CurrentRootCID = "bafk-arrived-form"
+	got, err := n.ArriveAlsetGen(&clone)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.CurrentRootCID != "bafk-arrived-form" {
+		t.Fatalf("arrive root=%s", got.CurrentRootCID)
+	}
+}

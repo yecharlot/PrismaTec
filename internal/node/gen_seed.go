@@ -1,8 +1,10 @@
 package node
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -176,4 +178,129 @@ func (n *NodoAlset) handleGenObserve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = json.NewEncoder(w).Encode(res)
+}
+
+
+// hopGenHTTP posts gen JSON to another node's /api/gen/arrive (G3 inter-node hop).
+func (n *NodoAlset) hopGenHTTP(baseURL string, genJSON []byte) map[string]interface{} {
+	baseURL = strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	if baseURL == "" {
+		return map[string]interface{}{"ok": false, "error": "empty target_url"}
+	}
+	url := baseURL + "/api/gen/arrive"
+	client := &http.Client{Timeout: 12 * time.Second}
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(genJSON))
+	if err != nil {
+		return map[string]interface{}{"ok": false, "error": err.Error()}
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Alset-Gen-Hop", "1")
+	resp, err := client.Do(req)
+	if err != nil {
+		return map[string]interface{}{"ok": false, "error": err.Error(), "url": url}
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	ok := resp.StatusCode >= 200 && resp.StatusCode < 300
+	out := map[string]interface{}{
+		"ok":         ok,
+		"status":     resp.StatusCode,
+		"url":        url,
+		"body":       string(body),
+		"attempted":  true,
+	}
+	return out
+}
+
+// ArriveAlsetGen receives a traveling cell (same ANS key). Upserts form; does not wipe history.
+// Non-invasive: merges remote snapshot into local registry.
+func (n *NodoAlset) ArriveAlsetGen(incoming *agents.AlsetGen) (*agents.AlsetGen, error) {
+	if incoming == nil || incoming.Key == "" {
+		return nil, fmt.Errorf("gen inválido")
+	}
+	n.ensureGens()
+	key := normalizeGenKey(incoming.Key)
+	incoming.Key = key
+	now := time.Now().Unix()
+	incoming.UpdatedAt = now
+	incoming.State.LastSeen = now
+	if incoming.State.Metadata == nil {
+		incoming.State.Metadata = map[string]interface{}{}
+	}
+	incoming.State.Metadata["travel_status"] = "arrived"
+	if n.host != nil {
+		incoming.State.Location = n.host.ID().String()
+		incoming.State.Metadata["arrived_node"] = n.host.ID().String()
+	}
+
+	n.mu.Lock()
+	if existing, ok := n.gens[key]; ok {
+		// Preserve local history chain, append remote current if new
+		if existing.CurrentRootCID != "" && existing.CurrentRootCID != incoming.CurrentRootCID {
+			incoming.History = append(append([]string{}, existing.History...), existing.CurrentRootCID)
+		} else if len(incoming.History) == 0 {
+			incoming.History = existing.History
+		}
+		// Merge findings
+		if existing.State.Metadata != nil {
+			if incF, ok := incoming.State.Metadata["findings"]; !ok || incF == nil {
+				if f, ok := existing.State.Metadata["findings"]; ok {
+					incoming.State.Metadata["findings"] = f
+				}
+			}
+		}
+		if incoming.ID == "" {
+			incoming.ID = existing.ID
+		}
+	} else {
+		if incoming.ID == "" {
+			incoming.ID = genID()
+		}
+	}
+	n.gens[key] = incoming
+	if n.nombres == nil {
+		n.nombres = make(map[string]string)
+	}
+	n.nombres[key] = incoming.ID
+	n.nombres[strings.TrimSuffix(key, ".ans")] = incoming.ID
+	n.nombres["location."+key] = incoming.ID
+	// Mirror agent
+	if n.agentes == nil {
+		n.agentes = make(map[string]*Agente)
+	}
+	n.agentes[incoming.ID] = &Agente{
+		ID:           incoming.ID,
+		RootCID:      incoming.CurrentRootCID,
+		BalanceUTXO:  incoming.State.Balance,
+		UltimaActual: now,
+	}
+	out := *incoming
+	n.mu.Unlock()
+	n.saveGensToDisk()
+	go n.BroadcastPulse(agents.PulseGenTravel, map[string]interface{}{
+		"key":    key,
+		"event":  "arrive",
+		"root_cid": out.CurrentRootCID,
+	})
+	return &out, nil
+}
+
+func (n *NodoAlset) handleGenArrive(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", 405)
+		return
+	}
+	var incoming agents.AlsetGen
+	if err := json.NewDecoder(r.Body).Decode(&incoming); err != nil {
+		http.Error(w, "bad json", 400)
+		return
+	}
+	g, err := n.ArriveAlsetGen(&incoming)
+	if err != nil {
+		w.WriteHeader(400)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "gen": g, "note": "célula recibida; identidad ANS preservada"})
 }

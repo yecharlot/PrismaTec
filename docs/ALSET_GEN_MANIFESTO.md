@@ -54,7 +54,7 @@ El **gen Alset** es una **célula madre digital**: una semilla fractal que no es
 ## Ciclo de vida
 
 1. Creación — key + RootCID (manifiesto sellado).  
-2. Viaje — ubicación (stub → peers).  
+2. Viaje — ubicación ANS + pulso GEN_TRAVEL + hop HTTP opcional (`target_url` → `/api/gen/arrive`).  
 3. Mutación — nuevo RootCID + historial (G2 secret).  
 4. Observación — hallazgo CID (errores/tráfico/manual).  
 5. Servicio — CONSULTA + órganos.  

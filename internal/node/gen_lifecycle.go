@@ -236,8 +236,14 @@ func (n *NodoAlset) MutateAlsetGen(key, newRootCID, authNote string) (*agents.Al
 	return &out, nil
 }
 
-// TravelAlsetGen records autonomous location change (G1 stub — full P2P hop later).
+// TravelAlsetGen moves the cell: updates ANS location, emits GEN_TRAVEL pulse,
+// and optionally hops via HTTP POST /api/gen/arrive when targetURL is set (G3).
 func (n *NodoAlset) TravelAlsetGen(key, targetPeer string) (*agents.AlsetGen, error) {
+	return n.TravelAlsetGenTo(key, targetPeer, "")
+}
+
+// TravelAlsetGenTo is G3 travel with optional HTTP hop target_url (other node base URL).
+func (n *NodoAlset) TravelAlsetGenTo(key, targetPeer, targetURL string) (*agents.AlsetGen, error) {
 	n.ensureGens()
 	key = normalizeGenKey(key)
 	n.mu.Lock()
@@ -249,16 +255,67 @@ func (n *NodoAlset) TravelAlsetGen(key, targetPeer string) (*agents.AlsetGen, er
 	if targetPeer == "" && n.host != nil {
 		targetPeer = n.host.ID().String()
 	}
+	if targetPeer == "" {
+		targetPeer = "local"
+	}
 	g.State.Location = targetPeer
 	g.State.LastSeen = time.Now().Unix()
 	g.UpdatedAt = g.State.LastSeen
+	if g.State.Metadata == nil {
+		g.State.Metadata = map[string]interface{}{}
+	}
+	g.State.Metadata["travel_status"] = "in_transit"
+	g.State.Metadata["travel_target"] = targetPeer
+	if targetURL != "" {
+		g.State.Metadata["travel_target_url"] = targetURL
+	}
+	// ANS location alias: location.<key> → id (discoverable on this node)
+	if n.nombres == nil {
+		n.nombres = make(map[string]string)
+	}
+	n.nombres["location."+key] = g.ID
+	n.nombres["location."+strings.TrimSuffix(key, ".ans")] = g.ID
 	out := *g
+	payload, _ := json.Marshal(g)
 	n.mu.Unlock()
 	n.saveGensToDisk()
+
 	go n.BroadcastPulse(agents.PulseGenTravel, map[string]interface{}{
 		"key":      key,
 		"location": targetPeer,
+		"gen":      json.RawMessage(payload),
 	})
+
+	hop := map[string]interface{}{"attempted": false}
+	if strings.TrimSpace(targetURL) != "" {
+		hop = n.hopGenHTTP(targetURL, payload)
+		n.mu.Lock()
+		if gg, ok := n.gens[key]; ok {
+			if gg.State.Metadata == nil {
+				gg.State.Metadata = map[string]interface{}{}
+			}
+			gg.State.Metadata["last_hop"] = hop
+			if okHop, _ := hop["ok"].(bool); okHop {
+				gg.State.Metadata["travel_status"] = "arrived_remote"
+			} else {
+				gg.State.Metadata["travel_status"] = "hop_failed_local_anchor"
+			}
+			out = *gg
+		}
+		n.mu.Unlock()
+		n.saveGensToDisk()
+	} else {
+		n.mu.Lock()
+		if gg, ok := n.gens[key]; ok {
+			if gg.State.Metadata == nil {
+				gg.State.Metadata = map[string]interface{}{}
+			}
+			gg.State.Metadata["travel_status"] = "announced"
+			out = *gg
+		}
+		n.mu.Unlock()
+		n.saveGensToDisk()
+	}
 	return &out, nil
 }
 
@@ -400,6 +457,7 @@ func (n *NodoAlset) registerGenHTTP(extra map[string]http.HandlerFunc) {
 	extra["/api/gen/travel"] = n.handleGenTravel
 	extra["/api/gen/consult"] = n.handleGenConsult
 	extra["/api/gen/observe"] = n.handleGenObserve
+	extra["/api/gen/arrive"] = n.handleGenArrive
 }
 
 func (n *NodoAlset) handleGenList(w http.ResponseWriter, r *http.Request) {
@@ -472,14 +530,15 @@ func (n *NodoAlset) handleGenTravel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Key    string `json:"key"`
-		Target string `json:"target"`
+		Key       string `json:"key"`
+		Target    string `json:"target"`
+		TargetURL string `json:"target_url"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "bad json", 400)
 		return
 	}
-	g, err := n.TravelAlsetGen(req.Key, req.Target)
+	g, err := n.TravelAlsetGenTo(req.Key, req.Target, req.TargetURL)
 	if err != nil {
 		w.WriteHeader(400)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": err.Error()})
