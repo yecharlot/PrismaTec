@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"redalset/internal/agents"
 	"redalset/internal/persistence"
 )
 
@@ -60,6 +61,19 @@ func (n *NodoAlset) PersistirLocamente() {
 	if len(n.blockstore) > 0 {
 		if err := n.store.SaveBlocks(ctx, n.blockstore); err != nil {
 			log.Printf("⚠️ Error guardando blocks: %v", err)
+		}
+	}
+
+	// Alset-Gen registry (parallel to Mind; survives redeploy when Store is durable)
+	if len(n.gens) > 0 {
+		list := make([]*agents.AlsetGen, 0, len(n.gens))
+		for _, g := range n.gens {
+			list = append(list, g)
+		}
+		if d, err := json.Marshal(list); err == nil {
+			if err := n.store.Save(ctx, persistence.KeyGens, d); err != nil {
+				log.Printf("⚠️ Error guardando gens: %v", err)
+			}
 		}
 	}
 }

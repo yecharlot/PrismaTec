@@ -30,4 +30,6 @@ const (
 	KeyBlocks        = "blocks.json"
 	KeyNeuralState   = "neural_state.json"
 	KeyMindEpisodes  = "mind_episodes.json" // ring of episode CIDs (survives redeploy if Store is durable)
+	KeyGens          = "gen_registry.json"  // Alset-Gen cells
+	KeyGensSnapshot  = "gen_registry_cid"   // last full registry CID pointer
 )

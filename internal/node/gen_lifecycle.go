@@ -1,10 +1,12 @@
 package node
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -12,6 +14,7 @@ import (
 	"time"
 
 	"redalset/internal/agents"
+	"redalset/internal/persistence"
 )
 
 const genRegistryFile = "gen_registry.json"
@@ -24,15 +27,36 @@ func (n *NodoAlset) ensureGens() {
 }
 
 // loadGensFromDisk restores Alset-Gen registry (does not touch Mind state).
+// Order: durable Store → local file → (optional) CID snapshot pointer.
 func (n *NodoAlset) loadGensFromDisk() {
 	n.ensureGens()
-	path := filepath.Join(".", genRegistryFile)
-	b, err := os.ReadFile(path)
-	if err != nil || len(b) == 0 {
+	var b []byte
+	if n.store != nil {
+		if raw, err := n.store.Load(context.Background(), persistence.KeyGens); err == nil && len(raw) > 0 {
+			b = raw
+		}
+	}
+	if len(b) == 0 {
+		path := filepath.Join(".", genRegistryFile)
+		if raw, err := os.ReadFile(path); err == nil && len(raw) > 0 {
+			b = raw
+		}
+	}
+	// 3) Content-addressed snapshot pointer (last full registry CID)
+	if len(b) == 0 && n.store != nil {
+		if ptr, err := n.store.Load(context.Background(), persistence.KeyGensSnapshot); err == nil && len(ptr) > 0 {
+			cid := strings.TrimSpace(string(ptr))
+			if data, err := n.BuscarContenidoPorCID(cid); err == nil && len(data) > 0 {
+				b = data
+				log.Printf("🧬 Alset-Gen: registro recuperado desde snapshot CID %s…", truncateCID(cid))
+			}
+		}
+	}
+	if len(b) == 0 {
 		return
 	}
 	var list []*agents.AlsetGen
-	if json.Unmarshal(b, &list) != nil {
+	if json.Unmarshal(b, &list) != nil || len(list) == 0 {
 		return
 	}
 	n.mu.Lock()
@@ -46,14 +70,15 @@ func (n *NodoAlset) loadGensFromDisk() {
 			n.nombres = make(map[string]string)
 		}
 		n.nombres[g.Key] = g.ID
-		// short form without .ans
 		short := strings.TrimSuffix(g.Key, ".ans")
 		if short != g.Key {
 			n.nombres[short] = g.ID
 		}
 	}
+	log.Printf("🧬 Alset-Gen: %d células restauradas (Store/disco)", len(list))
 }
 
+// saveGensToDisk persists gens to local file + durable Store + content-addressed snapshot CID.
 func (n *NodoAlset) saveGensToDisk() {
 	n.mu.RLock()
 	list := make([]*agents.AlsetGen, 0, len(n.gens))
@@ -66,6 +91,24 @@ func (n *NodoAlset) saveGensToDisk() {
 		return
 	}
 	_ = os.WriteFile(filepath.Join(".", genRegistryFile), b, 0o644)
+	if n.store != nil {
+		ctx := context.Background()
+		if err := n.store.Save(ctx, persistence.KeyGens, b); err != nil {
+			log.Printf("⚠️ Alset-Gen Store save: %v", err)
+		}
+	}
+	// Snapshot CID (survives in blockstore / blocks table when Store.SaveBlocks runs)
+	if cid, err := n.GenerarCID(b); err == nil && cid != "" {
+		if n.store != nil {
+			_ = n.store.Save(context.Background(), persistence.KeyGensSnapshot, []byte(cid))
+		}
+		n.mu.Lock()
+		if n.gens != nil {
+			// stash pointer on first gen metadata is noisy; keep only store pointer
+		}
+		n.mu.Unlock()
+		_ = cid
+	}
 }
 
 func genID() string {

@@ -8,6 +8,7 @@ Alineado a `docs/ALSET_GEN_MANIFESTO.md`. **No sustituye a Alset Mind.**
 | **G1** | Crear / mutar / viajar (stub) / consultar + API + persistencia + pulsos | Hecho en prod |
 | **G1.5** | Observación no invasiva (`/api/gen/observe` + resonancia a pulsos) | Hecho 2026-08-22 |
 | **G2** | Auth de mutación (`GEN_MUTATE_SECRET` / `BOOTSTRAP_SECRET`) | Hecho (sin secret = open_dev) |
+| **G2.5** | Persistencia durable `KeyGens` + snapshot CID (sobrevive redeploy) | Hecho 2026-08-22 |
 | **G3** | Travel real entre peers + ANS de ubicación | Pendiente |
 | **G4** | Lógica Lisp / forma ligada a RootCID + fractal | Pendiente |
 | **G5** | Orquestación desde Alset Mind (tool bajo ethics) | Pendiente |

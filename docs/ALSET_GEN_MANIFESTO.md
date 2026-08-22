@@ -69,7 +69,7 @@ El **gen Alset** es una **célula madre digital**: una semilla fractal que no es
 | Tipos | `internal/agents/gen.go` |
 | Ciclo de vida | `internal/node/gen_lifecycle.go` |
 | Semilla (observe, auth, resonancia) | `internal/node/gen_seed.go` |
-| Persistencia | `gen_registry.json` + blockstore |
+| Persistencia | `gen_registry.json` + Store `KeyGens` + snapshot CID |
 
 ### API
 
