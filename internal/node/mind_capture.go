@@ -35,6 +35,7 @@ func isElaborationRequest(s string) bool {
 	expandRoots := []string{
 		"ampli", "profund", "desarroll", "expand", "detalle", "ángulo", "angulo",
 		"punto", "hilo", "sigue", "continu", "retom", "aclara", "mejor",
+		"ese tema", "este tema", "puedes seguir", "sigamos",
 	}
 	confusionRoots := []string{"no entiendo", "no comprendo", "no me queda", "confus", "no capto"}
 	hasExpand := hasAnyRoot(s, expandRoots)

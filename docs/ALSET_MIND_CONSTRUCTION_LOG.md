@@ -321,3 +321,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** mind_capture.go: isElaborationRequest, isEpistemicCheck, isNovelDeclarative, shouldCaptureEscape. Novedad y saveEp cuando el corpus no cubre. isWorldFact claims largos. Principio en ROADMAP.
 - **Decisión:** menos parches por frase; el patrón y la memoria cierran el hueco.
 - **Archivos:** mind_capture.go, mind_tick.go, mind_memory.go, tests, ROADMAP, bitácora.
+
+## 2026-08-22 — Fluidez: nombre limpio, social, foco de tema
+
+- **Acto:** `extractDeclaredName` corta en fórmulas sociales («mucho gusto», etc.). Corpus social. `extractTopicFocus` para «sigue ese tema de X» prioriza X sobre hilo de nombre pegajoso.
+- **Observación:** «Esteban mucho gusto» como nombre; «qué es mucho gusto» vacío; seguir tema mezclaba límites/ethics.
+- **Archivos:** mind_memory.go, mind_continuity.go, mind_capture.go, mind_knowledge.json, tests, bitácora.

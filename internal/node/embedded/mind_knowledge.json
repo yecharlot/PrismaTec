@@ -911,5 +911,27 @@
       "dialog act mem self ethics"
     ],
     "text": "Órganos del latido: dialog, act, mem, self, ethics, más curiosity y humor como tinte. Cada uno emite 0 (seguir), 1 (matizar) o 2 (alarma/sumidero). Ethics en 2 puede frenar act. No son metáforas de UI: condicionan la voz y lo que se puede hacer sobre el nodo."
+  },
+  {
+    "type": "social",
+    "keys": [
+      "mucho gusto",
+      "qué es mucho gusto",
+      "que es mucho gusto",
+      "un gusto",
+      "encantado de conocerte"
+    ],
+    "text": "«Mucho gusto» es una fórmula de cortesía al presentarse: expresa que te agrada conocer a la otra persona. No forma parte del nombre. Si alguien dice «me llamo Esteban, mucho gusto», el nombre es Esteban; «mucho gusto» es el saludo social."
+  },
+  {
+    "type": "social",
+    "keys": [
+      "encantado",
+      "encantada",
+      "un placer",
+      "placer conocerte",
+      "qué es un placer"
+    ],
+    "text": "«Encantado/a» o «un placer» funcionan como «mucho gusto»: cierran una presentación con amabilidad. Son fórmulas sociales, no datos de identidad ni órdenes al nodo."
   }
 ]

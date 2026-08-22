@@ -108,6 +108,38 @@ func (n *NodoAlset) confirmMindThread(text string) string {
 	return "No tengo un hecho reciente que confirmar. Si me dices el detalle, lo anclo."
 }
 
+
+// extractTopicFocus pulls an explicit topic the user wants to follow
+// ("sigue ese tema de mucho gusto", "hablemos de X", "sobre X").
+func extractTopicFocus(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	markers := []string{
+		"tema de ", "tema del ", "tema de la ", "sobre ", "acerca de ",
+		"respecto a ", "respecto de ", "del tema ", "ese tema de ", "este tema de ",
+	}
+	for _, m := range markers {
+		i := strings.Index(s, m)
+		if i < 0 {
+			continue
+		}
+		rest := strings.TrimSpace(s[i+len(m):])
+		for _, sep := range []string{"?", ".", ",", "!", " y ", " por favor"} {
+			if j := strings.Index(rest, sep); j > 0 {
+				rest = rest[:j]
+			}
+		}
+		rest = strings.TrimSpace(rest)
+		parts := strings.Fields(rest)
+		if len(parts) > 5 {
+			parts = parts[:5]
+		}
+		if len(parts) > 0 {
+			return strings.Join(parts, " ")
+		}
+	}
+	return ""
+}
+
 func (n *NodoAlset) continueMindThread(text string) string {
 	if n == nil {
 		return ""
@@ -119,10 +151,25 @@ func (n *NodoAlset) continueMindThread(text string) string {
 	wantMem := strings.Contains(low, "memoria") || strings.Contains(low, "recuerdo")
 	wantCorp := strings.Contains(low, "corpus") || strings.Contains(low, "conocimiento")
 
-	// If last thread was identity/name, stay on name — don't jump to unrelated corpus
+	// Explicit topic from user wins over sticky name thread
+	if focus := extractTopicFocus(low); focus != "" {
+		if hit := speakFromKnowledge(focus); hit != "" {
+			return "Sobre «" + focus + "»:\n\n" + hit
+		}
+		// Memory episodes that mention the focus
+		if m != "" && strings.Contains(strings.ToLower(m), focus) {
+			return "Sobre «" + focus + "», de lo que hablamos:\n\n" + m
+		}
+		if v != "" && strings.Contains(strings.ToLower(v), focus) {
+			return "Sobre «" + focus + "»:\n\n" + compressVoiceBlock(v, 280)
+		}
+		return "Sobre «" + focus + "»: no tengo aún una entrada clara en corpus. Si me lo explicas en una frase, lo marco en memoria."
+	}
+
+	// Name thread only if user did not point elsewhere
 	nameQ := strings.Contains(strings.ToLower(q), "nombre") || strings.Contains(strings.ToLower(q), "llamo") ||
 		extractDeclaredName(q) != "" || extractDeclaredName(m) != "" || extractDeclaredName(v) != ""
-	if nameQ && !wantCorp {
+	if nameQ && !wantCorp && !wantMem {
 		name := extractDeclaredName(m)
 		if name == "" {
 			name = extractDeclaredName(q)
@@ -131,7 +178,7 @@ func (n *NodoAlset) continueMindThread(text string) string {
 			name = extractDeclaredName(v)
 		}
 		if name != "" {
-			return "Sobre tu nombre: te llamas " + name + ". Lo guardé cuando me lo dijiste; si preguntas «cómo me llamo», vuelvo a ese hecho — no a una ventana de chat."
+			return "Sobre tu nombre: te llamas " + name + ". Lo guardé cuando me lo dijiste."
 		}
 	}
 

@@ -584,3 +584,41 @@ func TestNovelDeclarativeCapture(t *testing.T) {
 		t.Fatal("no escape when corpus hits")
 	}
 }
+
+func TestNameStopsAtMuchoGusto(t *testing.T) {
+	n := extractDeclaredName("mi nombre es Esteban mucho gusto")
+	if n != "Esteban" && n != "esteban" {
+		// case preserved from original text fields
+		if !strings.EqualFold(n, "esteban") {
+			t.Fatalf("name must be Esteban only, got %q", n)
+		}
+	}
+	n2 := extractDeclaredName("Mi nombre es Esteban, mucho gusto es una manera de decirte que me agrada conocerte")
+	if !strings.EqualFold(n2, "esteban") {
+		t.Fatalf("comma social tail: got %q", n2)
+	}
+}
+
+func TestMuchoGustoKnowledge(t *testing.T) {
+	got := speakFromKnowledge("que es mucho gusto")
+	if got == "" || !strings.Contains(strings.ToLower(got), "cortesía") && !strings.Contains(strings.ToLower(got), "cortesia") && !strings.Contains(strings.ToLower(got), "gusto") {
+		t.Fatalf("expected social definition, got %q", got)
+	}
+}
+
+func TestTopicFocusContinue(t *testing.T) {
+	focus := extractTopicFocus("puedes seguir ese tema de mucho gusto")
+	if focus != "mucho gusto" {
+		t.Fatalf("focus=%q", focus)
+	}
+	n := &NodoAlset{}
+	n.rememberMindThread("mi nombre es Esteban", "", "mi nombre es Esteban", "Perfecto, te llamas Esteban.")
+	got := n.continueMindThread("puedes seguir ese tema de mucho gusto")
+	low := strings.ToLower(got)
+	if strings.Contains(low, "no invento hechos") || strings.Contains(low, "destructivo") {
+		t.Fatalf("must not mix limits/ethics into social topic: %s", got)
+	}
+	if !strings.Contains(low, "gusto") && !strings.Contains(low, "cortesía") && !strings.Contains(low, "cortesia") {
+		t.Fatalf("expected social topic answer: %s", got)
+	}
+}

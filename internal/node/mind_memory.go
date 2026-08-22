@@ -431,7 +431,9 @@ func extractDeclaredName(text string) string {
 		"y": true, "qué": true, "que": true, "es": true, "el": true, "la": true,
 		"un": true, "una": true, "mi": true, "tu": true, "como": true, "cómo": true,
 		"cual": true, "cuál": true, "quote": true, "lisp": true, "en": true, "de": true,
-		"tuyo": true, "mío": true, "mio": true,
+		"tuyo": true, "mío": true, "mio": true, "mucho": true, "gusto": true,
+		"encantado": true, "encantada": true, "placer": true, "hola": true,
+		"buenas": true, "gracias": true, "por": true, "favor": true,
 	}
 	for _, pref := range []string{"me llamo ", "mi nombre es ", "mi nombre:", "te llamas "} {
 		i := strings.Index(low, pref)
@@ -446,7 +448,12 @@ func extractDeclaredName(text string) string {
 			continue
 		}
 		rest := strings.TrimSpace(text[i+len(pref):])
-		for _, sep := range []string{",", ".", "!", "?", " y ", " —", " -", " e "} {
+		// Cut social tails and clause boundaries (general: courtesy / explanation after name)
+		for _, sep := range []string{
+			",", ".", "!", "?", " y ", " —", " -", " e ",
+			" mucho gusto", " un gusto", " encantado", " encantada", " un placer",
+			" placer conocerte", " me agrada", " es una manera", " es una forma",
+		} {
 			if j := strings.Index(strings.ToLower(rest), sep); j > 0 {
 				rest = rest[:j]
 			}
