@@ -718,7 +718,7 @@ func (n *NodoAlset) mindSafeTools(text string) string {
 	wantGen := strings.Contains(s, "gen ") || strings.Contains(s, "gens") || strings.Contains(s, "células") ||
 		strings.Contains(s, "celulas") || strings.Contains(s, "alset-gen") || strings.Contains(s, "semilla") ||
 		strings.Contains(s, "explora") || strings.Contains(s, "explorar") || strings.Contains(s, "lista gen") ||
-		strings.Contains(s, "listar gen") || strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") || strings.Contains(s, "sirve gen") || strings.Contains(s, "servir gen") || strings.Contains(s, "pon a servir")
+		strings.Contains(s, "listar gen") || strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") || strings.Contains(s, "sirve gen") || strings.Contains(s, "servir gen") || strings.Contains(s, "pon a servir") || strings.Contains(s, "habla con gen") || strings.Contains(s, "pregunta al gen") || strings.Contains(s, "dialoga") || strings.Contains(s, "qué sabe el gen") || strings.Contains(s, "que sabe el gen")
 	if !wantStatus && !wantZyrion && !wantGen {
 		return ""
 	}
@@ -744,7 +744,7 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 	lines := []string{"—— Alset-Gen (células) ——"}
 	n.ensureGens()
 
-	if strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") || strings.Contains(s, "sirve gen") || strings.Contains(s, "servir gen") || strings.Contains(s, "pon a servir") {
+	if strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") || strings.Contains(s, "sirve gen") || strings.Contains(s, "servir gen") || strings.Contains(s, "pon a servir") || strings.Contains(s, "habla con gen") || strings.Contains(s, "pregunta al gen") || strings.Contains(s, "dialoga") || strings.Contains(s, "qué sabe el gen") || strings.Contains(s, "que sabe el gen") {
 		name := extractGenNameFromText(s)
 		if name == "" {
 			name = "mind-seed"
@@ -766,12 +766,12 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 		if u == "" {
 			lines = append(lines, "exploración: indica una URL https pública")
 		} else {
-			res, err := n.ExploreFrontier(name, u, "explore")
-			if err != nil {
-				lines = append(lines, "explorar: "+err.Error())
+			res := n.ExploreRemoteGen(name, u, "explore")
+			if err, ok := res["error"].(string); ok && err != "" && res["ok"] != true {
+				lines = append(lines, "explorar: "+err)
 			} else {
-				lines = append(lines, fmt.Sprintf("frontera %v · status %v · hallazgo %v",
-					res["url"], res["status"], res["hallazgo_cid"]))
+				lines = append(lines, fmt.Sprintf("frontera %v · status %v · remoto %v",
+					res["url"], res["status"], res["remote_http"]))
 				if sn, _ := res["snippet"].(string); sn != "" {
 					if len(sn) > 160 {
 						sn = sn[:160] + "…"
@@ -796,6 +796,40 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 		}
 	}
 
+	if strings.Contains(s, "habla con gen") || strings.Contains(s, "pregunta al gen") ||
+		strings.Contains(s, "dialoga") || strings.Contains(s, "qué sabe el gen") || strings.Contains(s, "que sabe el gen") ||
+		strings.Contains(s, "qué sabes gen") || strings.Contains(s, "consulta gen") || strings.Contains(s, "estado del gen") {
+		name := extractGenNameFromText(s)
+		if name == "" {
+			name = "demo-cell"
+		}
+		stim := text
+		// strip command noise for stimulus
+		for _, cut := range []string{"habla con gen " + name, "pregunta al gen " + name, "consulta gen " + name} {
+			stim = strings.ReplaceAll(strings.ToLower(stim), strings.ToLower(cut), "")
+		}
+		stim = strings.TrimSpace(stim)
+		if stim == "" || stim == strings.ToLower(name) {
+			stim = "quién eres y qué sabes"
+		}
+		res := n.DialogueRemoteGen(name, stim)
+		if v, ok := res["voice"].(string); ok && v != "" {
+			lines = append(lines, "gen "+normalizeGenKey(name)+": "+v)
+		} else if err, ok := res["error"].(string); ok {
+			lines = append(lines, "gen remoto: "+err)
+		} else {
+			lines = append(lines, fmt.Sprintf("gen respuesta: %v", res))
+		}
+		if rh, ok := res["remote_http"].(string); ok && rh != "" {
+			lines = append(lines, "alcance: "+rh)
+		}
+	}
+
+	// explore: prefer remote daemon if announced
+	if strings.Contains(s, "explora") || strings.Contains(s, "explorar") {
+		// already handled below in older block — skip duplicate if present
+	}
+
 	list := n.listGens()
 	lines = append(lines, fmt.Sprintf("células en este nodo: %d", len(list)))
 	for i, g := range list {
@@ -809,8 +843,14 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 				mission = m
 			}
 		}
-		lines = append(lines, fmt.Sprintf("- %s loc=%s mission=%s root=%s",
-			g.Key, g.State.Location, mission, truncateCID(g.CurrentRootCID)))
+		remote := ""
+		if g.State.Metadata != nil {
+			if rh, ok := g.State.Metadata["remote_http"].(string); ok && rh != "" {
+				remote = " remote=" + rh
+			}
+		}
+		lines = append(lines, fmt.Sprintf("- %s loc=%s mission=%s root=%s%s",
+			g.Key, g.State.Location, mission, truncateCID(g.CurrentRootCID), remote))
 	}
 
 	if strings.Contains(s, "consulta gen") || strings.Contains(s, "estado del gen") {

@@ -23,6 +23,8 @@ func main() {
 	httpAddr := flag.String("http", ":9090", "dirección HTTP del daemon")
 	dataDir := flag.String("data", "gen_data", "directorio de datos (clave libp2p, names)")
 	p2p := flag.Bool("p2p", false, "activar host libp2p propio")
+	announce := flag.String("announce", "", "URL base del nodo Alset/Mind (ej. https://prismatec.onrender.com)")
+	publicURL := flag.String("public-url", "", "URL pública con la que Mind te alcanza (ngrok, IP:puerto, etc.)")
 	flag.Parse()
 
 	if *pkgPath == "" {
@@ -45,10 +47,12 @@ func main() {
 	defer cancel()
 
 	d := &gennode.Daemon{
-		Pkg:       pkg,
-		DataDir:   *dataDir,
-		HTTPAddr:  *httpAddr,
-		EnableP2P: *p2p,
+		Pkg:         pkg,
+		DataDir:     *dataDir,
+		HTTPAddr:    *httpAddr,
+		EnableP2P:   *p2p,
+		AnnounceURL: *announce,
+		PublicURL:   *publicURL,
 	}
 	log.Printf("Semilla %s · root %s · modo autónomo", pkg.Key, short(pkg.CurrentRootCID))
 	err = d.Start(ctx)

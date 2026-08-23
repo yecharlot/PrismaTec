@@ -1,54 +1,59 @@
-# Alset-Gen autónomo (`cmd/alset-gen`)
+# Alset-Gen autónomo + Mind
 
-El gen puede vivir **fuera del monolito PrismaTec** como un proceso pequeño: misma identidad ANS, página de servicio, pulsos HTTP y (opcional) host libp2p propio.
+## Resident explorer
 
-## Idea en una frase
+El gen puede vivir fuera de PrismaTec, explorar URLs, guardar hallazgos y **dialogar con Alset Mind**.
 
-**Paquete CID** = la semilla en un frasco.  
-**`alset-gen`** = la maceta donde se planta y sigue viva.
-
-## Requisitos
-
-- Un archivo JSON `FrontierPackage` (`type: alset_gen_frontier_package`).
-- Export desde el nodo:
+### Arranque con anuncio a Mind
 
 ```bash
+# 1) Exportar paquete desde el nodo
 curl -s "https://prismatec.onrender.com/api/gen/export?key=demo-cell" -o demo-cell.package.json
+
+# 2) Daemon (anuncia cada 45s dónde está)
+go run ./cmd/alset-gen \
+  -package demo-cell.package.json \
+  -http :9090 \
+  -announce https://prismatec.onrender.com \
+  -public-url http://TU_IP_O_NGROK:9090
 ```
 
-O sella y recupera el bloque por CID si lo tienes en el blockstore.
+`-public-url` debe ser alcanzable desde el servidor Render (Mind). En local detrás de NAT usa ngrok/cloudflare tunnel.
 
-## Arranque
-
-```bash
-go run ./cmd/alset-gen -package demo-cell.package.json -http :9090
-# con red P2P propia:
-go run ./cmd/alset-gen -package demo-cell.package.json -http :9090 -p2p
-```
-
-## Endpoints del daemon
+### API del daemon
 
 | Ruta | Uso |
 |------|-----|
-| `GET /` | Página de servicio del gen |
-| `GET /api/info` | Identidad, root, peer id |
-| `POST /api/pulse` | Pulso JSON directo |
-| `GET /api/resolve?key=` | Resolución local de nombres |
-| `GET /health` | Salud |
+| `GET /` | Página de servicio |
+| `GET /api/info` | Identidad |
+| `POST /api/explore` | Explorar URL (residente) |
+| `POST /api/dialogue` | Dialogar / mostrar lo que sabe |
+| `GET /api/findings` | Lista de hallazgos |
+| `POST /api/pulse` | Pulso genérico |
 
-## ¿Puede vivir en un router?
+### Mind localiza y habla
 
-| Entorno | ¿Viable? |
-|---------|----------|
-| Router doméstico cerrado (firmware de fábrica) | **No** en la práctica |
-| OpenWrt / firmware libre con espacio y CPU | **Sí**, binario Go para la arquitectura del router (mips/arm), poca RAM |
-| Raspberry Pi / mini-PC en el borde | **Sí**, ideal |
-| Solo el `package_cid` en el router sin ejecutar nada | **No “vive”**: el CID es dato; la vida es el proceso |
+Tras el anuncio, en el nodo:
 
-El paquete **sobrevive** como archivo o CID en el router.  
-El gen **vive** solo si algo ejecuta `alset-gen` (u otro runtime Alset).
+```bash
+curl -s -X POST https://prismatec.onrender.com/api/gen/dialogue \
+  -H "Content-Type: application/json" \
+  -d '{"key":"demo-cell","text":"quién eres y qué sabes"}' | jq .
 
-## Relación con PrismaTec
+# O vía Mind
+curl -s -X POST https://prismatec.onrender.com/api/mind/tick \
+  -H "Content-Type: application/json" \
+  -d '{"text":"habla con gen demo-cell quién eres y qué sabes"}' | jq -r .voice
+```
 
-- PrismaTec sigue siendo laboratorio + Mind + `/api/gen/*`.
-- El daemon no reemplaza el nodo; es la **mudanza** de una célula a su propio proceso.
+Explore remoto (el gen explora **desde su frontera**, no ida-vuelta vacía):
+
+```bash
+curl -s -X POST https://prismatec.onrender.com/api/mind/tick \
+  -H "Content-Type: application/json" \
+  -d '{"text":"explora https://example.com con gen demo-cell"}' | jq -r .voice
+```
+
+### Router / borde
+
+El paquete puede guardarse en un router; el gen **vive** solo si corre `alset-gen` (OpenWrt/Pi/VPS). Mind lo encuentra por el **anuncio** (`http_base`), no por magia DHT.

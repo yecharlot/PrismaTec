@@ -1,6 +1,7 @@
 package gennode
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/json"
@@ -26,15 +27,18 @@ const PulseProtocol = "/alset/gen/pulse/1.0.0"
 
 // Daemon is a minimal autonomous gen process (maceta propia).
 type Daemon struct {
-	Pkg        *FrontierPackage
-	DataDir    string
-	HTTPAddr   string
-	EnableP2P  bool
-	host       host.Host
-	mu         sync.Mutex
-	pulses     []map[string]interface{}
-	startedAt  time.Time
-	nameRecord map[string]string // ANS key -> peer id / http
+	Pkg         *FrontierPackage
+	DataDir     string
+	HTTPAddr    string
+	EnableP2P   bool
+	AnnounceURL string // PrismaTec base URL to register reachability for Mind
+	PublicURL   string // how Mind should reach this daemon (e.g. https://x.ngrok.io)
+	host        host.Host
+	mu          sync.Mutex
+	pulses      []map[string]interface{}
+	findings    []map[string]interface{}
+	startedAt   time.Time
+	nameRecord  map[string]string // ANS key -> peer id / http
 }
 
 func (d *Daemon) Start(ctx context.Context) error {
@@ -45,6 +49,7 @@ func (d *Daemon) Start(ctx context.Context) error {
 	_ = os.MkdirAll(d.DataDir, 0o755)
 	d.nameRecord = map[string]string{}
 	d.loadNameRecord()
+	d.loadFindings()
 
 	if d.EnableP2P {
 		if err := d.startP2P(ctx); err != nil {
@@ -60,6 +65,9 @@ func (d *Daemon) Start(ctx context.Context) error {
 	d.nameRecord[d.Pkg.Key] = reach
 	d.nameRecord[strings.TrimSuffix(d.Pkg.Key, ".ans")] = reach
 	d.saveNameRecord()
+	if d.AnnounceURL != "" {
+		go d.announceLoop(ctx)
+	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", d.handleRoot)
@@ -67,6 +75,9 @@ func (d *Daemon) Start(ctx context.Context) error {
 	mux.HandleFunc("/api/info", d.handleInfo)
 	mux.HandleFunc("/api/pulse", d.handlePulseHTTP)
 	mux.HandleFunc("/api/resolve", d.handleResolve)
+	mux.HandleFunc("/api/explore", d.handleExplore)
+	mux.HandleFunc("/api/dialogue", d.handleDialogue)
+	mux.HandleFunc("/api/findings", d.handleFindings)
 
 	srv := &http.Server{Addr: d.HTTPAddr, Handler: mux}
 	log.Printf("🧬 Alset-Gen daemon %s escuchando HTTP en %s", d.Pkg.Key, d.HTTPAddr)
@@ -274,4 +285,143 @@ func (d *Daemon) SendPulseToPeer(ctx context.Context, peerAddr string, payload m
 	b, _ := json.Marshal(payload)
 	_, err = s.Write(b)
 	return err
+}
+
+
+func (d *Daemon) addFinding(report map[string]interface{}) {
+	d.mu.Lock()
+	d.findings = append(d.findings, report)
+	if len(d.findings) > 48 {
+		d.findings = d.findings[len(d.findings)-48:]
+	}
+	d.mu.Unlock()
+	d.saveFindings()
+}
+
+func (d *Daemon) loadFindings() {
+	path := filepath.Join(d.DataDir, "findings.json")
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return
+	}
+	var list []map[string]interface{}
+	if json.Unmarshal(b, &list) == nil {
+		d.findings = list
+	}
+}
+
+func (d *Daemon) saveFindings() {
+	d.mu.Lock()
+	b, _ := json.MarshalIndent(d.findings, "", "  ")
+	d.mu.Unlock()
+	_ = os.WriteFile(filepath.Join(d.DataDir, "findings.json"), b, 0o644)
+}
+
+func (d *Daemon) handleExplore(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, "POST only", 405)
+		return
+	}
+	var req struct {
+		URL     string `json:"url"`
+		Mission string `json:"mission"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad json", 400)
+		return
+	}
+	res, err := d.Explore(req.URL, req.Mission)
+	if err != nil {
+		w.WriteHeader(400)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": err.Error()})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(res)
+}
+
+func (d *Daemon) handleDialogue(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, "POST only", 405)
+		return
+	}
+	var req struct {
+		Text      string `json:"text"`
+		Stimulus  string `json:"stimulus"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad json", 400)
+		return
+	}
+	stim := req.Text
+	if stim == "" {
+		stim = req.Stimulus
+	}
+	_ = json.NewEncoder(w).Encode(d.Dialogue(stim))
+}
+
+func (d *Daemon) handleFindings(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	d.mu.Lock()
+	list := append([]map[string]interface{}{}, d.findings...)
+	d.mu.Unlock()
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "count": len(list), "findings": list})
+}
+
+func (d *Daemon) announceLoop(ctx context.Context) {
+	d.doAnnounce()
+	t := time.NewTicker(45 * time.Second)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			d.doAnnounce()
+		}
+	}
+}
+
+func (d *Daemon) doAnnounce() {
+	base := strings.TrimRight(strings.TrimSpace(d.AnnounceURL), "/")
+	if base == "" {
+		return
+	}
+	reach := strings.TrimSpace(d.PublicURL)
+	if reach == "" {
+		reach = "http://" + d.publicHTTPHint()
+	}
+	payload := map[string]interface{}{
+		"key":        d.Pkg.Key,
+		"http_base":  reach,
+		"root_cid":   d.Pkg.CurrentRootCID,
+		"mode":       "daemon",
+		"findings":   0,
+	}
+	d.mu.Lock()
+	payload["findings"] = len(d.findings)
+	d.mu.Unlock()
+	if d.host != nil {
+		payload["peer_id"] = d.host.ID().String()
+	}
+	b, _ := json.Marshal(payload)
+	client := &http.Client{Timeout: 12 * time.Second}
+	req, err := http.NewRequest(http.MethodPost, base+"/api/gen/announce", bytes.NewReader(b))
+	if err != nil {
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("⚠️ announce → Mind/nodo: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 256))
+		log.Printf("⚠️ announce status %d: %s", resp.StatusCode, body)
+		return
+	}
+	log.Printf("📡 anunciado a %s como %s → %s", base, d.Pkg.Key, reach)
 }
