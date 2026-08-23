@@ -21,7 +21,7 @@ type codeTemplate struct {
 var codeTemplates = []codeTemplate{
 	{
 		ID: "go_http_handler", Lang: "go",
-		Keys: []string{"handler http", "http handler", "servidor http go", "endpoint go", "api go básica", "hola mundo go http"},
+		Keys: []string{"handler http", "http handler", "servidor http go", "endpoint go", "api go básica", "hola mundo go http", "mux go"},
 		Body: `package main
 
 import (
@@ -47,8 +47,28 @@ func main() {
 `,
 	},
 	{
+		ID: "go_middleware", Lang: "go",
+		Keys: []string{"middleware go", "middleware http", "logging middleware"},
+		Body: `package {{pkg}}
+
+import (
+	"log"
+	"net/http"
+	"time"
+)
+
+func {{handler}}(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+		log.Printf("%s %s %s", r.Method, r.URL.Path, time.Since(start))
+	})
+}
+`,
+	},
+	{
 		ID: "go_func_test", Lang: "go",
-		Keys: []string{"test go", "table driven", "test table", "unit test go"},
+		Keys: []string{"test go", "table driven", "test table", "unit test go", "testing go"},
 		Body: `package {{pkg}}
 
 import "testing"
@@ -75,12 +95,85 @@ func Test{{Name}}(t *testing.T) {
 	},
 	{
 		ID: "go_struct_json", Lang: "go",
-		Keys: []string{"struct json", "json go", "marshal struct"},
+		Keys: []string{"struct json", "json go", "marshal struct", "struct go"},
 		Body: `package {{pkg}}
 
 type {{Name}} struct {
 	ID   string ` + "`json:\"id\"`" + `
 	Name string ` + "`json:\"name\"`" + `
+}
+`,
+	},
+	{
+		ID: "go_worker_pool", Lang: "go",
+		Keys: []string{"worker pool", "goroutine pool", "pool de workers", "fan out go"},
+		Body: `package {{pkg}}
+
+func {{fn}}(jobs <-chan int, results chan<- int, workers int) {
+	for i := 0; i < workers; i++ {
+		go func() {
+			for j := range jobs {
+				results <- j * j
+			}
+		}()
+	}
+}
+`,
+	},
+	{
+		ID: "go_context_timeout", Lang: "go",
+		Keys: []string{"context timeout", "withtimeout go", "deadline go"},
+		Body: `package {{pkg}}
+
+import (
+	"context"
+	"time"
+)
+
+func {{fn}}(parent context.Context) error {
+	ctx, cancel := context.WithTimeout(parent, 3*time.Second)
+	defer cancel()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(100 * time.Millisecond):
+		return nil
+	}
+}
+`,
+	},
+	{
+		ID: "go_crud_memory", Lang: "go",
+		Keys: []string{"crud go", "mapa en memoria", "rest crud go", "store in memory"},
+		Body: `package {{pkg}}
+
+import "sync"
+
+type {{Name}} struct {
+	ID   string
+	Name string
+}
+
+type Store struct {
+	mu   sync.RWMutex
+	data map[string]{{Name}}
+}
+
+func NewStore() *Store {
+	return &Store{data: make(map[string]{{Name}})}
+}
+
+func (s *Store) Put(x {{Name}}) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.data[x.ID] = x
+}
+
+func (s *Store) Get(id string) ({{Name}}, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	x, ok := s.data[id]
+	return x, ok
 }
 `,
 	},
@@ -115,6 +208,23 @@ type {{Name}} struct {
 `,
 	},
 	{
+		ID: "lisp_mapcar", Lang: "lisp",
+		Keys: []string{"mapcar", "mapear lista lisp"},
+		Body: `(defun {{fn}} (lst)
+  (mapcar (lambda (x) (* x x)) lst))
+`,
+	},
+	{
+		ID: "lisp_reverse", Lang: "lisp",
+		Keys: []string{"reverse lisp", "invertir lista lisp"},
+		Body: `(defun rev (lst)
+  (labels ((walk (xs acc)
+             (if (null xs) acc
+                 (walk (cdr xs) (cons (car xs) acc)))))
+    (walk lst nil)))
+`,
+	},
+	{
 		ID: "py_fastapi", Lang: "python",
 		Keys: []string{"fastapi", "api python", "endpoint python"},
 		Body: `from fastapi import FastAPI
@@ -138,6 +248,32 @@ def {{handler}}():
 `,
 	},
 	{
+		ID: "py_dataclass", Lang: "python",
+		Keys: []string{"dataclass", "data class python"},
+		Body: `from dataclasses import dataclass
+
+@dataclass
+class {{Name}}:
+    id: str
+    name: str
+`,
+	},
+	{
+		ID: "py_cli_argparse", Lang: "python",
+		Keys: []string{"argparse", "cli python", "script cli"},
+		Body: `import argparse
+
+def main():
+    p = argparse.ArgumentParser(description="{{fn}}")
+    p.add_argument("path", help="ruta de entrada")
+    args = p.parse_args()
+    print(args.path)
+
+if __name__ == "__main__":
+    main()
+`,
+	},
+	{
 		ID: "js_async", Lang: "javascript",
 		Keys: []string{"async js", "fetch js", "promesa ejemplo"},
 		Body: `async function {{fn}}(url) {
@@ -147,7 +283,21 @@ def {{handler}}():
 }
 `,
 	},
+	{
+		ID: "js_express", Lang: "javascript",
+		Keys: []string{"express", "endpoint node", "api express"},
+		Body: `const express = require("express");
+const app = express();
+
+app.get("/{{route}}", (req, res) => {
+  res.json({ ok: true, path: req.path });
+});
+
+app.listen(3000, () => console.log("listen :3000"));
+`,
+	},
 }
+
 
 // isCodeGenRequest detects explicit request to produce code (not mere explanation).
 func isCodeGenRequest(s string) bool {
@@ -265,13 +415,19 @@ var identRe = regexp.MustCompile(`(?i)\b([a-z_][a-z0-9_]{1,32})\b`)
 
 func extractCodeIdent(user, def string) string {
 	low := strings.ToLower(user)
-	for _, stop := range []string{"genera", "codigo", "código", "escribe", "implementa", "función", "funcion", "handler", "para", "en", "go", "python", "lisp", "javascript", "dame", "una", "un", "el", "la", "de", "con"} {
+	stops := []string{
+		"genera", "generar", "codigo", "código", "escribe", "escribir", "implementa", "implementar",
+		"función", "funcion", "handler", "endpoint", "esqueleto", "plantilla", "boilerplate",
+		"para", "en", "go", "golang", "python", "lisp", "javascript", "js", "typescript",
+		"dame", "una", "un", "el", "la", "de", "con", "por", "favor", "simple", "básico", "basico",
+		"http", "api", "rest", "servidor", "server", "test", "unitario",
+	}
+	for _, stop := range stops {
 		low = strings.ReplaceAll(low, stop, " ")
 	}
 	cands := identRe.FindAllString(low, -1)
 	for _, c := range cands {
-		if len(c) >= 2 && c != "http" && c != "api" && c != "test" {
-			// simple camel
+		if len(c) >= 2 && c != "ok" && c != "true" {
 			return c
 		}
 	}
@@ -293,9 +449,36 @@ func (n *NodoAlset) mindGenerateCode(userText string, ethicsState int) (voice st
 	}
 	code = fillCodeSlots(tpl.Body, userText)
 	lang = tpl.Lang
-	voice = fmt.Sprintf("Aquí va un esqueleto en %s (plantilla «%s», no predicción de tokens). Revísalo antes de usarlo:\n\n```%s\n%s```",
-		lang, tpl.ID, lang, strings.TrimSpace(code))
+	note := ""
+	if n != nil {
+		if k := speakFromKnowledge(userText); k != "" {
+			note = "\n\nContexto del corpus (no sustituye el esqueleto):\n" + compressVoiceBlock(k, 280)
+		}
+		if prev := lastCodegenHint(n); prev != "" {
+			note += "\n\n" + prev
+		}
+	}
+	voice = fmt.Sprintf(
+		"Aquí va un esqueleto en %s (plantilla «%s»; composición ternaria, no predicción de tokens). Revísalo antes de usarlo:\n\n```%s\n%s```%s",
+		lang, tpl.ID, lang, strings.TrimSpace(code), note,
+	)
 	return voice, code, lang, false
+}
+
+// lastCodegenHint surfaces a prior mind_codegen episode if any (CID memory continuity).
+func lastCodegenHint(n *NodoAlset) string {
+	if n == nil {
+		return ""
+	}
+	for _, ep := range n.recallRecentEpisodes(12) {
+		if ep.Type != "mind_codegen" && !strings.Contains(strings.ToLower(ep.Voice), "```") {
+			continue
+		}
+		if ep.Type == "mind_codegen" || strings.Contains(ep.Voice, "esqueleto") {
+			return "Hay un esqueleto reciente en memoria episódica; si quieres otro lenguaje o plantilla, dilo con claridad."
+		}
+	}
+	return ""
 }
 
 // saveCodegenEpisode stores request+code+eval as CID for durable memory.

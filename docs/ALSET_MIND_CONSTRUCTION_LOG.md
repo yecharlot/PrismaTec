@@ -353,3 +353,8 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** `mind_codegen.go` — plantillas Go/Lisp/Python/JS, `isCodeGenRequest`, `codeGenEthicsVeto`, fill slots, episodio CID `mind_codegen`. Cableado en `MindTick`. Tests.
 - **Observación:** No es un LLM: esqueletos curados + ethics. Suficiente para cerrar el MVP de Fase 5.
 - **Decisión:** Sin órganos nuevos (act + ethics bastan). Sin deploy hasta confirmación.
+
+## 2026-08-23 — Fase 5 ampliada: más plantillas + corpus + memoria
+
+- **Acto:** Plantillas extra (middleware, worker pool, context, CRUD memoria, mapcar/reverse Lisp, dataclass/CLI Python, Express JS). Slots con stop-words más finos. Voz añade contexto de corpus y hint de esqueleto reciente en CID.
+- **Decisión:** Sigue siendo composición curada + ethics; sin LLM. Sin deploy hasta confirmación.

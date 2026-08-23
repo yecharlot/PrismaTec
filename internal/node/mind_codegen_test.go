@@ -36,3 +36,22 @@ func TestIsCodeGenRequest(t *testing.T) {
 		t.Fatal("explanation is not codegen")
 	}
 }
+
+func TestCodeGenMoreTemplates(t *testing.T) {
+	n := &NodoAlset{agentes: map[string]*Agente{}, nombres: map[string]string{}, blockstore: map[string][]byte{}}
+	cases := []struct {
+		in, lang, sub string
+	}{
+		{"genera código middleware go", "go", "http.Handler"},
+		{"escribe código worker pool en go", "go", "workers"},
+		{"genera código dataclass python", "python", "@dataclass"},
+		{"código express endpoint node", "javascript", "express"},
+		{"implementa reverse lisp", "lisp", "defun"},
+	}
+	for _, tc := range cases {
+		_, code, lang, veto := n.mindGenerateCode(tc.in, 0)
+		if veto || lang != tc.lang || !strings.Contains(code, tc.sub) {
+			t.Fatalf("%q: lang=%s veto=%v code=%q", tc.in, lang, veto, code)
+		}
+	}
+}
