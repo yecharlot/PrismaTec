@@ -302,3 +302,34 @@ func (n *NodoAlset) handleGenRevive(w http.ResponseWriter, r *http.Request) {
 
 // Ensure persistence key referenced (avoid unused import if build tags change)
 var _ = persistence.KeyGens
+
+
+// ExportFrontierPackageJSON returns the raw package JSON (for alset-gen -package file).
+func (n *NodoAlset) ExportFrontierPackageJSON(key string) ([]byte, error) {
+	res, err := n.SealFrontierPackage(key)
+	if err != nil {
+		return nil, err
+	}
+	cid, _ := res["package_cid"].(string)
+	raw, err := n.BuscarContenidoPorCID(cid)
+	if err != nil {
+		return nil, err
+	}
+	return raw, nil
+}
+
+func (n *NodoAlset) handleGenExport(w http.ResponseWriter, r *http.Request) {
+	key := r.URL.Query().Get("key")
+	if key == "" {
+		http.Error(w, "key required", 400)
+		return
+	}
+	raw, err := n.ExportFrontierPackageJSON(key)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Disposition", "attachment; filename=\""+normalizeGenKey(key)+".package.json\"")
+	_, _ = w.Write(raw)
+}

@@ -1,0 +1,10 @@
+{
+  "type": "alset_gen_frontier_package",
+  "version": "1.0",
+  "key": "demo-cell.ans",
+  "id": "gen-demo-local",
+  "current_root_cid": "bafkrei-demo-root",
+  "service_html": "<!DOCTYPE html><html><body><h1>demo-cell autonomous</h1></body></html>",
+  "sealed_at": "2026-08-23T00:00:00Z",
+  "origin_note": "test package"
+}
