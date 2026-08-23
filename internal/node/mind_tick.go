@@ -718,7 +718,7 @@ func (n *NodoAlset) mindSafeTools(text string) string {
 	wantGen := strings.Contains(s, "gen ") || strings.Contains(s, "gens") || strings.Contains(s, "células") ||
 		strings.Contains(s, "celulas") || strings.Contains(s, "alset-gen") || strings.Contains(s, "semilla") ||
 		strings.Contains(s, "explora") || strings.Contains(s, "explorar") || strings.Contains(s, "lista gen") ||
-		strings.Contains(s, "listar gen") || strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") || strings.Contains(s, "sirve gen") || strings.Contains(s, "servir gen") || strings.Contains(s, "pon a servir") || strings.Contains(s, "habla con gen") || strings.Contains(s, "pregunta al gen") || strings.Contains(s, "dialoga") || strings.Contains(s, "qué sabe el gen") || strings.Contains(s, "que sabe el gen")
+		strings.Contains(s, "listar gen") || strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") || strings.Contains(s, "sirve gen") || strings.Contains(s, "servir gen") || strings.Contains(s, "pon a servir") || strings.Contains(s, "habla con gen") || strings.Contains(s, "pregunta al gen") || strings.Contains(s, "dialoga") || strings.Contains(s, "qué sabe el gen") || strings.Contains(s, "que sabe el gen") || strings.Contains(s, "resuelve gen") || strings.Contains(s, "dónde está el gen") || strings.Contains(s, "donde esta el gen")
 	if !wantStatus && !wantZyrion && !wantGen {
 		return ""
 	}
@@ -744,7 +744,7 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 	lines := []string{"—— Alset-Gen (células) ——"}
 	n.ensureGens()
 
-	if strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") || strings.Contains(s, "sirve gen") || strings.Contains(s, "servir gen") || strings.Contains(s, "pon a servir") || strings.Contains(s, "habla con gen") || strings.Contains(s, "pregunta al gen") || strings.Contains(s, "dialoga") || strings.Contains(s, "qué sabe el gen") || strings.Contains(s, "que sabe el gen") {
+	if strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") || strings.Contains(s, "sirve gen") || strings.Contains(s, "servir gen") || strings.Contains(s, "pon a servir") || strings.Contains(s, "habla con gen") || strings.Contains(s, "pregunta al gen") || strings.Contains(s, "dialoga") || strings.Contains(s, "qué sabe el gen") || strings.Contains(s, "que sabe el gen") || strings.Contains(s, "resuelve gen") || strings.Contains(s, "dónde está el gen") || strings.Contains(s, "donde esta el gen") {
 		name := extractGenNameFromText(s)
 		if name == "" {
 			name = "mind-seed"
@@ -828,6 +828,23 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 	// explore: prefer remote daemon if announced
 	if strings.Contains(s, "explora") || strings.Contains(s, "explorar") {
 		// already handled below in older block — skip duplicate if present
+	}
+
+	if strings.Contains(s, "resuelve gen") || strings.Contains(s, "dónde está el gen") || strings.Contains(s, "donde esta el gen") || strings.Contains(s, "donde está el gen") {
+		name := extractGenNameFromText(s)
+		if name == "" {
+			name = "demo-cell"
+		}
+		dns := ResolveGenDNS(name)
+		if len(dns) == 0 {
+			lines = append(lines, "DNS: sin registros TXT para "+name+" (configura ALSET_DNS_SUFFIX)")
+		} else {
+			lines = append(lines, fmt.Sprintf("DNS %v → pkg=%s reach=%s", dns["dns_host"], dns["package_cid"], dns["http_base"]))
+			if dns["http_base"] != "" {
+				_ = n.AnnounceRemoteGen(name, dns["http_base"], "", dns["package_cid"], 0, 0)
+				lines = append(lines, "anunciado remote_http desde DNS para diálogo")
+			}
+		}
 	}
 
 	list := n.listGens()

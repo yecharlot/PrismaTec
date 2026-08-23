@@ -19,7 +19,8 @@ import (
 )
 
 func main() {
-	pkgPath := flag.String("package", "", "ruta al JSON FrontierPackage (obligatorio)")
+	pkgPath := flag.String("package", "", "ruta al JSON FrontierPackage")
+	pkgURL := flag.String("package-url", "", "URL del paquete (by-cid o gateway IPFS)")
 	httpAddr := flag.String("http", ":9090", "dirección HTTP del daemon")
 	dataDir := flag.String("data", "gen_data", "directorio de datos (clave libp2p, names)")
 	p2p := flag.Bool("p2p", false, "activar host libp2p propio")
@@ -28,13 +29,17 @@ func main() {
 	udpPort := flag.Int("udp", 0, "puerto UDP Pulse (ej. 9091); 0 = desactivado")
 	flag.Parse()
 
-	if *pkgPath == "" {
-		fmt.Fprintln(os.Stderr, "uso: alset-gen -package <archivo.json> [-http :9090] [-p2p]")
-		fmt.Fprintln(os.Stderr, "El archivo es un FrontierPackage (type alset_gen_frontier_package).")
+	if *pkgPath == "" && *pkgURL == "" {
+		fmt.Fprintln(os.Stderr, "uso: alset-gen -package <file.json> | -package-url <url> [-http :9090] [-udp 9091] [-announce ...]")
 		os.Exit(2)
 	}
-
-	pkg, err := gennode.LoadPackageFile(*pkgPath)
+	var pkg *gennode.FrontierPackage
+	var err error
+	if *pkgURL != "" {
+		pkg, err = gennode.LoadPackageURL(*pkgURL)
+	} else {
+		pkg, err = gennode.LoadPackageFile(*pkgPath)
+	}
 	if err != nil {
 		log.Fatalf("paquete: %v", err)
 	}

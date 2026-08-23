@@ -3,6 +3,8 @@ package gennode
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -65,4 +67,33 @@ h1{color:#5eead4;font-size:1.25rem}code{color:#a5f3fc;font-size:.8rem;word-break
 <p>RootCID: <code>%s</code></p>
 <p>Arranque: %s</p>
 </div></body></html>`, p.Key, p.Key, p.CurrentRootCID, time.Now().UTC().Format(time.RFC3339))
+}
+
+
+// LoadPackageURL downloads a FrontierPackage JSON from HTTP(S) (node by-cid or gateway).
+func LoadPackageURL(rawURL string) (*FrontierPackage, error) {
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Get(rawURL)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
+	}
+	b, err := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+	if err != nil {
+		return nil, err
+	}
+	var p FrontierPackage
+	if err := json.Unmarshal(b, &p); err != nil {
+		return nil, err
+	}
+	if p.Key == "" {
+		return nil, fmt.Errorf("paquete sin key")
+	}
+	if !strings.HasSuffix(p.Key, ".ans") {
+		p.Key = p.Key + ".ans"
+	}
+	return &p, nil
 }

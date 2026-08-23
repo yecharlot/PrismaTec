@@ -129,8 +129,11 @@ func (n *NodoAlset) ReviveFromPackageCID(pkgCID string) (map[string]interface{},
 	}
 	raw, err := n.BuscarContenidoPorCID(pkgCID)
 	if err != nil || len(raw) == 0 {
-		// try store blocks already loaded; if still missing, fail clearly
-		return nil, fmt.Errorf("paquete no encontrado en blockstore (CID %s). Importa el bloque o usa un nodo que lo tenga", truncateCID(pkgCID))
+		if raw2, _, err2 := n.FetchPackageBytes(pkgCID); err2 == nil && len(raw2) > 0 {
+			raw = raw2
+		} else {
+			return nil, fmt.Errorf("paquete no encontrado (CID %s). Publica con /api/gen/publish o importa el bloque", truncateCID(pkgCID))
+		}
 	}
 	var pkg FrontierPackage
 	if json.Unmarshal(raw, &pkg) != nil || pkg.Type != "alset_gen_frontier_package" {
