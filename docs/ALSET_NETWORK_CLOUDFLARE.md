@@ -18,6 +18,12 @@ alset-network.workers.dev
 oficio en el edge (dialogue, explore, findings)
 ```
 
+## En producción
+
+**URL:** `https://alset-network.lhmolam-877.workers.dev`
+
+Ver [ALSET_NETWORK_LIVE.md](./ALSET_NETWORK_LIVE.md).
+
 ## Despliegue (tu cuenta Cloudflare)
 
 ```bash
