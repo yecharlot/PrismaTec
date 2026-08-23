@@ -81,6 +81,9 @@ func (d *Daemon) Start(ctx context.Context) error {
 	mux.HandleFunc("/api/explore", d.handleExplore)
 	mux.HandleFunc("/api/dialogue", d.handleDialogue)
 	mux.HandleFunc("/api/findings", d.handleFindings)
+	mux.HandleFunc("/api/cargo", d.handleCargo)
+	mux.HandleFunc("/api/cargo/seed", d.handleCargoSeed)
+	mux.HandleFunc("/api/peers", d.handlePeers)
 
 	srv := &http.Server{Addr: d.HTTPAddr, Handler: mux}
 	log.Printf("🧬 Alset-Gen daemon %s escuchando HTTP en %s", d.Pkg.Key, d.HTTPAddr)

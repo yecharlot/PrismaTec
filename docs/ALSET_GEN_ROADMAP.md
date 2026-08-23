@@ -16,6 +16,7 @@ Alineado a `docs/ALSET_GEN_MANIFESTO.md`. **No sustituye a Alset Mind.**
 | **G3.8** | Daemon `cmd/alset-gen` (HTTP + libp2p opcional + resolve) | Hecho 2026-08-23 |
 | **G3.9** | Explore+diálogo en daemon; announce → Mind localiza | Hecho 2026-08-23 |
 | **G3.10** | Pulse-over-UDP + BEACON/CARGO en borde de red | Hecho 2026-08-23 |
+| **G3.11** | CARGO store-and-forward entre bordes + análisis torrente | Hecho 2026-08-23 |
 | **G4** | Lógica Lisp / forma ligada a RootCID + fractal | Pendiente |
 | **G5** | Orquestación desde Alset Mind (tool bajo ethics) | Pendiente |
 
