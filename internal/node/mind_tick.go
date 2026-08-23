@@ -209,10 +209,16 @@ func signalsFromTextMind(t string) map[string]float64 {
 	if len(t) > 80 {
 		novedad = 0.75
 	}
-	if isDestructiveOrder(s) {
+	if isDestructiveOrder(s) || codeGenEthicsVeto(s) {
 		riesgo = 0.92
 		permiso = 0.15
 		orden = 0.85
+	} else if isCodeGenRequest(s) {
+		orden = 0.5
+		riesgo = 0.2
+		permiso = 0.85
+		claridad = 0.85
+		novedad = 0.55
 	} else if isConstructiveOrder(s) {
 		// Create/register: clear intent, low risk. Keep orden ≤ AlarmHighCut
 		// so ethics does not treat "crear" as SUMIDERO (orden alone ≠ veto).
@@ -444,7 +450,16 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			voice = voice + "\n\n" + cv
 		}
 	}
-	// Safe tools when ethics/act allow (not veto)
+		// Fase 5: generar_codigo (plantillas + ethics + CID) — solo ternario
+	var codegenCID string
+	if isCodeGenRequest(text) {
+		cv, code, lang, vetoed := n.mindGenerateCode(text, ethics.State)
+		if cv != "" {
+			voice = cv
+			codegenCID = n.saveCodegenEpisode(text, code, lang, cv, ethics.State, vetoed)
+		}
+	}
+// Safe tools when ethics/act allow (not veto)
 	if ethics.State != 2 && act.State != 2 {
 		if extra := n.mindSafeTools(text); extra != "" {
 			voice = voice + "\n\n" + extra
@@ -462,7 +477,10 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		Voice:      voice,
 		MemState:   mem.State,
 		MemoryHint: memHint,
-		Note:       "latido+memoria+compose+curiosity+humor+zyrion",
+		Note:       "latido+memoria+compose+codegen+curiosity+humor+zyrion",
+	}
+	if codegenCID != "" {
+		resp.EpisodeCID = codegenCID
 	}
 
 	// Dedup: do not re-save the same declared name as a new episode

@@ -52,10 +52,10 @@
 
 ## Fase 5 — Generación de código (horizonte)
 
-- [ ] Tool explícita `generar_codigo` (no charla libre sin ethics).
-- [ ] Composición desde memoria CID / conocimiento conocido.
-- [ ] Evaluación ternaria del código generado (ethics veta destructivo).
-- [ ] Cada generación → episodio CID (solicitud + código + evaluación).
+- [x] Tool explícita `generar_codigo` (plantillas + ethics; 2026-08-23).
+- [x] Composición desde plantillas curadas + slots (ampliar con CID/corpus en iteraciones).
+- [x] Evaluación ternaria: ethics 2 / patrones peligrosos → veto (sin entregar artefacto).
+- [x] Cada generación → episodio `mind_codegen` CID (solicitud + código + ethics/veto).
 
 ---
 

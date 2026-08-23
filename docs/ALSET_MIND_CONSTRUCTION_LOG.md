@@ -346,3 +346,10 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** Corpus knowledge 92 → ~151 entradas (Go, Python, JS, patrones, arquitectura, algoritmos, Gen/IPFS, ethics, filosofía operativa, anti-LLM). `fluidPureDialogue` más situaciones humanas (miedo, aburrimiento, amor, compañía). Typos de consulta ampliados. Calibración 84 casos.
 - **Observación:** El corpus se sentía pobre frente a la ambición polímata; la voz abierta caía en genéricos cortos.
 - **Decisión:** Solo texto curado + composición ternaria. Sin LLM. Sin deploy automático (auto-deploy OFF); este commit espera confirmación humana para Render.
+
+
+## 2026-08-23 — Fase 5 MVP: generar_codigo
+
+- **Acto:** `mind_codegen.go` — plantillas Go/Lisp/Python/JS, `isCodeGenRequest`, `codeGenEthicsVeto`, fill slots, episodio CID `mind_codegen`. Cableado en `MindTick`. Tests.
+- **Observación:** No es un LLM: esqueletos curados + ethics. Suficiente para cerrar el MVP de Fase 5.
+- **Decisión:** Sin órganos nuevos (act + ethics bastan). Sin deploy hasta confirmación.
