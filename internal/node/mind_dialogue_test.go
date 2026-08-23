@@ -622,3 +622,44 @@ func TestTopicFocusContinue(t *testing.T) {
 		t.Fatalf("expected social topic answer: %s", got)
 	}
 }
+
+func TestRecallApellidoFromMemory(t *testing.T) {
+	eps := []mindEpisodePayload{
+		{Text: "mi nombre es Esteban", Type: "mind_episode"},
+		{Text: "mi apellido es Charlot", Type: "mind_episode"},
+	}
+	if !isPersonalFact("mi apellido es Charlot") {
+		t.Fatal("declaration must be personal fact")
+	}
+	if !isMemoryQuery("cual es mi apellido") {
+		t.Fatal("question must be memory query")
+	}
+	if isPersonalFact("cual es mi apellido") {
+		t.Fatal("question must not be personal fact")
+	}
+	got := speakFromMemory("cual es mi apellido", eps)
+	if !strings.Contains(strings.ToLower(got), "charlot") {
+		t.Fatalf("expected Charlot in recall, got %q", got)
+	}
+	got2 := speakFromMemory("como me llamo", eps)
+	if !strings.Contains(strings.ToLower(got2), "esteban") {
+		t.Fatalf("expected esteban, got %q", got2)
+	}
+}
+
+func TestMindVoiceApellidoBeforeCorpus(t *testing.T) {
+	organs := []MindOrganResult{
+		{Name: "ethics", State: 0}, {Name: "act", State: 0}, {Name: "dialog", State: 1},
+		{Name: "mem", State: 2}, {Name: "self", State: 2},
+	}
+	mem := speakFromMemory("cual es mi apellido", []mindEpisodePayload{
+		{Text: "mi apellido es Charlot"},
+	})
+	v := mindVoice("cual es mi apellido", organs, mem, "Esteban")
+	if strings.Contains(strings.ToLower(v), "corpus") {
+		t.Fatalf("must not fall to corpus: %q", v)
+	}
+	if !strings.Contains(strings.ToLower(v), "charlot") {
+		t.Fatalf("expected apellido recall: %q", v)
+	}
+}

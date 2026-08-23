@@ -271,9 +271,23 @@ func isMemoryQuery(s string) bool {
 	if isAskingMindName(s) {
 		return false
 	}
+	// Declarations STORE facts — not memory queries (exclude interrogatives).
+	interrog := strings.Contains(s, "cómo") || strings.Contains(s, "como") ||
+		strings.Contains(s, "cuál") || strings.Contains(s, "cual") || strings.Contains(s, "?")
+	if !interrog {
+		if strings.Contains(s, "mi nombre es") || strings.Contains(s, "mi nombre:") || strings.Contains(s, "me llamo ") ||
+			strings.Contains(s, "mi apellido es") || strings.Contains(s, "mi apellido:") || strings.Contains(s, "me apellido ") ||
+			strings.Contains(s, "vivo en ") || strings.Contains(s, "mi ciudad es") {
+			return false
+		}
+	}
 	keys := []string{
 		"cómo me llamo", "como me llamo", "cuál es mi nombre", "cual es mi nombre",
 		"cómo me llamo?", "como me llamo?",
+		"cuál es mi apellido", "cual es mi apellido", "cómo me apellido", "como me apellido",
+		"qué apellido", "que apellido",
+		"cuál es mi edad", "cual es mi edad", "cuántos años", "cuantos años",
+		"dónde vivo", "donde vivo", "cuál es mi ciudad", "cual es mi ciudad",
 		"qué te dije", "que te dije", "qué te conté", "que te conte",
 		"te acuerdas", "te acuerda", "recuerdas", "recuerdas lo",
 		"qué sabes de mí", "que sabes de mi", "qué sabes de mi",
@@ -285,15 +299,17 @@ func isMemoryQuery(s string) bool {
 		"recuerdas todo", "qué recuerdas", "que recuerdas", "cuál es tu memoria", "cual es tu memoria",
 		"tu memoria", "esa es tu memoria", "cómo es tu memoria", "como es tu memoria",
 		"tienes memoria", "qué guardas", "que guardas",
+		"cuál es mi ", "cual es mi ", "qué te dije de mi", "que te dije de mi",
 	}
 	for _, k := range keys {
 		if strings.Contains(s, k) {
 			return true
 		}
 	}
-	// "mi nombre" alone is ambiguous; only with first-person recall intent.
-	// Do NOT treat declarations ("mi nombre es Esteban y el tuyo…") as memory queries.
-	if strings.Contains(s, "mi nombre es") || strings.Contains(s, "mi nombre:") || strings.Contains(s, "me llamo ") {
+	// Declarations are not memory queries (they STORE facts).
+	if strings.Contains(s, "mi nombre es") || strings.Contains(s, "mi nombre:") || strings.Contains(s, "me llamo ") ||
+		strings.Contains(s, "mi apellido es") || strings.Contains(s, "mi apellido:") || strings.Contains(s, "me apellido ") ||
+		strings.Contains(s, "vivo en ") || strings.Contains(s, "mi ciudad es") {
 		return false
 	}
 	if strings.Contains(s, "mi nombre") && (strings.Contains(s, "cuál") || strings.Contains(s, "cual") ||
@@ -337,6 +353,16 @@ func isPersonalFact(s string) bool {
 		return true
 	}
 	if strings.HasPrefix(s, "soy ") && len(s) < 40 {
+		return true
+	}
+	if strings.Contains(s, "mi apellido es") || strings.Contains(s, "mi apellido:") ||
+		strings.Contains(s, "apellido es ") || strings.Contains(s, "me apellido ") {
+		if strings.Contains(s, "cuál") || strings.Contains(s, "cual") || strings.Contains(s, "cómo") || strings.Contains(s, "como") {
+			return false
+		}
+		return true
+	}
+	if strings.Contains(s, "tengo ") && (strings.Contains(s, " años") || strings.Contains(s, "anos")) {
 		return true
 	}
 	return strings.Contains(s, "me gusta") || strings.Contains(s, "vivo en") ||
@@ -501,16 +527,15 @@ func isDuplicateNameDeclaration(text, knownName string) bool {
 }
 
 // speakFromMemory builds a natural reply from CID episodes when the user asks to recall.
+// Priority: explicit personal slots (apellido, nombre, ciudad…) → overlap → generic.
 func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 	if len(episodes) == 0 {
 		return ""
 	}
 	q := strings.ToLower(strings.TrimSpace(query))
-	// Never answer with the user's name when they ask Mind's name
 	if isAskingMindName(q) {
 		return ""
 	}
-	// Meta-questions about memory itself
 	if isMetaMemoryTalk(q) {
 		name := knownUserNameFromEpisodes(episodes)
 		n := len(episodes)
@@ -518,28 +543,18 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 			return "Recuerdo lo que marcamos como importante. Por ejemplo, te llamas " + name + ". No guardo todo el chat palabra por palabra."
 		}
 		if n > 0 {
-			return "Tengo algunas notas de lo que hablamos, pero aún no un nombre tuyo claro. Si me lo dices, lo recordaré."
+			return "Tengo algunas notas de lo que hablamos, pero no un resumen completo del chat."
 		}
-		return "Todavía no tengo mucho guardado. Si me dices algo claro, lo recordaré."
+		return "Aún no tengo episodios guardados de esta conversación."
 	}
-	// First-person name recall only
-	if strings.Contains(q, "cómo me llamo") || strings.Contains(q, "como me llamo") ||
-		strings.Contains(q, "cuál es mi nombre") || strings.Contains(q, "cual es mi nombre") ||
-		strings.Contains(q, "quién soy yo") || strings.Contains(q, "quien soy yo") ||
-		(strings.Contains(q, "mi nombre") && (strings.Contains(q, "cuál") || strings.Contains(q, "cual"))) {
-		for _, ep := range episodes {
-			if name := extractDeclaredName(ep.Text); name != "" {
-				return "Te llamas " + name + "."
-			}
-		}
-		return "Todavía no me has dicho tu nombre. Si me lo dices, lo recordaré."
+
+	// --- Slot-specific recall (memory before any corpus path) ---
+	if ans := recallPersonalSlot(q, episodes); ans != "" {
+		return ans
 	}
-	if !isMemoryQuery(q) {
-		// Proactive recall: threshold scales with MemoryActiveWeight
-		// Skip on pure short dialogue to avoid sticky wrong echoes
-		if isPureDialogue(q) && len(strings.Fields(q)) < 6 {
-			return ""
-		}
+
+	// Soft memory path (active echo) when not explicit memory query
+	if !isMemoryQuery(q) && !isPersonalFact(q) {
 		g := getMindGenome()
 		w := g.MemoryActiveWeight
 		if w <= 0 {
@@ -547,25 +562,39 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 		}
 		need := int(3.5 - w*2)
 		if need < 2 {
-			need = 2 // stricter: avoid hijacking open chat
+			need = 2
 		}
 		rel, score := bestEpisodeOverlap(query, episodes)
 		if score >= need && rel != "" {
 			if name := extractDeclaredName(rel); name != "" {
 				return "Sí, te llamas " + name + "."
 			}
+			if slot, val := extractPersonalDeclaration(rel); slot != "" && val != "" {
+				return formatPersonalRecall(slot, val)
+			}
 			snip := truncateRunes(rel, 100)
 			return "Me suena esto: «" + snip + "». ¿Seguimos por ahí?"
 		}
 		return ""
 	}
-	// Explicit memory query: best episode by overlap, world facts, personal facts
+
+	// Explicit memory query
 	rel, score := bestEpisodeOverlap(query, episodes)
 	if score >= 1 && rel != "" {
-		if name := extractDeclaredName(rel); name != "" {
+		if name := extractDeclaredName(rel); name != "" && (strings.Contains(q, "nombre") || strings.Contains(q, "llamo") || strings.Contains(q, "quién soy") || strings.Contains(q, "quien soy")) {
 			return "Sí, te llamas " + name + "."
 		}
+		if slot, val := extractPersonalDeclaration(rel); slot != "" && val != "" {
+			return formatPersonalRecall(slot, val)
+		}
 		return "Sí, recuerdo: «" + truncateRunes(rel, 120) + "»."
+	}
+	for _, ep := range episodes {
+		if slot, val := extractPersonalDeclaration(ep.Text); slot != "" && val != "" {
+			if personalSlotMatchesQuery(q, slot) {
+				return formatPersonalRecall(slot, val)
+			}
+		}
 	}
 	for _, ep := range episodes {
 		if isWorldFact(ep.Text) {
@@ -590,6 +619,129 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 	}
 	return ""
 }
+
+// recallPersonalSlot answers "cuál es mi apellido/nombre/ciudad…" from episode declarations.
+func recallPersonalSlot(query string, episodes []mindEpisodePayload) string {
+	q := strings.ToLower(query)
+	want := ""
+	switch {
+	case strings.Contains(q, "apellido"):
+		want = "apellido"
+	case strings.Contains(q, "cómo me llamo") || strings.Contains(q, "como me llamo") ||
+		strings.Contains(q, "mi nombre") || strings.Contains(q, "quién soy") || strings.Contains(q, "quien soy"):
+		want = "nombre"
+	case strings.Contains(q, "ciudad") || strings.Contains(q, "dónde vivo") || strings.Contains(q, "donde vivo") || strings.Contains(q, "vivo"):
+		want = "ciudad"
+	case strings.Contains(q, "edad") || strings.Contains(q, "años") || strings.Contains(q, "anos"):
+		want = "edad"
+	default:
+		return ""
+	}
+	for _, ep := range episodes {
+		slot, val := extractPersonalDeclaration(ep.Text)
+		if slot == want && val != "" {
+			return formatPersonalRecall(slot, val)
+		}
+		if want == "nombre" {
+			if name := extractDeclaredName(ep.Text); name != "" {
+				return "Te llamas " + name + "."
+			}
+		}
+	}
+	return ""
+}
+
+func formatPersonalRecall(slot, val string) string {
+	switch slot {
+	case "apellido":
+		return "Tu apellido es " + val + "."
+	case "nombre":
+		return "Te llamas " + val + "."
+	case "ciudad":
+		return "Me dijiste que vives en " + val + "."
+	case "edad":
+		return "Me dijiste que tienes " + val + " años."
+	default:
+		return "Recuerdo: " + slot + " = " + val + "."
+	}
+}
+
+func personalSlotMatchesQuery(q, slot string) bool {
+	switch slot {
+	case "apellido":
+		return strings.Contains(q, "apellido")
+	case "nombre":
+		return strings.Contains(q, "nombre") || strings.Contains(q, "llamo") || strings.Contains(q, "quién") || strings.Contains(q, "quien")
+	case "ciudad":
+		return strings.Contains(q, "ciudad") || strings.Contains(q, "vivo")
+	case "edad":
+		return strings.Contains(q, "edad") || strings.Contains(q, "años") || strings.Contains(q, "anos")
+	}
+	return false
+}
+
+// extractPersonalDeclaration pulls structured personal facts from episode text.
+func extractPersonalDeclaration(text string) (slot, value string) {
+	low := strings.ToLower(strings.TrimSpace(text))
+	// apellido
+	for _, pref := range []string{"mi apellido es ", "mi apellido:", "apellido es ", "me apellido "} {
+		if i := strings.Index(low, pref); i >= 0 {
+			rest := strings.TrimSpace(text[i+len(pref):])
+			val := firstNameTokens(rest, 2)
+			if val != "" {
+				return "apellido", val
+			}
+		}
+	}
+	// ciudad / vivo en
+	for _, pref := range []string{"vivo en ", "mi ciudad es ", "mi ciudad:", "radico en "} {
+		if i := strings.Index(low, pref); i >= 0 {
+			rest := strings.TrimSpace(text[i+len(pref):])
+			val := firstNameTokens(rest, 3)
+			if val != "" {
+				return "ciudad", val
+			}
+		}
+	}
+	// edad
+	for _, pref := range []string{"tengo ", "mi edad es "} {
+		if i := strings.Index(low, pref); i >= 0 {
+			rest := strings.TrimSpace(low[i+len(pref):])
+			fields := strings.Fields(rest)
+			if len(fields) > 0 {
+				num := strings.Trim(fields[0], ".,")
+				if num != "" && num[0] >= '0' && num[0] <= '9' {
+					return "edad", num
+				}
+			}
+		}
+	}
+	if name := extractDeclaredName(text); name != "" {
+		return "nombre", name
+	}
+	return "", ""
+}
+
+func firstNameTokens(rest string, max int) string {
+	stop := map[string]bool{
+		"y": true, "que": true, "qué": true, "es": true, "el": true, "la": true,
+		"un": true, "una": true, "mi": true, "tu": true, "de": true, "en": true,
+		"años": true, "anos": true, "mucho": true, "gracias": true,
+	}
+	var good []string
+	for _, p := range strings.Fields(rest) {
+		pl := strings.ToLower(strings.Trim(p, ".,!?;:"))
+		if pl == "" || stop[pl] {
+			break
+		}
+		good = append(good, strings.Trim(p, ".,!?;:"))
+		if len(good) >= max {
+			break
+		}
+	}
+	return strings.Join(good, " ")
+}
+
 
 func truncateRunes(s string, n int) string {
 	r := []rune(s)
