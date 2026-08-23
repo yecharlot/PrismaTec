@@ -1,0 +1,22 @@
+name = "alset-gen"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# Set secrets / vars:
+#   wrangler secret put ANNOUNCE_URL   # https://prismatec.onrender.com
+#   wrangler secret put PUBLIC_URL     # https://alset-gen.tu-cuenta.workers.dev
+# Or [vars] below for non-secret config.
+
+[vars]
+GEN_KEY = "demo-cell.ans"
+ROOT_CID = ""
+PACKAGE_CID = ""
+# ANNOUNCE_URL and PUBLIC_URL via secrets recommended
+
+[[durable_objects.bindings]]
+name = "GEN_DO"
+class_name = "AlsetGenDO"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["AlsetGenDO"]

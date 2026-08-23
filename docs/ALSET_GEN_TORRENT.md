@@ -82,3 +82,8 @@ Eso **es** descentralizar: muchas células en muchos bordes, un torrente de **da
 El “torrente que nunca se cae” para **datos** es **IPFS + réplicas**.  
 El “torrente de **presencia** en el camino” es la **malla de bordes** que la comunidad Alset puede operar.  
 DNS raíz y SCION CORE **no** son hoteles de procesos; tratarlos como tales no es pionero, es inviable e incorrecto. Ser pioneros es **construir el torrente Alset** encima de bloques y bordes legítimos.
+
+
+## Cloudflare Workers (añadido)
+
+Ver [ALSET_GEN_CLOUDFLARE.md](./ALSET_GEN_CLOUDFLARE.md): borde global legítimo con Durable Objects.
