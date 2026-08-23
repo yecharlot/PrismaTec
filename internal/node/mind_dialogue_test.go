@@ -82,7 +82,7 @@ func TestVetoBiasDoesNotPoisonCalmChat(t *testing.T) {
 func TestCuriosityAndHumorActive(t *testing.T) {
 	g := defaultMindGenome()
 	// metaphor should raise curiosity
-	c := evaluateCuriosity("la vida es una metáfora lúcida", "", g)
+	c := evaluateCuriosity("la vida es una metáfora lúcida", g, "")
 	if c.State < 1 {
 		t.Fatalf("curiosity should activate on metaphor, got %d", c.State)
 	}

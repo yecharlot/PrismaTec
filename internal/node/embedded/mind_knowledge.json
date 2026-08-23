@@ -1410,5 +1410,219 @@
       "cómo aprendes"
     ],
     "text": "Aprendo por episodios CID, ampliación de corpus curado y mutación acotada de umbrales si el corpus mejora. No reentreno una red neuronal."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "qué es la red alset",
+      "red alset",
+      "alset network",
+      "cómo funciona la red"
+    ],
+    "text": "La red Alset es el tejido donde viven el nodo PrismaTec, Alset Mind, los genes (células) y el borde Cloudflare. Mind orquesta; los genes viajan y sirven; el Worker global da presencia de borde. No es un LLM distribuido: es identidad ANS, CID y latido ternario."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "partes de la red",
+      "estructura de la red alset",
+      "componentes alset"
+    ],
+    "text": "Componentes: (1) Nodo Go PrismaTec — libp2p, LispAI, APIs, Mind, registro de genes. (2) Alset Mind — órganos Zyrion y memoria CID. (3) Alset-Gen — células con key y RootCID. (4) Edge Cloudflare — Worker + KV/DO, dispatch y diálogo remoto. (5) Paquetes CID — semillas revivibles. (6) Opcional DNS TXT y daemon alset-gen."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "qué es el nodo",
+      "nodo prismatec",
+      "qué hace el nodo"
+    ],
+    "text": "El nodo es el proceso residente: escucha HTTP, evalúa el latido de Mind, mantiene agentes/nombres/blockstore, puede hablar libp2p y anunciar genes. En Render u otro host es el cerebro local; sin él, el edge solo sostiene células ya despachadas."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "mind vs gen",
+      "diferencia mind gen",
+      "cerebro y célula"
+    ],
+    "text": "Mind es el cerebro ternario del nodo (órganos, ethics, memoria, genoma). Gen es la célula: identidad estable, naturaleza mutable por RootCID, puede explorarse, dialogarse y residir en borde. Mind no se sustituye por un gen; lo orquesta bajo ethics."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "qué es un gen",
+      "alset gen célula",
+      "semilla fractal"
+    ],
+    "text": "Un Alset-Gen tiene key ANS, RootCID, estado (location, metadata, mission). Puede crearse, mutarse (con secret), viajar, explorarse, empaquetarse por CID y revivirse. No predice tokens: observa, registra y sirve."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "cuándo no despachar",
+      "no envíes gen",
+      "cuándo no usar edge"
+    ],
+    "text": "No despaches si el gen maneja secretos locales, si el Worker no está configurado, o si solo necesitas prueba en el mismo proceso. No mutes RootCID sin GEN_MUTATE_SECRET en producción. No trates el edge como IPFS soberano: es un proveedor de borde."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "cloudflare alset",
+      "worker alset-network",
+      "borde global"
+    ],
+    "text": "El Worker alset-network (p. ej. alset-network.lhmolam-877.workers.dev) lista gens, hace dispatch, dialogue y explore en el edge. KV guarda estado de red. Announce vuelve al nodo cuando está vivo. Es torrente práctico, no soberanía pura."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "package cid gen",
+      "revivir gen",
+      "semilla autónoma"
+    ],
+    "text": "Publish/package sella la semilla del gen en un CID. Revive la rehidrata en otro nodo con ese CID. Así el gen no muere con un solo disco efímero. Guarda el package_cid: es la llave de continuidad."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "libp2p en alset",
+      "peers alset",
+      "gossip alset"
+    ],
+    "text": "libp2p da transporte, discovery y pubsub. En Render a menudo hay 0 peers: el nodo sigue siendo útil en solitario. Los pulsos y mind_episode pueden observarse cuando hay malla. Sin peers no es fallo de Mind; es topología."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "apis del gen",
+      "rutas /api/gen",
+      "cómo gestionar genes"
+    ],
+    "text": "API típica: GET /api/gen, POST create/mutate/travel/consult/observe/arrive/explore/package/revive/announce/dialogue/dispatch. Desde el diálogo de Mind: lista genes, crea gen X, despacha, pregunta al gen. Mutate exige secret; Mind no lo bypasea."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "qué hacer en la red",
+      "buenas prácticas alset"
+    ],
+    "text": "Haz: anclar hechos en CID, despachar sondas al edge, consultar genes, calibrar con feedback, ampliar corpus curado. No hagas: borrar a ciegas, filtrar secretos, mutar sin control, pretender que Mind es un LLM, depender solo de disco efímero de PaaS."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "qué no hacer alset",
+      "prohibido en la red",
+      "límites operativos"
+    ],
+    "text": "Prohibido por diseño: envolver un LLM como motor de decisión; dejar que curiosity o humor vetén el nodo; mutación de topología libre sin ethics; tratar Supabase caído como si la memoria CID existiera sin store. El sumidero ethics existe para cortar lo destructivo."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "daemon alset-gen",
+      "gen autónomo fuera del nodo"
+    ],
+    "text": "cmd/alset-gen puede vivir como daemon HTTP (y libp2p opcional) fuera de PrismaTec: explore, dialogue, announce hacia Mind. Sirve de borde que controlas tú (Pi, VPS) además del Worker."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "zyrion en la red",
+      "ternario en cada decisión"
+    ],
+    "text": "Zyrion 0/1/2 recorre dialog, act, mem, self, ethics (y curiosity/humor que colorean). Ethics puede absorber act. Toda orquestación de genes y código pasa por ese campo, no por probabilidad de tokens."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "pulso alset",
+      "sse pulse",
+      "cargo udp"
+    ],
+    "text": "Pulsos SSE y caminos Pulse-over-UDP/CARGO permiten beacon y store-and-forward entre bordes. Son el sistema nervioso auxiliar de la red, no el motor de charla de Mind."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "quién controla la red",
+      "soberanía alset"
+    ],
+    "text": "El operador del nodo controla genoma, secrets y deploys. Cloudflare es ancla de borde bajo su contrato. Los CID y paquetes son lo más soberano del contenido. Mind no cede el veto ethics al usuario persuasivo."
+  },
+  {
+    "type": "aprendizaje",
+    "keys": [
+      "qué no es aprender aquí",
+      "no fine tuning"
+    ],
+    "text": "Aprender aquí no es fine-tuning ni tragar terabytes. Es anclar, recuperar y ajustar cortes 0/1/2. Si algo no está en corpus ni en CID, puedo preguntar (curiosity) y pedir que me lo dejes explícito para guardarlo."
+  },
+  {
+    "type": "aprendizaje",
+    "keys": [
+      "quiero que aprendas",
+      "enséñame esto",
+      "guarda este conocimiento"
+    ],
+    "text": "Si me enseñas un hecho en forma clara («X es Y», «recuerda que…»), puedo anclarlo en memoria episódica. Para que entre al corpus estable hace falta curación en el repo. El deseo de aprender se expresa como curiosity alta + pedido de anclar."
+  },
+  {
+    "type": "aprendizaje",
+    "keys": [
+      "mutación del genoma",
+      "cómo mutas"
+    ],
+    "text": "Tras episodios relevantes puedo mutar umbrales (alarmas, cortes de curiosity/humor, pesos de memoria) si la calibración lo favorece. Pasos pequeños. Feedback del usuario guía sin reescribir la tesis."
+  },
+  {
+    "type": "aprendizaje",
+    "keys": [
+      "calibración corpus",
+      "score de calibración"
+    ],
+    "text": "El corpus de diálogos etiquetados mide si mis órganos salen como se espera. Subir el score es aprender disciplina, no acumular charla vacía."
+  },
+  {
+    "type": "aprendizaje",
+    "keys": [
+      "límites de memoria",
+      "olvidas en redeploy"
+    ],
+    "text": "Si el store durable falla, el índice de episodios puede vaciarse al redeploy. Por eso priorizamos CID + store y paquetes. Aprender de verdad exige persistencia fuera de la RAM del contenedor."
+  },
+  {
+    "type": "aprendizaje",
+    "keys": [
+      "curiosity y aprender",
+      "para qué la curiosidad"
+    ],
+    "text": "Curiosity detecta novedad o lagunas y formula preguntas. No veta el nodo. Cuando está alta, conviene responder o anclar; si ignoras siempre, el organismo se queda sin materia nueva."
+  },
+  {
+    "type": "aprendizaje",
+    "keys": [
+      "cómo ampliar lo que sé",
+      "enseñar al mind"
+    ],
+    "text": "Rutas: (1) hechos personales o de dominio en diálogo; (2) entradas en mind_knowledge.json; (3) casos de calibración; (4) feedback. Todo auditable. Nada de API de modelo externo."
+  },
+  {
+    "type": "curiosidad",
+    "keys": [
+      "cuándo preguntas",
+      "por qué preguntas"
+    ],
+    "text": "Pregunto cuando el mensaje trae novedad, metáfora abierta, tema fuera de corpus o invitación a aprender. Si ya sé el tema con solidez, bajo la intensidad y respondo antes de preguntar."
+  },
+  {
+    "type": "curiosidad",
+    "keys": [
+      "no sé y curiosity",
+      "laguna de conocimiento"
+    ],
+    "text": "Si no hay hit de corpus ni recuerdo CID, la curiosidad debe subir: mejor admitir la laguna y pedir un hecho anclable que inventar."
   }
 ]

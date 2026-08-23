@@ -9,61 +9,108 @@ import (
 // evaluateCuriosity: novel / reflective topics → urge to ask (never absorbs ethics).
 // 0 quiet · 1 mild follow-up · 2 strong open question.
 // Knowledge does not kill curiosity: a solid answer can still invite a follow-up.
-func evaluateCuriosity(text string, memSpeak string, g MindGenome) MindOrganResult {
+func evaluateCuriosity(text string, g MindGenome, memSpeak string) MindOrganResult {
 	s := strings.ToLower(strings.TrimSpace(text))
+	words := strings.Fields(s)
 	score := 0.0
-	words := tokenizeMind(s)
-	if isCalmChat(s) || isMemoryQuery(s) || isPersonalFact(s) || isDestructiveOrder(s) {
-		return MindOrganResult{Name: "curiosity", State: 0, Label: labelForOrgan("curiosity", 0), Inputs: []float64{0.1, 0, 0}}
-	}
-	if strings.Contains(s, "sabes qué") || strings.Contains(s, "sabes que") ||
-		strings.Contains(s, "te cuento") || strings.Contains(s, "descubr") ||
-		strings.Contains(s, "documental") || strings.Contains(s, "aprendí") ||
-		strings.Contains(s, "aprendi") || strings.Contains(s, "me enteré") {
-		score = 0.9
-	}
-	reflect := []string{"metáfora", "metafora", "significa", "existencia", "consciencia",
-		"conciencia", "pensamiento", "el todo", "esencia", "humano", "vivimos",
-		"primero debemos", "la vida es", "como si", "pareces", "eres como"}
-	for _, r := range reflect {
-		if strings.Contains(s, r) {
-			score += 0.45
+
+	// Explicit teaching / learning invitations — highest attention
+	teach := []string{"enséñame", "ensename", "aprende esto", "quiero que aprendas", "recuerda que",
+		"guarda que", "ancla esto", "te cuento", "descubrí", "descubri", "aprendí", "aprendi",
+		"me enteré", "me entere", "documental", "no está en tu corpus", "no esta en tu corpus"}
+	for _, k := range teach {
+		if strings.Contains(s, k) {
+			score = 0.95
 			break
 		}
 	}
-	if len(words) >= 4 {
-		score += 0.3
-	}
-	if len(s) > 50 {
-		score += 0.15
-	}
-	unknown := []string{"agujero negro", "agujeros negros", "cuántica", "galaxia",
-		"neurociencia", "bitcoin", "blockchain", "filosofía de", "filosofia de",
-		"relatividad", "dinosaurio", "océano", "oceano", "mito", "poesía", "poesia"}
-	for _, u := range unknown {
-		if strings.Contains(s, u) {
-			score = 0.92
-			break
+
+	// Open gaps: user signals ignorance or asks Mind to discover
+	if score < 0.9 {
+		gap := []string{"no sé", "no se ", "no tengo idea", "qué opinas de", "que opinas de",
+			"has oído", "has oido", "sabes algo de", "te suena", "explícame de cero", "explicame de cero"}
+		for _, k := range gap {
+			if strings.Contains(s, k) {
+				score = 0.88
+				break
+			}
 		}
 	}
-	if speakFromKnowledge(text) != "" && score < 0.5 {
-		score = 0.42
+
+	// Reflective / philosophical hooks
+	if score < 0.85 {
+		reflect := []string{"metáfora", "metafora", "significa", "existencia", "consciencia",
+			"conciencia", "pensamiento", "el todo", "esencia", "humano", "vivimos",
+			"primero debemos", "la vida es", "como si", "pareces", "eres como"}
+		for _, r := range reflect {
+			if strings.Contains(s, r) {
+				score += 0.5
+				break
+			}
+		}
+	}
+
+	// Domains outside curated core (raise curiosity)
+	if score < 0.9 {
+		unknown := []string{"agujero negro", "agujeros negros", "cuántica", "galaxia",
+			"neurociencia", "bitcoin", "blockchain", "filosofía de", "filosofia de",
+			"relatividad", "dinosaurio", "océano", "oceano", "mito", "poesía", "poesia",
+			"receta", "cocina", "fútbol", "futbol", "política", "politica"}
+		for _, u := range unknown {
+			if strings.Contains(s, u) {
+				score = 0.9
+				break
+			}
+		}
+	}
+
+	// Network expertise: if asking about Alset and we have knowledge, moderate curiosity (answer first)
+	know := speakFromKnowledge(text)
+	alsetTopic := strings.Contains(s, "alset") || strings.Contains(s, "gen ") || strings.Contains(s, "red ") ||
+		strings.Contains(s, "cloudflare") || strings.Contains(s, "cid") || strings.Contains(s, "nodo")
+	if alsetTopic && know != "" {
+		if score < 0.35 {
+			score = 0.35 // soft follow-up possible, not silence
+		}
+	} else if alsetTopic && know == "" {
+		score = 0.85 // should know network — gap is urgent
+	}
+
+	if know != "" && score < 0.5 && !alsetTopic {
+		score = 0.4
 	}
 	if memSpeak != "" && score < 0.35 {
-		score = 0.3
+		score = 0.32
 	}
+
+	// Length / richness of utterance
+	if len(words) >= 6 {
+		score += 0.2
+	}
+	if len(s) > 60 {
+		score += 0.12
+	}
+	if strings.Contains(s, "?") {
+		score += 0.08
+	}
+
+	if score > 1 {
+		score = 1
+	}
+
 	cut := g.CuriosityCut
 	if cut <= 0 {
-		cut = 0.4
+		cut = 0.38 // slightly more attentive default
 	}
 	st := 0
-	if score >= cut+0.25 {
+	if score >= cut+0.22 {
 		st = 2
 	} else if score >= cut {
 		st = 1
 	}
 	return MindOrganResult{Name: "curiosity", State: st, Label: labelForOrgan("curiosity", st), Inputs: []float64{score, cut, float64(len(words))}}
 }
+
 
 // evaluateHumor: comic intent or playful comparison in user message.
 func evaluateHumor(text string, g MindGenome) MindOrganResult {
@@ -100,28 +147,24 @@ func curiosityVoice(text string, st int) string {
 	if st <= 0 {
 		return ""
 	}
-	low := strings.ToLower(text)
-	// Skip on continue prompts and pure knowledge one-liners — avoid double refrain
-	if isContinuePrompt(low) {
-		return ""
-	}
+	s := strings.ToLower(strings.TrimSpace(text))
 	if st >= 2 {
-		if strings.Contains(low, "metáfora") || strings.Contains(low, "metafora") || strings.Contains(low, "la vida es") {
-			return "¿Qué parte de esa imagen te importa conservar?"
+		if strings.Contains(s, "alset") || strings.Contains(s, "red ") {
+			return "Quiero afinar este punto de la red: ¿me das el detalle que falta o un ejemplo concreto para anclarlo?"
 		}
-		if strings.Contains(low, "humano") {
-			return "¿Qué rasgo humano quieres contrastar con este organismo?"
+		if strings.Contains(s, "aprend") || strings.Contains(s, "enséñ") || strings.Contains(s, "ensenh") {
+			return "Si lo formularas en una frase cerrada del tipo «recuerda que X es Y», lo puedo marcar para memoria."
 		}
-		if strings.Contains(low, "consciencia") || strings.Contains(low, "conciencia") {
-			return "¿Lo planteas como experiencia subjetiva o como proceso que se puede observar?"
-		}
-		// no generic CID pitch
-		return ""
+		return "No lo tengo completo en corpus. ¿Me cuentas un hecho concreto para aprenderlo sin inventar?"
 	}
-	return ""
+	// st == 1
+	if speakFromKnowledge(text) != "" {
+		return "Si quieres, bajamos a un detalle más fino o lo cruzamos con un gen o un recuerdo tuyo."
+	}
+	return "¿Seguimos este hilo o hay algo de la red Alset / del nodo que quieras revisar?"
 }
 
-// humorVoice: light tint line to APPEND when humor organ is active.
+
 func humorVoice(text string, st int) string {
 	if st <= 0 {
 		return ""

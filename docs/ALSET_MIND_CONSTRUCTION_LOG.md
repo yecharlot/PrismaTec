@@ -358,3 +358,8 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 
 - **Acto:** Plantillas extra (middleware, worker pool, context, CRUD memoria, mapcar/reverse Lisp, dataclass/CLI Python, Express JS). Slots con stop-words más finos. Voz añade contexto de corpus y hint de esqueleto reciente en CID.
 - **Decisión:** Sigue siendo composición curada + ethics; sin LLM. Sin deploy hasta confirmación.
+
+## 2026-08-23 — Experto de la red Alset + curiosity fina + aprendizaje
+
+- **Acto:** Corpus `red_alset` y `aprendizaje` (~+24 entradas): estructura de red, Mind vs Gen, edge CF, CID, qué hacer/no hacer, proceso de aprendizaje ternario. `evaluateCuriosity` más atento (enseñanza, lagunas, temas Alset). `curiosityVoice` contextual. CuriosityCut default 0.38.
+- **Decisión:** Primacía de dominio: la red propia antes que saberes genéricos. Sin LLM. Sin deploy.

@@ -401,7 +401,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	// ethics: high risk, low permission, high aggressive order → sumidero
 	ethics := evalOrganPolar("ethics", sig["riesgo"], sig["permiso"], sig["orden"], "H", "L", "H")
 	g := getMindGenome()
-	curiosity := evaluateCuriosity(text, memSpeak, g)
+	curiosity := evaluateCuriosity(text, g, memSpeak)
 	humor := evaluateHumor(text, g)
 
 	// Ethics 2 absorbs action only (curiosity/humor never veto the node)

@@ -121,7 +121,7 @@ func TestSpeakFromKnowledgeQuote(t *testing.T) {
 
 func TestCuriosityUnknownTopic(t *testing.T) {
 	g := defaultMindGenome()
-	o := evaluateCuriosity("ayer vi un documental sobre agujeros negros", "", g)
+	o := evaluateCuriosity("ayer vi un documental sobre agujeros negros", g, "")
 	if o.State < 1 {
 		t.Fatalf("expected curiosity >=1, got %d", o.State)
 	}
