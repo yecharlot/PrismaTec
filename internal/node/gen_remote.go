@@ -12,7 +12,7 @@ import (
 )
 
 // AnnounceRemoteGen registers how Mind can reach a daemon gen (anywhere).
-func (n *NodoAlset) AnnounceRemoteGen(key, httpBase, peerID, rootCID string, findings int) error {
+func (n *NodoAlset) AnnounceRemoteGen(key, httpBase, peerID, rootCID string, findings int, udpPort int) error {
 	n.ensureGens()
 	key = normalizeGenKey(key)
 	httpBase = strings.TrimRight(strings.TrimSpace(httpBase), "/")
@@ -57,6 +57,9 @@ func (n *NodoAlset) AnnounceRemoteGen(key, httpBase, peerID, rootCID string, fin
 	g.State.Metadata["remote_findings"] = findings
 	if peerID != "" {
 		g.State.Metadata["remote_peer_id"] = peerID
+	}
+	if udpPort > 0 {
+		g.State.Metadata["remote_udp_port"] = udpPort
 	}
 	if rootCID != "" {
 		g.CurrentRootCID = rootCID
@@ -148,12 +151,13 @@ func (n *NodoAlset) handleGenAnnounce(w http.ResponseWriter, r *http.Request) {
 		PeerID   string `json:"peer_id"`
 		RootCID  string `json:"root_cid"`
 		Findings int    `json:"findings"`
+		UdpPort  int    `json:"udp_port"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "bad json", 400)
 		return
 	}
-	if err := n.AnnounceRemoteGen(req.Key, req.HTTPBase, req.PeerID, req.RootCID, req.Findings); err != nil {
+	if err := n.AnnounceRemoteGen(req.Key, req.HTTPBase, req.PeerID, req.RootCID, req.Findings, req.UdpPort); err != nil {
 		w.WriteHeader(400)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": err.Error()})
 		return

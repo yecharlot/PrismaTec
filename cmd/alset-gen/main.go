@@ -25,6 +25,7 @@ func main() {
 	p2p := flag.Bool("p2p", false, "activar host libp2p propio")
 	announce := flag.String("announce", "", "URL base del nodo Alset/Mind (ej. https://prismatec.onrender.com)")
 	publicURL := flag.String("public-url", "", "URL pública con la que Mind te alcanza (ngrok, IP:puerto, etc.)")
+	udpPort := flag.Int("udp", 0, "puerto UDP Pulse (ej. 9091); 0 = desactivado")
 	flag.Parse()
 
 	if *pkgPath == "" {
@@ -55,6 +56,11 @@ func main() {
 		PublicURL:   *publicURL,
 	}
 	log.Printf("Semilla %s · root %s · modo autónomo", pkg.Key, short(pkg.CurrentRootCID))
+	if *udpPort > 0 {
+		if err := d.StartUDP(*udpPort); err != nil {
+			log.Printf("⚠️ UDP: %v", err)
+		}
+	}
 	err = d.Start(ctx)
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)

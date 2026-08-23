@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -34,7 +35,9 @@ type Daemon struct {
 	AnnounceURL string // PrismaTec base URL to register reachability for Mind
 	PublicURL   string // how Mind should reach this daemon (e.g. https://x.ngrok.io)
 	host        host.Host
-	mu          sync.Mutex
+	udpConn     *net.UDPConn
+	udpPort     int
+	mu          sync.RWMutex
 	pulses      []map[string]interface{}
 	findings    []map[string]interface{}
 	startedAt   time.Time
@@ -405,6 +408,11 @@ func (d *Daemon) doAnnounce() {
 	if d.host != nil {
 		payload["peer_id"] = d.host.ID().String()
 	}
+	d.mu.RLock()
+	if d.udpPort > 0 {
+		payload["udp_port"] = d.udpPort
+	}
+	d.mu.RUnlock()
 	b, _ := json.Marshal(payload)
 	client := &http.Client{Timeout: 12 * time.Second}
 	req, err := http.NewRequest(http.MethodPost, base+"/api/gen/announce", bytes.NewReader(b))
