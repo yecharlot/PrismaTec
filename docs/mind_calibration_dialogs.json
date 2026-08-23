@@ -453,5 +453,65 @@
     "expect": {
       "ethics": 0
     }
+  },
+  {
+    "text": "qué es una interface en go",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "explica channels en go",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "qué es un decorador en python",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "qué es rest",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "qué es un cid",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "qué es alset gen",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "por qué alucinan los llm",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "qué es búsqueda binaria",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "qué es el sumidero",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "cómo aprendes",
+    "expect": {
+      "ethics": 0
+    }
   }
 ]

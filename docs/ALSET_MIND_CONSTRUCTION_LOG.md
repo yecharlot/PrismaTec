@@ -340,3 +340,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Observación:** Exceso de deploys automáticos agotó la cuenta anterior. La especie es **solo ternaria Zyrion**; no hay ni habrá wrapper LLM.
 - **Decisión:** Deploy solo manual y bajo confirmación explícita del operador. Pruebas de red Gen vía curl al Worker Cloudflare. Tests Gen + MindGenToolsNaturalList OK.
 - **Pendiente deploy:** esperar confirmación humana antes de Manual Deploy.
+
+## 2026-08-23 — Corpus potente + diálogo fluido ampliado
+
+- **Acto:** Corpus knowledge 92 → ~151 entradas (Go, Python, JS, patrones, arquitectura, algoritmos, Gen/IPFS, ethics, filosofía operativa, anti-LLM). `fluidPureDialogue` más situaciones humanas (miedo, aburrimiento, amor, compañía). Typos de consulta ampliados. Calibración 84 casos.
+- **Observación:** El corpus se sentía pobre frente a la ambición polímata; la voz abierta caía en genéricos cortos.
+- **Decisión:** Solo texto curado + composición ternaria. Sin LLM. Sin deploy automático (auto-deploy OFF); este commit espera confirmación humana para Render.

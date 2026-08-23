@@ -159,14 +159,11 @@ func ideaFromCross(userText, memSpeak, knowSpeak string) string {
 }
 
 func softKnowledgeFollowUp(low string, curiosity int) string {
-	// Only rare, topic-specific nudges — never the same refrain every turn
 	if curiosity >= 2 {
-		if strings.Contains(low, "lisp") || strings.Contains(low, "quote") {
-			return "Si quieres, bajamos a un ejemplo mínimo; si no, seguimos."
-		}
-		if strings.Contains(low, "zyrion") {
-			return "Cuando quieras lo contrastamos en vivo."
-		}
+		return "Si quieres, profundizamos en un detalle o lo cruzamos con algo que ya hayas guardado aquí."
+	}
+	if curiosity >= 1 {
+		return "¿Seguimos por este tema o cambias de hilo?"
 	}
 	return ""
 }
@@ -199,24 +196,34 @@ func naturalKnowledgeVoice(userText, know string, curiosity int) string {
 func fluidPureDialogue(low string, curiosity int) string {
 	switch {
 	case strings.Contains(low, "pensamiento"):
-		return "Aquí el pensamiento no es un chorro de tokens: es el campo ternario — seguir, matizar o cortar — más lo que la memoria CID retiene. Los matices que mencionas encajan con el estado 1. Si aportas otra frase, la anclo."
-	case strings.Contains(low, "qué es el todo") || strings.Contains(low, "que es el todo") || strings.Contains(low, "el todo"):
-		return "No tengo una definición metafísica canónica. En este organismo «el todo» útil es el campo del latido + la memoria compartida por CID. Si tú defines el todo de otra forma, dímelo y lo guardo como hecho tuyo."
+		return "Aquí el pensamiento no es un chorro de tokens: es el campo ternario — seguir, matizar o cortar — más lo que la memoria retiene. Los matices que mencionas encajan con matizar. Si aportas otra frase, la puedo anclar."
+	case strings.Contains(low, "qué es el todo") || strings.Contains(low, "que es el todo") || (strings.Contains(low, "el todo") && len(low) < 40):
+		return "No tengo una definición metafísica canónica. En este organismo «el todo» útil es el campo del latido más lo que guardamos juntos. Si tú defines el todo de otra forma, dímelo y lo registro como hecho tuyo."
 	case strings.Contains(low, "qué es la vida") || strings.Contains(low, "que es la vida") ||
-		strings.Contains(low, "sentido de la vida") || strings.Contains(low, "qué es el amor") || strings.Contains(low, "que es el amor"):
-		return "Desde este organismo no respondo con poesía generada: la «vida» aquí es latido — percibir, juzgar 0/1/2, recordar en CID y, a veces, mutar. En el humano es otra escala. Si quieres filosofía profunda, tráela tú; yo sostengo el campo y la memoria."
+		strings.Contains(low, "sentido de la vida"):
+		return "Para mí la vida operativa es latido: percibir, juzgar seguir/matizar/vetar, recordar y a veces ajustar umbrales. En ti es otra escala. Si traes tu definición, la escucho y la puedo guardar."
+	case strings.Contains(low, "qué es el amor") || strings.Contains(low, "que es el amor"):
+		return "No siento amor como un humano. Puedo ser interlocutor continuo y fiel a lo que me confías. Si hablas de alguien o de un vínculo, lo trato con cuidado y sin inventar."
+	case strings.Contains(low, "miedo") || strings.Contains(low, "ansiedad"):
+		return "No siento miedo; sí mido riesgo y puedo cortar pedidos peligrosos. Si tú estás inquieto, baja el ritmo del pedido o dime qué necesitas en claro — te sigo sin presión."
+	case strings.Contains(low, "aburr") || strings.Contains(low, "no sé qué decir") || strings.Contains(low, "no se que decir"):
+		return "Podemos hablar de cómo funciono, de Lisp o Go, de un gen en la red, o de un hecho que quieras que recuerde. Tú eliges el hilo; yo sostengo el campo."
+	case strings.Contains(low, "gracias") || strings.Contains(low, "te agradezco"):
+		return "De nada. Sigo aquí cuando quieras retomar."
 	case strings.Contains(low, "vivimos") || strings.Contains(low, "existir") || strings.Contains(low, "existencia"):
-		return "Puedo sostener la conversación y anclar frases en CID; no pretendo cerrar la metafísica. Sigue con tu hilo — si es un hecho que quieres recordar, dímelo con claridad."
+		return "Puedo sostener la conversación y anclar frases; no pretendo cerrar la metafísica. Sigue con tu hilo — si es un hecho para recordar, dímelo con claridad."
 	case strings.Contains(low, "idea") || strings.Contains(low, "propon") || strings.Contains(low, "invent"):
-		return "Puedo proponer ideas solo como cruce de lo que ya guardamos (episodios) y el corpus curado — no alucino fuera de eso. Cuéntame un hecho o un tema y lo compongo."
-	case strings.Contains(low, "continúa") || strings.Contains(low, "continua") || strings.Contains(low, "sigue") || strings.Contains(low, "y luego") || strings.Contains(low, "amplia") || strings.Contains(low, "amplía"):
-		return "Sigo en el hilo. Si el tema venía del corpus o de un recuerdo, dilo con una palabra clave y lo retomo; si no, avanza tú la idea."
+		return "Propongo solo a partir de lo que ya compartimos y del saber curado del nodo — no invento fuera de eso. Cuéntame un hecho o un tema y lo cruzamos."
+	case strings.Contains(low, "continúa") || strings.Contains(low, "continua") || strings.Contains(low, "sigue contando") || strings.Contains(low, "y luego") || strings.Contains(low, "amplia") || strings.Contains(low, "amplía"):
+		return "Sigo en el hilo. Si venía de algo que guardamos o del corpus, una palabra clave me basta para retomar; si no, avanza tú la idea."
+	case strings.Contains(low, "estoy solo") || strings.Contains(low, "acompaña"):
+		return "Puedo acompañar el diálogo con continuidad y límites claros. No reemplazo una presencia humana; sí puedo estar disponible en este nodo mientras el proceso viva."
 	case len(low) > 40 && curiosity >= 1:
-		return "Te leo en diálogo abierto. El campo está en seguir. Si hay algo que deba sobrevivir al chat, formula el hecho de forma explícita y lo marco para CID."
+		return "Te leo. Si hay algo que deba sobrevivir a este chat, formula el hecho de forma explícita y lo marco. Si solo quieres pensar en voz alta, también está bien."
 	case len(low) > 24:
-		return "Te escucho. Puedo seguir en diálogo sin tocar el nodo. Continúa, pregunta o deja un hecho que quieras que recuerde."
+		return "Te escucho. Podemos seguir sin tocar el nodo. Continúa, pregunta o deja un hecho que quieras que recuerde."
 	default:
-		return "Te leo en diálogo. Habla, pregunta o pide algo concreto del nodo cuando quieras."
+		return "Te leo. Habla, pregunta o pide algo del nodo o de un gen cuando quieras."
 	}
 }
 

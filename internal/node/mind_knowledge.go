@@ -52,6 +52,14 @@ func normalizeKnowledgeQuery(q string) string {
 		{"conscienca", "consciencia"},
 		{"concienica", "consciencia"},
 		{"ternaro", "ternario"},
+		{"interfaz go", "interface"},
+		{"gorutina", "goroutine"},
+		{"chanel", "channel"},
+		{"promesa js", "promesa"},
+		{"tipado", "typescript"},
+		{"micro servicio", "microservicio"},
+		{"base datos", "base de datos"},
+
 		{"alucinacion", "alucinación"},
 	}
 	for _, r := range reps {

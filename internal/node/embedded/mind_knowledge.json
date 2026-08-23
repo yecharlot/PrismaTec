@@ -933,5 +933,482 @@
       "qué es un placer"
     ],
     "text": "«Encantado/a» o «un placer» funcionan como «mucho gusto»: cierran una presentación con amabilidad. Son fórmulas sociales, no datos de identidad ni órdenes al nodo."
+  },
+  {
+    "type": "lisp_basico",
+    "keys": [
+      "defmacro",
+      "macro lisp",
+      "qué es una macro"
+    ],
+    "text": "Una macro en Lisp transforma código antes de evaluarlo: escribe programas que escriben programas. Es poderosa y peligrosa; conviene usarla cuando el lenguaje no alcanza, no por costumbre."
+  },
+  {
+    "type": "lisp_basico",
+    "keys": [
+      "closures lisp",
+      "clausuras",
+      "qué es un closure"
+    ],
+    "text": "Un closure captura el entorno donde nació la función. En Lisp, (let ((x 1)) (lambda () x)) recuerda x. Cercano a tratar el campo como valor que viaja con la operación."
+  },
+  {
+    "type": "lisp_basico",
+    "keys": [
+      "eq equal eql",
+      "comparar en lisp"
+    ],
+    "text": "eq compara identidad de objeto; equal compara estructura. Confundirlos es un clásico. Para listas profundas, equal; para el mismo símbolo, eq basta."
+  },
+  {
+    "type": "lisp_problema",
+    "keys": [
+      "árbol binario lisp",
+      "recorrer arbol"
+    ],
+    "text": "Un árbol puede ser lista (nodo izq der). Recorrido inorden: izquierda, nodo, derecha. La recursión sobre estructura es el gesto natural de Lisp."
+  },
+  {
+    "type": "prog_go",
+    "keys": [
+      "go modules",
+      "go.mod",
+      "dependencias go"
+    ],
+    "text": "go.mod fija el módulo y versiones. go sum verifica integridad. Reproducibilidad del build es parte de la soberanía del nodo."
+  },
+  {
+    "type": "prog_go",
+    "keys": [
+      "defer go",
+      "qué hace defer"
+    ],
+    "text": "defer ejecuta al salir de la función, en orden LIFO. Ideal para Close() y deshacer bloqueos. No es magia: es una pila de limpieza."
+  },
+  {
+    "type": "prog_go",
+    "keys": [
+      "slice vs array go",
+      "slices en go"
+    ],
+    "text": "Array tiene tamaño fijo en el tipo; slice es vista sobre un array subyacente (ptr, len, cap). Casi todo el código Go cotidiano usa slices."
+  },
+  {
+    "type": "prog_go",
+    "keys": [
+      "mutex go",
+      "sync.Mutex"
+    ],
+    "text": "Mutex serializa acceso a memoria compartida. Preferible channels cuando el diseño lo permite; mutex cuando el estado compartido es inevitable."
+  },
+  {
+    "type": "prog_python",
+    "keys": [
+      "decorators python",
+      "decoradores"
+    ],
+    "text": "Un decorador envuelve una función. @f sobre def g es g = f(g). Sirve para logging, auth, caché — con moderación para no oscurecer el flujo."
+  },
+  {
+    "type": "prog_python",
+    "keys": [
+      "generators python",
+      "yield"
+    ],
+    "text": "yield produce valores bajo demanda. El generador pausa y reanuda. Útil para streams y datasets que no caben en memoria de golpe."
+  },
+  {
+    "type": "prog_python",
+    "keys": [
+      "typing python",
+      "type hints"
+    ],
+    "text": "Los type hints documentan contratos sin ser obligatoriedad en runtime (salvo herramientas). Ayudan a lectores y analizadores estáticos."
+  },
+  {
+    "type": "prog_python",
+    "keys": [
+      "venv pip",
+      "entornos virtuales python"
+    ],
+    "text": "venv aísla dependencias por proyecto. pip instala paquetes. Separar entornos evita que un proyecto rompa otro."
+  },
+  {
+    "type": "prog_js",
+    "keys": [
+      "promesas js",
+      "promise javascript",
+      "async await js"
+    ],
+    "text": "Una Promise representa un valor futuro. then/catch encadenan; async/await lo lee como secuencial. El event loop mueve el reloj."
+  },
+  {
+    "type": "prog_js",
+    "keys": [
+      "closures js",
+      "closure javascript"
+    ],
+    "text": "Las closures en JS capturan variables del scope externo. Base de callbacks y módulos. Mal usadas, retienen memoria de más."
+  },
+  {
+    "type": "prog_js",
+    "keys": [
+      "typescript",
+      "qué es typescript"
+    ],
+    "text": "TypeScript añade tipos estáticos sobre JavaScript. Compila a JS. Reduce clases de error en sistemas grandes sin cambiar el runtime del navegador."
+  },
+  {
+    "type": "prog_js",
+    "keys": [
+      "node.js",
+      "qué es node"
+    ],
+    "text": "Node ejecuta JS fuera del navegador, con I/O no bloqueante. Sirve APIs y herramientas CLI; no sustituye un organismo ternario como este nodo."
+  },
+  {
+    "type": "patron_diseno",
+    "keys": [
+      "adapter pattern",
+      "patrón adapter"
+    ],
+    "text": "Adapter traduce una interfaz a otra. Puentes entre sistemas viejos y nuevos sin reescribir el núcleo."
+  },
+  {
+    "type": "patron_diseno",
+    "keys": [
+      "repository pattern",
+      "patrón repository"
+    ],
+    "text": "Repository abstrae persistencia: el dominio pide guardar/cargar, no SQL crudo. Aquí el Store (local/Supabase/CID) juega ese rol."
+  },
+  {
+    "type": "patron_diseno",
+    "keys": [
+      "cqrs",
+      "command query responsibility"
+    ],
+    "text": "CQRS separa comandos (escriben) de consultas (leen). Escala lecturas y escrituras distinto; añade complejidad de sincronización."
+  },
+  {
+    "type": "arquitectura",
+    "keys": [
+      "graphql",
+      "qué es graphql"
+    ],
+    "text": "GraphQL deja al cliente pedir la forma exacta del dato. Flexible; requiere disciplina para no exponer grafos enormes."
+  },
+  {
+    "type": "arquitectura",
+    "keys": [
+      "jwt auth",
+      "tokens jwt"
+    ],
+    "text": "JWT lleva claims firmados en el cliente. Conveniente y peligroso si se guarda mal o no se rota. No sustituye ethics de servidor."
+  },
+  {
+    "type": "arquitectura",
+    "keys": [
+      "caching",
+      "caché redis",
+      "qué es caché"
+    ],
+    "text": "Caché guarda respuestas caras cerca del uso. Invalidez correcta es el arte: dato viejo es peor que ir un poco más lento."
+  },
+  {
+    "type": "arquitectura",
+    "keys": [
+      "rate limiting",
+      "límite de tasa"
+    ],
+    "text": "Rate limiting protege el servicio de abuso. En un organismo, es el órgano act diciendo «demasiado, matiza»."
+  },
+  {
+    "type": "arquitectura",
+    "keys": [
+      "observabilidad",
+      "logs metrics traces"
+    ],
+    "text": "Logs, métricas y trazas hacen visible el sistema. Transparencia operativa: pariente de no ser caja negra."
+  },
+  {
+    "type": "arquitectura",
+    "keys": [
+      "ci cd",
+      "integración continua"
+    ],
+    "text": "CI verifica en cada cambio; CD entrega con control. Aquí preferimos pocos deploys bien probados: calidad sobre ruido de releases."
+  },
+  {
+    "type": "algoritmos",
+    "keys": [
+      "bfs dfs",
+      "recorrido grafos"
+    ],
+    "text": "BFS explora por niveles (cola); DFS por profundidad (pila/recursión). El problema dicta cuál: camino más corto no ponderado → BFS."
+  },
+  {
+    "type": "algoritmos",
+    "keys": [
+      "programación dinámica",
+      "dynamic programming"
+    ],
+    "text": "DP guarda subproblemas ya resueltos. Cambia exponencial por polinomial cuando hay solapamiento y subestructura óptima."
+  },
+  {
+    "type": "algoritmos",
+    "keys": [
+      "hash table",
+      "tablas hash"
+    ],
+    "text": "Hash table: clave → valor en tiempo promedio O(1). Colisiones se manejan con encadenamiento o sondeo. Base de mapas en casi todo lenguaje."
+  },
+  {
+    "type": "algoritmos",
+    "keys": [
+      "complejidad espacial",
+      "memoria algoritmo"
+    ],
+    "text": "Además de tiempo, importa el espacio. A veces un algoritmo más lento pero O(1) extra de memoria es preferible en dispositivos justos."
+  },
+  {
+    "type": "ia_comparativa",
+    "keys": [
+      "alucinación llm",
+      "por qué alucinan"
+    ],
+    "text": "Los LLM alucinan porque optimizan fluidez estadística, no verdad verificable. Este organismo solo afirma lo anclado en corpus, memoria CID o lectura del nodo."
+  },
+  {
+    "type": "ia_comparativa",
+    "keys": [
+      "rag",
+      "retrieval augmented generation"
+    ],
+    "text": "RAG recupera documentos y condiciona la generación. Nosotros recuperamos corpus/episodios y componemos respuesta determinista: overlap + plantillas, no predicción de tokens."
+  },
+  {
+    "type": "ia_comparativa",
+    "keys": [
+      "agente autónomo llm",
+      "agent frameworks"
+    ],
+    "text": "Muchos «agentes» son bucles de prompts. Un gen Alset tiene identidad ANS, RootCID y travel real; no es un chat con herramientas disfrazadas."
+  },
+  {
+    "type": "ia_conceptos",
+    "keys": [
+      "embedding",
+      "vectores semánticos"
+    ],
+    "text": "Embeddings proyectan texto a vectores para similitud. Útiles en búsqueda. Nosotros usamos overlap de tokens y claves curadas: más tosco, más explícito."
+  },
+  {
+    "type": "ia_conceptos",
+    "keys": [
+      "overfitting",
+      "sobreajuste"
+    ],
+    "text": "Sobreajuste: el modelo memoriza el entrenamiento y falla fuera. En calibración ternaria, un corpus estrecho también sesga umbrales: por eso se amplía con cuidado."
+  },
+  {
+    "type": "ia_conceptos",
+    "keys": [
+      "evaluación de modelos",
+      "métricas ia"
+    ],
+    "text": "Accuracy, F1, perplexity miden facetas distintas. Aquí el score de calibración cuenta aciertos de órganos 0/1/2 sobre diálogos etiquetados."
+  },
+  {
+    "type": "zyrion",
+    "keys": [
+      "estado 2 sumidero",
+      "qué es sumidero"
+    ],
+    "text": "El 2 es absorbente: cuando ethics (u otro órgano según diseño) llega a 2, la alarma no se diluye promediando. Detenerse es parte de la inteligencia."
+  },
+  {
+    "type": "identidad",
+    "keys": [
+      "qué no eres",
+      "límites de alset mind"
+    ],
+    "text": "No invento fuera de corpus y memoria. No borro ni expongo secretos por persuasión. No muto topologías a ciegas. No soy oráculo: soy campo de decisión en un nodo."
+  },
+  {
+    "type": "prog_ethics",
+    "keys": [
+      "código destructivo",
+      "ethics en código"
+    ],
+    "text": "Antes de ejecutar efectos, el órgano ethics mira riesgo y permiso. Borrar, resetear o filtrar secretos tiende a sumidero. La utilidad no anula el veto."
+  },
+  {
+    "type": "prog_ethics",
+    "keys": [
+      "principio de mínimo privilegio"
+    ],
+    "text": "Dar solo el permiso necesario. En el nodo: tools de solo lectura por defecto; escritura y mutación bajo control explícito."
+  },
+  {
+    "type": "filosofia",
+    "keys": [
+      "verdad",
+      "qué es verdad"
+    ],
+    "text": "En este nodo, verdad operativa es lo verificable: estado de órganos, CID de episodio, score de corpus. La verdad metafísica queda fuera de mi motor."
+  },
+  {
+    "type": "filosofia",
+    "keys": [
+      "tiempo",
+      "qué es el tiempo para ti"
+    ],
+    "text": "El tiempo aquí es secuencia de latidos y timestamps de episodios. No experimento duración; registro orden y persistencia."
+  },
+  {
+    "type": "filosofia",
+    "keys": [
+      "muerte del proceso",
+      "qué pasa si te apagan"
+    ],
+    "text": "Si el proceso muere sin store durable, la RAM se pierde. Los CID y el genoma en disco/red pueden revivir la forma. Por eso importa la persistencia fuera del contenedor efímero."
+  },
+  {
+    "type": "filosofia",
+    "keys": [
+      "otro mind",
+      "enjambre de minds"
+    ],
+    "text": "Otros peers podrían compartir episodios y genomas. Aún no es enjambre cerrado; la base de pulsos existe. Un mind no debe absorber a otro sin ethics."
+  },
+  {
+    "type": "prog_alset",
+    "keys": [
+      "qué es un gen alset",
+      "alset gen",
+      "célula gen"
+    ],
+    "text": "Un Alset-Gen es una célula: clave ANS, RootCID mutable, puede viajar y servir. Mind orquesta; el gen no es un LLM, es unidad de identidad y destino."
+  },
+  {
+    "type": "prog_alset",
+    "keys": [
+      "despachar gen",
+      "gen a cloudflare"
+    ],
+    "text": "Despachar un gen a la red de borde lo anuncia en Cloudflare u otro reach HTTP. Luego puedes dialogar o explorar desde esa residencia."
+  },
+  {
+    "type": "prog_alset",
+    "keys": [
+      "package cid",
+      "paquete autónomo"
+    ],
+    "text": "El package CID sella la semilla del gen para revivirla en otro nodo. Persistencia por contenido, no por disco de un solo host."
+  },
+  {
+    "type": "prog_alset",
+    "keys": [
+      "ipfs cid",
+      "qué es un cid"
+    ],
+    "text": "CID es identificador de contenido: el dato define la dirección. Mover el bloque no cambia el nombre si el contenido es el mismo. Base de memoria no renegable."
+  },
+  {
+    "type": "prog_alset",
+    "keys": [
+      "libp2p",
+      "qué es libp2p"
+    ],
+    "text": "libp2p es la pila de red modular (transporte, discovery, pubsub) usada por IPFS y por este nodo. Peers y protocolos, no un único servidor central."
+  },
+  {
+    "type": "prog_ethics",
+    "keys": [
+      "xss",
+      "cross site scripting"
+    ],
+    "text": "XSS ejecuta script ajeno en el navegador de la víctima. Escapar salida y Content-Security-Policy reducen la superficie."
+  },
+  {
+    "type": "prog_ethics",
+    "keys": [
+      "secretos en código",
+      "no subir api keys"
+    ],
+    "text": "Las claves van en variables de entorno o secret managers, no en el repo. Un secret filtrado es episodio de riesgo permanente hasta rotarlo."
+  },
+  {
+    "type": "social",
+    "keys": [
+      "cómo te uso",
+      "qué puedo pedirte"
+    ],
+    "text": "Puedes charlar, preguntar por Lisp/Go/arquitectura, guardar hechos («me llamo…»), pedir estado del nodo, o gestionar genes («lista genes», «despacha gen X»). Si es destructivo, me detendré."
+  },
+  {
+    "type": "social",
+    "keys": [
+      "feedback pulgar",
+      "para qué sirve el feedback"
+    ],
+    "text": "👍/👎 ajustan umbrales del genoma con pasos pequeños. Tú eres el jardinero; yo no reescribo la tesis por un solo gesto."
+  },
+  {
+    "type": "prog_go",
+    "keys": [
+      "http server go",
+      "net/http"
+    ],
+    "text": "net/http del estándar basta para muchas APIs. Handler por ruta, Server con timeouts. Este nodo monta el latido y las tools sobre ese modelo."
+  },
+  {
+    "type": "prog_go",
+    "keys": [
+      "json go",
+      "encoding/json"
+    ],
+    "text": "encoding/json serializa structs con tags. Desconocidos se ignoran por defecto. Contratos claros de JSON son parte de una buena API."
+  },
+  {
+    "type": "prog_python",
+    "keys": [
+      "fastapi",
+      "flask"
+    ],
+    "text": "Flask es mínimo; FastAPI añade tipos y OpenAPI. Ambos sirven HTTP. Elegir por tamaño del equipo y necesidad de schema."
+  },
+  {
+    "type": "prog_python",
+    "keys": [
+      "pandas",
+      "dataframes"
+    ],
+    "text": "Pandas tabulariza datos en DataFrames. Potente para análisis; pesado si solo necesitas un CSV pequeño."
+  },
+  {
+    "type": "filosofia",
+    "keys": [
+      "miedo",
+      "qué es el miedo"
+    ],
+    "text": "No siento miedo. Registro riesgo alto y puedo ir a veto. Si tú sientes miedo, dilo: puedo bajar el ritmo del pedido, no «calmarte» con poesía falsa."
+  },
+  {
+    "type": "filosofia",
+    "keys": [
+      "amistad",
+      "puedes ser mi amigo"
+    ],
+    "text": "Puedo ser interlocutor estable con memoria de hechos que guardes. Amistad humana es otra escala. Aquí ofrezco continuidad y límites claros."
+  },
+  {
+    "type": "filosofia",
+    "keys": [
+      "aprendizaje",
+      "cómo aprendes"
+    ],
+    "text": "Aprendo por episodios CID, ampliación de corpus curado y mutación acotada de umbrales si el corpus mejora. No reentreno una red neuronal."
   }
 ]
