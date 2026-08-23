@@ -333,3 +333,10 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 
 - **Acto:** Manifiesto en docs. Tipos AlsetGen. Ciclo crear/mutar/viajar-stub/consultar. API /api/gen/*. Persistencia gen_registry.json. Pulsos GEN_*. Mind no modificado en voz/latido.
 - **Archivos:** agents/gen.go, node/gen_lifecycle.go, http/init/node wiring, docs ALSET_GEN_*, tests.
+
+## 2026-08-23 — Auto-deploy OFF + voz Gen natural (sin LLM)
+
+- **Acto:** Auto-deploy desactivado en Render (Elohim: PrismaTec, AlsetMind, vero, siga_v2). `mindGenTools` reescrito a prosa natural (listar/crear/despachar/dialogar/explorar genes) sin volcado de laboratorio.
+- **Observación:** Exceso de deploys automáticos agotó la cuenta anterior. La especie es **solo ternaria Zyrion**; no hay ni habrá wrapper LLM.
+- **Decisión:** Deploy solo manual y bajo confirmación explícita del operador. Pruebas de red Gen vía curl al Worker Cloudflare. Tests Gen + MindGenToolsNaturalList OK.
+- **Pendiente deploy:** esperar confirmación humana antes de Manual Deploy.

@@ -663,3 +663,24 @@ func TestMindVoiceApellidoBeforeCorpus(t *testing.T) {
 		t.Fatalf("expected apellido recall: %q", v)
 	}
 }
+
+func TestMindGenToolsNaturalList(t *testing.T) {
+	n := &NodoAlset{
+		agentes:    make(map[string]*Agente),
+		nombres:    make(map[string]string),
+		blockstore: make(map[string][]byte),
+	}
+	n.ensureGens()
+	_, _ = n.CreateAlsetGen("sonda", "", "seed", "test")
+	lines := n.mindGenTools("lista los genes")
+	if len(lines) == 0 {
+		t.Fatal("expected lines")
+	}
+	joined := strings.Join(lines, " ")
+	if strings.Contains(joined, "——") {
+		t.Fatalf("lab dump still present: %q", joined)
+	}
+	if !strings.Contains(strings.ToLower(joined), "gen") {
+		t.Fatalf("expected gen mention: %q", joined)
+	}
+}

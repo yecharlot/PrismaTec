@@ -737,180 +737,154 @@ func (n *NodoAlset) mindSafeTools(text string) string {
 }
 
 
-// mindGenTools: Mind orchestrates Alset-Gen (list/create/explore/consult) under ethics.
+// mindGenTools: Mind orchestrates Alset-Gen under ethics (ternary only — no LLM).
+// Returns natural Spanish lines for dialogue, not lab dumps.
 // Mutate still requires GEN_MUTATE_SECRET via API — Mind does not bypass G2.
 func (n *NodoAlset) mindGenTools(text string) []string {
 	s := strings.ToLower(strings.TrimSpace(text))
-	lines := []string{"—— Alset-Gen (células) ——"}
 	n.ensureGens()
+	var lines []string
 
-	if strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") || strings.Contains(s, "sirve gen") || strings.Contains(s, "servir gen") || strings.Contains(s, "pon a servir") || strings.Contains(s, "habla con gen") || strings.Contains(s, "pregunta al gen") || strings.Contains(s, "dialoga") || strings.Contains(s, "qué sabe el gen") || strings.Contains(s, "que sabe el gen") || strings.Contains(s, "resuelve gen") || strings.Contains(s, "dónde está el gen") || strings.Contains(s, "donde esta el gen") || strings.Contains(s, "despacha") || strings.Contains(s, "envía gen") || strings.Contains(s, "envia gen") || strings.Contains(s, "manda gen") {
-		name := extractGenNameFromText(s)
-		if name == "" {
-			name = "mind-seed"
-		}
-		g, err := n.CreateAlsetGen(name, "", "seed", "creado por Alset Mind")
-		if err != nil {
-			lines = append(lines, "crear: "+err.Error())
-		} else {
-			lines = append(lines, fmt.Sprintf("creada %s · root %s", g.Key, truncateCID(g.CurrentRootCID)))
-		}
+	name := extractGenNameFromText(s)
+	if name == "" {
+		name = "demo-cell"
 	}
 
-	if strings.Contains(s, "explora") || strings.Contains(s, "explorar") {
-		u := extractURLFromText(text)
-		name := extractGenNameFromText(s)
-		if name == "" {
-			name = "demo-cell"
-		}
-		if u == "" {
-			lines = append(lines, "exploración: indica una URL https pública")
-		} else {
-			res := n.ExploreRemoteGen(name, u, "explore")
-			if err, ok := res["error"].(string); ok && err != "" && res["ok"] != true {
-				lines = append(lines, "explorar: "+err)
+	// --- dispatch to Cloudflare network ---
+	if strings.Contains(s, "despacha") || strings.Contains(s, "envía gen") || strings.Contains(s, "envia gen") ||
+		strings.Contains(s, "manda gen") || (strings.Contains(s, "a cloudflare") && strings.Contains(s, "gen")) {
+		destLocal := strings.Contains(s, "local") && !strings.Contains(s, "cloudflare")
+		if destLocal {
+			g, err := n.CreateAlsetGen(name, "", "seed", "local")
+			if err != nil {
+				lines = append(lines, "No pude dejar el gen en local: "+err.Error()+".")
 			} else {
-				lines = append(lines, fmt.Sprintf("frontera %v · status %v · remoto %v",
-					res["url"], res["status"], res["remote_http"]))
-				if sn, _ := res["snippet"].(string); sn != "" {
-					if len(sn) > 160 {
-						sn = sn[:160] + "…"
-					}
-					lines = append(lines, "informe: "+sn)
+				lines = append(lines, "Dejé el gen «"+g.Key+"» en este nodo ("+g.State.Location+").")
+			}
+		} else {
+			res, err := n.DispatchGenToCloudflare(name, "oficio edge")
+			if err != nil {
+				lines = append(lines, "No pude despachar a la red de borde: "+err.Error()+". ¿Está ALSET_CLOUDFLARE_NETWORK configurada?")
+			} else {
+				reach, _ := res["reach"].(string)
+				if reach == "" {
+					reach = "red Cloudflare"
 				}
+				lines = append(lines, "Despaché «"+normalizeGenKey(name)+"» a la red de borde. Puedes alcanzarlo en "+reach+".")
 			}
 		}
+		return lines
 	}
 
-	if strings.Contains(s, "sirve") || strings.Contains(s, "servir") || strings.Contains(s, "pon a servir") {
-		name := extractGenNameFromText(s)
-		if name == "" {
-			name = "demo-cell"
-		}
-		short := strings.TrimSuffix(normalizeGenKey(name), ".ans")
-		res, err := n.DeployGenService(name, "/work/"+short+"/", "", "Servicio · "+name)
-		if err != nil {
-			lines = append(lines, "servicio: "+err.Error())
+	// --- resolve / where is ---
+	if strings.Contains(s, "resuelve gen") || strings.Contains(s, "dónde está el gen") ||
+		strings.Contains(s, "donde esta el gen") || strings.Contains(s, "donde está el gen") {
+		dns := ResolveGenDNS(name)
+		if len(dns) == 0 {
+			lines = append(lines, "No encontré DNS propio para «"+name+"». Si quieres, lo despacho a Cloudflare o lo creo aquí.")
 		} else {
-			lines = append(lines, fmt.Sprintf("sirviendo %v en %v", res["key"], res["service_path"]))
+			pkg := dns["package_cid"]
+			reach := dns["http_base"]
+			msg := "Localicé «"+name+"»"
+			if reach != "" {
+				msg += " en "+reach
+				_ = n.AnnounceRemoteGen(name, reach, "", pkg, 0, 0)
+			}
+			if pkg != "" {
+				msg += " (paquete "+truncateCID(pkg)+")"
+			}
+			lines = append(lines, msg+".")
 		}
+		return lines
 	}
 
+	// --- dialogue with gen ---
 	if strings.Contains(s, "habla con gen") || strings.Contains(s, "pregunta al gen") ||
-		strings.Contains(s, "dialoga") || strings.Contains(s, "qué sabe el gen") || strings.Contains(s, "que sabe el gen") ||
-		strings.Contains(s, "qué sabes gen") || strings.Contains(s, "consulta gen") || strings.Contains(s, "estado del gen") {
-		name := extractGenNameFromText(s)
-		if name == "" {
-			name = "demo-cell"
-		}
-		stim := text
-		// strip command noise for stimulus
-		for _, cut := range []string{"habla con gen " + name, "pregunta al gen " + name, "consulta gen " + name} {
-			stim = strings.ReplaceAll(strings.ToLower(stim), strings.ToLower(cut), "")
-		}
-		stim = strings.TrimSpace(stim)
-		if stim == "" || stim == strings.ToLower(name) {
-			stim = "quién eres y qué sabes"
+		strings.Contains(s, "dialoga") || strings.Contains(s, "qué sabe el gen") ||
+		strings.Contains(s, "que sabe el gen") {
+		stim := "quién eres"
+		if i := strings.Index(s, ":"); i > 0 && i < len(s)-1 {
+			stim = strings.TrimSpace(text[i+1:])
 		}
 		res := n.DialogueRemoteGen(name, stim)
 		if v, ok := res["voice"].(string); ok && v != "" {
-			lines = append(lines, "gen "+normalizeGenKey(name)+": "+v)
-		} else if err, ok := res["error"].(string); ok {
-			lines = append(lines, "gen remoto: "+err)
+			lines = append(lines, "El gen «"+normalizeGenKey(name)+"» dice: "+v)
+		} else if err, ok := res["error"].(string); ok && err != "" {
+			lines = append(lines, "No hubo respuesta del gen: "+err+". Prueba a despacharlo antes a la red.")
 		} else {
-			lines = append(lines, fmt.Sprintf("gen respuesta: %v", res))
+			lines = append(lines, "El gen «"+normalizeGenKey(name)+"» está en silencio o sin anuncio remoto todavía.")
 		}
-		if rh, ok := res["remote_http"].(string); ok && rh != "" {
-			lines = append(lines, "alcance: "+rh)
-		}
+		return lines
 	}
 
-	// explore: prefer remote daemon if announced
+	// --- explore ---
 	if strings.Contains(s, "explora") || strings.Contains(s, "explorar") {
-		// already handled below in older block — skip duplicate if present
-	}
-
-	if strings.Contains(s, "resuelve gen") || strings.Contains(s, "dónde está el gen") || strings.Contains(s, "donde esta el gen") || strings.Contains(s, "despacha") || strings.Contains(s, "envía gen") || strings.Contains(s, "envia gen") || strings.Contains(s, "manda gen") || strings.Contains(s, "donde está el gen") {
-		name := extractGenNameFromText(s)
-		if name == "" {
-			name = "demo-cell"
-		}
-		dns := ResolveGenDNS(name)
-		if len(dns) == 0 {
-			lines = append(lines, "DNS: sin registros TXT para "+name+" (configura ALSET_DNS_SUFFIX)")
+		u := extractURLFromText(text)
+		if u == "" {
+			lines = append(lines, "Para explorar, dime una URL pública https.")
 		} else {
-			lines = append(lines, fmt.Sprintf("DNS %v → pkg=%s reach=%s", dns["dns_host"], dns["package_cid"], dns["http_base"]))
-			if dns["http_base"] != "" {
-				_ = n.AnnounceRemoteGen(name, dns["http_base"], "", dns["package_cid"], 0, 0)
-				lines = append(lines, "anunciado remote_http desde DNS para diálogo")
+			res := n.ExploreRemoteGen(name, u, "explore")
+			if err, ok := res["error"].(string); ok && err != "" && res["ok"] != true {
+				lines = append(lines, "La exploración no pudo completarse: "+err+".")
+			} else {
+				sn, _ := res["snippet"].(string)
+				if len(sn) > 160 {
+					sn = sn[:160] + "…"
+				}
+				msg := "Mandé a «"+normalizeGenKey(name)+"» a mirar "+u+"."
+				if sn != "" {
+					msg += " Trajo: "+sn
+				}
+				lines = append(lines, msg)
 			}
 		}
+		return lines
 	}
 
-	if strings.Contains(s, "despacha") || strings.Contains(s, "envía gen") || strings.Contains(s, "envia gen") || strings.Contains(s, "manda gen") || strings.Contains(s, "a cloudflare") {
-		name := extractGenNameFromText(s)
-		if name == "" {
-			name = "demo-cell"
-		}
-		dest := "cloudflare"
-		if strings.Contains(s, "local") {
-			dest = "local"
-		}
-		if dest == "cloudflare" {
-			res, err := n.DispatchGenToCloudflare(name, "oficio edge")
-			if err != nil {
-				lines = append(lines, "despacho CF: "+err.Error())
-			} else {
-				reach, _ := res["reach"].(string)
-				lines = append(lines, "gen "+normalizeGenKey(name)+" despachado a red Cloudflare · "+reach)
-			}
+	// --- serve ---
+	if strings.Contains(s, "sirve gen") || strings.Contains(s, "servir gen") || strings.Contains(s, "pon a servir") {
+		short := strings.TrimSuffix(normalizeGenKey(name), ".ans")
+		path := "/g/" + short + "/"
+		lines = append(lines, "El gen «"+normalizeGenKey(name)+"» puede servir en este nodo en la ruta "+path+" cuando el servicio local está activo.")
+		return lines
+	}
+
+	// --- create ---
+	if strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") || strings.Contains(s, "nuevo gen") {
+		g, err := n.CreateAlsetGen(name, "", "seed", "creado por Alset Mind")
+		if err != nil {
+			lines = append(lines, "No pude crear el gen: "+err.Error()+".")
 		} else {
-			g, err := n.CreateAlsetGen(name, "", "seed", "local")
-			if err != nil {
-				lines = append(lines, "local: "+err.Error())
-			} else {
-				lines = append(lines, "gen "+g.Key+" permanece local · "+g.State.Location)
-			}
+			lines = append(lines, "Listo: nació el gen «"+g.Key+"». Está en este nodo; si quieres lo despacho a la red de borde.")
 		}
+		return lines
 	}
 
+	// --- list (default for gen intents) ---
 	list := n.listGens()
-	lines = append(lines, fmt.Sprintf("células en este nodo: %d", len(list)))
+	if len(list) == 0 {
+		lines = append(lines, "Aquí no hay genes registrados todavía. Puedes decir «crea gen sonda» o «despacha gen demo-cell a cloudflare».")
+		return lines
+	}
+	lines = append(lines, fmt.Sprintf("Tengo %d gen(es) a la vista:", len(list)))
 	for i, g := range list {
-		if i >= 8 {
-			lines = append(lines, "…")
+		if i >= 6 {
+			lines = append(lines, "…y algunos más.")
 			break
 		}
-		mission := ""
-		if g.State.Metadata != nil {
-			if m, ok := g.State.Metadata["mission"].(string); ok {
-				mission = m
-			}
-		}
-		remote := ""
+		loc := g.State.Location
+		extra := ""
 		if g.State.Metadata != nil {
 			if rh, ok := g.State.Metadata["remote_http"].(string); ok && rh != "" {
-				remote = " remote=" + rh
+				extra = " · borde "+rh
 			}
 		}
-		lines = append(lines, fmt.Sprintf("- %s loc=%s mission=%s root=%s%s",
-			g.Key, g.State.Location, mission, truncateCID(g.CurrentRootCID), remote))
-	}
-
-	if strings.Contains(s, "consulta gen") || strings.Contains(s, "estado del gen") {
-		name := extractGenNameFromText(s)
-		if name == "" && len(list) > 0 {
-			name = list[0].Key
-		}
-		if name != "" {
-			snap := n.ConsultAlsetGen(name, "quién eres")
-			if v, ok := snap["voice"].(string); ok && v != "" {
-				lines = append(lines, "voz: "+v)
-			}
-		}
+		lines = append(lines, "· "+g.Key+" ("+loc+")"+extra)
 	}
 	return lines
 }
+
+
 
 func extractURLFromText(text string) string {
 	for _, w := range strings.Fields(text) {
