@@ -1,21 +1,20 @@
-name = "alset-gen"
+name = "alset-network"
 main = "src/index.js"
 compatibility_date = "2024-11-01"
 
-# Set secrets / vars:
-#   wrangler secret put ANNOUNCE_URL   # https://prismatec.onrender.com
-#   wrangler secret put PUBLIC_URL     # https://alset-gen.tu-cuenta.workers.dev
-# Or [vars] below for non-secret config.
+# Red Alset en Cloudflare: muchos genes coexisten (1 Durable Object por key).
 
 [vars]
-GEN_KEY = "demo-cell.ans"
-ROOT_CID = ""
-PACKAGE_CID = ""
-# ANNOUNCE_URL and PUBLIC_URL via secrets recommended
+# ANNOUNCE_URL vía secret: https://prismatec.onrender.com
 
 [[durable_objects.bindings]]
 name = "GEN_DO"
 class_name = "AlsetGenDO"
+
+# Registro opcional de genes (crear con: wrangler kv namespace create ALSET_GEN_REGISTRY)
+# [[kv_namespaces]]
+# binding = "GEN_REGISTRY"
+# id = "xxxxxxxx"
 
 [[migrations]]
 tag = "v1"

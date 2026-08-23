@@ -19,6 +19,7 @@ Alineado a `docs/ALSET_GEN_MANIFESTO.md`. **No sustituye a Alset Mind.**
 | **G3.11** | CARGO store-and-forward entre bordes + análisis torrente | Hecho 2026-08-23 |
 | **G3.12** | Publish by-cid + DNS TXT resolve + package-url | Hecho 2026-08-23 |
 | **G3.13** | Cloudflare Worker + Durable Object (edge torrente) | Hecho 2026-08-23 |
+| **G3.14** | Red multi-gen CF + dispatch desde Mind | Hecho 2026-08-23 |
 | **G4** | Lógica Lisp / forma ligada a RootCID + fractal | Pendiente |
 | **G5** | Orquestación desde Alset Mind (tool bajo ethics) | Pendiente |
 
