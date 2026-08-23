@@ -37,6 +37,7 @@ Lab Mind: `https://prismatec-4u5c.onrender.com/w/mind.app.ans`
 | Codegen plantillas + ethics + CID (`mind_codegen`) | Sí (no es LLM) |
 | Gen orquestación por voz | Sí |
 | **Gen-memoria** (misión memory, pin CID, API) | Sí |
+| **Puente Mind↔Gen** (dialogue, auto-pin, self.gen_bridge) | Sí |
 | **CloudflareStore** + `AlsetStoreDO` en Worker (código) | Sí (P0/P1) |
 | Factory: CF → Supabase → local | Sí |
 | Env prod: `ALSET_PERSIST=cloudflare`, `ALSET_CF_STORE_URL` | Configurado en Render |

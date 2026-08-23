@@ -503,6 +503,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		if cid, err := n.GenerarCID(raw); err == nil && cid != "" {
 			resp.EpisodeCID = cid
 			n.appendMindEpisodeCID(cid)
+			n.maybeAutoPinMemGen(cid)
 			n.Auditoria("MIND_EPISODE", fmt.Sprintf("cid=%s mem=%d", cid, mem.State))
 			n.mu.Lock()
 			if a, ok := n.agentes[mindAgentID]; ok && a != nil {
@@ -736,7 +737,7 @@ func (n *NodoAlset) mindSafeTools(text string) string {
 	wantGen := strings.Contains(s, "gen ") || strings.Contains(s, "gens") || strings.Contains(s, "células") ||
 		strings.Contains(s, "celulas") || strings.Contains(s, "alset-gen") || strings.Contains(s, "semilla") ||
 		strings.Contains(s, "explora") || strings.Contains(s, "explorar") || strings.Contains(s, "lista gen") ||
-		strings.Contains(s, "listar gen") || strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") || strings.Contains(s, "sirve gen") || strings.Contains(s, "servir gen") || strings.Contains(s, "pon a servir") || strings.Contains(s, "habla con gen") || strings.Contains(s, "pregunta al gen") || strings.Contains(s, "dialoga") || strings.Contains(s, "qué sabe el gen") || strings.Contains(s, "que sabe el gen") || strings.Contains(s, "resuelve gen") || strings.Contains(s, "dónde está el gen") || strings.Contains(s, "donde esta el gen") || strings.Contains(s, "despacha") || strings.Contains(s, "envía gen") || strings.Contains(s, "envia gen") || strings.Contains(s, "manda gen") || strings.Contains(s, "gen memoria") || strings.Contains(s, "salva en gen") || strings.Contains(s, "guarda en gen") || strings.Contains(s, "genes memoria")
+		strings.Contains(s, "listar gen") || strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") || strings.Contains(s, "sirve gen") || strings.Contains(s, "servir gen") || strings.Contains(s, "pon a servir") || strings.Contains(s, "habla con gen") || strings.Contains(s, "pregunta al gen") || strings.Contains(s, "dialoga") || strings.Contains(s, "qué sabe el gen") || strings.Contains(s, "que sabe el gen") || strings.Contains(s, "resuelve gen") || strings.Contains(s, "dónde está el gen") || strings.Contains(s, "donde esta el gen") || strings.Contains(s, "despacha") || strings.Contains(s, "envía gen") || strings.Contains(s, "envia gen") || strings.Contains(s, "manda gen") || strings.Contains(s, "gen memoria") || strings.Contains(s, "salva en gen") || strings.Contains(s, "guarda en gen") || strings.Contains(s, "genes memoria") || strings.Contains(s, "dile al gen") || strings.Contains(s, "vincula memoria")
 	if !wantStatus && !wantZyrion && !wantGen {
 		return ""
 	}
@@ -878,21 +879,34 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 		return lines
 	}
 
-	// --- dialogue with gen ---
+	// --- dialogue with gen (Mind bridge) ---
 	if strings.Contains(s, "habla con gen") || strings.Contains(s, "pregunta al gen") ||
 		strings.Contains(s, "dialoga") || strings.Contains(s, "qué sabe el gen") ||
-		strings.Contains(s, "que sabe el gen") {
-		stim := "quién eres"
-		if i := strings.Index(s, ":"); i > 0 && i < len(s)-1 {
-			stim = strings.TrimSpace(text[i+1:])
+		strings.Contains(s, "que sabe el gen") || strings.Contains(s, "dile al gen") ||
+		strings.Contains(s, "di al gen") || strings.Contains(s, "dialoga con gen") {
+		gkey, stim := extractGenDialogueStimulus(text)
+		if gkey == "" {
+			gkey = name
 		}
-		res := n.DialogueRemoteGen(name, stim)
-		if v, ok := res["voice"].(string); ok && v != "" {
-			lines = append(lines, "El gen «"+normalizeGenKey(name)+"» dice: "+v)
-		} else if err, ok := res["error"].(string); ok && err != "" {
-			lines = append(lines, "No hubo respuesta del gen: "+err+". Prueba a despacharlo antes a la red.")
+		lines = append(lines, n.BridgeDialogueGen(gkey, stim, 0))
+		return lines
+	}
+	if strings.Contains(s, "vincula memoria") || strings.Contains(s, "ancla episodio") ||
+		strings.Contains(s, "pin episodio") {
+		memKey := extractGenNameFromText(s)
+		if memKey == "" {
+			memKey = "mem-nodo"
+		}
+		eps := n.recallRecentEpisodes(1)
+		if len(eps) > 0 {
+			cid, _, err := n.SaveTextToMemoryGen(memKey, eps[0].Text, "vinculo_mind")
+			if err != nil {
+				lines = append(lines, "Vínculo falló: "+err.Error())
+			} else {
+				lines = append(lines, "Vinculé el último recuerdo de Mind al gen «"+normalizeGenKey(memKey)+"» · "+truncateCID(cid)+".")
+			}
 		} else {
-			lines = append(lines, "El gen «"+normalizeGenKey(name)+"» está en silencio o sin anuncio remoto todavía.")
+			lines = append(lines, "No hay episodios recientes que vincular. Guarda un hecho primero.")
 		}
 		return lines
 	}
@@ -1131,7 +1145,8 @@ func (n *NodoAlset) handleMindSelf(w http.ResponseWriter, r *http.Request) {
 		"episode_count": len(idx.CIDs),
 		"genome":        getMindGenome(),
 		"endpoints":     []string{"POST /api/mind/tick", "GET /api/mind/self", "GET /api/mind/memory", "GET /api/mind/calibrate", "POST /api/mind/feedback"},
-		"docs":          []string{"docs/ALSET_MIND_THESIS.md", "docs/ALSET_MIND_HANDOFF.md", "docs/AI_COLLABORATION.md"},
+		"docs":          []string{"docs/ALSET_MIND_THESIS.md", "docs/ALSET_STATUS_HANDOFF.md", "docs/ALSET_MIND_GEN_BRIDGE.md"},
+		"gen_bridge":    n.mindGenBridgeStatus(),
 	})
 }
 

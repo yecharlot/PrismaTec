@@ -373,3 +373,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 
 - **Acto:** `CreateMemoryGen`, `PinCIDToMemoryGen`, `SaveTextToMemoryGen`; API `/api/gen/memory/*`; voz Mind «crea gen memoria», «salva en gen…», «lista genes memoria».
 - **Decisión:** Misión memory en Manifest.Type + metadata; anclas en EpisodeCIDs. No deploy automático.
+
+## 2026-08-23 — Puente Mind ↔ Gen
+
+- **Acto:** `mind_gen_bridge.go` (status, dialogue bridge, auto-pin, parse estímulo); self expone `gen_bridge`; voz dile/pregunta/vincula memoria; doc `ALSET_MIND_GEN_BRIDGE.md`.
+- **Dónde:** Orquestación Mind→Gen bajo ethics; gen-memoria vinculable.
+- **Falta:** Store DO en CF (wrangler); panel lab de genes; auto-dispatch gen-memoria.
