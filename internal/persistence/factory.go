@@ -8,15 +8,25 @@ import (
 // NewFromEnv creates the appropriate Store implementation.
 //
 // Priority:
-//  1. SUPABASE_URL + (SUPABASE_SERVICE_KEY or SUPABASE_KEY) from environment → Supabase
-//  2. Fallback to LocalStore under dataDir
-//
-// Configure in Render / local:
-//
-//	export SUPABASE_URL="https://uysvbxawytsegxcufdds.supabase.co"
-//	export SUPABASE_SERVICE_KEY="sb_secret_..."   # or the classic service_role JWT
-//	export SUPABASE_TABLE="alset_kv"              # optional
+//  1. ALSET_CF_STORE_URL or ALSET_CLOUDFLARE_NETWORK (+ optional STORE secret) → Cloudflare DO
+//  2. SUPABASE_URL + key → Supabase
+//  3. LocalStore under dataDir
 func NewFromEnv(dataDir string) (Store, error) {
+	if os.Getenv("ALSET_CF_STORE_URL") != "" || os.Getenv("ALSET_PERSIST") == "cloudflare" {
+		if os.Getenv("ALSET_CF_STORE_URL") != "" || os.Getenv("ALSET_CLOUDFLARE_NETWORK") != "" {
+			store, err := NewCloudflareStoreFromEnv()
+			if err == nil {
+				base := os.Getenv("ALSET_CF_STORE_URL")
+				if base == "" {
+					base = os.Getenv("ALSET_CLOUDFLARE_NETWORK")
+				}
+				fmt.Println("✅ Persistencia: Cloudflare Durable Object →", base)
+				return store, nil
+			}
+			fmt.Println("⚠️ Cloudflare store:", err, "— intentando siguiente backend")
+		}
+	}
+
 	url := os.Getenv("SUPABASE_URL")
 	key := os.Getenv("SUPABASE_SERVICE_KEY")
 	if key == "" {
@@ -27,7 +37,7 @@ func NewFromEnv(dataDir string) (Store, error) {
 		cfg := SupabaseConfig{
 			URL:        url,
 			ServiceKey: key,
-			Table:      os.Getenv("SUPABASE_TABLE"), // optional, defaults to alset_kv
+			Table:      os.Getenv("SUPABASE_TABLE"),
 		}
 		store, err := NewSupabaseStore(cfg)
 		if err != nil {
@@ -45,6 +55,6 @@ func NewFromEnv(dataDir string) (Store, error) {
 		return nil, fmt.Errorf("persistence: local: %w", err)
 	}
 	fmt.Println("✅ Persistencia: Local (disco) —", dataDir)
-	fmt.Println("   (Define SUPABASE_URL + SUPABASE_SERVICE_KEY para usar Supabase)")
+	fmt.Println("   (Define ALSET_CF_STORE_URL o SUPABASE_URL+KEY para store durable)")
 	return store, nil
 }

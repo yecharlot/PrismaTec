@@ -19,3 +19,13 @@ class_name = "AlsetGenDO"
 [[migrations]]
 tag = "v1"
 new_classes = ["AlsetGenDO"]
+
+
+# Persistencia del nodo (blocks + kv) — sustituye/complementa Supabase
+[[durable_objects.bindings]]
+name = "STORE_DO"
+class_name = "AlsetStoreDO"
+
+[[migrations]]
+tag = "v2-store"
+new_classes = ["AlsetStoreDO"]

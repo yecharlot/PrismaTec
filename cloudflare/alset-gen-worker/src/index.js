@@ -45,6 +45,11 @@ export default {
       return spawnGen(request, env, request.url);
     }
 
+    // Node persistence store (blocks + kv) → single Durable Object
+    if (path.startsWith("/api/store/")) {
+      return storeProxy(request, env, path);
+    }
+
     // Per-gen: /g/{key}/...
     const m = path.match(/^\/g\/([^/]+)(\/.*)?$/);
     if (m) {
@@ -386,3 +391,121 @@ function json(obj, status = 200) {
 function html(s) {
   return new Response(s, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 }
+
+
+async function storeProxy(request, env, path) {
+  const secret = env.STORE_SECRET || "";
+  if (secret) {
+    const h = request.headers.get("X-Alset-Store-Secret") || "";
+    if (h !== secret) {
+      return json({ ok: false, error: "unauthorized" }, 401);
+    }
+  }
+  if (!env.STORE_DO) {
+    return json({ ok: false, error: "STORE_DO not bound — deploy wrangler with AlsetStoreDO" }, 503);
+  }
+  const id = env.STORE_DO.idFromName("alset-node-store");
+  const stub = env.STORE_DO.get(id);
+  return stub.fetch(request);
+}
+
+/**
+ * AlsetStoreDO — durable KV + content-addressed blocks for PrismaTec node.
+ * Paths (same request forwarded):
+ *   PUT/GET/DELETE /api/store/kv?key=
+ *   PUT/GET        /api/store/block?cid=
+ *   POST           /api/store/blocks   { "cid": "base64data", ... }
+ *   GET            /api/store/blocks   → map cid -> base64
+ *   GET            /api/store/info
+ */
+export class AlsetStoreDO {
+  constructor(state, env) {
+    this.state = state;
+    this.env = env;
+  }
+
+  async fetch(request) {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    if (path === "/api/store/info" && request.method === "GET") {
+      const meta = (await this.state.storage.get("meta")) || { blocks: 0, kv: 0 };
+      return json({ ok: true, species: "AlsetStoreDO", meta });
+    }
+
+    if (path === "/api/store/kv") {
+      const key = url.searchParams.get("key") || "";
+      if (!key) return json({ ok: false, error: "key required" }, 400);
+      if (request.method === "GET") {
+        const v = await this.state.storage.get("kv:" + key);
+        if (v === undefined || v === null) return json({ ok: false, error: "not found" }, 404);
+        return json({ ok: true, key, data: v });
+      }
+      if (request.method === "PUT" || request.method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        const data = body.data;
+        if (typeof data !== "string") return json({ ok: false, error: "data base64/string required" }, 400);
+        await this.state.storage.put("kv:" + key, data);
+        await this.bumpMeta("kv");
+        return json({ ok: true, key });
+      }
+      if (request.method === "DELETE") {
+        await this.state.storage.delete("kv:" + key);
+        return json({ ok: true, key, deleted: true });
+      }
+    }
+
+    if (path === "/api/store/block") {
+      const cid = url.searchParams.get("cid") || "";
+      if (!cid) return json({ ok: false, error: "cid required" }, 400);
+      if (request.method === "GET") {
+        const v = await this.state.storage.get("b:" + cid);
+        if (v === undefined || v === null) return json({ ok: false, error: "not found" }, 404);
+        return json({ ok: true, cid, data: v });
+      }
+      if (request.method === "PUT" || request.method === "POST") {
+        const body = await request.json().catch(() => ({}));
+        const data = body.data;
+        if (typeof data !== "string") return json({ ok: false, error: "data base64 required" }, 400);
+        await this.state.storage.put("b:" + cid, data);
+        await this.bumpMeta("blocks");
+        return json({ ok: true, cid });
+      }
+    }
+
+    if (path === "/api/store/blocks" && request.method === "POST") {
+      const body = await request.json().catch(() => ({}));
+      const blocks = body.blocks || body;
+      if (typeof blocks !== "object") return json({ ok: false, error: "blocks map required" }, 400);
+      let n = 0;
+      for (const [cid, data] of Object.entries(blocks)) {
+        if (typeof data === "string" && cid) {
+          await this.state.storage.put("b:" + cid, data);
+          n++;
+        }
+      }
+      await this.bumpMeta("blocks", n);
+      return json({ ok: true, saved: n });
+    }
+
+    if (path === "/api/store/blocks" && request.method === "GET") {
+      // list is expensive; return only if small — for node LoadBlocks we need full map
+      const all = await this.state.storage.list({ prefix: "b:" });
+      const out = {};
+      for (const [k, v] of all) {
+        out[k.slice(2)] = v;
+      }
+      return json({ ok: true, blocks: out, count: Object.keys(out).length });
+    }
+
+    return json({ ok: false, error: "store path not found" }, 404);
+  }
+
+  async bumpMeta(kind, by = 1) {
+    const meta = (await this.state.storage.get("meta")) || { blocks: 0, kv: 0 };
+    if (kind === "blocks") meta.blocks = (meta.blocks || 0) + by;
+    if (kind === "kv") meta.kv = (meta.kv || 0) + 1;
+    await this.state.storage.put("meta", meta);
+  }
+}
+
