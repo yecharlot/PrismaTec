@@ -736,7 +736,7 @@ func (n *NodoAlset) mindSafeTools(text string) string {
 	wantGen := strings.Contains(s, "gen ") || strings.Contains(s, "gens") || strings.Contains(s, "células") ||
 		strings.Contains(s, "celulas") || strings.Contains(s, "alset-gen") || strings.Contains(s, "semilla") ||
 		strings.Contains(s, "explora") || strings.Contains(s, "explorar") || strings.Contains(s, "lista gen") ||
-		strings.Contains(s, "listar gen") || strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") || strings.Contains(s, "sirve gen") || strings.Contains(s, "servir gen") || strings.Contains(s, "pon a servir") || strings.Contains(s, "habla con gen") || strings.Contains(s, "pregunta al gen") || strings.Contains(s, "dialoga") || strings.Contains(s, "qué sabe el gen") || strings.Contains(s, "que sabe el gen") || strings.Contains(s, "resuelve gen") || strings.Contains(s, "dónde está el gen") || strings.Contains(s, "donde esta el gen") || strings.Contains(s, "despacha") || strings.Contains(s, "envía gen") || strings.Contains(s, "envia gen") || strings.Contains(s, "manda gen")
+		strings.Contains(s, "listar gen") || strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") || strings.Contains(s, "sirve gen") || strings.Contains(s, "servir gen") || strings.Contains(s, "pon a servir") || strings.Contains(s, "habla con gen") || strings.Contains(s, "pregunta al gen") || strings.Contains(s, "dialoga") || strings.Contains(s, "qué sabe el gen") || strings.Contains(s, "que sabe el gen") || strings.Contains(s, "resuelve gen") || strings.Contains(s, "dónde está el gen") || strings.Contains(s, "donde esta el gen") || strings.Contains(s, "despacha") || strings.Contains(s, "envía gen") || strings.Contains(s, "envia gen") || strings.Contains(s, "manda gen") || strings.Contains(s, "gen memoria") || strings.Contains(s, "salva en gen") || strings.Contains(s, "guarda en gen") || strings.Contains(s, "genes memoria")
 	if !wantStatus && !wantZyrion && !wantGen {
 		return ""
 	}
@@ -762,6 +762,68 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 	s := strings.ToLower(strings.TrimSpace(text))
 	n.ensureGens()
 	var lines []string
+
+	// --- gen memoria: crear / salvar / listar ---
+	if strings.Contains(s, "gen memoria") || strings.Contains(s, "gen de memoria") ||
+		strings.Contains(s, "célula memoria") || strings.Contains(s, "celula memoria") ||
+		(strings.Contains(s, "crea gen") && (strings.Contains(s, "memor") || strings.Contains(s, "salvar") || strings.Contains(s, "backup"))) {
+		name := extractGenNameFromText(s)
+		if name == "" || name == "memoria" || name == "gen" {
+			name = "mem-nodo"
+		}
+		g, err := n.CreateMemoryGen(name, "salva de memoria de la red")
+		if err != nil {
+			lines = append(lines, "No pude preparar el gen memoria: "+err.Error()+".")
+		} else {
+			lines = append(lines, "Gen memoria «"+g.Key+"» listo. Misión: guardar CIDs y notas. Di «salva en gen "+strings.TrimSuffix(g.Key, ".ans")+" …» para anclar un texto.")
+		}
+		return lines
+	}
+	if strings.Contains(s, "salva en gen") || strings.Contains(s, "guardar en gen") || strings.Contains(s, "guarda en gen") ||
+		strings.Contains(s, "ancla en gen") || strings.Contains(s, "pin en gen") {
+		name := extractGenNameFromText(s)
+		if name == "" {
+			name = "mem-nodo"
+		}
+		// text after colon or after gen name
+		payload := s
+		if i := strings.Index(s, ":"); i >= 0 {
+			payload = strings.TrimSpace(text[i+1:])
+		} else {
+			// strip command prefixes
+			for _, pfx := range []string{"salva en gen", "guardar en gen", "guarda en gen", "ancla en gen", "pin en gen"} {
+				if j := strings.Index(s, pfx); j >= 0 {
+					rest := strings.TrimSpace(text[j+len(pfx):])
+					fields := strings.Fields(rest)
+					if len(fields) > 1 {
+						payload = strings.Join(fields[1:], " ")
+					}
+					break
+				}
+			}
+		}
+		if _, err := n.CreateMemoryGen(name, ""); err != nil && !strings.Contains(err.Error(), "already") {
+			// CreateMemoryGen returns existing via ensure
+		}
+		cid, g, err := n.SaveTextToMemoryGen(name, payload, "dialogo")
+		if err != nil {
+			lines = append(lines, "No pude salvar en el gen: "+err.Error()+".")
+		} else {
+			lines = append(lines, "Salvado en gen «"+g.Key+"» · CID "+truncateCID(cid)+" · total anclas "+fmt.Sprintf("%d", len(g.EpisodeCIDs))+".")
+		}
+		return lines
+	}
+	if strings.Contains(s, "lista memoria") || strings.Contains(s, "genes memoria") || strings.Contains(s, "qué hay en gen memoria") || strings.Contains(s, "que hay en gen memoria") {
+		list := n.ListMemoryGens()
+		if len(list) == 0 {
+			lines = append(lines, "No hay genes con misión memoria. Di «crea gen memoria mem-nodo».")
+			return lines
+		}
+		for _, g := range list {
+			lines = append(lines, fmt.Sprintf("· %s — %d CID(s) anclados", g.Key, len(g.EpisodeCIDs)))
+		}
+		return lines
+	}
 
 	name := extractGenNameFromText(s)
 	if name == "" {

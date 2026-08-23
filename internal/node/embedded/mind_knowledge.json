@@ -1624,5 +1624,22 @@
       "laguna de conocimiento"
     ],
     "text": "Si no hay hit de corpus ni recuerdo CID, la curiosidad debe subir: mejor admitir la laguna y pedir un hecho anclable que inventar."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "gen memoria",
+      "salva en gen",
+      "memoria distribuida gen"
+    ],
+    "text": "Un gen con misión memoria guarda CIDs y notas: es una salva opcional de la memoria del nodo. Crea con «crea gen memoria mem-nodo» y ancla con «salva en gen mem-nodo: texto». También API /api/gen/memory/save."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "cuándo usar gen memoria",
+      "backup en gen"
+    ],
+    "text": "Usa gen memoria cuando quieras que un hecho o episodio sobreviva más allá del chat y pueda viajar con la célula. No guardes secretos ni claves. Ethics sigue aplicando al contenido sensible."
   }
 ]

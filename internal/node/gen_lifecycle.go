@@ -469,6 +469,9 @@ func (n *NodoAlset) registerGenHTTP(extra map[string]http.HandlerFunc) {
 	extra["/api/gen/publish"] = n.handleGenPublish
 	extra["/api/gen/resolve"] = n.handleGenResolve
 	extra["/api/gen/dispatch"] = n.handleGenDispatch
+	extra["/api/gen/memory/create"] = n.handleGenMemoryCreate
+	extra["/api/gen/memory/save"] = n.handleGenMemorySave
+	extra["/api/gen/memory/list"] = n.handleGenMemoryList
 	extra["/g/"] = n.handleGenPublicServe
 	extra["/work/"] = n.handleGenPublicServe
 }

@@ -368,3 +368,8 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 
 - **Acto:** `AlsetStoreDO` + rutas `/api/store/*` en Worker; `CloudflareStore` Go; factory prioriza CF. Doc `ALSET_CF_STORE.md`.
 - **Decisión:** Paso a paso; no apaga Supabase aún. Timeout cliente 12s. Sin deploy Render hasta confirmación. Deploy Worker es responsabilidad del operador (wrangler).
+
+## 2026-08-23 — Gen-memoria (salva distribuida de CID)
+
+- **Acto:** `CreateMemoryGen`, `PinCIDToMemoryGen`, `SaveTextToMemoryGen`; API `/api/gen/memory/*`; voz Mind «crea gen memoria», «salva en gen…», «lista genes memoria».
+- **Decisión:** Misión memory en Manifest.Type + metadata; anclas en EpisodeCIDs. No deploy automático.
