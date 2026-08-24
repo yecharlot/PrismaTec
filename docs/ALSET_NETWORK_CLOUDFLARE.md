@@ -1,3 +1,5 @@
+> **Preferir** [`ALSET_NETWORK_LIVE.md`](ALSET_NETWORK_LIVE.md) + [`ALSET_CF_STORE.md`](ALSET_CF_STORE.md).
+
 # Red Alset en Cloudflare
 
 ## Idea

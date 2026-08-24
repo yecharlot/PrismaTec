@@ -1,3 +1,5 @@
+> Resumen operativo en [`ALSET_MIND_AND_GEN.md`](ALSET_MIND_AND_GEN.md). Este doc es detalle del puente.
+
 # Puente Alset Mind ↔ Alset Gen
 
 ## Modelo

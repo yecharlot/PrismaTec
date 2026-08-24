@@ -1,3 +1,5 @@
+> Incluido en [`ALSET_MIND_AND_GEN.md`](ALSET_MIND_AND_GEN.md).
+
 # Gen-memoria — salva de información por CID
 
 ## Idea

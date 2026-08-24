@@ -1,3 +1,5 @@
+> **Preferir** [`ALSET_NETWORK_LIVE.md`](ALSET_NETWORK_LIVE.md) + [`ALSET_CF_STORE.md`](ALSET_CF_STORE.md).
+
 # Alset-Gen en Cloudflare (torrente de borde legítimo)
 
 ## Por qué sí (y en qué se diferencia del DNS raíz)

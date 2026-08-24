@@ -379,3 +379,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** `mind_gen_bridge.go` (status, dialogue bridge, auto-pin, parse estímulo); self expone `gen_bridge`; voz dile/pregunta/vincula memoria; doc `ALSET_MIND_GEN_BRIDGE.md`.
 - **Dónde:** Orquestación Mind→Gen bajo ethics; gen-memoria vinculable.
 - **Falta:** Store DO en CF (wrangler); panel lab de genes; auto-dispatch gen-memoria.
+
+
+## 2026-08-24 — Doc canónica Mind+Gen + Store DO en vivo
+
+- **Acto:** `ALSET_MIND_AND_GEN.md` (operación conjunta). Store DO desplegado en CF. Stubs anti-redundancia en handoffs/CF duplicados.
+- **Estado:** Mind+Gen+edge+store operativos; guía única para trabajar de la mano.

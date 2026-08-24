@@ -5,7 +5,11 @@
 **Branch:** `main`  
 **Tip al deploy de esta fecha:** `2a55ecb` (gen-memoria) + commits previos de store CF, corpus red, codegen, curiosity.
 
-Este documento es la **fuente de orientación** para cualquier IA o programador. La bitácora detallada sigue en `ALSET_MIND_CONSTRUCTION_LOG.md`.
+Este documento es la **fuente de estado**. Para **usar Mind y Gen juntos**, lee **`ALSET_MIND_AND_GEN.md`**.
+
+**Edge Store DO (2026-08-24):** desplegado (`AlsetStoreDO`). Worker: `alset-network.lhmolam-877.workers.dev`.
+
+Este documento es la **fuente de orientación de estado** para cualquier IA o programador. La bitácora detallada sigue en `ALSET_MIND_CONSTRUCTION_LOG.md`.
 
 ---
 
@@ -64,8 +68,8 @@ Visión larga: organismo digital ético, transparente, con memoria por contenido
 
 | Hueco | Acción |
 |-------|--------|
-| **Worker con `AlsetStoreDO` en CF** | `cd cloudflare/alset-gen-worker && npx wrangler deploy` (migración v2-store). Sin esto, `/api/store/*` puede fallar y el nodo hará fallback a Supabase/local. |
-| **Probar store** | `curl …/api/store/info` → `species: AlsetStoreDO` |
+| **Worker `AlsetStoreDO`** | **Hecho (2026-08-24).** Verificar: `curl …/api/store/info`. |
+| **Probar store** | OK si `species: AlsetStoreDO` |
 | **Probar Mind en prod** | tick, gen memoria, codegen, lab |
 | **Codegen general** | Más fragmentos / ensamblador (no hecho) |
 | **Gen-memoria en edge** | Anunciar gens memoria al Worker (parcial; local+registry sí) |

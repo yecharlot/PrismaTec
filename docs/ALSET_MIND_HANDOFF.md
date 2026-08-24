@@ -1,3 +1,5 @@
+> **Preferir** [`ALSET_STATUS_HANDOFF.md`](ALSET_STATUS_HANDOFF.md) y [`ALSET_MIND_AND_GEN.md`](ALSET_MIND_AND_GEN.md). Este archivo es histórico.
+
 # Alset Mind — Protocolo de continuidad (handoff)
 
 Este archivo existe para que la co-creación **no muera** cuando un chat, un modelo o una sesión alcance su límite.
