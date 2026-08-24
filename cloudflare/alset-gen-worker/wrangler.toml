@@ -2,30 +2,24 @@ name = "alset-network"
 main = "src/index.js"
 compatibility_date = "2024-11-01"
 
-# Red Alset en Cloudflare: muchos genes coexisten (1 Durable Object por key).
+# Red Alset en Cloudflare: genes (GEN_DO) + store del nodo (STORE_DO).
 
 [vars]
-# ANNOUNCE_URL vía secret: https://prismatec.onrender.com
+# ANNOUNCE_URL vía secret si hace falta
 
 [[durable_objects.bindings]]
 name = "GEN_DO"
 class_name = "AlsetGenDO"
 
-# Registro opcional de genes (crear con: wrangler kv namespace create ALSET_GEN_REGISTRY)
-# [[kv_namespaces]]
-# binding = "GEN_REGISTRY"
-# id = "xxxxxxxx"
-
-[[migrations]]
-tag = "v1"
-new_classes = ["AlsetGenDO"]
-
-
-# Persistencia del nodo (blocks + kv) — sustituye/complementa Supabase
 [[durable_objects.bindings]]
 name = "STORE_DO"
 class_name = "AlsetStoreDO"
 
+# Free plan exige new_sqlite_classes (no solo new_classes)
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["AlsetGenDO"]
+
 [[migrations]]
 tag = "v2-store"
-new_classes = ["AlsetStoreDO"]
+new_sqlite_classes = ["AlsetStoreDO"]
