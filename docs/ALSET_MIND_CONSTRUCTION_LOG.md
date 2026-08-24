@@ -391,3 +391,8 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** `mind_director.go` — prioridad ethics→tools→math→codegen→mem/corpus→chat; normalización ortográfica; hilo (gen/explore/code); anti-coletas soft; capacidad ≠ crear; genConsultVoice con misión/hallazgos; plantillas sumar; corpus diálogo/cultura/gramática/mates (~197).
 - **Principio:** solución de enrutado + corpus + hilo, no parches por frase.
 - **Deploy:** pendiente confirmación (auto-deploy OFF).
+
+## 2026-08-24 — Gen delete/return + Mind scout web
+
+- **Acto:** `DeleteAlsetGen`, `ReturnGenHome`, API delete/return, voz Mind; `MindScoutWeb` (sonda temporal → explore → aprender CID → respuesta → delete opcional).
+- **Idea:** genes como sondas desechables o retornables; Mind amplía alcance sin LLM.

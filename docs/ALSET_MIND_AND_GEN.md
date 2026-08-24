@@ -162,3 +162,14 @@ Normalización de typos frecuentes del usuario.
 ---
 
 *Cualquier IA o programador: empieza por la §4. Si algo falla, mira `gen_bridge` en `/api/mind/self` y `/api/store/info`.*
+
+## 8. Sondas: eliminar, retornar, explorar y aprender (2026-08-24)
+
+| Acción | Frase / API |
+|--------|-------------|
+| Eliminar | «elimina gen genesis» · `POST /api/gen/delete` |
+| Retornar (explore o CF) | «retorna gen genesis» · `POST /api/gen/return` |
+| Explorar | «envía al gen X a explorar https://…» |
+| Sonda automática | Si no hay corpus, Mind puede crear `scout-*`, explorar Wikipedia ES, integrar hallazgo, anclar en memoria y **borrar** la sonda (`ALSET_SCOUT_EPHEMERAL`, default on) |
+
+El gen es la **herramienta de frontera** de Mind: no sustituye ethics ni el corpus curado; aporta hallazgos cuando el organismo no sabe.

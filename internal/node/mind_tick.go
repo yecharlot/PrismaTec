@@ -494,6 +494,14 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		}
 	}
 
+	// 6b) Sonda web vía gen cuando el corpus no sabe (explore → aprender → respuesta)
+	if voice == "" && ethics.State != 2 && speakFromKnowledge(text) == "" && memSpeak == "" {
+		if sv := n.MindScoutWeb(text, ethics.State); sv != "" {
+			voice = sv
+			primaryKind = "tool"
+		}
+	}
+
 	// 7) Voz clásica (identidad, memoria, corpus, compose)
 	if voice == "" {
 		voice = mindVoice(text, organs, memSpeak, knownName)
@@ -803,7 +811,7 @@ func (n *NodoAlset) mindSafeTools(text string) string {
 	wantGen := strings.Contains(s, "gen ") || strings.Contains(s, "gens") || strings.Contains(s, "células") ||
 		strings.Contains(s, "celulas") || strings.Contains(s, "alset-gen") || strings.Contains(s, "semilla") ||
 		strings.Contains(s, "explora") || strings.Contains(s, "explorar") || strings.Contains(s, "lista gen") ||
-		strings.Contains(s, "listar gen") || strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") || strings.Contains(s, "sirve gen") || strings.Contains(s, "servir gen") || strings.Contains(s, "pon a servir") || strings.Contains(s, "habla con gen") || strings.Contains(s, "pregunta al gen") || strings.Contains(s, "dialoga") || strings.Contains(s, "qué sabe el gen") || strings.Contains(s, "que sabe el gen") || strings.Contains(s, "resuelve gen") || strings.Contains(s, "dónde está el gen") || strings.Contains(s, "donde esta el gen") || strings.Contains(s, "despacha") || strings.Contains(s, "envía gen") || strings.Contains(s, "envia gen") || strings.Contains(s, "manda gen") || strings.Contains(s, "gen memoria") || strings.Contains(s, "salva en gen") || strings.Contains(s, "guarda en gen") || strings.Contains(s, "genes memoria") || strings.Contains(s, "dile al gen") || strings.Contains(s, "vincula memoria")
+		strings.Contains(s, "listar gen") || strings.Contains(s, "crea gen") || strings.Contains(s, "crear gen") || strings.Contains(s, "sirve gen") || strings.Contains(s, "servir gen") || strings.Contains(s, "pon a servir") || strings.Contains(s, "habla con gen") || strings.Contains(s, "pregunta al gen") || strings.Contains(s, "dialoga") || strings.Contains(s, "qué sabe el gen") || strings.Contains(s, "que sabe el gen") || strings.Contains(s, "resuelve gen") || strings.Contains(s, "dónde está el gen") || strings.Contains(s, "donde esta el gen") || strings.Contains(s, "despacha") || strings.Contains(s, "envía gen") || strings.Contains(s, "envia gen") || strings.Contains(s, "manda gen") || strings.Contains(s, "gen memoria") || strings.Contains(s, "salva en gen") || strings.Contains(s, "guarda en gen") || strings.Contains(s, "genes memoria") || strings.Contains(s, "dile al gen") || strings.Contains(s, "vincula memoria") || strings.Contains(s, "elimina gen") || strings.Contains(s, "retorna gen") || strings.Contains(s, "trae de vuelta")
 	if !wantStatus && !wantZyrion && !wantGen {
 		return ""
 	}
@@ -829,6 +837,35 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 	s := strings.ToLower(strings.TrimSpace(text))
 	n.ensureGens()
 	var lines []string
+
+	// --- eliminar / retornar gen (sonda a casa) ---
+	if strings.Contains(s, "elimina gen") || strings.Contains(s, "eliminar gen") || strings.Contains(s, "borra gen") || strings.Contains(s, "borrar gen") || strings.Contains(s, "destruye gen") {
+		name := extractGenNameFromText(s)
+		if name == "" {
+			lines = append(lines, "Indica el gen: «elimina gen genesis».")
+			return lines
+		}
+		if err := n.DeleteAlsetGen(name); err != nil {
+			lines = append(lines, "No pude eliminar: "+err.Error()+".")
+		} else {
+			lines = append(lines, "Gen «"+normalizeGenKey(name)+"» eliminado del registro de este nodo.")
+		}
+		return lines
+	}
+	if strings.Contains(s, "retorna gen") || strings.Contains(s, "retornar gen") || strings.Contains(s, "regresa gen") || strings.Contains(s, "vuelve gen") || strings.Contains(s, "trae de vuelta") || strings.Contains(s, "haz retornar") {
+		name := extractGenNameFromText(s)
+		if name == "" {
+			lines = append(lines, "Indica el gen: «retorna gen genesis».")
+			return lines
+		}
+		snap, err := n.ReturnGenHome(name)
+		if err != nil {
+			lines = append(lines, "No pude retornar el gen: "+err.Error()+".")
+		} else {
+			lines = append(lines, "Gen «"+snap.Key+"» de vuelta en el nodo (antes: "+snap.Prev+").")
+		}
+		return lines
+	}
 
 	// --- gen memoria: crear / salvar / listar ---
 	if strings.Contains(s, "gen memoria") || strings.Contains(s, "gen de memoria") ||
