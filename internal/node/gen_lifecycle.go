@@ -387,29 +387,67 @@ func genConsultVoice(g *agents.AlsetGen, stimulus string, o agents.GenOrganState
 		return fmt.Sprintf("Semilla %s: zona de riesgo — no invado ni muto. Identidad ANS intacta; RootCID sin cambio.", g.Key)
 	}
 	findN := 0
+	var lastFinding string
+	mission := g.Manifest.Description
 	if g.State.Metadata != nil {
+		if m, ok := g.State.Metadata["mission"].(string); ok && m != "" {
+			mission = m
+		}
 		switch v := g.State.Metadata["findings"].(type) {
 		case []interface{}:
 			findN = len(v)
+			if findN > 0 {
+				if m, ok := v[findN-1].(map[string]interface{}); ok {
+					if u, ok := m["url"].(string); ok {
+						lastFinding = u
+					}
+				}
+			}
 		case []string:
 			findN = len(v)
+			if findN > 0 {
+				lastFinding = v[findN-1]
+			}
 		}
+	}
+	st := strings.ToLower(stimulus)
+	if strings.Contains(st, "misión") || strings.Contains(st, "mision") || strings.Contains(st, "para qué sirves") || strings.Contains(st, "para que sirves") {
+		if mission == "" {
+			mission = g.Manifest.Type
+		}
+		if isMemoryMissionGen(g) {
+			return fmt.Sprintf("Soy %s, gen con misión memoria: anclo CIDs y notas (%d anclas). Ubicación %s.", g.Key, len(g.EpisodeCIDs), g.State.Location)
+		}
+		return fmt.Sprintf("Soy %s. Misión/descripción: %s. Tipo %s · ubicación %s · hallazgos %d.", g.Key, mission, g.Manifest.Type, g.State.Location, findN)
+	}
+	if strings.Contains(st, "quién eres") || strings.Contains(st, "quien eres") || strings.Contains(st, "quién es") || strings.Contains(st, "quien es") || strings.Contains(st, "identidad") {
+		return fmt.Sprintf("Soy Alset-Gen %s: identidad estable, forma mutable. Root %s · %d hallazgos · ubicación %s.", g.Key, truncateCID(g.CurrentRootCID), findN, g.State.Location)
+	}
+	if strings.Contains(st, "hallazgo") || strings.Contains(st, "explor") || strings.Contains(st, "viste") || strings.Contains(st, "encontr") {
+		if findN == 0 {
+			return fmt.Sprintf("%s aún no tiene hallazgos. Pide explorar una URL pública.", g.Key)
+		}
+		msg := fmt.Sprintf("%s reporta %d hallazgo(s).", g.Key, findN)
+		if lastFinding != "" {
+			msg += " Último: " + lastFinding
+		}
+		return msg
 	}
 	if o.Self >= 1 {
 		return fmt.Sprintf(
-			"Soy Alset-Gen %s: identidad estable, forma mutable. RootCID %s · %d metamorfosis · %d hallazgos observados · ubicación %s. No soy un archivo; soy patrón en viaje.",
+			"Soy Alset-Gen %s: identidad estable, forma mutable. RootCID %s · %d metamorfosis · %d hallazgos · ubicación %s.",
 			g.Key, truncateCID(g.CurrentRootCID), len(g.History), findN, g.State.Location,
 		)
 	}
 	if stimulus == "" {
 		return fmt.Sprintf(
-			"Semilla %s en resonancia (forma %s). Puedo observar, registrar en CID y mutar forma bajo autoridad — sin ocupar ni invadir.",
+			"Semilla %s en resonancia (forma %s). Puedo observar, registrar en CID y mutar forma bajo autoridad.",
 			g.Key, g.Manifest.Type,
 		)
 	}
 	return fmt.Sprintf(
-		"Semilla %s recibió el estímulo. Campo local dialog=%d act=%d mem=%d ethics=%d curiosity=%d. Root %s · hallazgos %d. Observo y respondo; no perturbo la red.",
-		g.Key, o.Dialog, o.Act, o.Mem, o.Ethics, o.Curiosity, truncateCID(g.CurrentRootCID), findN,
+		"%s escuchó el estímulo. Root %s · hallazgos %d · ubicación %s. Observo y respondo; no perturbo la red.",
+		g.Key, truncateCID(g.CurrentRootCID), findN, g.State.Location,
 	)
 }
 

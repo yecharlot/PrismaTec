@@ -116,6 +116,13 @@ curl -s https://alset-network.lhmolam-877.workers.dev/api/network/gens
 
 ---
 
+## 5b. Director de diálogo (2026-08-24)
+
+Prioridad fija en cada latido: **ethics → gen/tools → matemática (LispAI) → codegen → memoria → corpus → charla**.  
+Curiosity/humor **no** se pegan si hubo tool/código/cálculo.  
+Hilo: último gen / explore / código para «qué significa esto».  
+Normalización de typos frecuentes del usuario.
+
 ## 6. Dónde estamos / a dónde / qué falta
 
 | | |

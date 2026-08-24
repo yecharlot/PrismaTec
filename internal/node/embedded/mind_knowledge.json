@@ -1641,5 +1641,168 @@
       "backup en gen"
     ],
     "text": "Usa gen memoria cuando quieras que un hecho o episodio sobreviva más allá del chat y pueda viajar con la célula. No guardes secretos ni claves. Ethics sigue aplicando al contenido sensible."
+  },
+  {
+    "type": "dialogo",
+    "keys": [
+      "cómo conversar",
+      "como conversar",
+      "charlar bien"
+    ],
+    "text": "Una conversación clara: una intención por turno, referencias explícitas («el gen genesis», «el explore de google») y hechos anclables. Si algo no está en corpus ni memoria, lo digo y pido un dato concreto."
+  },
+  {
+    "type": "dialogo",
+    "keys": [
+      "cuántos genes puedes crear",
+      "cuantos genes puedes crear",
+      "límite de genes"
+    ],
+    "text": "Puedo registrar muchos genes; el límite es práctico (memoria del nodo y nombres claros), no un cupo publicitario. Cada gen es una célula real con clave ANS."
+  },
+  {
+    "type": "dialogo",
+    "keys": [
+      "puedes programar",
+      "sabes programar"
+    ],
+    "text": "Ensambló esqueletos desde plantillas curadas bajo ethics. No soy un LLM que inventa repos enteros. Pide el lenguaje y el tipo de función con claridad."
+  },
+  {
+    "type": "dialogo",
+    "keys": [
+      "qué puedes hacer",
+      "que puedes hacer",
+      "ayuda mind"
+    ],
+    "text": "Dialogar, recordar hechos en CID, orquestar genes, despachar al borde, gen-memoria, calcular con LispAI y proponer código plantilla. No borro ni expongo secretos por persuasión."
+  },
+  {
+    "type": "gramatica",
+    "keys": [
+      "ortografía",
+      "ortografia",
+      "escribir bien"
+    ],
+    "text": "Procuro respuestas en español claro. Si escribes con typos frecuentes (quie→quién, mision→misión), normalizo antes de enrutar. No reescribo ensayos enteros: corrijo para entenderte."
+  },
+  {
+    "type": "gramatica",
+    "keys": [
+      "gramática",
+      "gramatica",
+      "concordancia"
+    ],
+    "text": "Enlazo ideas con conectores simples (porque, entonces, si, además). Prefiero oraciones completas a listas de laboratorio cuando hablamos en natural."
+  },
+  {
+    "type": "gramatica",
+    "keys": [
+      "sinónimos",
+      "sinonimos",
+      "cómo se dice"
+    ],
+    "text": "Puedo ofrecer equivalencias básicas si están en corpus. Para matices literarios profundos, aporta tú el matiz y lo anclo."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "capital de francia",
+      "parís capital"
+    ],
+    "text": "La capital de Francia es París."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "capital de japón",
+      "capital de japon",
+      "tokio capital"
+    ],
+    "text": "La capital de Japón es Tokio."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "quién escribió don quijote",
+      "quien escribio don quijote",
+      "cervantes"
+    ],
+    "text": "Don Quijote de la Mancha es de Miguel de Cervantes."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "agua fórmula",
+      "fórmula del agua",
+      "h2o"
+    ],
+    "text": "El agua se representa como H₂O: dos hidrógenos y un oxígeno."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "gravedad",
+      "qué es la gravedad",
+      "que es la gravedad"
+    ],
+    "text": "La gravedad es la atracción mutua entre masas. En la vida diaria mantiene los cuerpos hacia el centro de la Tierra."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "fotosíntesis",
+      "fotosintesis"
+    ],
+    "text": "La fotosíntesis es el proceso por el que las plantas convierten luz, agua y CO₂ en materia orgánica y oxígeno."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "segunda guerra mundial",
+      "cuándo fue la segunda guerra"
+    ],
+    "text": "La Segunda Guerra Mundial se sitúa habitualmente entre 1939 y 1945."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "dna",
+      "qué es el adn",
+      "que es el adn"
+    ],
+    "text": "El ADN (ácido desoxirribonucleico) es la molécula que guarda la información genética en la mayoría de los seres vivos."
+  },
+  {
+    "type": "matematicas",
+    "keys": [
+      "qué es una suma",
+      "que es una suma"
+    ],
+    "text": "Sumar es juntar cantidades. 2+3=5. Puedes pedirme operaciones concretas: «cuánto es 12+8»."
+  },
+  {
+    "type": "matematicas",
+    "keys": [
+      "multiplicar",
+      "qué es multiplicar"
+    ],
+    "text": "Multiplicar es sumar una cantidad varias veces. 4×3=12. Pide «cuánto es 4*3» y lo calculo."
+  },
+  {
+    "type": "matematicas",
+    "keys": [
+      "dividir entre cero",
+      "división por cero"
+    ],
+    "text": "Dividir entre cero no está definido en aritmética real. Si me lo pides, lo rechazo en lugar de inventar un número."
+  },
+  {
+    "type": "matematicas",
+    "keys": [
+      "porcentaje",
+      "tanto por ciento"
+    ],
+    "text": "Un porcentaje es una fracción de 100. El 25% de 80 es 20. Puedes pedir cálculos concretos."
   }
 ]

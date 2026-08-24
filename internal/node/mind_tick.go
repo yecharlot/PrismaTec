@@ -423,48 +423,114 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			}
 		}
 	}
+	// --- Director de diálogo (prioridad contundente) ---
+	normText := normalizeUserInput(text)
 	voice := ""
-	// Generalized intents (structural) before brittle phrase lists
-	if isEpistemicCheck(text) || isConfirmationPrompt(text) {
+	primaryKind := "chat"
+	var codegenCID string
+
+	if ethics.State == 2 {
+		voice = mindVoice(text, organs, memSpeak, knownName)
+		primaryKind = "veto"
+	}
+
+	// 1) Referencias al hilo ("qué significa esto")
+	if voice == "" && isReferentialFollowUp(normText) {
+		if ref := n.resolveReferential(normText); ref != "" {
+			voice = ref
+			primaryKind = "referential"
+		}
+	}
+
+	// 2) Preguntas de capacidad (no confundir con "crea gen")
+	if voice == "" && isCapabilityQuestion(normText) {
+		voice = capabilityVoice(normText)
+		primaryKind = "capability"
+	}
+
+	// 3) Matemática → LispAI
+	if voice == "" {
+		if mv := n.tryMindMath(normText); mv != "" {
+			voice = mv
+			primaryKind = "math"
+			n.rememberThreadRefs("math", "", "", "")
+		}
+	}
+
+	// 4) Continuidad / confirmación de hilo
+	if voice == "" && (isEpistemicCheck(text) || isConfirmationPrompt(text)) {
 		voice = n.confirmMindThread(text)
+		primaryKind = "chat"
 	}
 	if voice == "" && (isElaborationRequest(text) || isContinuePrompt(text)) {
 		voice = n.continueMindThread(text)
+		primaryKind = "chat"
 	}
-	if voice == "" {
-		voice = mindVoice(text, organs, memSpeak, knownName)
-	}
-	// Soft organs APPEND tint/question — never replace solid knowledge/identity/memory answers
-	if ethics.State != 2 {
-		low := strings.ToLower(text)
-		if hv := humorVoice(text, humor.State); hv != "" {
-			playfulLead := humor.State >= 2 && (strings.Contains(low, "mago") || strings.Contains(low, "varita") ||
-				strings.Contains(low, "harry") || strings.Contains(low, "chiste") || strings.Contains(low, "jaja"))
-			if playfulLead && speakFromKnowledge(text) == "" && memSpeak == "" && !isIdentityTalk(low) {
-				voice = hv
-			} else {
-				voice = voice + "\n\n" + hv
+
+	// 5) Tools Gen (dominan sobre corpus)
+	if voice == "" && ethics.State != 2 && act.State != 2 && isGenToolIntent(normText) {
+		if extra := n.mindSafeTools(text); extra != "" {
+			voice = extra
+			primaryKind = "tool"
+			if g := extractGenNameFromText(normText); g != "" {
+				n.rememberThreadRefs("gen", g, "", "")
+			}
+			if strings.Contains(normText, "explora") || strings.Contains(normText, "explorar") {
+				n.rememberThreadRefs("explore", extractGenNameFromText(normText), compressVoiceBlock(extra, 500), "")
 			}
 		}
-		if cv := curiosityVoice(text, curiosity.State); cv != "" {
-			voice = voice + "\n\n" + cv
-		}
 	}
-		// Fase 5: generar_codigo (plantillas + ethics + CID) — solo ternario
-	var codegenCID string
-	if isCodeGenRequest(text) {
+
+	// 6) Codegen estricto
+	if voice == "" && isCodeGenStrict(normText) {
 		cv, code, lang, vetoed := n.mindGenerateCode(text, ethics.State)
 		if cv != "" {
 			voice = cv
+			primaryKind = "codegen"
 			codegenCID = n.saveCodegenEpisode(text, code, lang, cv, ethics.State, vetoed)
+			n.rememberThreadRefs("code", "", "", code)
+			_ = lang
+			_ = vetoed
 		}
 	}
-// Safe tools when ethics/act allow (not veto)
-	if ethics.State != 2 && act.State != 2 {
-		if extra := n.mindSafeTools(text); extra != "" {
-			voice = voice + "\n\n" + extra
+
+	// 7) Voz clásica (identidad, memoria, corpus, compose)
+	if voice == "" {
+		voice = mindVoice(text, organs, memSpeak, knownName)
+		if memSpeak != "" {
+			primaryKind = "memory"
+		} else if speakFromKnowledge(text) != "" {
+			primaryKind = "knowledge"
+			n.rememberThreadRefs("know", "", "", "")
+		} else if isIdentityTalk(strings.ToLower(text)) {
+			primaryKind = "identity"
+		} else {
+			primaryKind = "chat"
 		}
 	}
+
+	// Soft curiosity/humor SOLO si el director lo permite (anti-coletas)
+	if ethics.State != 2 && softAppendAllowed(primaryKind, voice) {
+		low := normText
+		if hv := humorVoice(text, humor.State); hv != "" {
+			playfulLead := humor.State >= 2 && (strings.Contains(low, "mago") || strings.Contains(low, "varita") ||
+				strings.Contains(low, "harry") || strings.Contains(low, "chiste") || strings.Contains(low, "jaja"))
+			if playfulLead && primaryKind == "chat" {
+				voice = hv
+			} else if primaryKind == "chat" {
+				voice = voice + "\n\n" + hv
+			}
+		}
+		if primaryKind == "chat" || primaryKind == "knowledge" {
+			if cv := curiosityVoice(text, curiosity.State); cv != "" {
+				// only one soft line, and only if curiosity high
+				if curiosity.State >= 2 && primaryKind == "chat" {
+					voice = voice + "\n\n" + cv
+				}
+			}
+		}
+	}
+
 	if memHint != "" && memSpeak == "" {
 		voice = voice + "\n\n" + memoryHintLine(memHint)
 	}

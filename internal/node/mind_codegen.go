@@ -93,6 +93,23 @@ func Test{{Name}}(t *testing.T) {
 }
 `,
 	},
+		{
+		ID: "go_sum_ab", Lang: "go",
+		Keys: []string{"sumar", "función sumar", "funcion sumar", "suma a y b", "sumar a y b", "func sumar"},
+		Body: `package {{pkg}}
+
+func {{fn}}(a, b int) int {
+	return a + b
+}
+`,
+	},
+	{
+		ID: "py_sum_ab", Lang: "python",
+		Keys: []string{"sumar python", "def sumar", "suma en python"},
+		Body: `def {{fn}}(a, b):
+	return a + b
+`,
+	},
 	{
 		ID: "go_struct_json", Lang: "go",
 		Keys: []string{"struct json", "json go", "marshal struct", "struct go"},

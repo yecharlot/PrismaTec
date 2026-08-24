@@ -385,3 +385,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 
 - **Acto:** `ALSET_MIND_AND_GEN.md` (operación conjunta). Store DO desplegado en CF. Stubs anti-redundancia en handoffs/CF duplicados.
 - **Estado:** Mind+Gen+edge+store operativos; guía única para trabajar de la mano.
+
+## 2026-08-24 — Director de diálogo contundente
+
+- **Acto:** `mind_director.go` — prioridad ethics→tools→math→codegen→mem/corpus→chat; normalización ortográfica; hilo (gen/explore/code); anti-coletas soft; capacidad ≠ crear; genConsultVoice con misión/hallazgos; plantillas sumar; corpus diálogo/cultura/gramática/mates (~197).
+- **Principio:** solución de enrutado + corpus + hilo, no parches por frase.
+- **Deploy:** pendiente confirmación (auto-deploy OFF).
