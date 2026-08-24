@@ -30,6 +30,7 @@ func isScoutableQuestion(s string) bool {
 	// factual / open info requests
 	if strings.HasPrefix(s, "qué es ") || strings.HasPrefix(s, "que es ") ||
 		strings.HasPrefix(s, "quién es ") || strings.HasPrefix(s, "quien es ") ||
+		strings.HasPrefix(s, "quién fue ") || strings.HasPrefix(s, "quien fue ") ||
 		strings.HasPrefix(s, "dónde queda ") || strings.HasPrefix(s, "donde queda ") ||
 		strings.HasPrefix(s, "busca ") || strings.HasPrefix(s, "investiga ") ||
 		strings.Contains(s, "en internet") || strings.Contains(s, "en la web") {
@@ -41,10 +42,22 @@ func isScoutableQuestion(s string) bool {
 	return false
 }
 
+// forceWebScout: user explicitly wants the web; do not skip for corpus keyword hits (e.g. "harry potter" humor entry).
+func forceWebScout(s string) bool {
+	s = strings.ToLower(strings.TrimSpace(s))
+	if strings.HasPrefix(s, "busca ") || strings.HasPrefix(s, "investiga ") ||
+		strings.HasPrefix(s, "quién es ") || strings.HasPrefix(s, "quien es ") ||
+		strings.HasPrefix(s, "quién fue ") || strings.HasPrefix(s, "quien fue ") ||
+		strings.Contains(s, "en internet") || strings.Contains(s, "en la web") {
+		return true
+	}
+	return false
+}
+
 func topicFromQuestion(s string) string {
 	s = strings.TrimSpace(s)
 	low := strings.ToLower(s)
-	for _, pfx := range []string{"qué es ", "que es ", "quién es ", "quien es ", "busca ", "investiga ", "dónde queda ", "donde queda "} {
+	for _, pfx := range []string{"qué es ", "que es ", "quién es ", "quien es ", "quién fue ", "quien fue ", "busca ", "investiga ", "dónde queda ", "donde queda "} {
 		if strings.HasPrefix(low, pfx) {
 			return strings.TrimSpace(s[len(pfx):])
 		}
@@ -71,7 +84,9 @@ func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 	if !isScoutableQuestion(normalizeUserInput(userText)) {
 		return ""
 	}
-	if speakFromKnowledge(userText) != "" {
+	norm := normalizeUserInput(userText)
+	// Corpus keyword hits (e.g. humor "harry potter") must not block explicit web search.
+	if !forceWebScout(norm) && speakFromKnowledge(userText) != "" {
 		return "" // corpus already knows
 	}
 	topic := topicFromQuestion(normalizeUserInput(userText))

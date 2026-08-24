@@ -380,7 +380,10 @@ func isWorldFact(s string) bool {
 	}
 	if strings.HasPrefix(s, "qué ") || strings.HasPrefix(s, "que ") ||
 		strings.HasPrefix(s, "cuál ") || strings.HasPrefix(s, "cual ") ||
-		strings.HasPrefix(s, "cómo ") || strings.HasPrefix(s, "como ") {
+		strings.HasPrefix(s, "cómo ") || strings.HasPrefix(s, "como ") ||
+		strings.HasPrefix(s, "quién ") || strings.HasPrefix(s, "quien ") ||
+		strings.HasPrefix(s, "busca ") || strings.HasPrefix(s, "investiga ") ||
+		strings.HasPrefix(s, "dónde ") || strings.HasPrefix(s, "donde ") {
 		return false
 	}
 	if strings.Contains(s, "borra") || strings.Contains(s, "elimina") || strings.Contains(s, "reset") {

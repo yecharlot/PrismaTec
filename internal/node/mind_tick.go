@@ -494,11 +494,16 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		}
 	}
 
-	// 6b) Sonda web vía gen cuando el corpus no sabe (explore → aprender → respuesta)
-	if voice == "" && ethics.State != 2 && speakFromKnowledge(text) == "" && memSpeak == "" {
-		if sv := n.MindScoutWeb(text, ethics.State); sv != "" {
-			voice = sv
-			primaryKind = "tool"
+	// 6b) Sonda web vía gen (explore → aprender → respuesta).
+	// Explicit "busca/quién es/investiga" must not be blocked by memory echoes or humor keywords.
+	if voice == "" && ethics.State != 2 {
+		norm := normalizeUserInput(text)
+		allowScout := forceWebScout(norm) || (speakFromKnowledge(text) == "" && memSpeak == "")
+		if allowScout {
+			if sv := n.MindScoutWeb(text, ethics.State); sv != "" {
+				voice = sv
+				primaryKind = "tool"
+			}
 		}
 	}
 
