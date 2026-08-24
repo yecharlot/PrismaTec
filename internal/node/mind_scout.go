@@ -1,11 +1,15 @@
 package node
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
 	"time"
+	"unicode"
 )
 
 // Scout: Mind uses a temporary (or named) gen as a probe to the web when corpus has no answer.
@@ -72,8 +76,79 @@ func wikipediaURL(topic string) string {
 	if topic == "" {
 		return ""
 	}
-	// Prefer Spanish Wikipedia as Mind speaks Spanish
-	return "https://es.wikipedia.org/wiki/" + url.PathEscape(strings.ReplaceAll(topic, " ", "_"))
+	return "https://es.wikipedia.org/wiki/" + url.PathEscape(strings.ReplaceAll(wikiTitle(topic), " ", "_"))
+}
+
+// wikiTitle: mild title-case so Wikipedia resolves "harry potter" → useful page.
+func wikiTitle(topic string) string {
+	parts := strings.Fields(strings.TrimSpace(topic))
+	for i, p := range parts {
+		runes := []rune(strings.ToLower(p))
+		if len(runes) == 0 {
+			continue
+		}
+		runes[0] = unicode.ToUpper(runes[0])
+		parts[i] = string(runes)
+	}
+	return strings.Join(parts, " ")
+}
+
+// fetchWikipediaSummary uses the public REST API (plain text extract, no HTML chrome).
+func fetchWikipediaSummary(topic string) (title, extract, pageURL string, ok bool) {
+	titleHint := wikiTitle(topic)
+	slug := url.PathEscape(strings.ReplaceAll(titleHint, " ", "_"))
+	hosts := []string{
+		"https://es.wikipedia.org/api/rest_v1/page/summary/",
+		"https://en.wikipedia.org/api/rest_v1/page/summary/",
+	}
+	client := &http.Client{Timeout: 12 * time.Second}
+	for _, host := range hosts {
+		req, err := http.NewRequest(http.MethodGet, host+slug, nil)
+		if err != nil {
+			continue
+		}
+		req.Header.Set("User-Agent", "AlsetMind-Scout/1.0 (https://github.com/yecharlot/PrismaTec; contact via repo)")
+		req.Header.Set("Accept", "application/json")
+		resp, err := client.Do(req)
+		if err != nil {
+			continue
+		}
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 64*1024))
+		resp.Body.Close()
+		if resp.StatusCode != 200 {
+			continue
+		}
+		var data struct {
+			Title       string `json:"title"`
+			Extract     string `json:"extract"`
+			Description string `json:"description"`
+			Type        string `json:"type"`
+			ContentURLs struct {
+				Desktop struct {
+					Page string `json:"page"`
+				} `json:"desktop"`
+			} `json:"content_urls"`
+		}
+		if json.Unmarshal(body, &data) != nil {
+			continue
+		}
+		extract = strings.TrimSpace(data.Extract)
+		if extract == "" && data.Description != "" {
+			extract = strings.TrimSpace(data.Description)
+		}
+		if extract == "" {
+			continue
+		}
+		if data.Type == "disambiguation" {
+			extract = "Varias entradas en Wikipedia; reformula el nombre más específico. " + extract
+		}
+		pageURL = data.ContentURLs.Desktop.Page
+		if pageURL == "" {
+			pageURL = wikipediaURL(topic)
+		}
+		return data.Title, extract, pageURL, true
+	}
+	return "", "", "", false
 }
 
 // MindScoutWeb creates/uses a gen, explores, learns from findings, optional delete.
@@ -85,19 +160,14 @@ func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 		return ""
 	}
 	norm := normalizeUserInput(userText)
-	// Corpus keyword hits (e.g. humor "harry potter") must not block explicit web search.
 	if !forceWebScout(norm) && speakFromKnowledge(userText) != "" {
-		return "" // corpus already knows
+		return ""
 	}
 	topic := topicFromQuestion(normalizeUserInput(userText))
 	if topic == "" || len(topic) < 2 {
 		return ""
 	}
-	u := wikipediaURL(topic)
-	if u == "" {
-		return ""
-	}
-	// stable-ish scout name per topic (reuse if still present)
+
 	slug := strings.ToLower(topic)
 	slug = strings.Map(func(r rune) rune {
 		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
@@ -114,47 +184,71 @@ func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 	}
 
 	_, _ = n.CreateAlsetGen(key, "", "scout", "sonda temporal: "+topic)
-	res := n.ExploreRemoteGen(key, u, "scout:"+topic)
-	snippet := ""
-	title := ""
-	if res != nil {
-		if s, ok := res["snippet"].(string); ok {
-			snippet = s
-		}
-		if t, ok := res["title"].(string); ok {
-			title = t
-		}
-		if err, ok := res["error"].(string); ok && err != "" && snippet == "" {
-			return fmt.Sprintf("Envié la sonda «%s» a la web, pero no trajo un informe usable (%s). Reformula el tema o prueba otra fuente.", normalizeGenKey(key), err)
-		}
-	}
-	report := strings.TrimSpace(title + " — " + snippet)
-	if report == "—" || len(report) < 8 {
-		report = fmt.Sprintf("La sonda «%s» visitó %s sin extraer texto útil.", normalizeGenKey(key), u)
+
+	var report, sourceURL string
+	if title, extract, pageURL, ok := fetchWikipediaSummary(topic); ok {
+		sourceURL = pageURL
+		report = strings.TrimSpace(title + ": " + extract)
+		report = compressVoiceBlock(report, 520)
 	} else {
-		report = compressVoiceBlock(report, 420)
+		u := wikipediaURL(topic)
+		sourceURL = u
+		res := n.ExploreRemoteGen(key, u, "scout:"+topic)
+		snippet, title := "", ""
+		if res != nil {
+			if s, ok := res["snippet"].(string); ok {
+				snippet = cleanWebSnippet(s)
+			}
+			if t, ok := res["title"].(string); ok {
+				title = t
+			}
+			if err, ok := res["error"].(string); ok && err != "" && snippet == "" {
+				_ = n.DeleteAlsetGen(key)
+				return fmt.Sprintf("Envié la sonda «%s» a la web, pero no trajo un informe usable (%s).", normalizeGenKey(key), err)
+			}
+		}
+		report = strings.TrimSpace(title + " — " + snippet)
+		if report == "—" || len(report) < 20 {
+			report = fmt.Sprintf("La sonda visitó %s sin extraer un resumen claro. Prueba otro nombre o «investiga …».", u)
+		} else {
+			report = compressVoiceBlock(report, 420)
+		}
 	}
 
-	// Learn: store as gen_memory note + mind episode ring via SaveTextToMemoryGen on mem-nodo optional
 	learnText := fmt.Sprintf("hallazgo sonda %s sobre %s: %s", key, topic, report)
 	if _, g, err := n.SaveTextToMemoryGen(key, learnText, "scout_finding"); err == nil && g != nil {
-		// also pin on mem-nodo for network memory
-		_, _ = n.PinCIDToMemoryGen("mem-nodo", g.EpisodeCIDs[len(g.EpisodeCIDs)-1], "from_scout")
+		if len(g.EpisodeCIDs) > 0 {
+			_, _ = n.PinCIDToMemoryGen("mem-nodo", g.EpisodeCIDs[len(g.EpisodeCIDs)-1], "from_scout")
+		}
 	} else {
-		// fallback: generate CID only via episode path on mem gen create
 		_, _ = n.CreateMemoryGen("mem-nodo", "memoria de sondas")
 		_, _, _ = n.SaveTextToMemoryGen("mem-nodo", learnText, "scout_finding")
 	}
 
 	n.rememberThreadRefs("explore", key, report, "")
 
-	voice := fmt.Sprintf("No lo tenía en corpus. Despaché la sonda «%s» a la web (%s).\n\n%s\n\nEsto queda en los hallazgos del gen; puedes preguntarle, retornarlo o eliminarlo.",
-		normalizeGenKey(key), u, report)
+	voice := fmt.Sprintf("No lo tenía en corpus. Despaché la sonda «%s» a la web (%s).\n\n%s\n\nEl hallazgo queda anclado en memoria de sondas.",
+		normalizeGenKey(key), sourceURL, report)
 
 	if scoutEphemeral() {
-		// keep findings learned on mem-nodo; remove temporary scout cell
 		_ = n.DeleteAlsetGen(key)
-		voice += "\n(Sonda temporal eliminada tras informar; el hallazgo quedó anclado en memoria.)"
+		voice += "\n(Sonda temporal eliminada tras informar.)"
 	}
 	return voice
+}
+
+// cleanWebSnippet drops obvious HTML/JS chrome left by crude page scrapes.
+func cleanWebSnippet(s string) string {
+	s = strings.TrimSpace(s)
+	low := strings.ToLower(s)
+	if strings.Contains(low, "function(){") || strings.Contains(low, "client-js") ||
+		strings.Contains(low, "vector-feature-") {
+		// Prefer text before the script noise if any
+		if i := strings.Index(s, "(function"); i > 40 {
+			s = strings.TrimSpace(s[:i])
+		} else {
+			return ""
+		}
+	}
+	return s
 }
