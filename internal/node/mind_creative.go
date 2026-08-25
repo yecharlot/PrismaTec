@@ -91,8 +91,9 @@ func isBadCreativeAnchor(s string) bool {
 		"me suena esto", "escribe un poema", "escribe un cuento", "hallazgo sonda",
 		"scout-", "seguimos por ahí", "seguimos por ahi", "prefers-color",
 		"composición ternaria", "composicion ternaria", "write=2",
-		"un poema organiza ritmo", // craft-only: not thematic anchor
+		"un poema organiza ritmo",
 		"recursos: aliteración", "metáfora: decir que",
+		"cuento breve:", "situación → giro", "no inventar biografías reales",
 	}
 	for _, b := range bad {
 		if strings.Contains(low, b) {
@@ -218,7 +219,9 @@ func isLiteraryCraftOnly(s string) bool {
 	return strings.Contains(low, "un poema organiza") ||
 		strings.Contains(low, "metáfora: decir") ||
 		strings.Contains(low, "recursos: aliteración") ||
-		strings.Contains(low, "haiku: tres versos")
+		strings.Contains(low, "haiku: tres versos") ||
+		strings.Contains(low, "cuento breve") ||
+		strings.Contains(low, "situación → giro")
 }
 
 func composeShortTale(theme, anchor, device string) string {
