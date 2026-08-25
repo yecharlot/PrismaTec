@@ -396,3 +396,13 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 
 - **Acto:** `DeleteAlsetGen`, `ReturnGenHome`, API delete/return, voz Mind; `MindScoutWeb` (sonda temporal → explore → aprender CID → respuesta → delete opcional).
 - **Idea:** genes como sondas desechables o retornables; Mind amplía alcance sin LLM.
+
+## 2026-08-24 — Capa de efecto ternaria bajo act + action_memory
+
+- **Acto:** Introducir `ActuateState` (write/read/reason/explore/execute/communicate/delete) como sub-efectores 0/1/2 bajo el órgano `act` existente. No se añade 8.º órgano; genoma de 7 intacto.
+- **Memoria:** `action_memory` (anillo en RAM + `alset_data/mind_action_memory.json`) registra canal, valor, trigger, snapshot de órganos, resultado y CID.
+- **Integración:** Director de diálogo registra al disparar Gen tools, scout, codegen y math. `ethics=2` o `act=2` (bloqueo) dejan todos los canales en 0.
+- **API:** `POST /api/mind/tick` puede devolver `actuate` opcional. Consultas tipo «qué hice / acciones recientes» leen el registro (`speakFromActionMemory`).
+- **Archivos:** `internal/node/mind_actuate.go` (nuevo); parches en `mind_tick.go` y `mind_bootstrap.go`.
+- **Regla:** Sin generación probabilística libre; write = codegen/composición; explore = MindScoutWeb/Gen.
+- **Decisión:** Orden, trazabilidad y base de políticas sin romper lab, calibración ni Sales/Vero.

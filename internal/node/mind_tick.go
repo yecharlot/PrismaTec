@@ -34,6 +34,7 @@ type MindTickResponse struct {
 	MemState   int               `json:"mem_state"`
 	MemoryHint string            `json:"memory_hint,omitempty"`
 	Note       string            `json:"note"`
+	Actuate    *ActuateState     `json:"actuate,omitempty"` // sub-efectores bajo act
 }
 
 // level03 maps [0,1] continuous to ternary intensity 0/1/2 (low/mid/high).
@@ -411,6 +412,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	}
 
 	organs := []MindOrganResult{dialog, act, mem, self, ethics, curiosity, humor}
+	actuate := evaluateActuate(text, organs)
 	knowHit := speakFromKnowledge(text)
 	// Escape hatch: no corpus hit + declarative novelty → raise memory organ
 	if shouldCaptureEscape(text, knowHit) {
@@ -454,6 +456,9 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			voice = mv
 			primaryKind = "math"
 			n.rememberThreadRefs("math", "", "", "")
+			if actuate.Reason >= 1 {
+				n.recordAction("reason", actuate.Reason, text, mv, "", primaryKind, organs)
+			}
 		}
 	}
 
@@ -478,6 +483,18 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			if strings.Contains(normText, "explora") || strings.Contains(normText, "explorar") {
 				n.rememberThreadRefs("explore", extractGenNameFromText(normText), compressVoiceBlock(extra, 500), "")
 			}
+			if actuate.Execute >= 1 {
+				n.recordAction("execute", actuate.Execute, text, extra, "", primaryKind, organs)
+			}
+			if actuate.Communicate >= 1 {
+				n.recordAction("communicate", actuate.Communicate, text, extra, "", primaryKind, organs)
+			}
+			if actuate.Delete >= 1 {
+				n.recordAction("delete", actuate.Delete, text, extra, "", primaryKind, organs)
+			}
+			if actuate.Read >= 1 {
+				n.recordAction("read", actuate.Read, text, extra, "", primaryKind, organs)
+			}
 		}
 	}
 
@@ -489,6 +506,9 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			primaryKind = "codegen"
 			codegenCID = n.saveCodegenEpisode(text, code, lang, cv, ethics.State, vetoed)
 			n.rememberThreadRefs("code", "", "", code)
+			if actuate.Write >= 1 {
+				n.recordAction("write", actuate.Write, text, cv, codegenCID, primaryKind, organs)
+			}
 			_ = lang
 			_ = vetoed
 		}
@@ -503,7 +523,18 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			if sv := n.MindScoutWeb(text, ethics.State); sv != "" {
 				voice = sv
 				primaryKind = "tool"
+				if actuate.Explore >= 1 {
+					n.recordAction("explore", actuate.Explore, text, sv, "", primaryKind, organs)
+				}
 			}
+		}
+	}
+
+	// 6c) Memoria de acción (qué hice / acciones recientes)
+	if voice == "" {
+		if am := speakFromActionMemory(normText); am != "" {
+			voice = am
+			primaryKind = "action_memory"
 		}
 	}
 
@@ -556,7 +587,8 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		Voice:      voice,
 		MemState:   mem.State,
 		MemoryHint: memHint,
-		Note:       "latido+memoria+compose+codegen+curiosity+humor+zyrion",
+		Note:       "latido+memoria+compose+codegen+curiosity+humor+zyrion+actuate",
+		Actuate:    &actuate,
 	}
 	if codegenCID != "" {
 		resp.EpisodeCID = codegenCID
