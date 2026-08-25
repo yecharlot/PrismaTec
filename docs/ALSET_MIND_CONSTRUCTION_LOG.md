@@ -418,3 +418,11 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 
 - **Acto:** `internal/pulse/types.go` DefaultServers apunta al servicio vivo `prismatec-4u5c.onrender.com` (el slug corto `prismatec.onrender.com` no responde / 404).
 - **Nota:** recuperar el nombre corto solo es posible si Render libera el hostname o con dominio propio; no es automático.
+
+## 2026-08-25 — Scout ES-first, voz limpia, typewriter lab
+
+- **ES primero:** `resolveWikipediaTitleOn` + summary solo ES; EN solo si no hay artículo ES; cache EN se invalida para re-sonda.
+- **Voz:** `formatScoutVoice` — cuerpo + `Fuente: URL` debajo; sin «Despaché la sonda…».
+- **Basura:** rechazo CSS/JS de DuckDuckGo HTML; explore final solo a wiki ES.
+- **UI:** typewriter en `embedded/mind_index.html` para mensajes de Mind.
+- **DDG:** `kl=es-es`.

@@ -292,22 +292,26 @@ func wikiTitle(topic string) string {
 	return strings.Join(parts, " ")
 }
 
-// resolveWikipediaTitle: B — search API → canonical page title.
-func resolveWikipediaTitle(topic string) string {
+// resolveWikipediaTitleOn searches one Wikipedia host; returns title or "".
+func resolveWikipediaTitleOn(topic, host string) string {
 	q := strings.TrimSpace(topic)
-	if q == "" {
+	if q == "" || host == "" {
 		return ""
 	}
-	hosts := []string{"es.wikipedia.org", "en.wikipedia.org"}
+	variants := []string{q}
+	// accent / capitalization variants help ES search (felix → Félix)
+	if !strings.Contains(q, "é") && strings.Contains(strings.ToLower(q), "felix") {
+		variants = append(variants, strings.ReplaceAll(q, "felix", "félix"), strings.ReplaceAll(q, "Felix", "Félix"))
+	}
 	client := &http.Client{Timeout: 10 * time.Second}
-	for _, host := range hosts {
-		api := fmt.Sprintf("https://%s/w/api.php?action=query&list=search&srsearch=%s&srlimit=1&format=json",
-			host, url.QueryEscape(q))
+	for _, v := range variants {
+		api := fmt.Sprintf("https://%s/w/api.php?action=query&list=search&srsearch=%s&srlimit=3&format=json",
+			host, url.QueryEscape(v))
 		req, err := http.NewRequest(http.MethodGet, api, nil)
 		if err != nil {
 			continue
 		}
-		req.Header.Set("User-Agent", "AlsetMind-Scout/1.1 (https://github.com/yecharlot/PrismaTec)")
+		req.Header.Set("User-Agent", "AlsetMind-Scout/1.3 (https://github.com/yecharlot/PrismaTec)")
 		req.Header.Set("Accept", "application/json")
 		resp, err := client.Do(req)
 		if err != nil {
@@ -328,73 +332,145 @@ func resolveWikipediaTitle(topic string) string {
 		if json.Unmarshal(body, &data) != nil {
 			continue
 		}
-		if len(data.Query.Search) > 0 && data.Query.Search[0].Title != "" {
-			return data.Query.Search[0].Title
+		for _, hit := range data.Query.Search {
+			if hit.Title == "" {
+				continue
+			}
+			low := strings.ToLower(hit.Title)
+			if strings.Contains(low, "desambiguación") || strings.Contains(low, "disambiguation") {
+				continue
+			}
+			return hit.Title
 		}
+	}
+	return ""
+}
+
+// resolveWikipediaTitle: ES first, then EN (title only; summary prefers ES).
+func resolveWikipediaTitle(topic string) string {
+	if t := resolveWikipediaTitleOn(topic, "es.wikipedia.org"); t != "" {
+		return t
+	}
+	if t := resolveWikipediaTitleOn(topic, "en.wikipedia.org"); t != "" {
+		return t
 	}
 	return wikiTitle(topic)
 }
 
-func fetchWikipediaSummary(topic string) (title, extract, pageURL string, ok bool) {
-	resolved := resolveWikipediaTitle(topic)
-	if resolved == "" {
-		resolved = wikiTitle(topic)
+// fetchWikipediaSummaryLang fetches REST summary from one language wiki.
+func fetchWikipediaSummaryLang(title, langHost string) (outTitle, extract, pageURL string, ok bool) {
+	if title == "" || langHost == "" {
+		return "", "", "", false
 	}
-	slug := url.PathEscape(strings.ReplaceAll(resolved, " ", "_"))
-	hosts := []string{
-		"https://es.wikipedia.org/api/rest_v1/page/summary/",
-		"https://en.wikipedia.org/api/rest_v1/page/summary/",
-	}
+	slug := url.PathEscape(strings.ReplaceAll(title, " ", "_"))
+	api := fmt.Sprintf("https://%s/api/rest_v1/page/summary/%s", langHost, slug)
 	client := &http.Client{Timeout: 12 * time.Second}
-	for _, host := range hosts {
-		req, err := http.NewRequest(http.MethodGet, host+slug, nil)
-		if err != nil {
-			continue
+	req, err := http.NewRequest(http.MethodGet, api, nil)
+	if err != nil {
+		return "", "", "", false
+	}
+	req.Header.Set("User-Agent", "AlsetMind-Scout/1.3 (https://github.com/yecharlot/PrismaTec)")
+	req.Header.Set("Accept", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", "", "", false
+	}
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 64*1024))
+	resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return "", "", "", false
+	}
+	var data struct {
+		Title       string `json:"title"`
+		Extract     string `json:"extract"`
+		Description string `json:"description"`
+		Type        string `json:"type"`
+		Lang        string `json:"lang"`
+		ContentURLs struct {
+			Desktop struct {
+				Page string `json:"page"`
+			} `json:"desktop"`
+		} `json:"content_urls"`
+	}
+	if json.Unmarshal(body, &data) != nil {
+		return "", "", "", false
+	}
+	extract = strings.TrimSpace(data.Extract)
+	if extract == "" {
+		extract = strings.TrimSpace(data.Description)
+	}
+	if extract == "" || data.Type == "disambiguation" {
+		return "", "", "", false
+	}
+	pageURL = data.ContentURLs.Desktop.Page
+	if pageURL == "" {
+		pageURL = fmt.Sprintf("https://%s/wiki/%s", langHost, slug)
+	}
+	outTitle = data.Title
+	if outTitle == "" {
+		outTitle = title
+	}
+	return outTitle, extract, pageURL, true
+}
+
+// fetchWikipediaSummary prioritizes Spanish. Falls back to EN only if ES missing.
+func fetchWikipediaSummary(topic string) (title, extract, pageURL string, ok bool) {
+	esTitle := resolveWikipediaTitleOn(topic, "es.wikipedia.org")
+	if esTitle != "" {
+		if t, e, u, hit := fetchWikipediaSummaryLang(esTitle, "es.wikipedia.org"); hit {
+			return t, e, u, true
 		}
-		req.Header.Set("User-Agent", "AlsetMind-Scout/1.1 (https://github.com/yecharlot/PrismaTec)")
-		req.Header.Set("Accept", "application/json")
-		resp, err := client.Do(req)
-		if err != nil {
-			continue
-		}
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, 64*1024))
-		resp.Body.Close()
-		if resp.StatusCode != 200 {
-			continue
-		}
-		var data struct {
-			Title       string `json:"title"`
-			Extract     string `json:"extract"`
-			Description string `json:"description"`
-			Type        string `json:"type"`
-			ContentURLs struct {
-				Desktop struct {
-					Page string `json:"page"`
-				} `json:"desktop"`
-			} `json:"content_urls"`
-		}
-		if json.Unmarshal(body, &data) != nil {
-			continue
-		}
-		extract = strings.TrimSpace(data.Extract)
-		if extract == "" && data.Description != "" {
-			extract = strings.TrimSpace(data.Description)
-		}
-		if extract == "" {
-			continue
-		}
-		if data.Type == "disambiguation" {
-			extract = "Varias entradas en Wikipedia; reformula con un nombre más específico. " + extract
-		}
-		pageURL = data.ContentURLs.Desktop.Page
-		if pageURL == "" {
-			pageURL = wikipediaURL(resolved)
-		}
-		return data.Title, extract, pageURL, true
+	}
+	// try same topic slug on ES without search hit
+	if t, e, u, hit := fetchWikipediaSummaryLang(wikiTitle(topic), "es.wikipedia.org"); hit {
+		return t, e, u, true
+	}
+	enTitle := resolveWikipediaTitleOn(topic, "en.wikipedia.org")
+	if enTitle == "" {
+		enTitle = wikiTitle(topic)
+	}
+	if t, e, u, hit := fetchWikipediaSummaryLang(enTitle, "en.wikipedia.org"); hit {
+		// mark English so voice layer can label it
+		return t, e, u, true
 	}
 	return "", "", "", false
 }
 
+// isMostlyEnglish heuristic: if we only have EN wiki, voice will say so.
+func isMostlyEnglish(s string) bool {
+	low := strings.ToLower(s)
+	esHints := []string{" el ", " la ", " de ", " que ", " fue ", " una ", " los ", " las ", " del ", " por ", " con "}
+	enHints := []string{" the ", " was ", " and ", " with ", " from ", " that ", " his ", " her ", " is ", " are "}
+	esN, enN := 0, 0
+	for _, h := range esHints {
+		if strings.Contains(low, h) {
+			esN++
+		}
+	}
+	for _, h := range enHints {
+		if strings.Contains(low, h) {
+			enN++
+		}
+	}
+	return enN >= 2 && enN > esN
+}
+
+// formatScoutVoice: cuerpo limpio + fuente debajo (sin jerga de laboratorio).
+func formatScoutVoice(body, sourceURL string, fromCache bool) string {
+	body = strings.TrimSpace(body)
+	body = compressVoiceBlock(body, 560)
+	var b strings.Builder
+	b.WriteString(body)
+	b.WriteString("\n\n")
+	if sourceURL != "" {
+		b.WriteString("Fuente: ")
+		b.WriteString(sourceURL)
+	}
+	if fromCache {
+		b.WriteString("\n(Recuperado de memoria de sondas.)")
+	}
+	return strings.TrimSpace(b.String())
+}
 
 // fetchDuckDuckGoAnswer: primary professional scout source (Instant Answer API).
 // Returns heading, abstract text, source URL. Prefer Abstract over RelatedTopics.
@@ -403,7 +479,7 @@ func fetchDuckDuckGoAnswer(topic string) (title, extract, pageURL string, ok boo
 	if q == "" {
 		return "", "", "", false
 	}
-	api := "https://api.duckduckgo.com/?q=" + url.QueryEscape(q) + "&format=json&no_html=1&skip_disambig=1"
+	api := "https://api.duckduckgo.com/?q=" + url.QueryEscape(q) + "&format=json&no_html=1&skip_disambig=1&kl=es-es"
 	client := &http.Client{Timeout: 12 * time.Second}
 	req, err := http.NewRequest(http.MethodGet, api, nil)
 	if err != nil {
@@ -488,6 +564,9 @@ func scoutReportLowQuality(report string) bool {
 	bad := []string{
 		"desambiguación", "disambiguation", "varias entradas",
 		"puede referirse a", "may refer to", "reformula con un nombre",
+		"prefers-color-scheme", "function(){", "client-js", "header-wrap",
+		"var dc_enabled", "baselinkurl", "set-theme--dark", "@media",
+		"html.no-theme", "duckduckgo.com@media",
 	}
 	for _, b := range bad {
 		if strings.Contains(r, b) {
@@ -519,9 +598,10 @@ func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 		nt := normalizeTopicKey(topic)
 		tk := normalizeTopicKey(tKey)
 		same := nt == tk || strings.Contains(tk, nt) || strings.Contains(nt, tk)
-		if same && !scoutReportLowQuality(prev) {
-			return fmt.Sprintf("Desde memoria de sondas («%s»):\n\n%s\n\n(Sin nueva sonda: ya teníamos este hallazgo.)", tKey, prev)
+		if same && !scoutReportLowQuality(prev) && !isMostlyEnglish(prev) {
+			return formatScoutVoice(prev, "", true)
 		}
+		// EN-only cache → re-scout seeking ES source
 	}
 
 	slug := strings.ToLower(topic)
@@ -542,18 +622,33 @@ func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 	_, _ = n.CreateAlsetGen(key, "", "scout", "sonda temporal: "+topic)
 
 	var report, sourceURL string
-	// Primary: DuckDuckGo Instant Answer (más serio / factual que Wikipedia raw)
-	if title, extract, pageURL, ok := fetchDuckDuckGoAnswer(topic); ok && !scoutReportLowQuality(extract) {
+	langNote := ""
+
+	// 1) Wikipedia ES primero (voz en español)
+	if title, extract, pageURL, ok := fetchWikipediaSummary(topic); ok && !scoutReportLowQuality(extract) {
 		sourceURL = pageURL
-		report = strings.TrimSpace(title + ": " + extract)
+		report = strings.TrimSpace(title + ". " + extract)
+		if isMostlyEnglish(report) {
+			langNote = "Resumen disponible solo en inglés (no hay artículo ES fiable)."
+		}
 		report = compressVoiceBlock(report, 520)
-	} else if title, extract, pageURL, ok := fetchWikipediaSummary(topic); ok && !scoutReportLowQuality(title+": "+extract) {
-		// Fallback Wikipedia (solo si no es desambiguación)
-		sourceURL = pageURL
-		report = strings.TrimSpace(title + ": " + extract)
-		report = compressVoiceBlock(report, 520)
-	} else {
-		u := "https://duckduckgo.com/?q=" + url.QueryEscape(topic)
+	}
+
+	// 2) DuckDuckGo Instant Answer (región es-es)
+	if report == "" {
+		if title, extract, pageURL, ok := fetchDuckDuckGoAnswer(topic); ok && !scoutReportLowQuality(extract) {
+			sourceURL = pageURL
+			report = strings.TrimSpace(title + ". " + extract)
+			if isMostlyEnglish(report) {
+				langNote = "Resumen en inglés (Instant Answer)."
+			}
+			report = compressVoiceBlock(report, 520)
+		}
+	}
+
+	// 3) Explore gen solo a página Wikipedia ES (evitar HTML de buscadores)
+	if report == "" {
+		u := wikipediaURL(topic)
 		sourceURL = u
 		res := n.ExploreRemoteGen(key, u, "scout:"+topic)
 		snippet, title := "", ""
@@ -566,15 +661,19 @@ func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 			}
 			if err, ok := res["error"].(string); ok && err != "" && snippet == "" {
 				_ = n.DeleteAlsetGen(key)
-				return fmt.Sprintf("Envié la sonda «%s» a la web, pero no encontré una página fiable (%s). Reformula el nombre.", normalizeGenKey(key), err)
+				return "No encontré una fuente fiable en español para «" + topic + "». Prueba el nombre completo."
 			}
 		}
-		report = strings.TrimSpace(title + " — " + snippet)
-		if report == "—" || len(report) < 20 || cleanWebSnippet(report) == "" {
+		report = strings.TrimSpace(strings.TrimSpace(title) + ". " + snippet)
+		if report == "." || len(report) < 40 || cleanWebSnippet(report) == "" || scoutReportLowQuality(report) {
 			_ = n.DeleteAlsetGen(key)
-			return fmt.Sprintf("No encontré una fuente fiable para «%s». Prueba con el nombre completo o más contexto.", topic)
+			return "No encontré una fuente fiable en español para «" + topic + "». Prueba con más contexto."
 		}
 		report = compressVoiceBlock(report, 420)
+	}
+
+	if langNote != "" {
+		report = report + "\n\n" + langNote
 	}
 
 	if !scoutReportLowQuality(report) {
@@ -593,26 +692,30 @@ func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 
 	n.rememberThreadRefs("explore", key, report, "")
 
-	voice := fmt.Sprintf("No lo tenía en corpus. Despaché la sonda «%s» a la web (%s).\n\n%s\n\nEl hallazgo queda anclado en memoria de sondas.",
-		normalizeGenKey(key), sourceURL, report)
-
+	voice := formatScoutVoice(report, sourceURL, false)
 	if scoutEphemeral() {
 		_ = n.DeleteAlsetGen(key)
-		voice += "\n(Sonda temporal eliminada tras informar.)"
 	}
 	return voice
 }
+
 
 func cleanWebSnippet(s string) string {
 	s = strings.TrimSpace(s)
 	low := strings.ToLower(s)
 	if strings.Contains(low, "function(){") || strings.Contains(low, "client-js") ||
-		strings.Contains(low, "vector-feature-") {
+		strings.Contains(low, "vector-feature-") || strings.Contains(low, "prefers-color-scheme") ||
+		strings.Contains(low, "header-wrap") || strings.Contains(low, "var dc_enabled") ||
+		strings.Contains(low, "@media") || strings.Contains(low, "baselinkurl") {
 		if i := strings.Index(s, "(function"); i > 40 {
 			s = strings.TrimSpace(s[:i])
 		} else {
 			return ""
 		}
+	}
+	// drop residual CSS/JS lines
+	if scoutReportLowQuality(s) {
+		return ""
 	}
 	return s
 }

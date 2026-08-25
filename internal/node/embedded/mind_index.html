@@ -167,12 +167,55 @@ function esc(t) {
 function add(who, text, meta) {
   const d = document.createElement('div');
   d.className = 'msg ' + who;
-  let html = '<div class="who">' + (who === 'user' ? 'Tú' : 'Alset Mind') + '</div>' +
-    esc(text).replace(/\n/g,'<br>');
-  if (meta) html += '<div class="meta">' + esc(meta) + '</div>';
-  d.innerHTML = html;
+  const whoLabel = who === 'user' ? 'Tú' : 'Alset Mind';
+  d.innerHTML = '<div class="who">' + whoLabel + '</div><div class="body"></div>';
+  const body = d.querySelector('.body');
   logEl.appendChild(d);
-  logEl.scrollTop = logEl.scrollHeight;
+  if (who === 'user') {
+    body.innerHTML = esc(text).replace(/\n/g, '<br>');
+    if (meta) {
+      const m = document.createElement('div');
+      m.className = 'meta';
+      m.textContent = meta;
+      d.appendChild(m);
+    }
+    logEl.scrollTop = logEl.scrollHeight;
+    return Promise.resolve();
+  }
+  // Typewriter for Mind — ilusión de escritura (no stream real del servidor)
+  return typewrite(body, text).then(() => {
+    if (meta) {
+      const m = document.createElement('div');
+      m.className = 'meta';
+      m.textContent = meta;
+      d.appendChild(m);
+    }
+    logEl.scrollTop = logEl.scrollHeight;
+  });
+}
+
+function typewrite(el, fullText) {
+  const text = String(fullText || '');
+  el.innerHTML = '';
+  let i = 0;
+  // adaptive speed: short answers slower feel, long answers faster
+  const base = text.length > 400 ? 6 : (text.length > 180 ? 10 : 14);
+  return new Promise(resolve => {
+    function step() {
+      if (i >= text.length) {
+        resolve();
+        return;
+      }
+      // chunk a few chars for smoother long texts
+      const n = text.length > 300 ? 3 : 1;
+      const slice = text.slice(i, i + n);
+      i += n;
+      el.innerHTML = esc(text.slice(0, i)).replace(/\n/g, '<br>');
+      logEl.scrollTop = logEl.scrollHeight;
+      setTimeout(step, base);
+    }
+    step();
+  });
 }
 
 function paintOrgans(organs) {
@@ -292,7 +335,7 @@ async function latido() {
   try {
     const { res, data } = await postMindTick(text);
     if (!res.ok || !data || (data.error && !data.voice)) {
-      add('mind', 'El nodo aún no responde. Espera un momento y prueba de nuevo.');
+      await add('mind', 'El nodo aún no responde. Espera un momento y prueba de nuevo.');
       document.getElementById('status').textContent = 'error';
     } else {
       paintOrgans(data.organs || []);
@@ -313,7 +356,7 @@ async function latido() {
         mutEl.textContent = 'genoma mutó';
         meta += (meta ? ' · ' : '') + 'genoma aceptó mutación';
       }
-      add('mind', msg, meta || null);
+      await add('mind', msg, meta || null);
       document.getElementById('status').textContent = 'vivo';
       refreshSelf();
       refreshMemory();
