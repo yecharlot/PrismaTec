@@ -433,3 +433,10 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Hilo:** `mindLastScoutTopic` + `tryScoutFollowUp` («su madre», etc.) sin ecos de Juana/antagonismo.
 - **Memoria:** soft «Me suena» no muestra hallazgo sonda / HTML basura.
 - **Acción:** `speakFromActionMemory` explica canal + órganos (ethics/act/dialog) y patrones de sesión.
+
+## 2026-08-25 — Fluidez: follow-up sonda, ecos limpios, corpus vivo
+
+- **Follow-up:** «su madre» lanza sonda a «madre de <tema>» si hace falta; no devuelve resumen vacío.
+- **Eco:** bestEpisodeOverlap ignora episodios «hallazgo sonda».
+- **Acción:** «qué hiciste» / «porque lo hiciste» (sin tilde) → action_memory.
+- **Corpus:** `promoteScoutToKnowledge` escribe hallazgos ES en `alset_data/mind_knowledge_live.json` (merge con corpus embebido).

@@ -622,38 +622,39 @@ func (n *NodoAlset) tryScoutFollowUp(userText string, ethicsState int) string {
 	}
 	n.mindLastMu.Lock()
 	subj := strings.TrimSpace(n.mindLastScoutTopic)
-	lastReport := n.mindLastExplore
+	lastReport := strings.TrimSpace(n.mindLastExplore)
+	lastVoice := strings.TrimSpace(n.mindLastVoice)
 	n.mindLastMu.Unlock()
 	if subj == "" {
 		return ""
 	}
-	// 1) Memory of sondas for the subject
-	if _, prev, ok := recallScoutFinding(subj); ok && !scoutReportLowQuality(prev) && !isMostlyEnglish(prev) {
-		// answer from known report if it already contains a clue
-		if strings.Contains(low, "madre") || strings.Contains(low, "padre") || strings.Contains(low, "esposa") {
-			return formatScoutVoice(
-				"Sobre «"+subj+"» tengo este resumen, pero no incluye el nombre que pides:\n\n"+prev+
-					"\n\nPuedo buscar «"+followUpSearchTopic(low, subj)+"» si quieres que lance otra sonda.",
-				"", true)
-		}
-		return formatScoutVoice(
-			"Seguimos con «"+subj+"». De lo ya explorado:\n\n"+compressVoiceBlock(prev, 400)+
-				"\n\nSi quieres otro detalle concreto, dilo (lugar de nacimiento, equipo, obra…).",
-			"", true)
-	}
-	if lastReport != "" && !scoutReportLowQuality(lastReport) {
-		return formatScoutVoice(
-			"Seguimos con «"+subj+"». Del último hallazgo:\n\n"+compressVoiceBlock(lastReport, 400)+
-				"\n\nEse resumen no responde del todo a «"+strings.TrimSpace(userText)+"». Puedo sondear «"+followUpSearchTopic(low, subj)+"».",
-			"", true)
-	}
-	// 2) New probe with composed topic
 	composed := followUpSearchTopic(low, subj)
-	if composed == "" {
-		return ""
+	// Prefer launching a focused probe when asking for a concrete slot (madre/padre/…)
+	needsProbe := strings.Contains(low, "madre") || strings.Contains(low, "padre") ||
+		strings.Contains(low, "esposa") || strings.Contains(low, "mujer") ||
+		strings.Contains(low, "nació") || strings.Contains(low, "nacio") ||
+		strings.Contains(low, "equipo")
+	if needsProbe && composed != "" && composed != subj {
+		if v := n.MindScoutWeb("quién es "+composed, ethicsState); v != "" {
+			return v
+		}
 	}
-	// reuse MindScoutWeb path via synthetic question
-	return n.MindScoutWeb("quién es "+composed, ethicsState)
+	base := lastReport
+	if base == "" {
+		if _, prev, ok := recallScoutFinding(subj); ok && !scoutReportLowQuality(prev) {
+			base = prev
+		}
+	}
+	if base == "" && lastVoice != "" && !scoutReportLowQuality(lastVoice) {
+		base = lastVoice
+	}
+	if base == "" {
+		return "Seguimos con «" + subj + "», pero aún no tengo un resumen sólido en memoria. Pregunta «quién es " + subj + "» y luego el detalle."
+	}
+	return formatScoutVoice(
+		"Seguimos con «"+subj+"». De lo explorado:\n\n"+compressVoiceBlock(base, 420)+
+			"\n\nEse texto no responde del todo a «"+strings.TrimSpace(userText)+"».",
+		"", true)
 }
 
 func followUpSearchTopic(follow, subject string) string {
@@ -782,6 +783,7 @@ func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 
 	if !scoutReportLowQuality(report) {
 		storeScoutFinding(topic, report)
+		promoteScoutToKnowledge(topic, report)
 	}
 
 	learnText := fmt.Sprintf("hallazgo sonda %s sobre %s: %s", key, topic, report)

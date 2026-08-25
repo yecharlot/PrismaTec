@@ -226,14 +226,17 @@ func speakFromActionMemory(query string) string {
 	if q == "" {
 		return ""
 	}
+	qf := foldSpanish(q)
 	ask := strings.Contains(q, "qué hice") || strings.Contains(q, "que hice") ||
+		strings.Contains(qf, "que hice") || strings.Contains(qf, "que hiciste") ||
 		strings.Contains(q, "última acción") || strings.Contains(q, "ultima accion") ||
 		strings.Contains(q, "acciones recientes") || strings.Contains(q, "qué ejecutaste") ||
 		strings.Contains(q, "que ejecutaste") || strings.Contains(q, "historial de acción") ||
 		strings.Contains(q, "historial de accion") || strings.Contains(q, "qué acciones") ||
 		strings.Contains(q, "que acciones") || strings.Contains(q, "por qué hiciste") ||
 		strings.Contains(q, "por que hiciste") || strings.Contains(q, "por qué lo hiciste") ||
-		strings.Contains(q, "por que lo hiciste") || strings.Contains(q, "cómo decides") ||
+		strings.Contains(q, "por que lo hiciste") || strings.Contains(qf, "porque lo hiciste") ||
+		strings.Contains(qf, "porque hiciste") || strings.Contains(q, "cómo decides") ||
 		strings.Contains(q, "como decides") || strings.Contains(q, "qué patrón") ||
 		strings.Contains(q, "que patron") || strings.Contains(q, "explica tu acción") ||
 		strings.Contains(q, "explica la acción")
@@ -282,4 +285,12 @@ func speakFromActionMemory(query string) string {
 		b.WriteString("Patrón en esta sesión: " + strings.Join(pats, ", ") + ". Repito canales que ya funcionaron bajo ethics=0.")
 	}
 	return strings.TrimSpace(b.String())
+}
+
+func foldSpanish(s string) string {
+	repl := strings.NewReplacer(
+		"á", "a", "é", "e", "í", "i", "ó", "o", "ú", "u", "ü", "u", "ñ", "n",
+		"Á", "a", "É", "e", "Í", "i", "Ó", "o", "Ú", "u", "¿", "", "¡", "",
+	)
+	return repl.Replace(strings.ToLower(s))
 }

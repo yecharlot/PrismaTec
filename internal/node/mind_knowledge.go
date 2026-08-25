@@ -3,7 +3,10 @@ package node
 import (
 	_ "embed"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
+	"sync"
 )
 
 //go:embed embedded/mind_knowledge.json
@@ -15,21 +18,90 @@ type mindKnowledgeEntry struct {
 	Text string   `json:"text"`
 }
 
-var mindKnowledgeCache []mindKnowledgeEntry
+var (
+	mindKnowledgeCache []mindKnowledgeEntry
+	mindKnowledgeMu    sync.RWMutex
+	liveKnowledgeFile  = "mind_knowledge_live.json"
+)
 
 func loadMindKnowledge() []mindKnowledgeEntry {
+	mindKnowledgeMu.RLock()
+	if len(mindKnowledgeCache) > 0 {
+		out := mindKnowledgeCache
+		mindKnowledgeMu.RUnlock()
+		return out
+	}
+	mindKnowledgeMu.RUnlock()
+
+	mindKnowledgeMu.Lock()
+	defer mindKnowledgeMu.Unlock()
 	if len(mindKnowledgeCache) > 0 {
 		return mindKnowledgeCache
 	}
-	if len(embeddedKnowledgeJSON) == 0 {
-		return nil
-	}
 	var entries []mindKnowledgeEntry
-	if json.Unmarshal(embeddedKnowledgeJSON, &entries) != nil || len(entries) == 0 {
-		return nil
+	if len(embeddedKnowledgeJSON) > 0 {
+		_ = json.Unmarshal(embeddedKnowledgeJSON, &entries)
+	}
+	// Live corpus from sondas (alset_data) — amplía el corpus sin LLM
+	livePath := filepath.Join("alset_data", liveKnowledgeFile)
+	if raw, err := os.ReadFile(livePath); err == nil && len(raw) > 0 {
+		var live []mindKnowledgeEntry
+		if json.Unmarshal(raw, &live) == nil {
+			entries = append(entries, live...)
+		}
 	}
 	mindKnowledgeCache = entries
 	return mindKnowledgeCache
+}
+
+// promoteScoutToKnowledge writes a durable ES finding into the live corpus.
+func promoteScoutToKnowledge(topic, report string) {
+	topic = strings.TrimSpace(strings.ToLower(topic))
+	report = strings.TrimSpace(report)
+	if topic == "" || len(report) < 60 || scoutReportLowQuality(report) || isMostlyEnglish(report) {
+		return
+	}
+	entry := mindKnowledgeEntry{
+		Type: "scout_live",
+		Keys: []string{topic, "quién es " + topic, "quien es " + topic},
+		Text: report,
+	}
+	dir := "alset_data"
+	_ = os.MkdirAll(dir, 0o755)
+	path := filepath.Join(dir, liveKnowledgeFile)
+
+	mindKnowledgeMu.Lock()
+	defer mindKnowledgeMu.Unlock()
+	var live []mindKnowledgeEntry
+	if raw, err := os.ReadFile(path); err == nil {
+		_ = json.Unmarshal(raw, &live)
+	}
+	// upsert by primary key
+	found := false
+	for i := range live {
+		for _, k := range live[i].Keys {
+			if strings.EqualFold(k, topic) {
+				live[i] = entry
+				found = true
+				break
+			}
+		}
+		if found {
+			break
+		}
+	}
+	if !found {
+		live = append(live, entry)
+	}
+	// ring cap
+	if len(live) > 200 {
+		live = live[len(live)-200:]
+	}
+	if raw, err := json.MarshalIndent(live, "", "  "); err == nil {
+		_ = os.WriteFile(path, raw, 0o644)
+	}
+	// invalidate cache so next load merges
+	mindKnowledgeCache = nil
 }
 
 

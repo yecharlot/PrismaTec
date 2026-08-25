@@ -231,6 +231,11 @@ func bestEpisodeOverlap(text string, episodes []mindEpisodePayload) (string, int
 	bestScore := 0.0
 	bestText := ""
 	for _, ep := range episodes {
+		// no usar crudo de sondas como eco de diálogo
+		lowEp := strings.ToLower(ep.Text)
+		if strings.Contains(lowEp, "hallazgo sonda") || strings.Contains(lowEp, "scout-") {
+			continue
+		}
 		sc := 0.0
 		ew := tokenizeMind(ep.Text)
 		set := map[string]bool{}
