@@ -151,22 +151,49 @@ func extractTopic(query string) string {
 		}
 	}
 
-	// Stopwords (keep content words)
+	// Stopwords: drop query glue, but KEEP linking prepositions (de/del/of/…)
+	// between content words so "juana de arco" does not become "juana arco".
 	stop := map[string]bool{
 		"busca": true, "información": true, "informacion": true, "info": true,
 		"sobre": true, "que": true, "qué": true, "es": true, "la": true, "el": true,
-		"los": true, "las": true, "un": true, "una": true, "de": true, "del": true,
+		"los": true, "las": true, "un": true, "una": true,
 		"quien": true, "quién": true, "quienes": true, "quiénes": true, "fue": true,
 		"en": true, "web": true, "internet": true, "mas": true, "más": true,
 		"profundiza": true, "investiga": true, "dime": true, "cuéntame": true, "cuentame": true,
 	}
+	linkers := map[string]bool{
+		"de": true, "del": true, "of": true, "van": true, "von": true,
+		"da": true, "di": true, "y": true, "and": true,
+	}
+	words := strings.Fields(s)
 	var kept []string
-	for _, w := range strings.Fields(s) {
+	for i, w := range words {
 		w = strings.Trim(w, ".,;:¡!¿\"'")
-		if w == "" || stop[w] {
+		if w == "" {
 			continue
 		}
+		if stop[w] {
+			continue
+		}
+		if linkers[w] {
+			hasPrev := len(kept) > 0 && !linkers[kept[len(kept)-1]]
+			hasNext := false
+			for j := i + 1; j < len(words); j++ {
+				nw := strings.Trim(words[j], ".,;:¡!¿\"'")
+				if nw == "" || stop[nw] || linkers[nw] {
+					continue
+				}
+				hasNext = true
+				break
+			}
+			if !hasPrev || !hasNext {
+				continue
+			}
+		}
 		kept = append(kept, w)
+	}
+	for len(kept) > 0 && linkers[kept[len(kept)-1]] {
+		kept = kept[:len(kept)-1]
 	}
 	topic := strings.Join(kept, " ")
 	topic = applyTopicTypos(topic)
@@ -178,7 +205,11 @@ func applyTopicTypos(topic string) string {
 		{"luter", "luther"},
 		{"lutther", "luther"},
 		{"joana de arco", "juana de arco"},
+		{"joana arco", "juana de arco"},
 		{"juana darc", "juana de arco"},
+		{"juana arco", "juana de arco"},
+		{"juana d arco", "juana de arco"},
+		{"joan of arc", "juana de arco"},
 		{"bio informatica", "bioinformática"},
 		{"bio-informatica", "bioinformática"},
 		{"bioinformatica", "bioinformática"},
@@ -364,6 +395,108 @@ func fetchWikipediaSummary(topic string) (title, extract, pageURL string, ok boo
 	return "", "", "", false
 }
 
+
+// fetchDuckDuckGoAnswer: primary professional scout source (Instant Answer API).
+// Returns heading, abstract text, source URL. Prefer Abstract over RelatedTopics.
+func fetchDuckDuckGoAnswer(topic string) (title, extract, pageURL string, ok bool) {
+	q := strings.TrimSpace(topic)
+	if q == "" {
+		return "", "", "", false
+	}
+	api := "https://api.duckduckgo.com/?q=" + url.QueryEscape(q) + "&format=json&no_html=1&skip_disambig=1"
+	client := &http.Client{Timeout: 12 * time.Second}
+	req, err := http.NewRequest(http.MethodGet, api, nil)
+	if err != nil {
+		return "", "", "", false
+	}
+	req.Header.Set("User-Agent", "AlsetMind-Scout/1.2 (https://github.com/yecharlot/PrismaTec)")
+	req.Header.Set("Accept", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", "", "", false
+	}
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 128*1024))
+	resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return "", "", "", false
+	}
+	var data struct {
+		Heading      string `json:"Heading"`
+		Abstract     string `json:"Abstract"`
+		AbstractText string `json:"AbstractText"`
+		AbstractURL  string `json:"AbstractURL"`
+		Answer       string `json:"Answer"`
+		AnswerType   string `json:"AnswerType"`
+		Definition   string `json:"Definition"`
+		DefinitionURL string `json:"DefinitionURL"`
+		RelatedTopics []struct {
+			Text string `json:"Text"`
+			FirstURL string `json:"FirstURL"`
+		} `json:"RelatedTopics"`
+	}
+	if json.Unmarshal(body, &data) != nil {
+		return "", "", "", false
+	}
+	extract = strings.TrimSpace(data.AbstractText)
+	if extract == "" {
+		extract = strings.TrimSpace(data.Abstract)
+	}
+	if extract == "" {
+		extract = strings.TrimSpace(data.Answer)
+	}
+	if extract == "" {
+		extract = strings.TrimSpace(data.Definition)
+	}
+	title = strings.TrimSpace(data.Heading)
+	pageURL = strings.TrimSpace(data.AbstractURL)
+	if pageURL == "" {
+		pageURL = strings.TrimSpace(data.DefinitionURL)
+	}
+	// RelatedTopics as last resort (first non-empty)
+	if extract == "" {
+		for _, rt := range data.RelatedTopics {
+			if t := strings.TrimSpace(rt.Text); len(t) > 40 {
+				extract = t
+				if pageURL == "" {
+					pageURL = strings.TrimSpace(rt.FirstURL)
+				}
+				if title == "" {
+					title = q
+				}
+				break
+			}
+		}
+	}
+	if extract == "" || len(extract) < 40 {
+		return "", "", "", false
+	}
+	if title == "" {
+		title = wikiTitle(q)
+	}
+	if pageURL == "" {
+		pageURL = "https://duckduckgo.com/?q=" + url.QueryEscape(q)
+	}
+	return title, extract, pageURL, true
+}
+
+// scoutReportLowQuality: reject disambiguation / empty filler from cache or sources.
+func scoutReportLowQuality(report string) bool {
+	r := strings.ToLower(strings.TrimSpace(report))
+	if len(r) < 40 {
+		return true
+	}
+	bad := []string{
+		"desambiguación", "disambiguation", "varias entradas",
+		"puede referirse a", "may refer to", "reformula con un nombre",
+	}
+	for _, b := range bad {
+		if strings.Contains(r, b) {
+			return true
+		}
+	}
+	return false
+}
+
 // MindScoutWeb: A topic → B resolve → D recall → explore → store.
 func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 	if ethicsState == 2 || n == nil {
@@ -386,7 +519,7 @@ func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 		nt := normalizeTopicKey(topic)
 		tk := normalizeTopicKey(tKey)
 		same := nt == tk || strings.Contains(tk, nt) || strings.Contains(nt, tk)
-		if same {
+		if same && !scoutReportLowQuality(prev) {
 			return fmt.Sprintf("Desde memoria de sondas («%s»):\n\n%s\n\n(Sin nueva sonda: ya teníamos este hallazgo.)", tKey, prev)
 		}
 	}
@@ -409,12 +542,18 @@ func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 	_, _ = n.CreateAlsetGen(key, "", "scout", "sonda temporal: "+topic)
 
 	var report, sourceURL string
-	if title, extract, pageURL, ok := fetchWikipediaSummary(topic); ok {
+	// Primary: DuckDuckGo Instant Answer (más serio / factual que Wikipedia raw)
+	if title, extract, pageURL, ok := fetchDuckDuckGoAnswer(topic); ok && !scoutReportLowQuality(extract) {
+		sourceURL = pageURL
+		report = strings.TrimSpace(title + ": " + extract)
+		report = compressVoiceBlock(report, 520)
+	} else if title, extract, pageURL, ok := fetchWikipediaSummary(topic); ok && !scoutReportLowQuality(title+": "+extract) {
+		// Fallback Wikipedia (solo si no es desambiguación)
 		sourceURL = pageURL
 		report = strings.TrimSpace(title + ": " + extract)
 		report = compressVoiceBlock(report, 520)
 	} else {
-		u := wikipediaURL(topic)
+		u := "https://duckduckgo.com/?q=" + url.QueryEscape(topic)
 		sourceURL = u
 		res := n.ExploreRemoteGen(key, u, "scout:"+topic)
 		snippet, title := "", ""
@@ -433,12 +572,14 @@ func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 		report = strings.TrimSpace(title + " — " + snippet)
 		if report == "—" || len(report) < 20 || cleanWebSnippet(report) == "" {
 			_ = n.DeleteAlsetGen(key)
-			return fmt.Sprintf("No encontré una página fiable en Wikipedia para «%s». Prueba otro nombre (ej. «quién es bioinformática»).", topic)
+			return fmt.Sprintf("No encontré una fuente fiable para «%s». Prueba con el nombre completo o más contexto.", topic)
 		}
 		report = compressVoiceBlock(report, 420)
 	}
 
-	storeScoutFinding(topic, report)
+	if !scoutReportLowQuality(report) {
+		storeScoutFinding(topic, report)
+	}
 
 	learnText := fmt.Sprintf("hallazgo sonda %s sobre %s: %s", key, topic, report)
 	if _, g, err := n.SaveTextToMemoryGen(key, learnText, "scout_finding"); err == nil && g != nil {

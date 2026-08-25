@@ -406,3 +406,10 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Archivos:** `internal/node/mind_actuate.go` (nuevo); parches en `mind_tick.go` y `mind_bootstrap.go`.
 - **Regla:** Sin generación probabilística libre; write = codegen/composición; explore = MindScoutWeb/Gen.
 - **Decisión:** Orden, trazabilidad y base de políticas sin romper lab, calibración ni Sales/Vero.
+
+## 2026-08-25 — Scout: topic «de» + DuckDuckGo primario
+
+- **Acto:** `extractTopic` conserva preposiciones de enlace (de/del/of/…) entre palabras de contenido; typos `juana arco` → `juana de arco`.
+- **Fuente:** búsqueda primaria DuckDuckGo Instant Answer API; Wikipedia solo fallback si no es desambiguación; explore gen a DDG HTML como último recurso.
+- **Calidad:** `scoutReportLowQuality` evita cachear/reusar páginas de desambiguación.
+- **Archivo:** `internal/node/mind_scout.go`.
