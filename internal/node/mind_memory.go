@@ -647,6 +647,10 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 		}
 	}
 	for _, ep := range episodes {
+		low := strings.ToLower(ep.Text)
+		if strings.Contains(low, "hallazgo sonda") || strings.Contains(low, "scout-") {
+			continue
+		}
 		if isPersonalFact(ep.Text) {
 			return "Recuerdo esto de ti: «" + truncateRunes(ep.Text, 120) + "»."
 		}

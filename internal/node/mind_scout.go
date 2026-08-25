@@ -636,7 +636,16 @@ func (n *NodoAlset) tryScoutFollowUp(userText string, ethicsState int) string {
 		strings.Contains(low, "equipo")
 	if needsProbe && composed != "" && composed != subj {
 		if v := n.MindScoutWeb("quién es "+composed, ethicsState); v != "" {
-			return v
+			lowV := strings.ToLower(v)
+			hit := 0
+			for _, tok := range strings.Fields(strings.ToLower(subj)) {
+				if len(tok) > 3 && strings.Contains(lowV, tok) {
+					hit++
+				}
+			}
+			if hit > 0 || strings.Contains(lowV, "madre") || strings.Contains(lowV, "padre") {
+				return v
+			}
 		}
 	}
 	base := lastReport

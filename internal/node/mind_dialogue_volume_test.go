@@ -124,3 +124,10 @@ func TestAnomalyNoSoftHijackPattern(t *testing.T) {
 		}
 	}
 }
+
+func TestKnowledgeNoCondFalsePositive(t *testing.T) {
+	got := speakFromKnowledge("qué es la mitocondria")
+	if strings.Contains(strings.ToLower(got), "lisp") || strings.Contains(got, "(if ") {
+		t.Fatalf("corpus false positive lisp for mitocondria: %q", got)
+	}
+}

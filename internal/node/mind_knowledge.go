@@ -201,10 +201,11 @@ func speakFromKnowledge(query string) string {
 			}
 			if q == k {
 				sc += 12 + len([]rune(k))/2
-			} else if strings.Contains(q, k) {
+			} else if len([]rune(k)) >= 5 && strings.Contains(q, k) {
 				// Prefer longer keys so "gil python" beats bare "python"
+				// keys < 5 chars (e.g. "cond") must NOT match inside "mitocondria"
 				sc += 5 + len([]rune(k))/2
-			} else if strings.Contains(k, q) && len(q) > 4 {
+			} else if len([]rune(q)) >= 5 && strings.Contains(k, q) {
 				sc += 3
 			}
 		}
@@ -274,7 +275,7 @@ func relatedKnowledge(lastQuery, lastKnow string) string {
 		sc := 0
 		for _, k := range e.Keys {
 			k = strings.ToLower(k)
-			if k != "" && (strings.Contains(q, k) || strings.Contains(k, q) || strings.Contains(strings.ToLower(lastKnow), k)) {
+			if k != "" && len([]rune(k)) >= 4 && (strings.Contains(q, k) || strings.Contains(k, q) || strings.Contains(strings.ToLower(lastKnow), k)) {
 				sc += 4 + len([]rune(k))/3
 			}
 		}
