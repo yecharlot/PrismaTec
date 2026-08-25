@@ -440,3 +440,10 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Eco:** bestEpisodeOverlap ignora episodios «hallazgo sonda».
 - **Acción:** «qué hiciste» / «porque lo hiciste» (sin tilde) → action_memory.
 - **Corpus:** `promoteScoutToKnowledge` escribe hallazgos ES en `alset_data/mind_knowledge_live.json` (merge con corpus embebido).
+
+## 2026-08-25 — Banco de anomalías + reglas de ruta + probe de volumen
+
+- **Rutas:** `mind_route.go` classifyMindRoute (action → thread → math → gen → memory → corpus/web → chat).
+- **Anomalías:** DetectVoiceAnomalies (HTML, eco sonda, desambiguación, resumen vacío, jerga, inglés).
+- **Tests:** `mind_dialogue_volume_test.go`; script `scripts/mind_volume_probe.py` contra nodo local o Render.
+- **Deploy:** disparado a PrismaTec (prismatec-4u5c) para volumen real.
