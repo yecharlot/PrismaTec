@@ -27,5 +27,5 @@ type EventHandler func(eventType, data string)
 
 // DefaultServers are well-known relay pulse endpoints for local nodes.
 var DefaultServers = []string{
-	"https://prismatec.onrender.com/api/pulse",
+	"https://prismatec-4u5c.onrender.com/api/pulse",
 }

@@ -413,3 +413,8 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Fuente:** búsqueda primaria DuckDuckGo Instant Answer API; Wikipedia solo fallback si no es desambiguación; explore gen a DDG HTML como último recurso.
 - **Calidad:** `scoutReportLowQuality` evita cachear/reusar páginas de desambiguación.
 - **Archivo:** `internal/node/mind_scout.go`.
+
+## 2026-08-25 — Pulse default → prismatec-4u5c
+
+- **Acto:** `internal/pulse/types.go` DefaultServers apunta al servicio vivo `prismatec-4u5c.onrender.com` (el slug corto `prismatec.onrender.com` no responde / 404).
+- **Nota:** recuperar el nombre corto solo es posible si Render libera el hostname o con dominio propio; no es automático.
