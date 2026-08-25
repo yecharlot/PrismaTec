@@ -523,6 +523,16 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		}
 	}
 
+	// 6a) Escritura creativa (poema/cuento) — no LLM; plantillas + ancla memoria/corpus
+	if voice == "" && ethics.State != 2 && isCreativeWriteRequest(normText) {
+		cv := mindComposeCreative(text, ethics.State, memSpeak, knowHit)
+		if cv != "" {
+			voice = cv
+			primaryKind = "creative"
+			n.recordAction("write", 2, text, cv, "", primaryKind, organs)
+		}
+	}
+
 	// 6b) Sonda web vía gen (explore → aprender → respuesta).
 	// Explicit "busca/quién es/investiga" must not be blocked by memory echoes or humor keywords.
 	if voice == "" && ethics.State != 2 {
@@ -544,6 +554,12 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		if am := speakFromActionMemory(normText); am != "" {
 			voice = am
 			primaryKind = "action_memory"
+		}
+	}
+	if voice == "" {
+		if pm := speakFromPatterns(normText); pm != "" {
+			voice = pm
+			primaryKind = "patterns"
 		}
 	}
 
@@ -643,6 +659,9 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 				}
 			}
 		}
+	}
+	if voice != "" {
+		recordVoiceAnomalies(text, voice)
 	}
 	return resp
 }

@@ -91,6 +91,7 @@ func (n *NodoAlset) ensureMindApp() {
 
 	loadMindGenomeFromDisk()
 	loadActionMemory()
+	loadLearnedPatterns()
 	n.seedMindLispGenome()
 	fmt.Println("🧠 Alset Mind: semilla lista · alias", mindAlias, "· app /w/mind.app.ans")
 }

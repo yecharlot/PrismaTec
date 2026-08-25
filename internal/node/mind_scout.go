@@ -790,7 +790,13 @@ func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 		report = report + "\n\n" + langNote
 	}
 
-	if !scoutReportLowQuality(report) {
+	if filtered, _, keep := applyLearnedPolicies(report, sourceURL); keep && filtered != "" {
+		report = filtered
+	} else if !keep {
+		// política aprendida rechazó el hallazgo (HTML/EN/desambig)
+		report = ""
+	}
+	if report != "" && !scoutReportLowQuality(report) {
 		storeScoutFinding(topic, report)
 		promoteScoutToKnowledge(topic, report)
 	}

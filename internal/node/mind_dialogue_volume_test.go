@@ -131,3 +131,58 @@ func TestKnowledgeNoCondFalsePositive(t *testing.T) {
 		t.Fatalf("corpus false positive lisp for mitocondria: %q", got)
 	}
 }
+
+func TestClassifyCreativeAndPatterns(t *testing.T) {
+	if classifyMindRoute("escribe un poema sobre el mar").Source != RouteCreative {
+		t.Fatal("expected creative")
+	}
+	if classifyMindRoute("qué patrones aprendiste").Source != RoutePatterns {
+		t.Fatal("expected patterns")
+	}
+}
+
+func TestCreativeComposeNotEmpty(t *testing.T) {
+	v := mindComposeCreative("escribe un poema sobre el río", 0, "", "")
+	if v == "" || !strings.Contains(v, "río") && !strings.Contains(v, "rio") {
+		// theme may keep accent
+		if !strings.Contains(strings.ToLower(v), "río") && !strings.Contains(strings.ToLower(v), "rio") && !strings.Contains(v, "Composición ternaria") {
+			t.Fatalf("bad creative: %q", v)
+		}
+	}
+	if strings.Contains(strings.ToLower(v), "function(){") {
+		t.Fatal("junk in creative")
+	}
+}
+
+func TestRecordAnomaliesLearns(t *testing.T) {
+	patternsMu.Lock()
+	patternsRing = nil
+	patternsMu.Unlock()
+	recordVoiceAnomalies("test q", "antagonismo @media (prefers-color-scheme: dark) function(){")
+	if !policyFlag("prefer_wiki_es_only", 1) {
+		t.Fatal("expected learned prefer_wiki_es_only")
+	}
+}
+
+func TestVolumeRouteMatrix(t *testing.T) {
+	// large matrix of intents → expected family
+	web := []string{"quién es cervantes", "quién es borges", "qué es la democracia", "qué es un átomo",
+		"quién es galileo", "quién es newton", "qué es el feudalismo", "quién es ada lovelace"}
+	for _, q := range web {
+		if classifyMindRoute(q).Source != RouteWeb {
+			t.Errorf("%q not web", q)
+		}
+	}
+	math := []string{"cuánto es 2+2", "suma 10 y 11", "cuanto es 100-3"}
+	for _, q := range math {
+		if classifyMindRoute(q).Source != RouteMath {
+			t.Errorf("%q not math", q)
+		}
+	}
+	act := []string{"qué hice", "que hiciste", "porque lo hiciste", "por qué lo hiciste"}
+	for _, q := range act {
+		if classifyMindRoute(q).Source != RouteAction {
+			t.Errorf("%q not action", q)
+		}
+	}
+}

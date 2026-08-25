@@ -19,6 +19,8 @@ const (
 	RouteCorpus   RouteSource = "corpus"
 	RouteWeb      RouteSource = "web"
 	RouteChat     RouteSource = "chat"
+	RouteCreative RouteSource = "creative"
+	RoutePatterns RouteSource = "patterns"
 )
 
 // RouteDecision documents the ordered rule that won (for tests + learning).
@@ -48,6 +50,13 @@ func classifyMindRoute(text string) RouteDecision {
 
 	if isActionMemoryQuery(low) {
 		return RouteDecision{Source: RouteAction, Rule: "action_memory_query"}
+	}
+	qf := foldSpanish(low)
+	if strings.Contains(qf, "que aprendiste") || strings.Contains(qf, "patrones") || strings.Contains(qf, "autocorreccion") {
+		return RouteDecision{Source: RoutePatterns, Rule: "learned_patterns"}
+	}
+	if isCreativeWriteRequest(low) {
+		return RouteDecision{Source: RouteCreative, Rule: "creative_write"}
 	}
 	if isReferentialFollowUp(norm) || isPronounFollowUp(low) {
 		return RouteDecision{Source: RouteThread, Rule: "thread_or_pronoun_followup"}
@@ -85,7 +94,7 @@ func isActionMemoryQuery(low string) bool {
 		"que hice", "que hiciste", "que ejecute", "que ejecutaste",
 		"acciones recientes", "ultima accion", "historial de accion",
 		"porque lo hiciste", "porque hiciste", "por que lo hiciste", "por que hiciste",
-		"como decides", "que patron", "explica tu accion", "explica la accion",
+		"como decides", "explica tu accion", "explica la accion",
 	}
 	for _, k := range keys {
 		if strings.Contains(qf, k) {

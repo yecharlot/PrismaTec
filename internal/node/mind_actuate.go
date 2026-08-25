@@ -237,8 +237,7 @@ func speakFromActionMemory(query string) string {
 		strings.Contains(q, "por que hiciste") || strings.Contains(q, "por qué lo hiciste") ||
 		strings.Contains(q, "por que lo hiciste") || strings.Contains(qf, "porque lo hiciste") ||
 		strings.Contains(qf, "porque hiciste") || strings.Contains(q, "cómo decides") ||
-		strings.Contains(q, "como decides") || strings.Contains(q, "qué patrón") ||
-		strings.Contains(q, "que patron") || strings.Contains(q, "explica tu acción") ||
+		strings.Contains(q, "como decides") || strings.Contains(q, "explica tu acción") ||
 		strings.Contains(q, "explica la acción")
 	if !ask {
 		return ""
