@@ -236,6 +236,9 @@ func bestEpisodeOverlap(text string, episodes []mindEpisodePayload) (string, int
 		if strings.Contains(lowEp, "hallazgo sonda") || strings.Contains(lowEp, "scout-") {
 			continue
 		}
+		if isCreativeWriteRequest(lowEp) || strings.Contains(lowEp, "me suena esto") {
+			continue
+		}
 		sc := 0.0
 		ew := tokenizeMind(ep.Text)
 		set := map[string]bool{}
@@ -594,8 +597,15 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 		if isPronounFollowUp(q) {
 			return ""
 		}
+		// Factual "qué es / quién es" must not be stolen by soft memory of prior writes
+		if forceWebScout(q) || isScoutableQuestion(normalizeUserInput(q)) || isCreativeWriteRequest(q) {
+			return ""
+		}
 		rel, score := bestEpisodeOverlap(query, episodes)
 		if score >= need && rel != "" {
+			if isBadCreativeAnchor(rel) || isCreativeWriteRequest(rel) {
+				return ""
+			}
 			if name := extractDeclaredName(rel); name != "" {
 				return "Sí, te llamas " + name + "."
 			}

@@ -453,3 +453,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Aprendizaje:** `mind_patterns.go` registra anomalías de voz y activa políticas (prefer_wiki_es_only, reject_en, block_scout_as_personal…).
 - **Escritura:** `mind_creative.go` poema/cuento por plantillas + ancla corpus/memoria (no LLM).
 - **Rutas:** creative + patterns; probe multi-familia; tests de volumen.
+
+## 2026-08-25 — Corpus literario + anclas creativas limpias
+
+- **Corpus:** poema, metáfora, símil, anáfora, haiku, cuento, rima/métrica, ortografía, puntuación, concordancia, estilo, definición de amor.
+- **Creativo:** anclas rechazan soft-memory/pedidos previos; recurso literario rotativo; plantillas por dispositivo.
+- **Memoria:** soft path no roba «qué es / quién es» ni episodios de escritura creativa.

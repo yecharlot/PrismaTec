@@ -1803,5 +1803,113 @@
       "tanto por ciento"
     ],
     "text": "Un porcentaje es una fracción de 100. El 25% de 80 es 20. Puedes pedir cálculos concretos."
+  },
+  {
+    "type": "literatura",
+    "keys": [
+      "qué es un poema",
+      "que es un poema",
+      "poema",
+      "poesía",
+      "poesia",
+      "verso"
+    ],
+    "text": "Un poema organiza ritmo, imagen y silencio. No necesita rima, pero la rima es un recurso. Formas útiles: haiku (5-7-5), cuarteto, verso libre, estribillo. En Alset Mind la composición es plantilla ternaria + ancla factual, no predicción libre."
+  },
+  {
+    "type": "literatura",
+    "keys": [
+      "metáfora",
+      "metafora",
+      "qué es una metáfora",
+      "que es una metafora"
+    ],
+    "text": "Metáfora: decir que A es B para iluminar A sin «como». Ejemplo: «el tiempo es un río». Evita metáforas muertas («corazón de oro») si buscas frescura."
+  },
+  {
+    "type": "literatura",
+    "keys": [
+      "símil",
+      "simil",
+      "qué es un símil",
+      "comparación literaria"
+    ],
+    "text": "Símil: comparación explícita con «como» o «parece». Ejemplo: «la duda avanza como marea». Útil para anclar imágenes concretas."
+  },
+  {
+    "type": "literatura",
+    "keys": [
+      "aliteración",
+      "aliteracion",
+      "anáfora",
+      "anafora",
+      "hipérbole",
+      "hiperbole",
+      "recursos literarios",
+      "figuras retóricas",
+      "figuras retoricas"
+    ],
+    "text": "Recursos: aliteración (repetir sonidos), anáfora (repetir inicio de verso), hipérbole (exagerar), personificación (dar agencia a lo inanimado), oxímoron (opuestos juntos). Elige uno o dos por poema; no satures."
+  },
+  {
+    "type": "literatura",
+    "keys": [
+      "haiku",
+      "qué es un haiku",
+      "que es un haiku"
+    ],
+    "text": "Haiku: tres versos 5-7-5 sílabas (tradición japonesa). Suele fijar un instante natural sin moralizar. Ejemplo de molde: [naturaleza] / [contraste o corte] / [eco breve]."
+  },
+  {
+    "type": "literatura",
+    "keys": [
+      "cuento",
+      "qué es un cuento",
+      "estructura del cuento",
+      "narrativa breve"
+    ],
+    "text": "Cuento breve: situación → giro → cierre. Personaje, deseo, obstáculo. En este nodo: no inventar biografías reales; si hay ancla factual, usarla como marco, no como trama inventada de personas vivas."
+  },
+  {
+    "type": "literatura",
+    "keys": [
+      "rima",
+      "métrica",
+      "metrica",
+      "ritmo poético",
+      "ritmo poetico"
+    ],
+    "text": "Rima: asonante (vocales) o consonante (desde la tónica). Métrica en español cuenta sílabas con sinalefa. El verso libre prioriza ritmo interno y respiración sobre conteo estricto."
+  },
+  {
+    "type": "filosofia",
+    "keys": [
+      "qué es el amor",
+      "que es el amor",
+      "amor",
+      "el amor"
+    ],
+    "text": "El amor, en el uso humano, nombra vínculo, cuidado y deseo de bien del otro. No es un solo sentimiento: puede ser eros, amistad, cuidado o lealtad. Alset Mind no «siente» amor; puede ordenar ideas, recordar lo que confías y componer imágenes sin fingir experiencia corporal."
+  },
+  {
+    "type": "gramatica",
+    "keys": [
+      "puntuación",
+      "puntuacion",
+      "coma",
+      "punto y coma",
+      "signos de puntuación"
+    ],
+    "text": "Punto cierra idea. Coma separa elementos y aclaraciones (sin separar sujeto y verbo). Punto y coma une oraciones emparentadas. Interrogación y exclamación en español abren y cierran (¿ ? ¡ !)."
+  },
+  {
+    "type": "literatura",
+    "keys": [
+      "escribir bien",
+      "estilo literario",
+      "claridad",
+      "economía verbal"
+    ],
+    "text": "Estilo claro: verbo fuerte, menos adjetivos vacíos, una imagen por verso o frase. Revisa: ¿cada palabra aporta? Preferir concreto a abstracto («sal») antes que solo «emoción»."
   }
 ]

@@ -186,3 +186,20 @@ func TestVolumeRouteMatrix(t *testing.T) {
 		}
 	}
 }
+
+func TestAmorKnowledgePresent(t *testing.T) {
+	got := speakFromKnowledge("qué es el amor")
+	if got == "" || strings.Contains(strings.ToLower(got), "me suena") {
+		t.Fatalf("expected amor corpus, got %q", got)
+	}
+}
+
+func TestCreativeRejectsSoftAnchor(t *testing.T) {
+	if !isBadCreativeAnchor("Me suena esto: «escribe un poema sobre el mar»") {
+		t.Fatal("should reject soft anchor")
+	}
+	v := mindComposeCreative("escribe un poema sobre el amor", 0, "Me suena esto: «escribe un poema sobre el mar»", "")
+	if strings.Contains(strings.ToLower(v), "me suena") {
+		t.Fatalf("creative leaked soft memory: %q", v)
+	}
+}
