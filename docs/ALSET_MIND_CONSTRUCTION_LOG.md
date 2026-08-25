@@ -426,3 +426,10 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Basura:** rechazo CSS/JS de DuckDuckGo HTML; explore final solo a wiki ES.
 - **UI:** typewriter en `embedded/mind_index.html` para mensajes de Mind.
 - **DDG:** `kl=es-es`.
+
+## 2026-08-25 — Diálogo: memoria limpia, hilo de sonda, porqué de acciones
+
+- **Topic:** `michel jordan` → `michael jordan`; ranking de títulos wiki por solapamiento de tokens.
+- **Hilo:** `mindLastScoutTopic` + `tryScoutFollowUp` («su madre», etc.) sin ecos de Juana/antagonismo.
+- **Memoria:** soft «Me suena» no muestra hallazgo sonda / HTML basura.
+- **Acción:** `speakFromActionMemory` explica canal + órganos (ethics/act/dialog) y patrones de sesión.

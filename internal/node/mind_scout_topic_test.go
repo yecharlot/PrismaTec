@@ -14,6 +14,7 @@ func TestExtractTopicCleaning(t *testing.T) {
 		"busca Martin Luter King en la web":       "martin luther king",
 		"quien martin luter king":                 "martin luther king",
 		"quien es Joana de Arco":                  "juana de arco",
+		"quien es michel jordan":                 "michael jordan",
 	}
 	for in, want := range cases {
 		got := extractTopic(normalizeUserInput(in))

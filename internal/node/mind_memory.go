@@ -531,6 +531,24 @@ func isDuplicateNameDeclaration(text, knownName string) bool {
 
 // speakFromMemory builds a natural reply from CID episodes when the user asks to recall.
 // Priority: explicit personal slots (apellido, nombre, ciudad…) → overlap → generic.
+// isPronounFollowUp: "su madre", "y él", etc. — need last scout subject, not random memory.
+func isPronounFollowUp(s string) bool {
+	s = strings.ToLower(strings.TrimSpace(s))
+	keys := []string{
+		"su madre", "su padre", "su esposa", "su mujer", "su marido", "su hijo", "su hija",
+		"cómo se llama su", "como se llama su", "dónde nació", "donde nacio", "dónde nacio",
+		"cuántos años", "cuantos anos", "de qué equipo", "de que equipo",
+		"y su ", "y él", "y ella", "qué más", "que mas", "algo más sobre", "algo mas sobre",
+	}
+	for _, k := range keys {
+		if strings.Contains(s, k) {
+			return true
+		}
+	}
+	return false
+}
+
+
 func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 	if len(episodes) == 0 {
 		return ""
@@ -567,6 +585,10 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 		if need < 2 {
 			need = 2
 		}
+		// Follow-ups about "su madre/padre/…" must not grab unrelated scout echoes
+		if isPronounFollowUp(q) {
+			return ""
+		}
 		rel, score := bestEpisodeOverlap(query, episodes)
 		if score >= need && rel != "" {
 			if name := extractDeclaredName(rel); name != "" {
@@ -574,6 +596,13 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 			}
 			if slot, val := extractPersonalDeclaration(rel); slot != "" && val != "" {
 				return formatPersonalRecall(slot, val)
+			}
+			// Never surface raw sonda/HTML junk as soft memory
+			lowRel := strings.ToLower(rel)
+			if strings.Contains(lowRel, "hallazgo sonda") || strings.Contains(lowRel, "scout-") ||
+				strings.Contains(lowRel, "duckduckgo") || strings.Contains(lowRel, "prefers-color") ||
+				strings.Contains(lowRel, "function(){") {
+				return ""
 			}
 			snip := truncateRunes(rel, 100)
 			return "Me suena esto: «" + snip + "». ¿Seguimos por ahí?"

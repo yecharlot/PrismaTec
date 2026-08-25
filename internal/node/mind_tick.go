@@ -444,6 +444,15 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		}
 	}
 
+	// 1b) Seguimiento pronominal del último tema de sonda («su madre», …)
+	if voice == "" && ethics.State != 2 {
+		if fv := n.tryScoutFollowUp(text, ethics.State); fv != "" {
+			voice = fv
+			primaryKind = "tool"
+			n.recordAction("explore", 2, text, fv, "", primaryKind, organs)
+		}
+	}
+
 	// 2) Preguntas de capacidad (no confundir con "crea gen")
 	if voice == "" && isCapabilityQuestion(normText) {
 		voice = capabilityVoice(normText)

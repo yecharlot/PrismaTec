@@ -231,26 +231,55 @@ func speakFromActionMemory(query string) string {
 		strings.Contains(q, "acciones recientes") || strings.Contains(q, "qué ejecutaste") ||
 		strings.Contains(q, "que ejecutaste") || strings.Contains(q, "historial de acción") ||
 		strings.Contains(q, "historial de accion") || strings.Contains(q, "qué acciones") ||
-		strings.Contains(q, "que acciones")
+		strings.Contains(q, "que acciones") || strings.Contains(q, "por qué hiciste") ||
+		strings.Contains(q, "por que hiciste") || strings.Contains(q, "por qué lo hiciste") ||
+		strings.Contains(q, "por que lo hiciste") || strings.Contains(q, "cómo decides") ||
+		strings.Contains(q, "como decides") || strings.Contains(q, "qué patrón") ||
+		strings.Contains(q, "que patron") || strings.Contains(q, "explica tu acción") ||
+		strings.Contains(q, "explica la acción")
 	if !ask {
 		return ""
 	}
-	recs := recentActions(5)
+	recs := recentActions(8)
 	if len(recs) == 0 {
-		return "Aún no tengo acciones registradas en esta sesión."
+		return "Aún no tengo acciones registradas en esta sesión. Cuando explore, escriba o calcule, quedará aquí con el porqué (órganos)."
 	}
 	var b strings.Builder
-	b.WriteString("Acciones recientes (action_memory):\n")
+	b.WriteString("Registro de acciones (action_memory):\n")
+	channelCount := map[string]int{}
 	for i := len(recs) - 1; i >= 0; i-- {
 		r := recs[i]
+		channelCount[r.Channel]++
 		b.WriteString(fmt.Sprintf("- %s · %s=%d", r.Timestamp, r.Channel, r.Value))
 		if r.PrimaryKind != "" {
 			b.WriteString(" · " + r.PrimaryKind)
 		}
-		if r.Result != "" {
-			b.WriteString(" → " + compressVoiceBlock(r.Result, 80))
+		// why: ethics/act/dialog snapshot
+		if r.OrgansSnapshot != nil {
+			why := []string{}
+			for _, k := range []string{"ethics", "act", "dialog", "curiosity"} {
+				if v, ok := r.OrgansSnapshot[k]; ok {
+					why = append(why, fmt.Sprintf("%s=%d", k, v))
+				}
+			}
+			if len(why) > 0 {
+				b.WriteString(" · porque " + strings.Join(why, ","))
+			}
+		}
+		if r.Trigger != "" {
+			b.WriteString(" · pedido «" + compressVoiceBlock(r.Trigger, 40) + "»")
 		}
 		b.WriteByte('\n')
+	}
+	// simple pattern line
+	var pats []string
+	for ch, n := range channelCount {
+		if n >= 2 {
+			pats = append(pats, fmt.Sprintf("%s×%d", ch, n))
+		}
+	}
+	if len(pats) > 0 {
+		b.WriteString("Patrón en esta sesión: " + strings.Join(pats, ", ") + ". Repito canales que ya funcionaron bajo ethics=0.")
 	}
 	return strings.TrimSpace(b.String())
 }

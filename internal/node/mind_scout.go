@@ -215,6 +215,11 @@ func applyTopicTypos(topic string) string {
 		{"bioinformatica", "bioinformática"},
 		{"lebrom", "lebron"},
 		{"martin luther king", "martin luther king"},
+		{"michel jordan", "michael jordan"},
+		{"michael jordan", "michael jordan"},
+		{"miquel jordan", "michael jordan"},
+		{"maicol jordan", "michael jordan"},
+		{"tiziano ferro", "tiziano ferro"},
 	}
 	low := strings.ToLower(topic)
 	for _, r := range repl {
@@ -332,6 +337,8 @@ func resolveWikipediaTitleOn(topic, host string) string {
 		if json.Unmarshal(body, &data) != nil {
 			continue
 		}
+		qTokens := strings.Fields(strings.ToLower(v))
+		bestTitle, bestScore := "", -1
 		for _, hit := range data.Query.Search {
 			if hit.Title == "" {
 				continue
@@ -340,7 +347,34 @@ func resolveWikipediaTitleOn(topic, host string) string {
 			if strings.Contains(low, "desambiguación") || strings.Contains(low, "disambiguation") {
 				continue
 			}
-			return hit.Title
+			sc := 0
+			for _, tok := range qTokens {
+				if len(tok) < 2 {
+					continue
+				}
+				if strings.Contains(low, tok) {
+					sc += 2 + len(tok)/3
+				}
+			}
+			// prefer exact-ish multi-word match
+			if strings.Contains(low, strings.ToLower(v)) {
+				sc += 10
+			}
+			if sc > bestScore {
+				bestScore, bestTitle = sc, hit.Title
+			}
+		}
+		if bestTitle != "" && bestScore > 0 {
+			return bestTitle
+		}
+		// if no token overlap, still take first non-disambig only when single token query
+		if len(qTokens) <= 1 && len(data.Query.Search) > 0 {
+			for _, hit := range data.Query.Search {
+				low := strings.ToLower(hit.Title)
+				if hit.Title != "" && !strings.Contains(low, "desambiguación") && !strings.Contains(low, "disambiguation") {
+					return hit.Title
+				}
+			}
 		}
 	}
 	return ""
@@ -576,6 +610,76 @@ func scoutReportLowQuality(report string) bool {
 	return false
 }
 
+
+// tryScoutFollowUp: "cómo se llama su madre" after a scout topic → memory first, then admit gap or re-scout.
+func (n *NodoAlset) tryScoutFollowUp(userText string, ethicsState int) string {
+	if n == nil || ethicsState == 2 {
+		return ""
+	}
+	low := strings.ToLower(strings.TrimSpace(userText))
+	if !isPronounFollowUp(low) {
+		return ""
+	}
+	n.mindLastMu.Lock()
+	subj := strings.TrimSpace(n.mindLastScoutTopic)
+	lastReport := n.mindLastExplore
+	n.mindLastMu.Unlock()
+	if subj == "" {
+		return ""
+	}
+	// 1) Memory of sondas for the subject
+	if _, prev, ok := recallScoutFinding(subj); ok && !scoutReportLowQuality(prev) && !isMostlyEnglish(prev) {
+		// answer from known report if it already contains a clue
+		if strings.Contains(low, "madre") || strings.Contains(low, "padre") || strings.Contains(low, "esposa") {
+			return formatScoutVoice(
+				"Sobre «"+subj+"» tengo este resumen, pero no incluye el nombre que pides:\n\n"+prev+
+					"\n\nPuedo buscar «"+followUpSearchTopic(low, subj)+"» si quieres que lance otra sonda.",
+				"", true)
+		}
+		return formatScoutVoice(
+			"Seguimos con «"+subj+"». De lo ya explorado:\n\n"+compressVoiceBlock(prev, 400)+
+				"\n\nSi quieres otro detalle concreto, dilo (lugar de nacimiento, equipo, obra…).",
+			"", true)
+	}
+	if lastReport != "" && !scoutReportLowQuality(lastReport) {
+		return formatScoutVoice(
+			"Seguimos con «"+subj+"». Del último hallazgo:\n\n"+compressVoiceBlock(lastReport, 400)+
+				"\n\nEse resumen no responde del todo a «"+strings.TrimSpace(userText)+"». Puedo sondear «"+followUpSearchTopic(low, subj)+"».",
+			"", true)
+	}
+	// 2) New probe with composed topic
+	composed := followUpSearchTopic(low, subj)
+	if composed == "" {
+		return ""
+	}
+	// reuse MindScoutWeb path via synthetic question
+	return n.MindScoutWeb("quién es "+composed, ethicsState)
+}
+
+func followUpSearchTopic(follow, subject string) string {
+	follow = strings.ToLower(follow)
+	subject = strings.TrimSpace(subject)
+	if subject == "" {
+		return ""
+	}
+	if strings.Contains(follow, "madre") {
+		return "madre de " + subject
+	}
+	if strings.Contains(follow, "padre") {
+		return "padre de " + subject
+	}
+	if strings.Contains(follow, "esposa") || strings.Contains(follow, "mujer") {
+		return "esposa de " + subject
+	}
+	if strings.Contains(follow, "nació") || strings.Contains(follow, "nacio") {
+		return "nacimiento de " + subject
+	}
+	if strings.Contains(follow, "equipo") {
+		return subject + " equipo"
+	}
+	return subject
+}
+
 // MindScoutWeb: A topic → B resolve → D recall → explore → store.
 func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 	if ethicsState == 2 || n == nil {
@@ -691,6 +795,9 @@ func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 	}
 
 	n.rememberThreadRefs("explore", key, report, "")
+	n.mindLastMu.Lock()
+	n.mindLastScoutTopic = topic
+	n.mindLastMu.Unlock()
 
 	voice := formatScoutVoice(report, sourceURL, false)
 	if scoutEphemeral() {

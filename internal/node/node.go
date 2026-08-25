@@ -100,7 +100,8 @@ type NodoAlset struct {
 	mindLastGen     string // último gen tocado
 	mindLastExplore string // último informe explore
 	mindLastCode    string // último esqueleto codegen
-	mindLastTopic   string // gen|explore|code|know|chat|math
+	mindLastTopic      string // gen|explore|code|know|chat|math
+	mindLastScoutTopic string // último tema de sonda (ej. michael jordan)
 }
 
 type BlockInfo struct {
