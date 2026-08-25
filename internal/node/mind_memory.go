@@ -236,7 +236,9 @@ func bestEpisodeOverlap(text string, episodes []mindEpisodePayload) (string, int
 		if strings.Contains(lowEp, "hallazgo sonda") || strings.Contains(lowEp, "scout-") {
 			continue
 		}
-		if isCreativeWriteRequest(lowEp) || strings.Contains(lowEp, "me suena esto") {
+		if isCreativeWriteRequest(lowEp) || strings.Contains(lowEp, "me suena esto") ||
+			strings.HasPrefix(lowEp, "escribe ") || strings.Contains(lowEp, "escribe un parrafo") ||
+			strings.Contains(lowEp, "escribe un párrafo") {
 			continue
 		}
 		sc := 0.0

@@ -200,7 +200,9 @@ func speakFromKnowledge(query string) string {
 				continue
 			}
 			if q == k {
-				sc += 12 + len([]rune(k))/2
+				sc += 20 + len([]rune(k))
+			} else if len(strings.Fields(q)) == 1 && q == strings.Fields(k)[0] {
+				sc += 18
 			} else if len([]rune(k)) >= 5 && strings.Contains(q, k) {
 				// Prefer longer keys so "gil python" beats bare "python"
 				// keys < 5 chars (e.g. "cond") must NOT match inside "mitocondria"

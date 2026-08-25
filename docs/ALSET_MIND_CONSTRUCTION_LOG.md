@@ -459,3 +459,11 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Corpus:** poema, metáfora, símil, anáfora, haiku, cuento, rima/métrica, ortografía, puntuación, concordancia, estilo, definición de amor.
 - **Creativo:** anclas rechazan soft-memory/pedidos previos; recurso literario rotativo; plantillas por dispositivo.
 - **Memoria:** soft path no roba «qué es / quién es» ni episodios de escritura creativa.
+
+## 2026-08-25 — Evolución de voz creativa y corpus (sin menú)
+
+- Sin coleta «¿Seguimos por este tema…?» en literario/creative/knowledge sólido.
+- Eco memoria no muestra episodios «escribe un…».
+- Cuentos por dominio (gen / harry / mar / genérico); poemas sin pie de laboratorio ruidoso.
+- Ancla temática (no craft literario como factual).
+- Ortografía: entrada real de acentuación; score exact key más alto.

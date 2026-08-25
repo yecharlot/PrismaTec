@@ -159,12 +159,17 @@ func ideaFromCross(userText, memSpeak, knowSpeak string) string {
 }
 
 func softKnowledgeFollowUp(low string, curiosity int) string {
+	// Evitar menú repetido en corpus literario/gramática (ya respondido).
+	if strings.Contains(low, "metáfora") || strings.Contains(low, "metafora") ||
+		strings.Contains(low, "poema") || strings.Contains(low, "amor") ||
+		strings.Contains(low, "recursos literarios") || strings.Contains(low, "ortograf") ||
+		strings.Contains(low, "haiku") || strings.Contains(low, "símil") || strings.Contains(low, "simil") {
+		return ""
+	}
 	if curiosity >= 2 {
-		return "Si quieres, profundizamos en un detalle o lo cruzamos con algo que ya hayas guardado aquí."
+		return "Si quieres, profundizamos un detalle concreto."
 	}
-	if curiosity >= 1 {
-		return "¿Seguimos por este tema o cambias de hilo?"
-	}
+	// curiosity==1: silencio (antes: menú de hilo)
 	return ""
 }
 

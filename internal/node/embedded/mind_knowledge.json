@@ -1681,9 +1681,12 @@
     "keys": [
       "ortografía",
       "ortografia",
-      "escribir bien"
+      "acentos",
+      "tildes",
+      "reglas de acentuación",
+      "acentuación"
     ],
-    "text": "Procuro respuestas en español claro. Si escribes con typos frecuentes (quie→quién, mision→misión), normalizo antes de enrutar. No reescribo ensayos enteros: corrijo para entenderte."
+    "text": "Acentuación española: agudas llevan tilde si terminan en n, s o vocal; llanas si no terminan en n, s o vocal; esdrújulas y sobresdrújulas siempre. Mayúscula al inicio de oración y en nombres propios. Interrogación y exclamación abren y cierran (¿ ? ¡ !). En escritura creativa, revisa concordancia y evita comas entre sujeto y verbo."
   },
   {
     "type": "gramatica",
