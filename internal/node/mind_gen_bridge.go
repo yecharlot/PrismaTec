@@ -72,6 +72,51 @@ func (n *NodoAlset) BridgeDialogueGen(key, stimulus string, ethicsState int) str
 }
 
 // BridgePinEpisodeToMemGen pins a Mind episode CID onto default or named memory gen.
+
+// BridgeSpeakGenFindings — Mind trae a voz humana el último hallazgo del gen (no solo el conteo).
+func (n *NodoAlset) BridgeSpeakGenFindings(key string) string {
+	key = normalizeGenKey(key)
+	n.ensureGens()
+	n.mu.RLock()
+	g, ok := n.gens[key]
+	n.mu.RUnlock()
+	if !ok {
+		return "No tengo el gen «" + key + "» en este nodo."
+	}
+	findN := 0
+	last := ""
+	if g.State.Metadata != nil {
+		if lh, ok := g.State.Metadata["last_hallazgo"].(string); ok {
+			last = lh
+		}
+		switch v := g.State.Metadata["findings"].(type) {
+		case []interface{}:
+			findN = len(v)
+		case []string:
+			findN = len(v)
+		}
+	}
+	loc := g.State.Location
+	if loc == "" {
+		loc = "local"
+	}
+	if findN == 0 && last == "" {
+		return fmt.Sprintf("El gen «%s» (%s) aún no tiene hallazgos. Puedes decir: explora gen %s https://ejemplo.org", key, loc, strings.TrimSuffix(key, ".ans"))
+	}
+	msg := fmt.Sprintf("Desde el gen «%s» (%s, %d hallazgo(s))", key, loc, findN)
+	if last != "" {
+		snip := last
+		if len([]rune(snip)) > 320 {
+			r := []rune(snip)
+			snip = string(r[:320]) + "…"
+		}
+		msg += ":\n" + snip
+	} else {
+		msg += "."
+	}
+	return msg
+}
+
 func (n *NodoAlset) BridgePinEpisodeToMemGen(genKey, episodeCID, note string) string {
 	if episodeCID == "" {
 		return "No hay CID de episodio para anclar."

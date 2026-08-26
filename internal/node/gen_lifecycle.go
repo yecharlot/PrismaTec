@@ -393,19 +393,26 @@ func genConsultVoice(g *agents.AlsetGen, stimulus string, o agents.GenOrganState
 		if m, ok := g.State.Metadata["mission"].(string); ok && m != "" {
 			mission = m
 		}
+		if lh, ok := g.State.Metadata["last_hallazgo"].(string); ok && lh != "" {
+			lastFinding = lh
+		}
 		switch v := g.State.Metadata["findings"].(type) {
 		case []interface{}:
 			findN = len(v)
-			if findN > 0 {
+		case []string:
+			findN = len(v)
+		}
+		if lastFinding == "" && findN > 0 {
+			switch v := g.State.Metadata["findings"].(type) {
+			case []interface{}:
 				if m, ok := v[findN-1].(map[string]interface{}); ok {
 					if u, ok := m["url"].(string); ok {
 						lastFinding = u
 					}
+				} else if s, ok := v[findN-1].(string); ok {
+					lastFinding = s
 				}
-			}
-		case []string:
-			findN = len(v)
-			if findN > 0 {
+			case []string:
 				lastFinding = v[findN-1]
 			}
 		}
@@ -423,13 +430,20 @@ func genConsultVoice(g *agents.AlsetGen, stimulus string, o agents.GenOrganState
 	if strings.Contains(st, "quién eres") || strings.Contains(st, "quien eres") || strings.Contains(st, "quién es") || strings.Contains(st, "quien es") || strings.Contains(st, "identidad") {
 		return fmt.Sprintf("Soy Alset-Gen %s: identidad estable, forma mutable. Root %s · %d hallazgos · ubicación %s.", g.Key, truncateCID(g.CurrentRootCID), findN, g.State.Location)
 	}
-	if strings.Contains(st, "hallazgo") || strings.Contains(st, "explor") || strings.Contains(st, "viste") || strings.Contains(st, "encontr") {
-		if findN == 0 {
-			return fmt.Sprintf("%s aún no tiene hallazgos. Pide explorar una URL pública.", g.Key)
+	if strings.Contains(st, "hallazgo") || strings.Contains(st, "explor") || strings.Contains(st, "viste") ||
+		strings.Contains(st, "encontr") || strings.Contains(st, "qué sabes") || strings.Contains(st, "que sabes") ||
+		strings.Contains(st, "qué sabe") || strings.Contains(st, "que sabe") || strings.Contains(st, "reporta") {
+		if findN == 0 && lastFinding == "" {
+			return fmt.Sprintf("%s aún no tiene hallazgos. Pide explorar una URL pública (ej. «explora gen %s https://…»).", g.Key, strings.TrimSuffix(g.Key, ".ans"))
 		}
 		msg := fmt.Sprintf("%s reporta %d hallazgo(s).", g.Key, findN)
 		if lastFinding != "" {
-			msg += " Último: " + lastFinding
+			snip := lastFinding
+			if len([]rune(snip)) > 280 {
+				r := []rune(snip)
+				snip = string(r[:280]) + "…"
+			}
+			msg += " Último: " + snip
 		}
 		return msg
 	}

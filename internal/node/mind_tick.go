@@ -1031,7 +1031,8 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 		} else {
 			res, err := n.DispatchGenToCloudflare(name, "oficio edge")
 			if err != nil {
-				lines = append(lines, "No pude despachar a la red de borde: "+err.Error()+". ¿Está ALSET_CLOUDFLARE_NETWORK configurada?")
+				lines = append(lines, "No pude despachar a la red de borde: "+err.Error()+
+					". Configura ALSET_CLOUDFLARE_NETWORK (ej. https://alset-network.lhmolam-877.workers.dev) y reinicia el nodo.")
 			} else {
 				reach, _ := res["reach"].(string)
 				if reach == "" {
@@ -1069,10 +1070,21 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 	if strings.Contains(s, "habla con gen") || strings.Contains(s, "pregunta al gen") ||
 		strings.Contains(s, "dialoga") || strings.Contains(s, "qué sabe el gen") ||
 		strings.Contains(s, "que sabe el gen") || strings.Contains(s, "dile al gen") ||
-		strings.Contains(s, "di al gen") || strings.Contains(s, "dialoga con gen") {
+		strings.Contains(s, "di al gen") || strings.Contains(s, "dialoga con gen") ||
+		strings.Contains(s, "qué sabes del gen") || strings.Contains(s, "que sabes del gen") {
 		gkey, stim := extractGenDialogueStimulus(text)
 		if gkey == "" {
 			gkey = name
+		}
+		// Mind incorpora hallazgos del gen en la voz humana
+		if strings.Contains(s, "qué sabe") || strings.Contains(s, "que sabe") ||
+			strings.Contains(s, "qué sabes") || strings.Contains(s, "que sabes") ||
+			strings.Contains(s, "hallazgo") {
+			lines = append(lines, n.BridgeSpeakGenFindings(gkey))
+			return lines
+		}
+		if stim == "" {
+			stim = "quién eres"
 		}
 		lines = append(lines, n.BridgeDialogueGen(gkey, stim, 0))
 		return lines
@@ -1108,14 +1120,19 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 				lines = append(lines, "La exploración no pudo completarse: "+err+".")
 			} else {
 				sn, _ := res["snippet"].(string)
-				if len(sn) > 160 {
-					sn = sn[:160] + "…"
+				if len(sn) > 200 {
+					r := []rune(sn)
+					sn = string(r[:200]) + "…"
 				}
 				msg := "Mandé a «" + normalizeGenKey(name) + "» a mirar " + u + "."
 				if sn != "" {
 					msg += " Trajo: " + sn
 				}
 				lines = append(lines, msg)
+				// Voz Mind: incorporar hallazgo del gen (no solo el snippet del HTTP)
+				if extra := n.BridgeSpeakGenFindings(name); extra != "" && !strings.Contains(extra, "aún no tiene hallazgos") {
+					lines = append(lines, extra)
+				}
 			}
 		}
 		return lines

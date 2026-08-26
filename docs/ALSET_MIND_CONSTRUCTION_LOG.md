@@ -481,3 +481,11 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - Fuzzy corpus exige tokens ≥4 (corta mar↔car).
 - Identidad «qué es alset mind» priorizada; entrada de calibración sin keys de identidad.
 - Creativo: anclas naturales primero; tests PrepA/mar/Lisp.
+
+## 2026-08-26 — Hitos: hallazgos del gen en voz Mind + nivel CF
+
+- `BridgeSpeakGenFindings`: Mind articula last_hallazgo del gen.
+- «qué sabe el gen X» → hallazgos, no solo identidad.
+- Tras explore, voz Mind incluye hallazgo del gen.
+- `genConsultVoice` usa `last_hallazgo` (texto), no solo CID.
+- CF: código completo; red live `alset-network.lhmolam-877.workers.dev` (store OK, registry vacío hasta despacho). Falta env local `ALSET_CLOUDFLARE_NETWORK`.
