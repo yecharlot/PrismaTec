@@ -467,3 +467,10 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - Cuentos por dominio (gen / harry / mar / genérico); poemas sin pie de laboratorio ruidoso.
 - Ancla temática (no craft literario como factual).
 - Ortografía: entrada real de acentuación; score exact key más alto.
+
+## 2026-08-26 — Variantes creativas: gramática, repetición, anclas naturales
+
+- `themeAsPrepDe` / `themeAsSubject`: evita «de el mar» → «del mar».
+- Contador de variante por (kind|tema): 3 moldes por recurso; al repetir cambia el texto.
+- `naturalThemeImage`: mar, noche, lluvia, silencio, viento, luna, sol, amor.
+- Cuentos HP/gen/mar con 3 aperturas; marco factual más corto al final.

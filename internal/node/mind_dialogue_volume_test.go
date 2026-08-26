@@ -203,3 +203,36 @@ func TestCreativeRejectsSoftAnchor(t *testing.T) {
 		t.Fatalf("creative leaked soft memory: %q", v)
 	}
 }
+
+func TestThemeAsPrepDe(t *testing.T) {
+	if got := themeAsPrepDe("el mar"); got != "del mar" {
+		t.Fatalf("el mar → %q", got)
+	}
+	if got := themeAsPrepDe("mar"); got != "del mar" {
+		t.Fatalf("mar → %q", got)
+	}
+	if got := themeAsPrepDe("la noche"); got != "de la noche" {
+		t.Fatalf("la noche → %q", got)
+	}
+}
+
+func TestCreativeVariantDiffers(t *testing.T) {
+	creativeVarMu.Lock()
+	creativeVarCount = map[string]int{}
+	creativeVarMu.Unlock()
+	a := mindComposeCreative("escribe un poema sobre el mar", 0, "", "")
+	b := mindComposeCreative("escribe un poema sobre el mar", 0, "", "")
+	if a == b {
+		t.Fatalf("expected variant difference:\nA=%q\nB=%q", a, b)
+	}
+	if strings.Contains(a, "de el mar") || strings.Contains(b, "de el mar") {
+		t.Fatal("grammar de el mar must not appear")
+	}
+}
+
+func TestNaturalMarAnchor(t *testing.T) {
+	img := naturalThemeImage("el mar")
+	if img == "" || !strings.Contains(strings.ToLower(img), "sal") && !strings.Contains(strings.ToLower(img), "horizonte") {
+		t.Fatalf("expected sensory mar image, got %q", img)
+	}
+}
