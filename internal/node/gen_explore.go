@@ -71,11 +71,8 @@ func (n *NodoAlset) ExploreFrontier(key, rawURL, mission string) (map[string]int
 	}
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, maxExploreBody))
-	snippet := collapseWS(stripTags(string(body)))
-	if len(snippet) > 400 {
-		snippet = snippet[:400] + "…"
-	}
 	title := extractTitle(string(body))
+	snippet := cleanExploreSnippet(title, string(body))
 
 	report := map[string]interface{}{
 		"mission":      mission,
@@ -88,8 +85,14 @@ func (n *NodoAlset) ExploreFrontier(key, rawURL, mission string) (map[string]int
 		"snippet":      snippet,
 		"title":        title,
 	}
-	detail := fmt.Sprintf("mission=%s status=%d type=%s title=%q snippet=%s",
-		mission, resp.StatusCode, report["content_type"], title, snippet)
+	// detail humano: título + snippet limpio (sin volcar status/type a la voz)
+	detail := snippet
+	if title != "" && !strings.Contains(snippet, title) {
+		detail = title + " — " + snippet
+	}
+	if detail == "" {
+		detail = fmt.Sprintf("mission=%s status=%d url=%s", mission, resp.StatusCode, safe)
+	}
 	obs, _ := n.ObserveIntoGen(key, "explore:"+mission, detail)
 	n.markGenMission(key, mission, "reported", safe, report)
 
@@ -170,6 +173,28 @@ func validatePublicExploreURL(raw string) (string, error) {
 }
 
 func stripTags(s string) string {
+	low := strings.ToLower(s)
+	// Quitar script/style enteros (Wikipedia mete JS en el body)
+	for _, tag := range []string{"script", "style", "noscript"} {
+		for {
+			open := strings.Index(low, "<"+tag)
+			if open < 0 {
+				break
+			}
+			close := strings.Index(low[open:], "</"+tag)
+			if close < 0 {
+				s = s[:open]
+				low = strings.ToLower(s)
+				break
+			}
+			end := open + close + len("</"+tag+">")
+			if end > len(s) {
+				end = len(s)
+			}
+			s = s[:open] + " " + s[end:]
+			low = strings.ToLower(s)
+		}
+	}
 	var b strings.Builder
 	in := false
 	for _, r := range s {
@@ -182,11 +207,42 @@ func stripTags(s string) string {
 			b.WriteRune(r)
 		}
 	}
-	return b.String()
+	out := b.String()
+	// residual JS noise
+	for _, junk := range []string{"(function(){", "function(){", "var className=", "client-js", "vector-feature-"} {
+		if i := strings.Index(out, junk); i >= 0 {
+			// cut from junk if early in string after title-ish content
+			if i < 80 {
+				out = out[:i]
+			}
+		}
+	}
+	return out
 }
 
 func collapseWS(s string) string {
 	return strings.Join(strings.Fields(s), " ")
+}
+
+// cleanExploreSnippet prioritizes title + readable prose, drops JS leftovers.
+func cleanExploreSnippet(title, raw string) string {
+	raw = collapseWS(stripTags(raw))
+	for _, junk := range []string{"(function()", "function(){", "var className", "mw.loader", "RLCONF", "RLSTATE"} {
+		if i := strings.Index(raw, junk); i >= 0 {
+			raw = strings.TrimSpace(raw[:i])
+		}
+	}
+	if title != "" && (raw == "" || len([]rune(raw)) < 40) {
+		return title
+	}
+	if title != "" && !strings.HasPrefix(strings.ToLower(raw), strings.ToLower(title[:minInt(len(title), 12)])) {
+		raw = title + ". " + raw
+	}
+	if len([]rune(raw)) > 320 {
+		r := []rune(raw)
+		raw = string(r[:320]) + "…"
+	}
+	return strings.TrimSpace(raw)
 }
 
 func extractTitle(html string) string {

@@ -489,3 +489,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - Tras explore, voz Mind incluye hallazgo del gen.
 - `genConsultVoice` usa `last_hallazgo` (texto), no solo CID.
 - CF: código completo; red live `alset-network.lhmolam-877.workers.dev` (store OK, registry vacío hasta despacho). Falta env local `ALSET_CLOUDFLARE_NETWORK`.
+
+## 2026-08-26 — Explore limpio + no mind_episode en gen
+
+- stripTags elimina script/style; cleanExploreSnippet corta JS residual.
+- Pulsos mind_episode no se observan en todos los genes.
+- BridgeSpeakGenFindings ignora last_hallazgo tipo mind_episode.

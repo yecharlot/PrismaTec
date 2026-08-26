@@ -87,7 +87,11 @@ func (n *NodoAlset) BridgeSpeakGenFindings(key string) string {
 	last := ""
 	if g.State.Metadata != nil {
 		if lh, ok := g.State.Metadata["last_hallazgo"].(string); ok {
-			last = lh
+			low := strings.ToLower(lh)
+			// ignorar contaminación por pulsos mind_episode
+			if !strings.Contains(low, "mind_episode") && !strings.HasPrefix(low, "pulse:") {
+				last = lh
+			}
 		}
 		switch v := g.State.Metadata["findings"].(type) {
 		case []interface{}:

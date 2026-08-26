@@ -124,12 +124,18 @@ func (n *NodoAlset) ResonateGensOnPulse(eventType string, data interface{}) {
 	case agents.PulseHallazgo, agents.PulseEstado, agents.PulseConsulta,
 		agents.PulseGenCreated, agents.PulseGenMutated, agents.PulseGenTravel:
 		return
-	case "MIND_EPISODE", "AGENT_CREATED", "ROOT_UPDATED", "DNS_REGISTERED", "ERROR", "AUDIT":
+	case "MIND_EPISODE", "mind_episode":
+		// No contaminar hallazgos del gen con latidos de Mind
+		return
+	case "AGENT_CREATED", "ROOT_UPDATED", "DNS_REGISTERED", "ERROR", "AUDIT":
 		// external ecosystem events
 	default:
 		low := strings.ToLower(eventType)
+		if strings.Contains(low, "mind_episode") || strings.Contains(low, "mind-episode") {
+			return
+		}
 		if !strings.Contains(low, "error") && !strings.Contains(low, "fail") &&
-			!strings.Contains(low, "episode") && !strings.Contains(low, "agent") {
+			!strings.Contains(low, "agent") {
 			return
 		}
 	}
