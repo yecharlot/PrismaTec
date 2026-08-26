@@ -85,3 +85,15 @@ func TestActuateEffectLevel(t *testing.T) {
 		t.Fatal("empty should be 0")
 	}
 }
+
+func TestDeepenNewTopicSkipsStickyHarry(t *testing.T) {
+	// topicKeysMatch must not equate harry with voldemort
+	if topicKeysMatch("lord voldemort", "harry potter") {
+		t.Fatal("cross match")
+	}
+	// extract from deepen phrase
+	got := extractTopic(normalizeUserInput("profundiza mas sobre Lord Voldemort"))
+	if got != "lord voldemort" {
+		t.Fatalf("topic=%q", got)
+	}
+}

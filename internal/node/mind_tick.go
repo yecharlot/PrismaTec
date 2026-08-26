@@ -477,8 +477,26 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		primaryKind = "chat"
 	}
 	if voice == "" && (isElaborationRequest(text) || isContinuePrompt(text)) {
-		voice = n.continueMindThread(text)
-		primaryKind = "chat"
+		// "profundiza sobre X" con X ≠ último tema de sonda → dejar para MindScoutWeb
+		// (evita Sobre «voldemort» + artículo de Harry porque el texto menciona Voldemort)
+		skipThread := false
+		if isDeepenScout(normText) || forceWebScout(normText) {
+			topic := extractTopic(normText)
+			n.mindLastMu.Lock()
+			last := strings.TrimSpace(n.mindLastScoutTopic)
+			n.mindLastMu.Unlock()
+			if topic != "" && last != "" && !topicKeysMatch(topic, last) {
+				skipThread = true
+			}
+			// deepen sin last topic o con topic nuevo vacío de match: preferir scout
+			if topic != "" && (last == "" || !topicKeysMatch(topic, last)) {
+				skipThread = true
+			}
+		}
+		if !skipThread {
+			voice = n.continueMindThread(text)
+			primaryKind = "chat"
+		}
 	}
 
 	// 5) Tools Gen (dominan sobre corpus)

@@ -108,7 +108,6 @@ func (n *NodoAlset) confirmMindThread(text string) string {
 	return "No tengo un hecho reciente que confirmar. Si me dices el detalle, lo anclo."
 }
 
-
 // extractTopicFocus pulls an explicit topic the user wants to follow
 // ("sigue ese tema de mucho gusto", "hablemos de X", "sobre X").
 func extractTopicFocus(s string) string {
@@ -156,14 +155,21 @@ func (n *NodoAlset) continueMindThread(text string) string {
 		if hit := speakFromKnowledge(focus); hit != "" {
 			return "Sobre «" + focus + "»:\n\n" + hit
 		}
-		// Memory episodes that mention the focus
-		if m != "" && strings.Contains(strings.ToLower(m), focus) {
-			return "Sobre «" + focus + "», de lo que hablamos:\n\n" + m
+		// Reuse last voice only if focus IS the last scout subject
+		// (not a name mentioned inside another article, e.g. Harry text → Voldemort).
+		n.mindLastMu.Lock()
+		lastScout := strings.TrimSpace(n.mindLastScoutTopic)
+		n.mindLastMu.Unlock()
+		if lastScout != "" && topicKeysMatch(focus, lastScout) {
+			if m != "" && strings.Contains(strings.ToLower(m), strings.ToLower(focus)) {
+				return "Sobre «" + focus + "», de lo que hablamos:\n\n" + m
+			}
+			if v != "" {
+				return "Sobre «" + focus + "»:\n\n" + compressVoiceBlock(v, 280)
+			}
 		}
-		if v != "" && strings.Contains(strings.ToLower(v), focus) {
-			return "Sobre «" + focus + "»:\n\n" + compressVoiceBlock(v, 280)
-		}
-		return "Sobre «" + focus + "»: no tengo aún una entrada clara en corpus. Si me lo explicas en una frase, lo marco en memoria."
+		// New entity focus → empty so runMindTick can dispatch MindScoutWeb
+		return ""
 	}
 
 	// Name thread only if user did not point elsewhere
