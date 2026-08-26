@@ -119,6 +119,32 @@ func themeAsPrepDe(theme string) string {
 	return "de " + sub
 }
 
+// themeAsPrepA: "al mar", "a la noche" — evita "a el mar" / "a del mar".
+func themeAsPrepA(theme string) string {
+	sub := themeAsSubject(theme)
+	low := strings.ToLower(sub)
+	if strings.HasPrefix(low, "el ") {
+		return "al " + strings.TrimSpace(sub[3:])
+	}
+	if strings.HasPrefix(low, "la ") {
+		return "a la " + strings.TrimSpace(sub[3:])
+	}
+	if strings.HasPrefix(low, "los ") {
+		return "a los " + strings.TrimSpace(sub[4:])
+	}
+	if strings.HasPrefix(low, "las ") {
+		return "a las " + strings.TrimSpace(sub[4:])
+	}
+	return "a " + sub
+}
+
+// themeLooksPlural — sujetos compuestos ("gen y zyrion").
+func themeLooksPlural(theme string) bool {
+	low := strings.ToLower(theme)
+	return strings.Contains(low, " y ") || strings.Contains(low, " e ") ||
+		strings.HasPrefix(low, "los ") || strings.HasPrefix(low, "las ")
+}
+
 func mindComposeCreative(userText string, ethicsState int, memSpeak, knowSpeak string) string {
 	if ethicsState == 2 {
 		return "Ethics en veto: no compongo texto creativo ahora."
@@ -173,6 +199,9 @@ func isBadCreativeAnchor(s string) bool {
 		"composición ternaria", "composicion ternaria", "write=2",
 		"un poema organiza ritmo", "recursos: aliteración", "metáfora: decir que",
 		"cuento breve:", "situación → giro", "no inventar biografías reales",
+		"car =", "cdr =", "cons =", "defun ", "evaluar-zyrion", ":entradas",
+		"(quote", "lispai", "átomos de manipular", "atomos de manipular",
+		"```", "func (",
 	}
 	for _, b := range bad {
 		if strings.Contains(low, b) {
@@ -182,37 +211,88 @@ func isBadCreativeAnchor(s string) bool {
 	return false
 }
 
-func pickCreativeAnchor(theme, memSpeak, knowSpeak string) string {
-	theme = strings.TrimSpace(theme)
-	if theme != "" {
-		if k := speakFromKnowledge(theme); k != "" && !isBadCreativeAnchor(k) {
-			return compressVoiceBlock(k, 180)
+// anchorFitsTheme exige solape real (evita mar→car por edit-distance en corpus).
+func anchorFitsTheme(theme, anchor string) bool {
+	theme = strings.ToLower(strings.TrimSpace(theme))
+	anchor = strings.ToLower(strings.TrimSpace(anchor))
+	if theme == "" || anchor == "" {
+		return false
+	}
+	stop := map[string]bool{
+		"el": true, "la": true, "los": true, "las": true, "un": true, "una": true,
+		"de": true, "del": true, "y": true, "e": true, "o": true, "en": true,
+		"que": true, "qué": true, "sobre": true, "para": true, "con": true,
+	}
+	hit := 0
+	for _, w := range strings.Fields(theme) {
+		w = strings.Trim(w, ".,;:¡!¿?")
+		if len([]rune(w)) < 3 || stop[w] {
+			continue
 		}
-		if k := speakFromKnowledge("qué es " + theme); k != "" && !isBadCreativeAnchor(k) {
-			return compressVoiceBlock(k, 180)
-		}
-		// bare noun without article
-		bare := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(strings.ToLower(theme), "el "), "la "))
-		if bare != theme {
-			if k := speakFromKnowledge(bare); k != "" && !isBadCreativeAnchor(k) {
-				return compressVoiceBlock(k, 180)
-			}
-		}
-		if _, prev, ok := recallScoutFinding(theme); ok && !scoutReportLowQuality(prev) && !isMostlyEnglish(prev) && !isBadCreativeAnchor(prev) {
-			return compressVoiceBlock(prev, 160)
-		}
-		if _, prev, ok := recallScoutFinding(bare); ok && !scoutReportLowQuality(prev) && !isMostlyEnglish(prev) && !isBadCreativeAnchor(prev) {
-			return compressVoiceBlock(prev, 160)
+		if strings.Contains(anchor, w) {
+			hit++
 		}
 	}
+	return hit > 0
+}
+
+func pickCreativeAnchor(theme, memSpeak, knowSpeak string) string {
+	theme = strings.TrimSpace(theme)
+	try := func(k string) string {
+		if k == "" || isBadCreativeAnchor(k) {
+			return ""
+		}
+		// imágenes naturales no necesitan solape de tokens
+		if strings.Contains(strings.ToLower(k), "sal en el aire") ||
+			strings.Contains(strings.ToLower(k), "cielo opaco") ||
+			strings.Contains(strings.ToLower(k), "golpes menudos") ||
+			strings.Contains(strings.ToLower(k), "vínculo, cuidado") {
+			return compressVoiceBlock(k, 180)
+		}
+		if !anchorFitsTheme(theme, k) {
+			return ""
+		}
+		return compressVoiceBlock(k, 180)
+	}
+	// 1) imagen sensorial primero (evita corpus técnico ruidoso tipo car/cdr)
 	if img := naturalThemeImage(theme); img != "" {
 		return img
 	}
-	if knowSpeak != "" && !isBadCreativeAnchor(knowSpeak) {
-		return compressVoiceBlock(knowSpeak, 160)
+	if theme != "" {
+		if k := try(speakFromKnowledge(theme)); k != "" {
+			return k
+		}
+		if k := try(speakFromKnowledge("qué es " + theme)); k != "" {
+			return k
+		}
+		bare := strings.ToLower(theme)
+		for _, p := range []string{"el ", "la ", "los ", "las ", "un ", "una "} {
+			bare = strings.TrimPrefix(bare, p)
+		}
+		bare = strings.TrimSpace(bare)
+		if bare != "" {
+			if k := try(speakFromKnowledge(bare)); k != "" {
+				return k
+			}
+		}
+		if _, prev, ok := recallScoutFinding(theme); ok && !scoutReportLowQuality(prev) && !isMostlyEnglish(prev) {
+			if k := try(prev); k != "" {
+				return k
+			}
+		}
+		if bare != "" {
+			if _, prev, ok := recallScoutFinding(bare); ok && !scoutReportLowQuality(prev) && !isMostlyEnglish(prev) {
+				if k := try(prev); k != "" {
+					return k
+				}
+			}
+		}
 	}
-	if memSpeak != "" && !isBadCreativeAnchor(memSpeak) {
-		return compressVoiceBlock(memSpeak, 120)
+	if k := try(knowSpeak); k != "" {
+		return k
+	}
+	if k := try(memSpeak); k != "" {
+		return k
 	}
 	return ""
 }
@@ -269,6 +349,7 @@ func composePoem(theme, anchor, device string, variant int) string {
 	theme = polishTheme(theme)
 	sub := themeAsSubject(theme)
 	prep := themeAsPrepDe(theme)
+	aPrep := themeAsPrepA(theme)
 	dev := strings.ToLower(device)
 	v := ((variant - 1) % 3) // 0,1,2 cycles
 
@@ -305,9 +386,9 @@ func composePoem(theme, anchor, device string, variant int) string {
 			}
 		case 2:
 			lines = []string{
-				fmt.Sprintf("Vuelvo a %s sin permiso,", prep),
-				fmt.Sprintf("vuelvo a %s con menos prisa,", prep),
-				fmt.Sprintf("vuelvo a %s y el verso aprende a callar.", prep),
+				fmt.Sprintf("Vuelvo %s sin permiso,", aPrep),
+				fmt.Sprintf("vuelvo %s con menos prisa,", aPrep),
+				fmt.Sprintf("vuelvo %s y el verso aprende a callar.", aPrep),
 			}
 		default:
 			lines = []string{
@@ -332,7 +413,7 @@ func composePoem(theme, anchor, device string, variant int) string {
 			}
 		default:
 			lines = []string{
-				fmt.Sprintf("%s avanza como marea en calma,", capitalizeFirst(sub)),
+				fmt.Sprintf("%s %s como marea en calma,", capitalizeFirst(sub), map[bool]string{true: "avanzan", false: "avanza"}[themeLooksPlural(theme)]),
 				"deja marcas en la arena del oído,",
 				"y al retirarse, deja una forma que se puede leer despacio.",
 			}
@@ -395,7 +476,7 @@ func composePoem(theme, anchor, device string, variant int) string {
 			}
 		default:
 			lines = []string{
-				fmt.Sprintf("Miro %s sin pretender agotarlo,", prep),
+				fmt.Sprintf("Miro %s sin pretender agotarlo,", sub),
 				"anoto tres imágenes y suelto la cuarta,",
 				"porque el poema también se mide por lo que omite.",
 			}
