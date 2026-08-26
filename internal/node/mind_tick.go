@@ -35,6 +35,7 @@ type MindTickResponse struct {
 	MemoryHint string            `json:"memory_hint,omitempty"`
 	Note       string            `json:"note"`
 	Actuate    *ActuateState     `json:"actuate,omitempty"` // sub-efectores bajo act
+	Effect     int               `json:"effect"`            // 0 quiet | 1 prepare | 2 execute
 }
 
 // level03 maps [0,1] continuous to ternary intensity 0/1/2 (low/mid/high).
@@ -279,7 +280,6 @@ func signalsFromTextMind(t string) map[string]float64 {
 		"novedad":  novedad,
 	}
 }
-
 
 func isIncompleteUtterance(s string) bool {
 	s = strings.ToLower(strings.TrimSpace(s))
@@ -614,6 +614,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		MemoryHint: memHint,
 		Note:       "latido+memoria+compose+codegen+curiosity+humor+zyrion+actuate",
 		Actuate:    &actuate,
+		Effect:     actuate.effectLevel(),
 	}
 	if codegenCID != "" {
 		resp.EpisodeCID = codegenCID
@@ -894,7 +895,6 @@ func (n *NodoAlset) mindSafeTools(text string) string {
 	return strings.Join(lines, "\n")
 }
 
-
 // mindGenTools: Mind orchestrates Alset-Gen under ethics (ternary only — no LLM).
 // Returns natural Spanish lines for dialogue, not lab dumps.
 // Mutate still requires GEN_MUTATE_SECRET via API — Mind does not bypass G2.
@@ -1034,13 +1034,13 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 		} else {
 			pkg := dns["package_cid"]
 			reach := dns["http_base"]
-			msg := "Localicé «"+name+"»"
+			msg := "Localicé «" + name + "»"
 			if reach != "" {
-				msg += " en "+reach
+				msg += " en " + reach
 				_ = n.AnnounceRemoteGen(name, reach, "", pkg, 0, 0)
 			}
 			if pkg != "" {
-				msg += " (paquete "+truncateCID(pkg)+")"
+				msg += " (paquete " + truncateCID(pkg) + ")"
 			}
 			lines = append(lines, msg+".")
 		}
@@ -1093,9 +1093,9 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 				if len(sn) > 160 {
 					sn = sn[:160] + "…"
 				}
-				msg := "Mandé a «"+normalizeGenKey(name)+"» a mirar "+u+"."
+				msg := "Mandé a «" + normalizeGenKey(name) + "» a mirar " + u + "."
 				if sn != "" {
-					msg += " Trajo: "+sn
+					msg += " Trajo: " + sn
 				}
 				lines = append(lines, msg)
 			}
@@ -1138,15 +1138,13 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 		extra := ""
 		if g.State.Metadata != nil {
 			if rh, ok := g.State.Metadata["remote_http"].(string); ok && rh != "" {
-				extra = " · borde "+rh
+				extra = " · borde " + rh
 			}
 		}
 		lines = append(lines, "· "+g.Key+" ("+loc+")"+extra)
 	}
 	return lines
 }
-
-
 
 func extractURLFromText(text string) string {
 	for _, w := range strings.Fields(text) {

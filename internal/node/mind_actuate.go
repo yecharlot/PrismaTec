@@ -26,7 +26,7 @@ type ActuateState struct {
 type ActionMemoryEntry struct {
 	Timestamp      string         `json:"timestamp"`
 	Channel        string         `json:"channel"` // write|read|reason|explore|execute|communicate|delete
-	Value          int            `json:"value"`  // 0|1|2
+	Value          int            `json:"value"`   // 0|1|2
 	Trigger        string         `json:"trigger"`
 	OrgansSnapshot map[string]int `json:"organs_state"`
 	Result         string         `json:"result,omitempty"`
@@ -124,6 +124,17 @@ func evaluateActuate(input string, organs []MindOrganResult) ActuateState {
 	}
 
 	return st
+}
+
+// effectLevel: 0 quiet, 1 prepare, 2 execute (max over channels).
+func (s ActuateState) effectLevel() int {
+	max := 0
+	for _, v := range []int{s.Write, s.Read, s.Reason, s.Explore, s.Execute, s.Communicate, s.Delete} {
+		if v > max {
+			max = v
+		}
+	}
+	return max
 }
 
 func (s ActuateState) anyActive() bool {

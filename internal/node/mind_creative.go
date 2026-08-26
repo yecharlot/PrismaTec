@@ -1,15 +1,83 @@
 package node
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 )
 
 var (
 	creativeVarMu    sync.Mutex
 	creativeVarCount = map[string]int{}
 )
+
+type creativeIndexEntry struct {
+	Theme  string `json:"theme"`
+	Kind   string `json:"kind"`
+	Text   string `json:"text"`
+	When   string `json:"when"`
+	Device string `json:"device,omitempty"`
+}
+
+const creativeIndexFile = "mind_creativity_index.json"
+const creativeIndexMax = 80
+
+var creativeIndexMu sync.Mutex
+
+func storeCreativeWork(theme, kind, text, device string) {
+	theme = strings.TrimSpace(strings.ToLower(theme))
+	text = strings.TrimSpace(text)
+	if theme == "" || len(text) < 20 {
+		return
+	}
+	_ = os.MkdirAll("alset_data", 0o755)
+	path := filepath.Join("alset_data", creativeIndexFile)
+	creativeIndexMu.Lock()
+	defer creativeIndexMu.Unlock()
+	var entries []creativeIndexEntry
+	if raw, err := os.ReadFile(path); err == nil {
+		_ = json.Unmarshal(raw, &entries)
+	}
+	entries = append(entries, creativeIndexEntry{
+		Theme: theme, Kind: kind, Text: text,
+		When: time.Now().UTC().Format(time.RFC3339), Device: device,
+	})
+	if len(entries) > creativeIndexMax {
+		entries = entries[len(entries)-creativeIndexMax:]
+	}
+	if raw, err := json.MarshalIndent(entries, "", "  "); err == nil {
+		_ = os.WriteFile(path, raw, 0o644)
+	}
+}
+
+func recallCreativeWork(theme, kind string) string {
+	theme = strings.TrimSpace(strings.ToLower(theme))
+	if theme == "" {
+		return ""
+	}
+	raw, err := os.ReadFile(filepath.Join("alset_data", creativeIndexFile))
+	if err != nil {
+		return ""
+	}
+	var entries []creativeIndexEntry
+	if json.Unmarshal(raw, &entries) != nil {
+		return ""
+	}
+	for i := len(entries) - 1; i >= 0; i-- {
+		e := entries[i]
+		if kind != "" && e.Kind != kind {
+			continue
+		}
+		if e.Theme == theme || strings.Contains(e.Theme, theme) || strings.Contains(theme, e.Theme) {
+			return e.Text
+		}
+	}
+	return ""
+}
 
 func nextCreativeVariant(key string) int {
 	creativeVarMu.Lock()
@@ -185,7 +253,9 @@ func mindComposeCreative(userText string, ethicsState int, memSpeak, knowSpeak s
 		}
 		b.WriteString(".)")
 	}
-	return b.String()
+	out := b.String()
+	storeCreativeWork(theme, kind, out, device)
+	return out
 }
 
 func isBadCreativeAnchor(s string) bool {
@@ -624,7 +694,7 @@ func composePoem(theme, anchor, device string, variant int) string {
 				"y el resto del día habla en voz baja de eso.",
 			},
 			{
-				fmt.Sprintf("Más ancho que el mapa, más corto que un suspiro:", capitalizeFirst(sub)),
+				fmt.Sprintf("Más ancho que el mapa, más corto que un suspiro: %s", capitalizeFirst(sub)),
 				"así mide quien no usa regla,",
 				"solo el pulso y una línea en blanco.",
 			},

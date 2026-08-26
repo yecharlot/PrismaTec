@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -238,36 +239,146 @@ func normalizeTopicKey(topic string) string {
 	return strings.Join(strings.Fields(strings.ToLower(strings.TrimSpace(topic))), " ")
 }
 
-func storeScoutFinding(topic, report string) {
-	k := normalizeTopicKey(topic)
-	if k == "" || report == "" {
+const scoutIndexFile = "mind_scout_index.json"
+
+func scoutIndexPath() string {
+	return filepath.Join("alset_data", scoutIndexFile)
+}
+
+func loadScoutIndex() {
+	scoutFindingIndex.mu.Lock()
+	defer scoutFindingIndex.mu.Unlock()
+	if len(scoutFindingIndex.byTopic) > 0 {
 		return
 	}
+	raw, err := os.ReadFile(scoutIndexPath())
+	if err != nil || len(raw) == 0 {
+		if scoutFindingIndex.byTopic == nil {
+			scoutFindingIndex.byTopic = map[string]string{}
+		}
+		return
+	}
+	var m map[string]string
+	if json.Unmarshal(raw, &m) != nil || m == nil {
+		scoutFindingIndex.byTopic = map[string]string{}
+		return
+	}
+	scoutFindingIndex.byTopic = m
+}
+
+func persistScoutIndexLocked() {
+	_ = os.MkdirAll("alset_data", 0o755)
+	if scoutFindingIndex.byTopic == nil {
+		return
+	}
+	raw, err := json.MarshalIndent(scoutFindingIndex.byTopic, "", "  ")
+	if err != nil {
+		return
+	}
+	_ = os.WriteFile(scoutIndexPath(), raw, 0o644)
+}
+
+func storeScoutFinding(topic, report string) {
+	k := normalizeTopicKey(topic)
+	if k == "" || report == "" || scoutReportLowQuality(report) {
+		return
+	}
+	loadScoutIndex()
 	scoutFindingIndex.mu.Lock()
+	if scoutFindingIndex.byTopic == nil {
+		scoutFindingIndex.byTopic = map[string]string{}
+	}
 	scoutFindingIndex.byTopic[k] = report
+	// ring cap ~120 topics
+	if len(scoutFindingIndex.byTopic) > 120 {
+		// drop arbitrary excess keys (map iteration order)
+		n := 0
+		for key := range scoutFindingIndex.byTopic {
+			if n > 20 {
+				break
+			}
+			delete(scoutFindingIndex.byTopic, key)
+			n++
+		}
+	}
+	persistScoutIndexLocked()
 	scoutFindingIndex.mu.Unlock()
 }
 
+// topicKeysMatch: strict — exact key, or ≥2 significant tokens shared (len≥4).
+// Avoids harry potter ↔ lord voldemort cross-contamination.
+func topicKeysMatch(a, b string) bool {
+	a, b = normalizeTopicKey(a), normalizeTopicKey(b)
+	if a == "" || b == "" {
+		return false
+	}
+	if a == b {
+		return true
+	}
+	// one is full phrase containing the other only if the shorter has ≥2 tokens
+	shorter, longer := a, b
+	if len(b) < len(a) {
+		shorter, longer = b, a
+	}
+	sig := func(s string) []string {
+		var out []string
+		for _, w := range strings.Fields(s) {
+			if len(w) >= 4 {
+				out = append(out, w)
+			}
+		}
+		return out
+	}
+	sa, sb := sig(a), sig(b)
+	if len(sa) == 0 || len(sb) == 0 {
+		// single short token: only exact already handled
+		return false
+	}
+	hit := 0
+	set := map[string]bool{}
+	for _, w := range sb {
+		set[w] = true
+	}
+	for _, w := range sa {
+		if set[w] {
+			hit++
+		}
+	}
+	need := 2
+	if len(sa) == 1 && len(sb) == 1 {
+		return sa[0] == sb[0]
+	}
+	if hit >= need {
+		return true
+	}
+	// allow "bioinformática" vs "bio informatica" after typo norm already applied
+	if len(sa) == 1 && strings.Contains(longer, shorter) && len(shorter) >= 8 {
+		return true
+	}
+	return false
+}
+
 func recallScoutFinding(query string) (topic string, report string, ok bool) {
+	loadScoutIndex()
 	q := normalizeTopicKey(extractTopic(query))
 	if q == "" {
 		q = normalizeTopicKey(query)
 	}
 	scoutFindingIndex.mu.RLock()
 	defer scoutFindingIndex.mu.RUnlock()
-	if r, hit := scoutFindingIndex.byTopic[q]; hit {
+	if r, hit := scoutFindingIndex.byTopic[q]; hit && !scoutReportLowQuality(r) {
 		return q, r, true
 	}
-	// substring: stored topic contained in query or vice-versa
 	bestK, bestR, bestN := "", "", 0
 	for k, r := range scoutFindingIndex.byTopic {
-		if len(k) < 4 {
+		if scoutReportLowQuality(r) {
 			continue
 		}
-		if strings.Contains(q, k) || strings.Contains(k, q) {
-			if len(k) > bestN {
-				bestK, bestR, bestN = k, r, len(k)
-			}
+		if !topicKeysMatch(q, k) {
+			continue
+		}
+		if len(k) > bestN {
+			bestK, bestR, bestN = k, r, len(k)
 		}
 	}
 	if bestK != "" {
@@ -531,16 +642,16 @@ func fetchDuckDuckGoAnswer(topic string) (title, extract, pageURL string, ok boo
 		return "", "", "", false
 	}
 	var data struct {
-		Heading      string `json:"Heading"`
-		Abstract     string `json:"Abstract"`
-		AbstractText string `json:"AbstractText"`
-		AbstractURL  string `json:"AbstractURL"`
-		Answer       string `json:"Answer"`
-		AnswerType   string `json:"AnswerType"`
-		Definition   string `json:"Definition"`
+		Heading       string `json:"Heading"`
+		Abstract      string `json:"Abstract"`
+		AbstractText  string `json:"AbstractText"`
+		AbstractURL   string `json:"AbstractURL"`
+		Answer        string `json:"Answer"`
+		AnswerType    string `json:"AnswerType"`
+		Definition    string `json:"Definition"`
 		DefinitionURL string `json:"DefinitionURL"`
 		RelatedTopics []struct {
-			Text string `json:"Text"`
+			Text     string `json:"Text"`
 			FirstURL string `json:"FirstURL"`
 		} `json:"RelatedTopics"`
 	}
@@ -609,7 +720,6 @@ func scoutReportLowQuality(report string) bool {
 	}
 	return false
 }
-
 
 // tryScoutFollowUp: "cómo se llama su madre" after a scout topic → memory first, then admit gap or re-scout.
 func (n *NodoAlset) tryScoutFollowUp(userText string, ethicsState int) string {
@@ -707,15 +817,13 @@ func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 		return ""
 	}
 
-	// D — reuse prior scout finding for the same topic
+	// D — reuse prior finding only on strict topic match (never Harry↔Voldemort)
 	if tKey, prev, hit := recallScoutFinding(topic); hit {
-		nt := normalizeTopicKey(topic)
-		tk := normalizeTopicKey(tKey)
-		same := nt == tk || strings.Contains(tk, nt) || strings.Contains(nt, tk)
-		if same && !scoutReportLowQuality(prev) && !isMostlyEnglish(prev) {
+		if topicKeysMatch(topic, tKey) && !scoutReportLowQuality(prev) && !isMostlyEnglish(prev) {
+			// deepen on same entity can reuse; deepen on other entity already has different extractTopic
 			return formatScoutVoice(prev, "", true)
 		}
-		// EN-only cache → re-scout seeking ES source
+		// EN-only or weak match → re-scout
 	}
 
 	slug := strings.ToLower(topic)
@@ -822,7 +930,6 @@ func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 	}
 	return voice
 }
-
 
 func cleanWebSnippet(s string) string {
 	s = strings.TrimSpace(s)
