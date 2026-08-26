@@ -323,7 +323,10 @@ func naturalThemeImage(theme string) string {
 }
 
 func pickLiteraryDevice(theme string, variant int) string {
-	devices := []string{"metáfora", "símil", "anáfora", "verso libre", "haiku", "personificación"}
+	devices := []string{
+		"metáfora", "símil", "anáfora", "verso libre", "haiku", "personificación",
+		"aliteración", "hipérbole",
+	}
 	i := 0
 	for _, r := range theme {
 		i += int(r)
@@ -351,136 +354,331 @@ func composePoem(theme, anchor, device string, variant int) string {
 	prep := themeAsPrepDe(theme)
 	aPrep := themeAsPrepA(theme)
 	dev := strings.ToLower(device)
-	v := ((variant - 1) % 3) // 0,1,2 cycles
+	// 8 moldes por recurso → ciclo largo antes de repetir
+	v := ((variant - 1) % 8)
 
 	var lines []string
 	switch {
 	case strings.Contains(dev, "haiku"):
-		switch v {
-		case 1:
-			lines = []string{
-				"ola que no llega",
-				fmt.Sprintf("%s en la orilla", truncateRunes(sub, 18)),
-				"sal en la lengua",
-			}
-		case 2:
-			lines = []string{
-				"horizonte bajo",
-				"el agua cuenta sin prisa",
-				"nadie responde",
-			}
-		default:
-			lines = []string{
-				haikuLine(sub, 5),
-				"un corte de silencio",
-				"eco que no explica",
-			}
+		molds := [][]string{
+			{haikuLine(sub, 5), "un corte de silencio", "eco que no explica"},
+			{"ola que no llega", fmt.Sprintf("%s en la orilla", truncateRunes(sub, 18)), "sal en la lengua"},
+			{"horizonte bajo", "el agua cuenta sin prisa", "nadie responde"},
+			{"piedra y espuma", fmt.Sprintf("nombre: %s", truncateRunes(sub, 12)), "el resto es bruma"},
+			{"viento en la tapa", "del cuaderno abierto", "tinta que no seca"},
+			{"tres gotas, un reloj", "la orilla no pregunta", "el verso sí"},
+			{"luz de media tarde", fmt.Sprintf("%s sin marco", truncateRunes(sub, 14)), "sombra que se queda"},
+			{"un barco pequeño", "carga solo preguntas", "no trae respuestas"},
 		}
+		lines = molds[v]
 	case strings.Contains(dev, "anáfora") || strings.Contains(dev, "anafora"):
-		switch v {
-		case 1:
-			lines = []string{
-				fmt.Sprintf("Si %s fuera solo nombre, bastaría el diccionario,", sub),
-				fmt.Sprintf("si %s fuera solo ruido, bastaría taparse los oídos,", sub),
-				fmt.Sprintf("pero %s pide mirada — y la mirada no se improvisa.", sub),
-			}
-		case 2:
-			lines = []string{
-				fmt.Sprintf("Vuelvo %s sin permiso,", aPrep),
-				fmt.Sprintf("vuelvo %s con menos prisa,", aPrep),
-				fmt.Sprintf("vuelvo %s y el verso aprende a callar.", aPrep),
-			}
-		default:
-			lines = []string{
+		molds := [][]string{
+			{
 				fmt.Sprintf("No es solo %s lo que llega a la boca,", sub),
 				fmt.Sprintf("no es solo %s lo que cabe en el pecho,", sub),
 				fmt.Sprintf("no es solo %s: es el modo de mirar y no soltar.", sub),
-			}
+			},
+			{
+				fmt.Sprintf("Si %s fuera solo nombre, bastaría el diccionario,", sub),
+				fmt.Sprintf("si %s fuera solo ruido, bastaría taparse los oídos,", sub),
+				fmt.Sprintf("pero %s pide mirada — y la mirada no se improvisa.", sub),
+			},
+			{
+				fmt.Sprintf("Vuelvo %s sin permiso,", aPrep),
+				fmt.Sprintf("vuelvo %s con menos prisa,", aPrep),
+				fmt.Sprintf("vuelvo %s y el verso aprende a callar.", aPrep),
+			},
+			{
+				fmt.Sprintf("Digo %s y el aire cambia de peso,", sub),
+				fmt.Sprintf("digo %s y el reloj pierde un segundo,", sub),
+				fmt.Sprintf("digo %s y aún así no lo agoto.", sub),
+			},
+			{
+				fmt.Sprintf("Antes %s era un rumor lejano,", prep),
+				fmt.Sprintf("antes %s era una foto en la pared,", prep),
+				fmt.Sprintf("ahora %s pide sitio en la mesa.", sub),
+			},
+			{
+				fmt.Sprintf("Ni el mapa explica %s,", sub),
+				fmt.Sprintf("ni el diccionario cierra %s,", sub),
+				fmt.Sprintf("ni el silencio niega %s.", sub),
+			},
+			{
+				fmt.Sprintf("Una vez %s,", sub),
+				fmt.Sprintf("otra vez %s,", sub),
+				fmt.Sprintf("y de nuevo %s: el verso no se cansa de intentar.", sub),
+			},
+			{
+				fmt.Sprintf("Por %s dejo una silla vacía,", prep),
+				fmt.Sprintf("por %s enciendo una luz baja,", prep),
+				fmt.Sprintf("por %s escribo despacio, sin prisa de acabar.", prep),
+			},
 		}
+		lines = molds[v]
 	case strings.Contains(dev, "símil") || strings.Contains(dev, "simil"):
-		switch v {
-		case 1:
-			lines = []string{
-				fmt.Sprintf("%s se parece a una carta sin sobre,", capitalizeFirst(sub)),
-				"cualquiera puede leer el borde,",
-				"pero el centro solo se entiende en voz baja.",
-			}
-		case 2:
-			lines = []string{
-				fmt.Sprintf("Hablar %s es como abrir una ventana en invierno:", prep),
-				"entra aire, entra claridad,",
-				"y también un poco de temblor necesario.",
-			}
-		default:
-			lines = []string{
+		molds := [][]string{
+			{
 				fmt.Sprintf("%s %s como marea en calma,", capitalizeFirst(sub), map[bool]string{true: "avanzan", false: "avanza"}[themeLooksPlural(theme)]),
 				"deja marcas en la arena del oído,",
 				"y al retirarse, deja una forma que se puede leer despacio.",
-			}
+			},
+			{
+				fmt.Sprintf("%s se parece a una carta sin sobre,", capitalizeFirst(sub)),
+				"cualquiera puede leer el borde,",
+				"pero el centro solo se entiende en voz baja.",
+			},
+			{
+				fmt.Sprintf("Hablar %s es como abrir una ventana en invierno:", prep),
+				"entra aire, entra claridad,",
+				"y también un poco de temblor necesario.",
+			},
+			{
+				fmt.Sprintf("%s es como un faro sin isla:", capitalizeFirst(sub)),
+				"alumbra, pero no promete puerto,",
+				"y aun así orienta a quien navega de noche.",
+			},
+			{
+				fmt.Sprintf("Pensar %s es como sostener agua en las manos:", prep),
+				"algo se queda, algo se escapa,",
+				"y lo que queda basta para mojar la sed.",
+			},
+			{
+				fmt.Sprintf("%s se parece a un camino sin carteles,", capitalizeFirst(sub)),
+				"cada paso inventa la siguiente curva,",
+				"y el final no es un punto: es otra curva.",
+			},
+			{
+				fmt.Sprintf("Mirar %s es como oír una canción en otro idioma:", prep),
+				"no captas cada palabra,",
+				"pero el tono te dice si puedes quedarte.",
+			},
+			{
+				fmt.Sprintf("%s es como la sombra al mediodía:", capitalizeFirst(sub)),
+				"casi no se ve, y sin embargo marca el cuerpo,",
+				"recuerda que hay sol aunque no lo nombres.",
+			},
 		}
+		lines = molds[v]
 	case strings.Contains(dev, "personificación"):
-		switch v {
-		case 1:
-			lines = []string{
+		molds := [][]string{
+			{
 				fmt.Sprintf("%s toca a la puerta del verso,", capitalizeFirst(sub)),
 				"no pide entrada: espera a que le cedamos el umbral,",
 				"y cuando lo hacemos, acomoda el silencio.",
-			}
-		case 2:
-			lines = []string{
+			},
+			{
 				fmt.Sprintf("%s camina descalzo por la frase,", capitalizeFirst(sub)),
 				"deja huellas que el lector completa,",
 				"y al final se sienta donde nadie lo invitó.",
-			}
-		default:
-			lines = []string{
+			},
+			{
 				fmt.Sprintf("%s se sienta al borde de la frase,", capitalizeFirst(sub)),
 				"pregunta sin preguntar, espera sin reloj,",
 				"y cuando nos callamos, sigue escuchando.",
-			}
+			},
+			{
+				fmt.Sprintf("%s abre el cuaderno por la mitad,", capitalizeFirst(sub)),
+				"tacha una palabra que sobraba,",
+				"y deja el margen más ancho de lo justo.",
+			},
+			{
+				fmt.Sprintf("%s no grita: susurra al oído del papel,", capitalizeFirst(sub)),
+				"pide una línea más y luego otra,",
+				"hasta que el blanco se convence de ceder.",
+			},
+			{
+				fmt.Sprintf("%s mira el reloj y no lo cree,", capitalizeFirst(sub)),
+				"dice que el tiempo aquí se mide en versos,",
+				"no en minutos que se van sin decir adiós.",
+			},
+			{
+				fmt.Sprintf("%s recoge las palabras caídas,", capitalizeFirst(sub)),
+				"las ordena como quien guarda semillas,",
+				"y espera a que alguna germine en la página.",
+			},
+			{
+				fmt.Sprintf("%s se asoma al borde del poema,", capitalizeFirst(sub)),
+				"duda un segundo, luego entra,",
+				"y deja la puerta entreabierta por si vuelves.",
+			},
 		}
+		lines = molds[v]
 	case strings.Contains(dev, "metáfora"):
-		switch v {
-		case 1:
-			lines = []string{
-				fmt.Sprintf("%s es una llave que no abre todas las puertas,", capitalizeFirst(sub)),
-				"solo aquellas donde alguien dejó una luz encendida,",
-				"y aun así hay que girarla con cuidado.",
-			}
-		case 2:
-			lines = []string{
-				fmt.Sprintf("Llamar %s no es etiquetar un objeto,", prep),
-				"es aceptar que algo nos atraviesa",
-				"y sigue siendo más ancho que el nombre.",
-			}
-		default:
-			lines = []string{
+		molds := [][]string{
+			{
 				fmt.Sprintf("%s no es un cartel: es una puerta entreabierta,", capitalizeFirst(sub)),
 				"cruzarla pide ritmo, no inventario,",
 				"tres pasos: ver, nombrar, callar a tiempo.",
-			}
+			},
+			{
+				fmt.Sprintf("%s es una llave que no abre todas las puertas,", capitalizeFirst(sub)),
+				"solo aquellas donde alguien dejó una luz encendida,",
+				"y aun así hay que girarla con cuidado.",
+			},
+			{
+				fmt.Sprintf("Llamar %s no es etiquetar un objeto,", prep),
+				"es aceptar que algo nos atraviesa",
+				"y sigue siendo más ancho que el nombre.",
+			},
+			{
+				fmt.Sprintf("%s es un puente de madera vieja,", capitalizeFirst(sub)),
+				"cruje, pero aguanta el paso,",
+				"y al otro lado el paisaje no es el mismo.",
+			},
+			{
+				fmt.Sprintf("%s es un vaso a medio llenar de lluvia,", capitalizeFirst(sub)),
+				"no sirve para brindar ni para regar del todo,",
+				"sirve para recordar que el cielo también cae.",
+			},
+			{
+				fmt.Sprintf("%s es el pliegue de un mapa gastado,", capitalizeFirst(sub)),
+				"donde las rutas se cruzan sin permiso,",
+				"y aun así alguien llega a casa.",
+			},
+			{
+				fmt.Sprintf("%s es una habitación con la ventana abierta,", capitalizeFirst(sub)),
+				"entra el ruido de la calle y también el aire,",
+				"y uno decide qué dejar pasar.",
+			},
+			{
+				fmt.Sprintf("%s es el hilo que sobra al terminar el tejido,", capitalizeFirst(sub)),
+				"no decora, no sostiene,",
+				"pero sin él no sabrías dónde cortar.",
+			},
 		}
+		lines = molds[v]
+	case strings.Contains(dev, "aliteración") || strings.Contains(dev, "aliteracion"):
+		molds := [][]string{
+			{
+				fmt.Sprintf("Pasa %s, pasa el peso, pasa la pausa,", sub),
+				"poco a poco el poema pone orden,",
+				"sin prisa, sin ruido de más.",
+			},
+			{
+				fmt.Sprintf("Suenan sílabas suaves %s", prep),
+				"sal, sombra, silencio que se sostiene,",
+				"y el oído elige qué guardar.",
+			},
+			{
+				fmt.Sprintf("Lento, limpio, lejos %s", prep),
+				"la lengua deja letras en el aire,",
+				"y el verso las recoge una a una.",
+			},
+			{
+				fmt.Sprintf("Murmullo %s, memoria muda,", prep),
+				"marca el margen con una mano quieta,",
+				"mientras el otro oído escucha el fondo.",
+			},
+			{
+				fmt.Sprintf("Cae, crece, cierra %s", prep),
+				"ciclo corto de cuatro sílabas,",
+				"y otra vez el blanco pide turno.",
+			},
+			{
+				fmt.Sprintf("Viento, verso, viaje %s", prep),
+				"tres voces que no se empujan,",
+				"comparten el mismo aliento breve.",
+			},
+			{
+				fmt.Sprintf("Dura, densa, distinta %s", prep),
+				"la palabra se apoya en la siguiente,",
+				"sin tropiezo, sin adorno de más.",
+			},
+			{
+				fmt.Sprintf("Ronda el ritmo %s", prep),
+				"rueda baja, casi no se oye,",
+				"y aun así empuja el poema adelante.",
+			},
+		}
+		lines = molds[v]
+	case strings.Contains(dev, "hipérbole") || strings.Contains(dev, "hiperbole"):
+		molds := [][]string{
+			{
+				fmt.Sprintf("Cabe el mundo entero en un trazo %s,", prep),
+				"y aun así sobra margen para el silencio,",
+				"que también pesa como un continente.",
+			},
+			{
+				fmt.Sprintf("%s cabría en un grano de arena", capitalizeFirst(sub)),
+				"y a la vez no cabe en ninguna biblioteca,",
+				"porque el tamaño aquí lo decide el asombro.",
+			},
+			{
+				fmt.Sprintf("Mil puertas se abren al nombrar %s,", sub),
+				"y detrás de cada una hay otra más ancha,",
+				"hasta que el mapa se rinde y pide un verso.",
+			},
+			{
+				fmt.Sprintf("Un solo segundo %s dura una vida,", prep),
+				"o una vida se comprime en un segundo,",
+				"según mire quien sostiene el lápiz.",
+			},
+			{
+				fmt.Sprintf("%s llena la habitación sin entrar,", capitalizeFirst(sub)),
+				"empuja las paredes un centímetro,",
+				"y el techo aprende a ser cielo un rato.",
+			},
+			{
+				fmt.Sprintf("Quepa o no, %s se queda,", sub),
+				"ocupa el asiento de al lado,",
+				"y el resto del día habla en voz baja de eso.",
+			},
+			{
+				fmt.Sprintf("Más ancho que el mapa, más corto que un suspiro:", capitalizeFirst(sub)),
+				"así mide quien no usa regla,",
+				"solo el pulso y una línea en blanco.",
+			},
+			{
+				fmt.Sprintf("Toda la noche cabe en una sílaba %s,", prep),
+				"si la dices despacio,",
+				"y al amanecer aún resuena en la mesa.",
+			},
+		}
+		lines = molds[v]
 	default: // verso libre
-		switch v {
-		case 1:
-			lines = []string{
-				fmt.Sprintf("Bajo el nombre %s hay agua y hay piedra,", prep),
-				"el verso elige qué tocar primero,",
-				"y deja el resto al silencio que también es parte.",
-			}
-		case 2:
-			lines = []string{
-				fmt.Sprintf("Hoy %s no pide adorno,", sub),
-				"pide una línea limpia y un margen en blanco,",
-				"donde quepa lo que aún no sabemos decir.",
-			}
-		default:
-			lines = []string{
+		molds := [][]string{
+			{
 				fmt.Sprintf("Miro %s sin pretender agotarlo,", sub),
 				"anoto tres imágenes y suelto la cuarta,",
 				"porque el poema también se mide por lo que omite.",
-			}
+			},
+			{
+				fmt.Sprintf("Bajo el nombre %s hay agua y hay piedra,", prep),
+				"el verso elige qué tocar primero,",
+				"y deja el resto al silencio que también es parte.",
+			},
+			{
+				fmt.Sprintf("Hoy %s no pide adorno,", sub),
+				"pide una línea limpia y un margen en blanco,",
+				"donde quepa lo que aún no sabemos decir.",
+			},
+			{
+				fmt.Sprintf("Entre %s y la página hay un paso,", sub),
+				"no siempre se da,",
+				"pero cuando se da, el suelo cambia de textura.",
+			},
+			{
+				fmt.Sprintf("No traigo definiciones %s:", prep),
+				"traigo una mesa, una silla y tiempo,",
+				"para que el tema se siente si quiere.",
+			},
+			{
+				fmt.Sprintf("Escribo cerca %s, no encima,", prep),
+				"dejo hueco por si algo quiere crecer,",
+				"y no firmo hasta que el silencio asienta.",
+			},
+			{
+				fmt.Sprintf("Lo que sé %s cabe en tres líneas;", prep),
+				"lo que no sé llena el resto del cuaderno,",
+				"y por eso el poema no termina del todo.",
+			},
+			{
+				fmt.Sprintf("Una lista breve %s:", prep),
+				"luz, peso, distancia, una pregunta,",
+				"y al final un punto que no cierra nada.",
+			},
 		}
+		lines = molds[v]
 	}
 
 	out := strings.Join(lines, "\n")
