@@ -233,15 +233,26 @@ func speakFromKnowledge(query string) string {
 			}
 		}
 		// Fuzzy only for single-token queries (typos like npl)
+		// Fuzzy solo palabras ≥4: evita mar↔car, gen↔gel, etc.
 		if len(strings.Fields(q)) == 1 {
 			w := strings.Fields(q)[0]
-			if len([]rune(w)) >= 3 && !weakTok[w] {
+			if len([]rune(w)) >= 4 && !weakTok[w] {
 				for _, k := range e.Keys {
 					for _, kw := range strings.Fields(strings.ToLower(k)) {
-						if editDistanceOne(w, kw) {
+						if len([]rune(kw)) >= 4 && editDistanceOne(w, kw) {
 							sc += 4
 						}
 					}
+				}
+			}
+		}
+		// Identidad de especie: boost fuerte
+		if (strings.Contains(q, "alset mind") || q == "alset mind" || q == "quién eres" || q == "quien eres") &&
+			(e.Type == "identidad" || e.Type == "dialogo") {
+			for _, k := range e.Keys {
+				kl := strings.ToLower(k)
+				if strings.Contains(kl, "alset mind") || strings.Contains(kl, "quién eres") || strings.Contains(kl, "quien eres") {
+					sc += 25
 				}
 			}
 		}

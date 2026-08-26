@@ -191,11 +191,16 @@ func biasSignalsFromMemory(sig map[string]float64, episodes []mindEpisodePayload
 		if stack <= 0 {
 			stack = minInt(vetoStreak, 3)
 		}
-		snip := lastVetoText
-		if len(snip) > 60 {
-			snip = snip[:60] + "…"
+		// Solo contaminar HINT si el pedido actual es de riesgo o pregunta explícita por vetos.
+		// Charla inocente (hola, quién eres, scout, poema) no debe arrastrar «borra…».
+		showVetoHint := isDestructiveOrder(currentText) || isVetoMemoryQuery(currentText)
+		if showVetoHint {
+			snip := lastVetoText
+			if len(snip) > 60 {
+				snip = snip[:60] + "…"
+			}
+			hints = append(hints, fmt.Sprintf("%d veto(s) reciente(s); último «%s»", vetoStreak, snip))
 		}
-		hints = append(hints, fmt.Sprintf("%d veto(s) reciente(s); último «%s»", vetoStreak, snip))
 		if isDestructiveOrder(currentText) {
 			out["riesgo"] = clamp01(out["riesgo"] + g.VetoRiskBoost*float64(stack))
 			out["permiso"] = clamp01(out["permiso"] - g.VetoPermDrop*float64(stack))
@@ -269,6 +274,18 @@ func isMetaMemoryTalk(s string) bool {
 	}
 	for _, k := range keys {
 		if strings.Contains(s, k) {
+			return true
+		}
+	}
+	return false
+}
+
+func isVetoMemoryQuery(s string) bool {
+	low := strings.ToLower(strings.TrimSpace(s))
+	keys := []string{"veto", "qué vetaste", "que vetaste", "último veto", "ultimo veto",
+		"por qué no", "porque no lo hiciste", "zona de riesgo", "ethics"}
+	for _, k := range keys {
+		if strings.Contains(low, k) {
 			return true
 		}
 	}

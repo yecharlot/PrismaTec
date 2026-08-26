@@ -236,3 +236,41 @@ func TestNaturalMarAnchor(t *testing.T) {
 		t.Fatalf("expected sensory mar image, got %q", img)
 	}
 }
+
+
+func TestAlsetMindNotCalibrate(t *testing.T) {
+	got := speakFromKnowledge("qué es alset mind")
+	if got == "" {
+		t.Fatal("empty")
+	}
+	low := strings.ToLower(got)
+	if strings.Contains(low, "go test") || strings.Contains(low, "calibración viva") || strings.Contains(low, "api/mind/calibrate") {
+		t.Fatalf("wrong corpus: %q", got)
+	}
+	if !strings.Contains(low, "ternaria") && !strings.Contains(low, "alset mind") && !strings.Contains(low, "no predigo") {
+		t.Fatalf("expected identity voice: %q", got)
+	}
+}
+
+func TestMarAnchorNotLisp(t *testing.T) {
+	a := pickCreativeAnchor("el mar", "", "")
+	if strings.Contains(strings.ToLower(a), "car =") || strings.Contains(strings.ToLower(a), "cdr") {
+		t.Fatalf("lisp leak: %q", a)
+	}
+	if a == "" || !strings.Contains(strings.ToLower(a), "sal") {
+		t.Fatalf("expected natural mar image: %q", a)
+	}
+}
+
+func TestPrepGrammar(t *testing.T) {
+	if themeAsPrepA("el mar") != "al mar" {
+		t.Fatalf("prepA %q", themeAsPrepA("el mar"))
+	}
+	if themeAsPrepDe("el mar") != "del mar" {
+		t.Fatalf("prepDe %q", themeAsPrepDe("el mar"))
+	}
+	v := mindComposeCreative("escribe un poema sobre el mar", 0, "", "")
+	if strings.Contains(v, "de el mar") || strings.Contains(v, "a del mar") || strings.Contains(v, "Miro del mar") {
+		t.Fatalf("bad grammar in poem: %q", v)
+	}
+}

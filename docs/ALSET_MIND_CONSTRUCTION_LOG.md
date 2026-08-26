@@ -474,3 +474,10 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - Contador de variante por (kind|tema): 3 moldes por recurso; al repetir cambia el texto.
 - `naturalThemeImage`: mar, noche, lluvia, silencio, viento, luna, sol, amor.
 - Cuentos HP/gen/mar con 3 aperturas; marco factual más corto al final.
+
+## 2026-08-26 — Veto hint limpio, mar≠Lisp, rank Alset Mind
+
+- Hint de veto solo si pedido destructivo o pregunta por veto/ethics.
+- Fuzzy corpus exige tokens ≥4 (corta mar↔car).
+- Identidad «qué es alset mind» priorizada; entrada de calibración sin keys de identidad.
+- Creativo: anclas naturales primero; tests PrepA/mar/Lisp.
