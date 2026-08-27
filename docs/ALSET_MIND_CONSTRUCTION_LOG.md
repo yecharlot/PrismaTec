@@ -495,3 +495,8 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - stripTags elimina script/style; cleanExploreSnippet corta JS residual.
 - Pulsos mind_episode no se observan en todos los genes.
 - BridgeSpeakGenFindings ignora last_hallazgo tipo mind_episode.
+
+## 2026-08-26 — CF por defecto + Wikipedia REST en explore
+
+- `cloudflareNetworkBase` usa red live si no hay env; carga `alset_data/cloudflare.env` / `.env` al arrancar.
+- Explore Wikipedia vía REST summary (texto limpio, sin menú).

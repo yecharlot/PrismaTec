@@ -15,3 +15,11 @@ func TestCleanExploreSnippetDropsJS(t *testing.T) {
 		t.Fatalf("expected content: %q", sn)
 	}
 }
+
+func TestTryWikipediaSummaryParse(t *testing.T) {
+	// offline: only rejects non-wiki
+	_, _, ok := tryWikipediaSummary("https://example.com/foo")
+	if ok {
+		t.Fatal("non-wiki should fail")
+	}
+}

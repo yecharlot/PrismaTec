@@ -13,7 +13,12 @@ import (
 
 // Dispatch destinations: local | cloudflare | (future: daemon url)
 func cloudflareNetworkBase() string {
-	return strings.TrimRight(strings.TrimSpace(os.Getenv("ALSET_CLOUDFLARE_NETWORK")), "/")
+	v := strings.TrimRight(strings.TrimSpace(os.Getenv("ALSET_CLOUDFLARE_NETWORK")), "/")
+	if v != "" {
+		return v
+	}
+	// Red edge de PrismaTec por defecto (sobreescribible con env o alset_data/cloudflare.env)
+	return "https://alset-network.lhmolam-877.workers.dev"
 }
 
 // DispatchGenToCloudflare seals package, spawns gen on CF network, announces reach.

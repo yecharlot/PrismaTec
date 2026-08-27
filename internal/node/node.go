@@ -231,6 +231,7 @@ func (n *NodoAlset) BuscarContenidoPorCID(cidStr string) ([]byte, error) {
 }
 
 func Run(port string) {
+	loadLocalEnvFiles()
 	fmt.Println("🌐 PRISM@.TEC ALSET NET (P.TEC-AN) v4.0")
 	fmt.Println("📦 Sistema Híbrido Go + Lisp con IA Distribuida, VC, UTXO, PoH y ZKP")
 	fmt.Println("🧠 Con IA Distribuida: Neuronas, Sinapsis, Inferencia Distribuida y Memoria Distribuida")

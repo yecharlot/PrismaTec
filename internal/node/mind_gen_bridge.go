@@ -31,7 +31,7 @@ func (n *NodoAlset) mindGenBridgeStatus() map[string]interface{} {
 			}
 		}
 	}
-	cf := strings.TrimSpace(os.Getenv("ALSET_CLOUDFLARE_NETWORK"))
+	cf := cloudflareNetworkBase()
 	return map[string]interface{}{
 		"gens_total":     total,
 		"gens_memory":    memN,

@@ -39,6 +39,34 @@ func (n *NodoAlset) ExploreFrontier(key, rawURL, mission string) (map[string]int
 		return nil, fmt.Errorf("gen not found: %s", key)
 	}
 
+	// Wikipedia: REST summary (texto limpio) antes del HTML de la página
+	if title, extract, ok := tryWikipediaSummary(safe); ok && extract != "" {
+		snippet := extract
+		if len([]rune(snippet)) > 320 {
+			r := []rune(snippet)
+			snippet = string(r[:320]) + "…"
+		}
+		if title != "" && !strings.Contains(snippet, title) {
+			snippet = title + ". " + snippet
+		}
+		report := map[string]interface{}{
+			"mission": mission, "url": safe, "ok": true, "status": 200,
+			"title": title, "snippet": snippet, "source": "wikipedia_rest",
+		}
+		obs, _ := n.ObserveIntoGen(key, "explore:"+mission, snippet)
+		n.markGenMission(key, mission, "reported", safe, report)
+		out := map[string]interface{}{
+			"ok": true, "key": key, "mission": mission, "url": safe,
+			"status": 200, "title": title, "snippet": snippet,
+			"hallazgo_cid": obs["hallazgo_cid"],
+			"note":         "exploración Wikipedia REST (texto limpio)",
+		}
+		go n.BroadcastPulse("GEN_EXPLORE", map[string]interface{}{
+			"key": key, "url": safe, "mission": mission, "status": 200,
+		})
+		return out, nil
+	}
+
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -226,8 +254,19 @@ func collapseWS(s string) string {
 
 // cleanExploreSnippet prioritizes title + readable prose, drops JS leftovers.
 func cleanExploreSnippet(title, raw string) string {
+	raw = extractMainHTML(raw)
 	raw = collapseWS(stripTags(raw))
-	for _, junk := range []string{"(function()", "function(){", "var className", "mw.loader", "RLCONF", "RLSTATE"} {
+	for _, junk := range []string{
+		"(function()", "function(){", "var className", "mw.loader", "RLCONF", "RLSTATE",
+		"Ir al contenido", "Menú principal", "Menu principal", "mover a la barra lateral",
+		"ocultar Navegación", "Portal de la comunidad", "Cambios recientes", "Páginas nuevas",
+		"Página aleatoria", "Notificar un error", "Páginas especiales", "Crear una cuenta",
+		"Herramientas", "Imprimir/exportar", "En otros proyectos", "Buscar Buscar Apariencia",
+	} {
+		raw = strings.ReplaceAll(raw, junk, " ")
+	}
+	raw = collapseWS(raw)
+	for _, junk := range []string{"(function()", "function(){", "var className", "mw.loader"} {
 		if i := strings.Index(raw, junk); i >= 0 {
 			raw = strings.TrimSpace(raw[:i])
 		}
@@ -235,9 +274,7 @@ func cleanExploreSnippet(title, raw string) string {
 	if title != "" && (raw == "" || len([]rune(raw)) < 40) {
 		return title
 	}
-	if title != "" && !strings.HasPrefix(strings.ToLower(raw), strings.ToLower(title[:minInt(len(title), 12)])) {
-		raw = title + ". " + raw
-	}
+	// Prefer text that looks like a definition (contains period, length)
 	if len([]rune(raw)) > 320 {
 		r := []rune(raw)
 		raw = string(r[:320]) + "…"
@@ -266,6 +303,85 @@ func extractTitle(html string) string {
 		t = t[:120]
 	}
 	return t
+}
+
+
+func tryWikipediaSummary(pageURL string) (title, extract string, ok bool) {
+	u, err := url.Parse(pageURL)
+	if err != nil {
+		return "", "", false
+	}
+	host := strings.ToLower(u.Host)
+	if !strings.Contains(host, "wikipedia.org") {
+		return "", "", false
+	}
+	// path /wiki/Title
+	parts := strings.Split(strings.Trim(u.Path, "/"), "/")
+	var page string
+	for i, p := range parts {
+		if p == "wiki" && i+1 < len(parts) {
+			page = parts[i+1]
+			break
+		}
+	}
+	if page == "" || page == "Wiki" {
+		return "", "", false
+	}
+	lang := "en"
+	if h := strings.Split(host, "."); len(h) > 0 && len(h[0]) <= 3 {
+		lang = h[0]
+	}
+	api := fmt.Sprintf("https://%s.wikipedia.org/api/rest_v1/page/summary/%s", lang, page)
+	client := &http.Client{Timeout: 8 * time.Second}
+	req, err := http.NewRequest(http.MethodGet, api, nil)
+	if err != nil {
+		return "", "", false
+	}
+	req.Header.Set("User-Agent", "Alset-Gen/1.0 (+explore; non-invasive)")
+	req.Header.Set("Accept", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", "", false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", "", false
+	}
+	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 64*1024))
+	var data struct {
+		Title       string `json:"title"`
+		Extract     string `json:"extract"`
+		Description string `json:"description"`
+	}
+	if json.Unmarshal(raw, &data) != nil || data.Extract == "" {
+		return "", "", false
+	}
+	return data.Title, data.Extract, true
+}
+
+func extractMainHTML(html string) string {
+	low := strings.ToLower(html)
+	for _, marker := range []string{`id="mw-content-text"`, `class="mw-parser-output"`, `id="bodycontent"`} {
+		i := strings.Index(low, marker)
+		if i < 0 {
+			continue
+		}
+		// take a window after marker
+		start := i
+		if start > 0 {
+			// find next >
+			gt := strings.Index(html[start:], ">")
+			if gt >= 0 {
+				start = start + gt + 1
+			}
+		}
+		end := start + 12000
+		if end > len(html) {
+			end = len(html)
+		}
+		return html[start:end]
+	}
+	return html
 }
 
 func (n *NodoAlset) handleGenExplore(w http.ResponseWriter, r *http.Request) {
