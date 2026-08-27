@@ -1310,12 +1310,24 @@
     "text": "El package CID sella la semilla del gen para revivirla en otro nodo. Persistencia por contenido, no por disco de un solo host."
   },
   {
-    "type": "prog_alset",
+    "type": "arquitectura",
     "keys": [
+      "cid",
+      "qué es cid",
+      "que es cid",
+      "qué es un cid",
+      "que es un cid",
+      "qué significa cid",
+      "que significa cid",
+      "content identifier",
+      "identificador de contenido",
       "ipfs cid",
-      "qué es un cid"
+      "memoria cid",
+      "cid en alset",
+      "cid en tu tecnologia",
+      "cid en tu tecnología"
     ],
-    "text": "CID es identificador de contenido: el dato define la dirección. Mover el bloque no cambia el nombre si el contenido es el mismo. Base de memoria no renegable."
+    "text": "En Alset/PrismaTec, CID (Content Identifier) es la dirección del dato por su contenido: el hash del bloque es el nombre. GenerarCID(bytes) sella un episodio, hallazgo o paquete; BuscarContenidoPorCID lo recupera. No es «El Cid» histórico: aquí CID = memoria content-addressed (como en IPFS). Los genes y Mind anclan hechos en CIDs para que persistan entre nodos."
   },
   {
     "type": "prog_alset",
@@ -1917,5 +1929,16 @@
       "economía verbal"
     ],
     "text": "Estilo claro: verbo fuerte, menos adjetivos vacíos, una imagen por verso o frase. Revisa: ¿cada palabra aporta? Preferir concreto a abstracto («sal») antes que solo «emoción»."
+  },
+  {
+    "type": "identidad",
+    "keys": [
+      "inteligencia simbólica",
+      "ia simbolica",
+      "ia simbólica",
+      "capacidad fractar",
+      "simbólica"
+    ],
+    "text": "Alset Mind se alinea con lo simbólico/ternario: reglas, órganos 0/1/2, CID y Gen — no predicción libre de tokens. Si hablas de 'fractar' como partir campos o juicios, aquí el análogo es el corte ternario (seguir, matizar, sumidero), no un modelo generativo."
   }
 ]

@@ -274,3 +274,20 @@ func TestPrepGrammar(t *testing.T) {
 		t.Fatalf("bad grammar in poem: %q", v)
 	}
 }
+
+func TestCIDIsTechNotElCid(t *testing.T) {
+	got := speakFromKnowledge("qué es CID")
+	if got == "" {
+		t.Fatal("empty knowledge for CID")
+	}
+	low := strings.ToLower(got)
+	if strings.Contains(low, "varios artículos") || strings.Contains(low, "el cid histórico") {
+		t.Fatalf("wrong sense: %q", got)
+	}
+	if !strings.Contains(low, "contenido") && !strings.Contains(low, "content") && !strings.Contains(low, "hash") {
+		t.Fatalf("expected content-addressed sense: %q", got)
+	}
+	if isScoutableQuestion("qué es CID") {
+		t.Fatal("CID should not scout when knowledge hits")
+	}
+}

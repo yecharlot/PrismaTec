@@ -617,7 +617,8 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 			return ""
 		}
 		// Factual "qué es / quién es" must not be stolen by soft memory of prior writes
-		if forceWebScout(q) || isScoutableQuestion(normalizeUserInput(q)) || isCreativeWriteRequest(q) {
+		if forceWebScout(q) || isScoutableQuestion(normalizeUserInput(q)) || isCreativeWriteRequest(q) ||
+			isIdentityTalk(q) || isCapabilityQuestion(q) {
 			return ""
 		}
 		rel, score := bestEpisodeOverlap(query, episodes)

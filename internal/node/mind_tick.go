@@ -757,17 +757,28 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 		return "No lo tenía catalogado en el corpus. Lo marco como hecho relevante; si más adelante lo preguntas, lo traeré desde memoria."
 	}
 
-	// Dual recall + fluid composition (memory ∩ corpus → ideas). Falls through if empty.
 	know := speakFromKnowledge(text)
+	// Identidad y corpus técnico antes que ecos de memoria (evita «Me suena…» en «qué eres» / CID)
+	if isIdentityTalk(low) {
+		// fall through to identity block below, but don't let memSpeak steal first
+		if know != "" && (strings.Contains(low, "cid") || strings.Contains(low, "zyrion") || strings.Contains(low, "órgano") || strings.Contains(low, "organo")) {
+			return naturalKnowledgeVoice(text, know, get("curiosity").State)
+		}
+	} else if know != "" && (strings.Contains(low, "cid") || strings.Contains(low, "significa cid") ||
+		strings.Contains(low, "qué es cid") || strings.Contains(low, "que es cid") ||
+		strings.Contains(low, "content id") || strings.Contains(low, "identificador de contenido")) {
+		return naturalKnowledgeVoice(text, know, get("curiosity").State)
+	}
+
 	if composed := composeFluidVoice(text, organs, memSpeak, know); composed != "" {
 		return composed
 	}
 
-	// Spoken episodic memory — the advantage over LLM context windows
-	if memSpeak != "" {
+	if isIdentityTalk(low) {
+		// identity answers before episodic echo
+	} else if memSpeak != "" {
 		return memSpeak
 	}
-	// Curated polymath knowledge — natural phrasing, not a menu card
 	if know != "" {
 		return naturalKnowledgeVoice(text, know, get("curiosity").State)
 	}

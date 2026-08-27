@@ -44,6 +44,10 @@ func isScoutableQuestion(s string) bool {
 		strings.HasPrefix(s, "dónde queda ") || strings.HasPrefix(s, "donde queda ") ||
 		strings.HasPrefix(s, "busca ") || strings.HasPrefix(s, "investiga ") ||
 		strings.Contains(s, "en internet") || strings.Contains(s, "en la web") {
+		// Corpus técnico local gana a Wikipedia (ej. CID ≠ El Cid)
+		if speakFromKnowledge(s) != "" {
+			return false
+		}
 		return true
 	}
 	// Follow-ups: profundiza / más sobre / cuéntame de …

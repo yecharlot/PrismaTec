@@ -201,7 +201,9 @@ func speakFromKnowledge(query string) string {
 			}
 			if q == k {
 				sc += 20 + len([]rune(k))
-			} else if len(strings.Fields(q)) == 1 && q == strings.Fields(k)[0] {
+			} else if k == "cid" && (strings.Contains(q, " cid") || strings.HasSuffix(q, " cid") || q == "cid" || strings.Contains(q, "que es cid") || strings.Contains(q, "qué es cid") || strings.Contains(q, "significa cid")) {
+				sc += 30
+			} else if len(strings.Fields(q)) == 1 && len(strings.Fields(k)) > 0 && q == strings.Fields(k)[0] {
 				sc += 18
 			} else if len([]rune(k)) >= 5 && strings.Contains(q, k) {
 				// Prefer longer keys so "gil python" beats bare "python"
@@ -218,17 +220,23 @@ func speakFromKnowledge(query string) string {
 			"como": true, "cómo": true, "qué": true, "que": true, "cual": true, "cuál": true,
 			"para": true, "por": true, "con": true, "una": true, "unos": true, "algo": true,
 		}
+		techShort := map[string]bool{"cid": true, "gen": true, "ans": true, "ipfs": true, "utxo": true, "zkp": true}
 		for _, w := range tokenizeMind(q) {
-			if weakTok[w] || len([]rune(w)) < 4 {
+			if weakTok[w] {
+				continue
+			}
+			if len([]rune(w)) < 4 && !techShort[w] {
 				continue
 			}
 			for _, k := range e.Keys {
 				kl := strings.ToLower(k)
-				if strings.Contains(kl, w) {
+				if kl == w || strings.Contains(" "+kl+" ", " "+w+" ") || strings.HasPrefix(kl, w+" ") || strings.HasSuffix(kl, " "+w) {
+					sc += 8
+				} else if len([]rune(w)) >= 4 && strings.Contains(kl, w) {
 					sc += 2
 				}
 			}
-			if strings.Contains(e.Type, w) {
+			if len([]rune(w)) >= 4 && strings.Contains(e.Type, w) {
 				sc++
 			}
 		}
