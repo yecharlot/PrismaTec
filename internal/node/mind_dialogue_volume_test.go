@@ -146,7 +146,7 @@ func TestClassifyCreativeAndPatterns(t *testing.T) {
 }
 
 func TestCreativeComposeNotEmpty(t *testing.T) {
-	v := mindComposeCreative("escribe un poema sobre el río", 0, "", "")
+	v := mindComposeCreative("escribe un poema sobre el río", 0, "", "", "")
 	if v == "" || !strings.Contains(v, "río") && !strings.Contains(v, "rio") {
 		// theme may keep accent
 		if !strings.Contains(strings.ToLower(v), "río") && !strings.Contains(strings.ToLower(v), "rio") && !strings.Contains(v, "Composición ternaria") {
@@ -202,7 +202,7 @@ func TestCreativeRejectsSoftAnchor(t *testing.T) {
 	if !isBadCreativeAnchor("Me suena esto: «escribe un poema sobre el mar»") {
 		t.Fatal("should reject soft anchor")
 	}
-	v := mindComposeCreative("escribe un poema sobre el amor", 0, "Me suena esto: «escribe un poema sobre el mar»", "")
+	v := mindComposeCreative("escribe un poema sobre el amor", 0, "Me suena esto: «escribe un poema sobre el mar»", "", "")
 	if strings.Contains(strings.ToLower(v), "me suena") {
 		t.Fatalf("creative leaked soft memory: %q", v)
 	}
@@ -224,8 +224,8 @@ func TestCreativeVariantDiffers(t *testing.T) {
 	creativeVarMu.Lock()
 	creativeVarCount = map[string]int{}
 	creativeVarMu.Unlock()
-	a := mindComposeCreative("escribe un poema sobre el mar", 0, "", "")
-	b := mindComposeCreative("escribe un poema sobre el mar", 0, "", "")
+	a := mindComposeCreative("escribe un poema sobre el mar", 0, "", "", "")
+	b := mindComposeCreative("escribe un poema sobre el mar", 0, "", "", "")
 	if a == b {
 		t.Fatalf("expected variant difference:\nA=%q\nB=%q", a, b)
 	}
@@ -273,7 +273,7 @@ func TestPrepGrammar(t *testing.T) {
 	if themeAsPrepDe("el mar") != "del mar" {
 		t.Fatalf("prepDe %q", themeAsPrepDe("el mar"))
 	}
-	v := mindComposeCreative("escribe un poema sobre el mar", 0, "", "")
+	v := mindComposeCreative("escribe un poema sobre el mar", 0, "", "", "")
 	if strings.Contains(v, "de el mar") || strings.Contains(v, "a del mar") || strings.Contains(v, "Miro del mar") {
 		t.Fatalf("bad grammar in poem: %q", v)
 	}

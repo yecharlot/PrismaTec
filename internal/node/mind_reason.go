@@ -555,3 +555,94 @@ func softReasonFromKnowledge(userText string) string {
 	}
 	return formatDeductionVoice(facts, best)
 }
+
+// conclusionSentence — frase corta usable como ancla creativa/compose.
+func conclusionSentence(f ternaryFact) string {
+	if !validReasonTerm(f.Subj) || !validReasonTerm(f.Obj) {
+		return ""
+	}
+	return f.Subj + " " + relVoice(f.Rel) + " " + f.Obj
+}
+
+// reasonAnchorForTheme: deduce sobre el tema (usuario+corpus+memoria) y devuelve
+// la mejor conclusión como ancla factual (no predicción libre).
+func reasonAnchorForTheme(theme, userText string, extra []ternaryFact) string {
+	theme = normalizeReasonToken(theme)
+	if theme == "" {
+		return ""
+	}
+	// Quitar artículos sueltos del tema creativo
+	for _, a := range []string{"el ", "la ", "los ", "las ", "un ", "una "} {
+		if strings.HasPrefix(theme, a) {
+			theme = strings.TrimSpace(theme[len(a):])
+		}
+	}
+	facts := collectReasonFacts(userText)
+	facts = append(facts, extra...)
+	// hechos del corpus que toquen el tema
+	for _, e := range loadMindKnowledge() {
+		blob := strings.ToLower(strings.Join(e.Keys, " ") + " " + e.Text)
+		if theme != "" && !strings.Contains(blob, theme) && !strings.Contains(blob, strings.TrimSpace(theme)) {
+			continue
+		}
+		for _, sent := range extractSentences(e.Text) {
+			if f, ok := parseRelationFact(sent, 1, "corpus-tema"); ok {
+				facts = append(facts, f)
+			}
+		}
+	}
+	// dedupe
+	seen := map[string]bool{}
+	var uniq []ternaryFact
+	for _, f := range facts {
+		k := factKey(f)
+		if seen[k] {
+			continue
+		}
+		seen[k] = true
+		uniq = append(uniq, f)
+	}
+	derived := deduceAll(uniq)
+	if len(derived) == 0 {
+		// sin cadena: si hay un hecho directo sobre el tema, úsalo
+		for _, f := range uniq {
+			if strings.Contains(f.Subj, theme) || strings.Contains(f.Obj, theme) ||
+				strings.Contains(theme, f.Subj) || strings.Contains(theme, f.Obj) {
+				if s := conclusionSentence(f); s != "" {
+					return s
+				}
+			}
+		}
+		return ""
+	}
+	qtoks := tokenizeMind(theme + " " + strings.ToLower(userText))
+	best := ternaryFact{}
+	bestSc := -1
+	for _, f := range derived {
+		sc := scoreFactAgainstQuery(f, qtoks)
+		if strings.Contains(f.Subj, theme) || strings.Contains(f.Obj, theme) {
+			sc += 6
+		}
+		if sc > bestSc {
+			bestSc = sc
+			best = f
+		}
+	}
+	if bestSc < 1 {
+		return ""
+	}
+	return conclusionSentence(best)
+}
+
+// composeWithReason: bloque opcional "antes deduje…" + cuerpo creativo.
+func weaveReasonIntoCreative(body, reasonAnchor string) string {
+	reasonAnchor = strings.TrimSpace(reasonAnchor)
+	body = strings.TrimSpace(body)
+	if reasonAnchor == "" {
+		return body
+	}
+	if strings.Contains(strings.ToLower(body), strings.ToLower(reasonAnchor)) {
+		return body
+	}
+	return body + "\n\n— Ancla deducida (no inventada):\n" + reasonAnchor
+}

@@ -72,3 +72,21 @@ func TestExtractClausesGrammar(t *testing.T) {
 		t.Fatalf("parts=%v", parts)
 	}
 }
+
+func TestReasonAnchorWeaves(t *testing.T) {
+	body := "Verso sobre el mortal."
+	out := weaveReasonIntoCreative(body, "sócrates es mortal")
+	if !strings.Contains(out, "sócrates es mortal") {
+		t.Fatalf("%q", out)
+	}
+}
+
+func TestReasonAnchorForThemeCID(t *testing.T) {
+	a := reasonAnchorForTheme("cid", "CID es identificador y identificador es dirección por hash", nil)
+	if a == "" {
+		t.Fatal("empty anchor")
+	}
+	if !strings.Contains(strings.ToLower(a), "cid") && !strings.Contains(strings.ToLower(a), "hash") {
+		t.Fatalf("anchor=%q", a)
+	}
+}

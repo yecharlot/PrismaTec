@@ -559,11 +559,17 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 
 	// 6a) Escritura creativa (poema/cuento) — no LLM; plantillas + ancla memoria/corpus
 	if voice == "" && ethics.State != 2 && isCreativeWriteRequest(normText) {
-		cv := mindComposeCreative(text, ethics.State, memSpeak, knowHit)
+		theme := polishTheme(extractCreativeTheme(text))
+		extraR := factsFromEpisodes(recent)
+		ra := reasonAnchorForTheme(theme, text, extraR)
+		cv := mindComposeCreative(text, ethics.State, memSpeak, knowHit, ra)
 		if cv != "" {
 			voice = cv
 			primaryKind = "creative"
 			n.recordAction("write", 2, text, cv, "", primaryKind, organs)
+			if ra != "" {
+				n.recordAction("reason", 1, text, ra, "", "reason", organs)
+			}
 		}
 	}
 

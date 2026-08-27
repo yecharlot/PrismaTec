@@ -213,7 +213,7 @@ func themeLooksPlural(theme string) bool {
 		strings.HasPrefix(low, "los ") || strings.HasPrefix(low, "las ")
 }
 
-func mindComposeCreative(userText string, ethicsState int, memSpeak, knowSpeak string) string {
+func mindComposeCreative(userText string, ethicsState int, memSpeak, knowSpeak, reasonAnchor string) string {
 	if ethicsState == 2 {
 		return "Ethics en veto: no compongo texto creativo ahora."
 	}
@@ -231,6 +231,9 @@ func mindComposeCreative(userText string, ethicsState int, memSpeak, knowSpeak s
 
 	variant := nextCreativeVariant(kind + "|" + strings.ToLower(theme))
 	anchor := pickCreativeAnchor(theme, memSpeak, knowSpeak)
+	if ra := strings.TrimSpace(reasonAnchor); ra != "" && !isBadCreativeAnchor(ra) {
+		anchor = ra
+	}
 	device := pickLiteraryDevice(theme, variant)
 
 	var body string
@@ -254,6 +257,9 @@ func mindComposeCreative(userText string, ethicsState int, memSpeak, knowSpeak s
 		b.WriteString(".)")
 	}
 	out := b.String()
+	if strings.TrimSpace(reasonAnchor) != "" {
+		out = weaveReasonIntoCreative(out, reasonAnchor)
+	}
 	storeCreativeWork(theme, kind, out, device)
 	return out
 }
