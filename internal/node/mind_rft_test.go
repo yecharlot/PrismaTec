@@ -27,6 +27,10 @@ func TestRFTTiempoMemoria(t *testing.T) {
 	if !strings.Contains(low, "realidad") {
 		t.Fatalf("expected salto realidad: %q", v)
 	}
+	// L1 transitivo debe aparecer; guía no debe ser solo el salto si hay cierre
+	if !strings.Contains(low, "l1 cierre") && !strings.Contains(low, "[l1") {
+		t.Fatalf("expected L1 closure memoria→ilusión: %q", v)
+	}
 }
 
 func TestRFTSocratesStillWorks(t *testing.T) {

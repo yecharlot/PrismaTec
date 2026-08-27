@@ -90,3 +90,34 @@ func TestReasonAnchorForThemeCID(t *testing.T) {
 		t.Fatalf("anchor=%q", a)
 	}
 }
+
+func TestTransWithArticles(t *testing.T) {
+	facts := []ternaryFact{
+		{Subj: "el tiempo", Rel: "es_un", Obj: "ilusión", Conf: 2, Src: "usuario"},
+		{Subj: "la memoria", Rel: "es", Obj: "tiempo", Conf: 2, Src: "usuario"},
+	}
+	// after normalize in parse, subj may already be stripped — also test raw
+	d := deduceAll(facts)
+	found := false
+	for _, x := range d {
+		if strings.Contains(x.Subj, "memoria") && (strings.Contains(x.Obj, "ilusión") || strings.Contains(x.Obj, "ilusion")) {
+			found = true
+		}
+	}
+	if !found {
+		// try normalized forms
+		facts2 := []ternaryFact{
+			{Subj: "tiempo", Rel: "es", Obj: "ilusión", Conf: 2, Src: "usuario"},
+			{Subj: "memoria", Rel: "es", Obj: "tiempo", Conf: 2, Src: "usuario"},
+		}
+		d = deduceAll(facts2)
+		for _, x := range d {
+			if x.Subj == "memoria" && (x.Obj == "ilusión" || x.Obj == "ilusion") {
+				found = true
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected memoria→ilusión: %+v", d)
+	}
+}

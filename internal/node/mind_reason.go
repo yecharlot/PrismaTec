@@ -76,7 +76,17 @@ func normalizeReasonToken(s string) string {
 	if i := strings.IndexAny(s, ".!?;"); i > 0 {
 		s = strings.TrimSpace(s[:i])
 	}
+	for _, a := range []string{"el ", "la ", "los ", "las ", "un ", "una ", "unos ", "unas ", "lo "} {
+		if strings.HasPrefix(s, a) {
+			s = strings.TrimSpace(s[len(a):])
+			break
+		}
+	}
 	return s
+}
+
+func termsMatch(a, b string) bool {
+	return normalizeReasonToken(a) == normalizeReasonToken(b)
 }
 
 // extractSentences: gramática mínima — cortar por . ! ? y por ;
@@ -355,29 +365,29 @@ func deduceAll(facts []ternaryFact) []ternaryFact {
 				a, b := pool[i], pool[j]
 				conf := zyrionMinConf(a.Conf, b.Conf)
 
-				if isIdentityRel(a.Rel) && isIdentityRel(b.Rel) && a.Obj == b.Subj {
+				if isIdentityRel(a.Rel) && isIdentityRel(b.Rel) && termsMatch(a.Obj, b.Subj) {
 					add(ternaryFact{Subj: a.Subj, Rel: "es", Obj: b.Obj, Conf: conf, Src: "regla:trans-es"})
 				}
-				if a.Rel == "implica" && b.Rel == "implica" && a.Obj == b.Subj {
+				if a.Rel == "implica" && b.Rel == "implica" && termsMatch(a.Obj, b.Subj) {
 					add(ternaryFact{Subj: a.Subj, Rel: "implica", Obj: b.Obj, Conf: conf, Src: "regla:trans-implica"})
 				}
-				if a.Rel == "parte_de" && b.Rel == "parte_de" && a.Obj == b.Subj {
+				if a.Rel == "parte_de" && b.Rel == "parte_de" && termsMatch(a.Obj, b.Subj) {
 					add(ternaryFact{Subj: a.Subj, Rel: "parte_de", Obj: b.Obj, Conf: conf, Src: "regla:trans-parte"})
 				}
-				if isIdentityRel(a.Rel) && b.Rel == "implica" && a.Obj == b.Subj {
+				if isIdentityRel(a.Rel) && b.Rel == "implica" && termsMatch(a.Obj, b.Subj) {
 					add(ternaryFact{Subj: a.Subj, Rel: "implica", Obj: b.Obj, Conf: conf, Src: "regla:es+implica"})
 				}
-				if a.Rel == "implica" && isIdentityRel(b.Rel) && a.Obj == b.Subj {
+				if a.Rel == "implica" && isIdentityRel(b.Rel) && termsMatch(a.Obj, b.Subj) {
 					add(ternaryFact{Subj: a.Subj, Rel: "implica", Obj: b.Obj, Conf: conf, Src: "regla:implica+es"})
 				}
-				if isIdentityRel(a.Rel) && b.Rel == "parte_de" && a.Obj == b.Subj {
+				if isIdentityRel(a.Rel) && b.Rel == "parte_de" && termsMatch(a.Obj, b.Subj) {
 					c := conf
 					if c > 1 {
 						c = 1
 					}
 					add(ternaryFact{Subj: a.Subj, Rel: "parte_de", Obj: b.Obj, Conf: c, Src: "regla:es+parte"})
 				}
-				if isIdentityRel(a.Rel) && b.Rel == "tiene" && a.Obj == b.Subj {
+				if isIdentityRel(a.Rel) && b.Rel == "tiene" && termsMatch(a.Obj, b.Subj) {
 					c := conf
 					if c > 1 {
 						c = 1
@@ -385,7 +395,7 @@ func deduceAll(facts []ternaryFact) []ternaryFact {
 					add(ternaryFact{Subj: a.Subj, Rel: "tiene", Obj: b.Obj, Conf: c, Src: "regla:es+tiene"})
 				}
 				// A tiene B, B es C ⇒ A tiene C (matiz)
-				if a.Rel == "tiene" && isIdentityRel(b.Rel) && a.Obj == b.Subj {
+				if a.Rel == "tiene" && isIdentityRel(b.Rel) && termsMatch(a.Obj, b.Subj) {
 					c := conf
 					if c > 1 {
 						c = 1
@@ -393,14 +403,14 @@ func deduceAll(facts []ternaryFact) []ternaryFact {
 					add(ternaryFact{Subj: a.Subj, Rel: "tiene", Obj: b.Obj, Conf: c, Src: "regla:tiene+es"})
 				}
 				// A parte_de B, B es C ⇒ A parte_de C (matiz)
-				if a.Rel == "parte_de" && isIdentityRel(b.Rel) && a.Obj == b.Subj {
+				if a.Rel == "parte_de" && isIdentityRel(b.Rel) && termsMatch(a.Obj, b.Subj) {
 					c := conf
 					if c > 1 {
 						c = 1
 					}
 					add(ternaryFact{Subj: a.Subj, Rel: "parte_de", Obj: b.Obj, Conf: c, Src: "regla:parte+es"})
 				}
-				if isIdentityRel(a.Rel) && b.Rel == "no_es" && a.Subj == b.Subj && a.Obj == b.Obj {
+				if isIdentityRel(a.Rel) && b.Rel == "no_es" && termsMatch(a.Subj, b.Subj) && termsMatch(a.Obj, b.Obj) {
 					add(ternaryFact{Subj: a.Subj, Rel: "no_es", Obj: a.Obj, Conf: 2, Src: "regla:conflicto"})
 				}
 			}

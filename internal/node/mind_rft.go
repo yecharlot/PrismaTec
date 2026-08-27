@@ -212,13 +212,13 @@ func buildRFTTree(facts []ternaryFact) rftTree {
 		if !hit {
 			continue
 		}
+		// Los saltos enriquecen el árbol; no sustituyen el cierre L1 si existe
+		if bestSc >= 20 {
+			continue
+		}
 		sc := 12 + n.Fact.Conf
 		if n.Kind == "salto-neg" {
 			sc += 3
-		}
-		// no desplazar cierre L1 fuerte
-		if bestSc >= 20 && n.Kind == "salto-inv" {
-			continue
 		}
 		if sc > bestSc {
 			bestSc = sc
