@@ -512,3 +512,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - `mind_reason.go`: hechos A—es—B con conf 0/1/2; transitividad; voz de deducción.
 - Gatillo: entonces / por tanto / deduce / «A es B y B es C».
 - Camino LispAI: ternarizar/desternarizar + zyrion como ley de confianza; no predicción de tokens.
+
+## 2026-08-26 — Reglas de razón ampliadas + corpus
+
+- deduceAll: trans-es, trans-implica, trans-parte, es+implica, implica+es, es+parte, es+tiene, conflicto, cierre 2 niveles.
+- Corpus razon_ternaria + hechos_cadena + lexico_razon.
+- softReasonFromKnowledge en latido cuando hay cadena aplicable.

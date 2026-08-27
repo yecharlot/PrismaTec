@@ -541,13 +541,19 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		}
 	}
 
-	// 6a0) Razón ternaria: silogismos / transitividad (LispAI-Zyrion, no predicción)
-	if voice == "" && ethics.State != 2 && isReasoningRequest(normText) {
+	// 6a0) Razón ternaria: silogismos / reglas sobre corpus+memoria (no predicción)
+	if voice == "" && ethics.State != 2 {
 		extra := factsFromEpisodes(recent)
-		if rv := reasonAboutQuery(text, extra); rv != "" {
+		if isReasoningRequest(normText) {
+			if rv := reasonAboutQuery(text, extra); rv != "" {
+				voice = rv
+				primaryKind = "reason"
+				n.recordAction("reason", 2, text, rv, "", primaryKind, organs)
+			}
+		} else if rv := softReasonFromKnowledge(text); rv != "" {
 			voice = rv
 			primaryKind = "reason"
-			n.recordAction("reason", 2, text, rv, "", primaryKind, organs)
+			n.recordAction("reason", 1, text, rv, "", primaryKind, organs)
 		}
 	}
 

@@ -1940,5 +1940,120 @@
       "simbólica"
     ],
     "text": "Alset Mind se alinea con lo simbólico/ternario: reglas, órganos 0/1/2, CID y Gen — no predicción libre de tokens. Si hablas de 'fractar' como partir campos o juicios, aquí el análogo es el corte ternario (seguir, matizar, sumidero), no un modelo generativo."
+  },
+  {
+    "type": "razon_ternaria",
+    "keys": [
+      "silogismo",
+      "deducción",
+      "deduccion",
+      "premisa",
+      "conclusión",
+      "conclusion",
+      "transitividad",
+      "razón ternaria",
+      "razon ternaria"
+    ],
+    "text": "Un silogismo aquí no predice tokens: combina premisas con confianza 0 (no afirmar), 1 (matizar) o 2 (afirmar). Si A es B y B es C, se deduce A es C con conf = mínimo de las premisas. Si falta el eslabón B, no se inventa la conclusión."
+  },
+  {
+    "type": "razon_ternaria",
+    "keys": [
+      "modus ponens",
+      "implica",
+      "entonces se sigue",
+      "qué implica"
+    ],
+    "text": "Si A implica B y se afirma A (conf ≥ 1), se puede afirmar B con la conf mínima. La cadena A implica B e B implica C permite A implica C. No es probabilidad: es cierre de relaciones."
+  },
+  {
+    "type": "razon_ternaria",
+    "keys": [
+      "patrón lógico",
+      "patrones de razonamiento",
+      "combinar premisas"
+    ],
+    "text": "Patrones que uso: (1) trans-es A→B→C, (2) trans-implica, (3) es+implica, (4) implica+es, (5) es+parte_de, (6) es+tiene, (7) conflicto es/no_es. El lenguaje de respuesta nombra la regla y la confianza."
+  },
+  {
+    "type": "razon_ternaria",
+    "keys": [
+      "socrates",
+      "sócrates",
+      "hombre mortal",
+      "ejemplo silogismo"
+    ],
+    "text": "Sócrates es hombre. Hombre es mortal. Por transitividad de es, Sócrates es mortal. Ejemplo canónico de deducción ternaria en este nodo."
+  },
+  {
+    "type": "razon_ternaria",
+    "keys": [
+      "cómo razonas",
+      "como razonas",
+      "piensas lógicamente",
+      "no eres buscador"
+    ],
+    "text": "No busco la frase más probable. Juzgo el campo 0/1/2, anclo hechos en CID y, cuando hay premisas enlazables, aplico reglas (transitividad, implica, parte_de). Si no hay eslabón, lo digo y pido otra premisa."
+  },
+  {
+    "type": "razon_ternaria",
+    "keys": [
+      "conf 0",
+      "conf 1",
+      "conf 2",
+      "confianza ternaria"
+    ],
+    "text": "Confianza 0: no afirmo. Confianza 1: matizo (herencia débil o eslabón parcial). Confianza 2: afirmo. Al combinar premisas, la conclusión lleva el mínimo de las confianzas (ley tipo Zyrion/Kleene)."
+  },
+  {
+    "type": "hechos_cadena",
+    "keys": [
+      "gen es célula",
+      "alset-gen",
+      "célula digital"
+    ],
+    "text": "Un Alset-Gen es una célula digital. Célula digital tiene RootCID. Gen implica identidad estable y forma mutable."
+  },
+  {
+    "type": "hechos_cadena",
+    "keys": [
+      "cid es identificador",
+      "contenido dirigido"
+    ],
+    "text": "CID es identificador de contenido. Identificador de contenido es dirección por hash. Hash implica inmutabilidad del bloque si el contenido no cambia."
+  },
+  {
+    "type": "hechos_cadena",
+    "keys": [
+      "mind es organismo",
+      "organismo ternario"
+    ],
+    "text": "Alset Mind es un organismo ternario. Organismo ternario tiene órganos 0/1/2. Órganos 0/1/2 implica juicio sin predicción libre de tokens."
+  },
+  {
+    "type": "hechos_cadena",
+    "keys": [
+      "lluvia",
+      "suelo mojado",
+      "ejemplo implica"
+    ],
+    "text": "Lluvia implica suelo mojado. Suelo mojado implica precaución al caminar. Ejemplo de cadena implica para practicar deducción."
+  },
+  {
+    "type": "lexico_razon",
+    "keys": [
+      "vocabulario deducción",
+      "cómo hablar de lógica",
+      "frases de conclusión"
+    ],
+    "text": "Léxico útil: premisa, eslabón, transitividad, matizo, afirmo, no afirmo, por tanto, se sigue que, conflicto de premisas. Evito relleno: nombro la regla cuando concluyo."
+  },
+  {
+    "type": "lexico_razon",
+    "keys": [
+      "diálogo fluido lógico",
+      "conversar con reglas"
+    ],
+    "text": "Diálogo fluido aquí significa: recordar premisas, detectar el patrón aplicable, concluir solo si el eslabón existe, y corregir cuando el humano dice «no me refiero a…». No rellenar con prosa inventada."
   }
 ]
