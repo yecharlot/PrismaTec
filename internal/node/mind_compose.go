@@ -90,23 +90,25 @@ func isOpenReflective(low string) bool {
 }
 
 func bridgeMemAndKnowledge(userText, memSpeak, knowSpeak string, curiosity int) string {
-	memSnip := compressVoiceBlock(memSpeak, 160)
-	knowSnip := compressVoiceBlock(knowSpeak, 220)
+	knowSnip := stripKnowledgeEchoLead(compressVoiceBlock(knowSpeak, 280))
+	memSnip := compressVoiceBlock(memSpeak, 140)
 	idea := ideaFromCross(userText, memSpeak, knowSpeak)
 
 	var b strings.Builder
-	b.WriteString(memSnip)
-	b.WriteString("\n\n")
-	b.WriteString("")
-	b.WriteString(knowSnip)
+	if knowSnip != "" {
+		b.WriteString(knowSnip)
+		if memSnip != "" {
+			b.WriteString("\n\n")
+			b.WriteString("(Eco de memoria: ")
+			b.WriteString(memSnip)
+			b.WriteString(")")
+		}
+	} else {
+		b.WriteString(memSnip)
+	}
 	if idea != "" {
 		b.WriteString("\n\n")
 		b.WriteString(idea)
-	}
-	if curiosity >= 2 {
-		b.WriteString("\n\n¿Lo dejamos anotado o preferimos otro ángulo?")
-	} else if curiosity == 1 {
-		b.WriteString("\n\nSi quieres, puedo guardar este cruce.")
 	}
 	return b.String()
 }
@@ -176,15 +178,13 @@ func softKnowledgeFollowUp(low string, curiosity int) string {
 // naturalKnowledgeVoice turns a corpus hit into conversational prose (not a help card).
 func naturalKnowledgeVoice(userText, know string, curiosity int) string {
 	low := strings.ToLower(strings.TrimSpace(userText))
-	know = strings.TrimSpace(know)
+	know = stripKnowledgeEchoLead(strings.TrimSpace(know))
 	if know == "" {
 		return ""
 	}
 	var lead string
 	switch {
-	case strings.Contains(low, "qué es") || strings.Contains(low, "que es") || strings.Contains(low, "explica"):
-		lead = ""
-	case strings.Contains(low, "cómo") || strings.Contains(low, "como"):
+	case strings.Contains(low, "cómo") || strings.Contains(low, "como "):
 		lead = "Mirándolo desde el corpus del nodo: "
 	case strings.Contains(low, "por qué") || strings.Contains(low, "porque"):
 		lead = "La lectura que tengo es esta: "
@@ -192,10 +192,45 @@ func naturalKnowledgeVoice(userText, know string, curiosity int) string {
 		lead = ""
 	}
 	out := lead + know
-	if fu := softKnowledgeFollowUp(low, curiosity); fu != "" {
-		out = out + "\n\n" + fu
+	if idea := synthesizeIdeaLine(low, know, curiosity); idea != "" {
+		out = out + "\n\n" + idea
 	}
 	return out
+}
+
+func stripKnowledgeEchoLead(know string) string {
+	know = strings.TrimSpace(know)
+	if i := strings.Index(know, ". "); i > 0 && i < 36 {
+		first := strings.TrimSpace(know[:i])
+		rest := strings.TrimSpace(know[i+1:])
+		rw := strings.Fields(rest)
+		if len(rw) > 0 && strings.EqualFold(rw[0], first) {
+			return rest
+		}
+		if !strings.Contains(first, " ") && strings.HasPrefix(strings.ToLower(rest), strings.ToLower(first)+" ") {
+			return rest
+		}
+	}
+	return know
+}
+
+func synthesizeIdeaLine(userLow, know string, curiosity int) string {
+	wantIdea := strings.Contains(userLow, "idea") || strings.Contains(userLow, "propon") ||
+		strings.Contains(userLow, "invent") || strings.Contains(userLow, "ocurre") || curiosity >= 2
+	if !wantIdea {
+		return ""
+	}
+	k := strings.ToLower(know)
+	switch {
+	case strings.Contains(k, "cid") || strings.Contains(k, "contenido"):
+		return "Idea: anclar cada hallazgo de sonda como bloque CID y contrastarlo con «qué sabe el gen», sin confundirlo con nombres históricos."
+	case strings.Contains(k, "ternar") || strings.Contains(k, "órgano") || strings.Contains(k, "organo"):
+		return "Idea: forzar un solo órgano a 2 en el próximo pedido y observar solo ese cambio en la voz."
+	case strings.Contains(k, "metáfora") || strings.Contains(k, "poema"):
+		return "Idea: pedir el mismo tema con otro recurso literario y quedarte con una sola imagen."
+	default:
+		return "Idea: dejar una frase operativa de lo anterior (qué harás con ese saber) y anclarla si quieres que sobreviva al chat."
+	}
 }
 
 func fluidPureDialogue(low string, curiosity int) string {

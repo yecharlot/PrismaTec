@@ -604,9 +604,67 @@ func isMostlyEnglish(s string) bool {
 	return enN >= 2 && enN > esN
 }
 
+
+// mergeTitleAndExtract evita "Cid. Cid hace referencia…" / "Key. Key is…".
+// Prefiere el extracto; solo usa el título si no hay cuerpo útil.
+func mergeTitleAndExtract(title, extract string) string {
+	title = strings.TrimSpace(title)
+	extract = strings.TrimSpace(extract)
+	if extract == "" {
+		return title
+	}
+	if title == "" {
+		return extract
+	}
+	lowE := strings.ToLower(extract)
+	lowT := strings.ToLower(title)
+	if strings.HasPrefix(lowE, lowT) {
+		return extract
+	}
+	// "Title. rest" already
+	if strings.HasPrefix(lowE, lowT+".") {
+		return extract
+	}
+	// first sentence is the title repeated
+	if i := strings.Index(extract, ". "); i > 0 && i < 48 {
+		first := strings.TrimSpace(extract[:i])
+		if strings.EqualFold(first, title) {
+			return strings.TrimSpace(extract[i+1:])
+		}
+	}
+	return extract
+}
+
+
+// stripEchoTitleLead quita "Nombre. Nombre …" al inicio del cuerpo.
+func stripEchoTitleLead(body string) string {
+	body = strings.TrimSpace(body)
+	if body == "" {
+		return body
+	}
+	// "Cid. Cid hace…"
+	if i := strings.Index(body, ". "); i > 0 && i < 40 {
+		first := strings.TrimSpace(body[:i])
+		rest := strings.TrimSpace(body[i+1:])
+		if rest != "" {
+			// first word of rest equals first?
+			rw := strings.Fields(rest)
+			if len(rw) > 0 && strings.EqualFold(rw[0], first) {
+				return rest
+			}
+			// first equals title-like single token and rest starts with same
+			if !strings.Contains(first, " ") && strings.HasPrefix(strings.ToLower(rest), strings.ToLower(first)+" ") {
+				return rest
+			}
+		}
+	}
+	return body
+}
+
 // formatScoutVoice: cuerpo limpio + fuente debajo (sin jerga de laboratorio).
 func formatScoutVoice(body, sourceURL string, fromCache bool) string {
 	body = strings.TrimSpace(body)
+	body = stripEchoTitleLead(body)
 	body = compressVoiceBlock(body, 560)
 	var b strings.Builder
 	b.WriteString(body)
@@ -853,7 +911,7 @@ func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 	// 1) Wikipedia ES primero (voz en español)
 	if title, extract, pageURL, ok := fetchWikipediaSummary(topic); ok && !scoutReportLowQuality(extract) {
 		sourceURL = pageURL
-		report = strings.TrimSpace(title + ". " + extract)
+		report = mergeTitleAndExtract(title, extract)
 		if isMostlyEnglish(report) {
 			langNote = "Resumen disponible solo en inglés (no hay artículo ES fiable)."
 		}
@@ -864,7 +922,7 @@ func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 	if report == "" {
 		if title, extract, pageURL, ok := fetchDuckDuckGoAnswer(topic); ok && !scoutReportLowQuality(extract) {
 			sourceURL = pageURL
-			report = strings.TrimSpace(title + ". " + extract)
+			report = mergeTitleAndExtract(title, extract)
 			if isMostlyEnglish(report) {
 				langNote = "Resumen en inglés (Instant Answer)."
 			}
@@ -890,7 +948,7 @@ func (n *NodoAlset) MindScoutWeb(userText string, ethicsState int) string {
 				return "No encontré una fuente fiable en español para «" + topic + "». Prueba el nombre completo."
 			}
 		}
-		report = strings.TrimSpace(strings.TrimSpace(title) + ". " + snippet)
+		report = mergeTitleAndExtract(title, snippet)
 		if report == "." || len(report) < 40 || cleanWebSnippet(report) == "" || scoutReportLowQuality(report) {
 			_ = n.DeleteAlsetGen(key)
 			return "No encontré una fuente fiable en español para «" + topic + "». Prueba con más contexto."
