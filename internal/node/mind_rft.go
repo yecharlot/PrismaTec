@@ -156,25 +156,8 @@ func buildRFTTree(facts []ternaryFact) rftTree {
 			}
 		}
 		// Cadena especial tiempo/memoria/ilusión ya cubierta por trans + salto-neg
-		// Salto-concreta: de abstracto a instancia corpus (un hecho del corpus que comparta obj)
-		for _, f := range linear {
-			for _, e := range loadMindKnowledge() {
-				blob := strings.ToLower(e.Text)
-				if !strings.Contains(blob, f.Obj) && !strings.Contains(blob, f.Subj) {
-					continue
-				}
-				for _, sent := range extractSentences(e.Text) {
-					cf, ok := parseRelationFact(sent, 1, "rft:corpus")
-					if !ok {
-						continue
-					}
-					if cf.Subj == f.Subj || cf.Obj == f.Obj || cf.Subj == f.Obj {
-						add(rftNode{Fact: cf, Level: 2, Kind: "salto-concreta", Parent: factKey(f)})
-						break
-					}
-				}
-			}
-		}
+		// Salto-concreta: desactivado en masa (el corpus no debe inundar el árbol).
+		// La concreción se limita a collectReasonFactsOpts filtrado.
 		// Segundo cierre fractal sobre nodos de salto (autosimilitud)
 		var saltoFacts []ternaryFact
 		for _, n := range tree.Saltos {
@@ -186,19 +169,47 @@ func buildRFTTree(facts []ternaryFact) rftTree {
 		}
 	}
 
-	// Elegir conclusión primaria: preferir nivel 1 trans; si hay salto-neg relevante, mencionarlo
+	// Conclusión primaria: anclada a términos de premisas de usuario
+	userTerms := map[string]bool{}
+	for _, n := range tree.Nodes {
+		if n.Kind == "premisa" && (n.Fact.Src == "usuario" || n.Fact.Src == "memoria") {
+			for _, w := range strings.Fields(n.Fact.Subj + " " + n.Fact.Obj) {
+				if len([]rune(w)) >= 3 {
+					userTerms[w] = true
+				}
+			}
+		}
+	}
 	best := ternaryFact{}
 	bestSc := -1
 	for _, n := range tree.Nodes {
 		if n.Kind == "premisa" {
 			continue
 		}
-		sc := n.Fact.Conf + n.Level
+		sc := n.Fact.Conf
 		if n.Kind == "trans" && n.Level == 1 {
-			sc += 5
+			sc += 8
 		}
 		if n.Kind == "salto-neg" {
-			sc += 3
+			sc += 6
+		}
+		if n.Level == 3 {
+			sc -= 2 // evitar tautologías L3 (A es A)
+		}
+		// exigir solape con premisas del usuario
+		hit := false
+		for w := range userTerms {
+			if strings.Contains(n.Fact.Subj, w) || strings.Contains(n.Fact.Obj, w) {
+				sc += 5
+				hit = true
+			}
+		}
+		if !hit && len(userTerms) > 0 {
+			continue
+		}
+		// penalizar tautología
+		if n.Fact.Subj == n.Fact.Obj {
+			continue
 		}
 		if sc > bestSc {
 			bestSc = sc
@@ -227,45 +238,83 @@ func formatRFTVoice(tree rftTree) string {
 	if len(tree.Nodes) == 0 {
 		return ""
 	}
+	userTerms := map[string]bool{}
+	for _, n := range tree.Nodes {
+		if n.Kind == "premisa" && (n.Fact.Src == "usuario" || n.Fact.Src == "memoria") {
+			for _, w := range strings.Fields(n.Fact.Subj + " " + n.Fact.Obj) {
+				if len([]rune(w)) >= 3 {
+					userTerms[w] = true
+				}
+			}
+		}
+	}
 	var b strings.Builder
 	b.WriteString("Razonamiento Fractal-Ternario (RFT — no lineal, no predicción):\n")
-	// Premisas nivel 0
 	for _, n := range tree.Nodes {
 		if n.Kind != "premisa" {
 			continue
 		}
+		if n.Fact.Src != "usuario" && n.Fact.Src != "memoria" {
+			continue
+		}
 		b.WriteString(fmt.Sprintf("· [L0 premisa conf %d] «%s» %s «%s»\n", n.Fact.Conf, n.Fact.Subj, relVoice(n.Fact.Rel), n.Fact.Obj))
 	}
-	// Trans lineales
 	shown := 0
 	for _, n := range tree.Nodes {
 		if n.Kind != "trans" || n.Level != 1 {
 			continue
 		}
-		if shown >= 3 {
-			break
+		if n.Fact.Subj == n.Fact.Obj {
+			continue
+		}
+		hit := len(userTerms) == 0
+		for w := range userTerms {
+			if strings.Contains(n.Fact.Subj, w) || strings.Contains(n.Fact.Obj, w) {
+				hit = true
+				break
+			}
+		}
+		if !hit || shown >= 3 {
+			continue
 		}
 		b.WriteString(fmt.Sprintf("· [L1 cierre conf %d] «%s» %s «%s»\n", n.Fact.Conf, n.Fact.Subj, relVoice(n.Fact.Rel), n.Fact.Obj))
 		shown++
 	}
-	// Saltos
 	if len(tree.Saltos) > 0 {
 		b.WriteString("· Sumidero/salto (2 → otro nivel):\n")
-		for i, n := range tree.Saltos {
-			if i >= 4 {
+		ns := 0
+		for _, n := range tree.Saltos {
+			if ns >= 4 {
 				break
 			}
+			ok := len(userTerms) == 0
+			for w := range userTerms {
+				if strings.Contains(n.Fact.Subj, w) || strings.Contains(n.Fact.Obj, w) {
+					ok = true
+					break
+				}
+			}
+			if !ok {
+				continue
+			}
 			b.WriteString(fmt.Sprintf("  — %s [L%d conf %d]: «%s» %s «%s»\n", n.Kind, n.Level, n.Fact.Conf, n.Fact.Subj, relVoice(n.Fact.Rel), n.Fact.Obj))
+			ns++
 		}
 	}
-	// Cierre fractal nivel 3
 	shown3 := 0
 	for _, n := range tree.Nodes {
-		if n.Level != 3 {
+		if n.Level != 3 || n.Fact.Subj == n.Fact.Obj {
 			continue
 		}
-		if shown3 >= 2 {
-			break
+		hit := false
+		for w := range userTerms {
+			if strings.Contains(n.Fact.Subj, w) || strings.Contains(n.Fact.Obj, w) {
+				hit = true
+				break
+			}
+		}
+		if !hit || shown3 >= 2 {
+			continue
 		}
 		b.WriteString(fmt.Sprintf("· [L3 fractal conf %d] «%s» %s «%s»\n", n.Fact.Conf, n.Fact.Subj, relVoice(n.Fact.Rel), n.Fact.Obj))
 		shown3++
@@ -278,10 +327,14 @@ func formatRFTVoice(tree rftTree) string {
 	return strings.TrimSpace(b.String())
 }
 
-// reasonRFT: entrada principal RFT
 func reasonRFT(userText string, extra []ternaryFact) string {
-	facts := collectReasonFacts(userText)
-	facts = append(facts, extra...)
+	// Solo premisas del usuario + memoria del hilo. Sin volcar el corpus.
+	facts := collectReasonFactsOpts(userText, false)
+	for _, f := range extra {
+		if f.Src == "memoria" || f.Src == "usuario" {
+			facts = append(facts, f)
+		}
+	}
 	seen := map[string]bool{}
 	var uniq []ternaryFact
 	for _, f := range facts {

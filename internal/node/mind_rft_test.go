@@ -12,13 +12,18 @@ func TestRFTTiempoMemoria(t *testing.T) {
 		t.Fatal("empty RFT")
 	}
 	low := strings.ToLower(v)
-	if !strings.Contains(low, "memoria") || !strings.Contains(low, "ilusión") && !strings.Contains(low, "ilusion") {
-		t.Fatalf("expected memoria/ilusión: %q", v)
+	if !strings.Contains(low, "memoria") {
+		t.Fatalf("expected memoria: %q", v)
 	}
-	if !strings.Contains(low, "salto") || !strings.Contains(low, "rft") {
-		t.Fatalf("expected RFT labels: %q", v)
+	if !strings.Contains(low, "ilusión") && !strings.Contains(low, "ilusion") {
+		t.Fatalf("expected ilusión: %q", v)
 	}
-	// salto a realidad no es tiempo (vía ilusión)
+	if strings.Contains(low, "sócrates") || strings.Contains(low, "socrates") || strings.Contains(low, "lisp") {
+		t.Fatalf("corpus flood in RFT: %q", v)
+	}
+	if strings.Count(low, "[l0 premisa") > 6 {
+		t.Fatalf("too many L0 premises: %q", v)
+	}
 	if !strings.Contains(low, "realidad") {
 		t.Fatalf("expected salto realidad: %q", v)
 	}

@@ -246,6 +246,12 @@ func factKey(f ternaryFact) string {
 }
 
 func collectReasonFacts(userText string) []ternaryFact {
+	return collectReasonFactsOpts(userText, true)
+}
+
+// collectReasonFactsOpts: includeCorpus solo inyecta hechos del corpus que
+// solapan léxicamente con las premisas del usuario (máx. 4). Evita el volcado RFT.
+func collectReasonFactsOpts(userText string, includeCorpus bool) []ternaryFact {
 	var out []ternaryFact
 	seen := map[string]bool{}
 	add := func(f ternaryFact) {
@@ -261,9 +267,35 @@ func collectReasonFacts(userText string) []ternaryFact {
 			add(f)
 		}
 	}
+	if !includeCorpus {
+		return out
+	}
+	// tokens de las premisas del usuario
+	seed := map[string]bool{}
+	for _, f := range out {
+		for _, w := range strings.Fields(f.Subj + " " + f.Obj) {
+			if len([]rune(w)) >= 4 {
+				seed[w] = true
+			}
+		}
+	}
+	for _, w := range tokenizeMind(userText) {
+		if len([]rune(w)) >= 4 {
+			seed[w] = true
+		}
+	}
+	if len(seed) == 0 {
+		return out
+	}
+	nCorpus := 0
 	for _, e := range loadMindKnowledge() {
-		// solo oraciones cortas del corpus (gramática limpia)
+		if nCorpus >= 4 {
+			break
+		}
 		for _, sent := range extractSentences(e.Text) {
+			if nCorpus >= 4 {
+				break
+			}
 			if len([]rune(sent)) > 100 {
 				continue
 			}
@@ -272,8 +304,19 @@ func collectReasonFacts(userText string) []ternaryFact {
 				strings.Contains(low, "no predice") || strings.Contains(low, "léxico") {
 				continue
 			}
+			hit := false
+			for w := range seed {
+				if strings.Contains(low, w) {
+					hit = true
+					break
+				}
+			}
+			if !hit {
+				continue
+			}
 			if f, ok := parseRelationFact(sent, 1, "corpus"); ok {
 				add(f)
+				nCorpus++
 			}
 		}
 	}
