@@ -165,6 +165,7 @@ func biasSignalsFromMemory(sig map[string]float64, episodes []mindEpisodePayload
 	if len(episodes) == 0 {
 		return sig, "", ""
 	}
+	episodes = dedupeEpisodesByText(episodes)
 	out := make(map[string]float64, len(sig))
 	for k, v := range sig {
 		out[k] = v

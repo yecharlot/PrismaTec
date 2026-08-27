@@ -379,7 +379,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	if isMemoryQuery(text) {
 		recallN = 24 // deeper look when user asks to remember
 	}
-	recent := n.recallRecentEpisodes(recallN)
+	recent := dedupeEpisodesByText(n.recallRecentEpisodes(recallN))
 	knownName := knownUserNameFromEpisodes(recent)
 	memHint := ""
 	memSpeak := ""
