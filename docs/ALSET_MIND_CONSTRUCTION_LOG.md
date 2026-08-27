@@ -500,3 +500,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 
 - `cloudflareNetworkBase` usa red live si no hay env; carga `alset_data/cloudflare.env` / `.env` al arrancar.
 - Explore Wikipedia vía REST summary (texto limpio, sin menú).
+
+## 2026-08-26 — Salto cierre: hallazgos al despachar + diálogo borde
+
+- Dispatch envía `findings` + `last_hallazgo` al edge y POST `/api/seed`.
+- Workers (KV/DO) aceptan siembra de hallazgos.
+- BridgeSpeakGenFindings consulta el borde si hace falta.

@@ -134,6 +134,8 @@ async function spawnGen(request, env, workerURL) {
       root_cid: body.root_cid || "",
       mission: body.mission || "",
       description: body.description || "",
+      findings: body.findings || [],
+      last_hallazgo: body.last_hallazgo || "",
     }),
   });
   await stub.fetch(seedReq);
@@ -163,7 +165,7 @@ async function spawnGen(request, env, workerURL) {
           key,
           http_base: reach,
           root_cid: body.root_cid || "",
-          findings: 0,
+          findings: Array.isArray(body.findings) ? body.findings.length : 0,
         }),
       });
       announced = { status: resp.status, ok: resp.ok };
@@ -202,6 +204,13 @@ export class AlsetGenDO {
       if (body.root_cid) await this.state.storage.put("root_cid", body.root_cid);
       if (body.mission) await this.state.storage.put("mission", body.mission);
       if (body.description) await this.state.storage.put("description", body.description);
+      if (Array.isArray(body.findings) && body.findings.length) {
+        await this.state.storage.put("findings", body.findings.slice(-48));
+      } else if (body.last_hallazgo) {
+        await this.state.storage.put("findings", [
+          { url: "local-seed", title: "hallazgo local", status: 200, snippet: body.last_hallazgo },
+        ]);
+      }
       await this.state.storage.put("updated_at", Date.now());
       return json({ ok: true, key, seeded: true });
     }
@@ -305,7 +314,7 @@ function composeVoice(key, s, findings, root) {
       `Hallazgos (${findings.length}) en Cloudflare:\n` +
       findings
         .slice(-3)
-        .map((f) => `- ${f.url} · ${f.title || ""} · ${f.status}`)
+        .map((f) => `- ${String(f.snippet || f.title || f.url || "").slice(0, 180)}`)
         .join("\n")
     );
   }

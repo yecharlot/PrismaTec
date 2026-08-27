@@ -33,18 +33,31 @@ func (n *NodoAlset) DispatchGenToCloudflare(key, mission string) (map[string]int
 		// may already exist
 		_ = err
 	}
-	var packageCID, rootCID string
+	var packageCID, rootCID, lastHallazgo string
+	var findingsSeed []map[string]interface{}
 	if sealed, err := n.SealFrontierPackage(key); err == nil {
 		packageCID, _ = sealed["package_cid"].(string)
 	}
 	n.mu.RLock()
 	if g, ok := n.gens[key]; ok {
 		rootCID = g.CurrentRootCID
+		if g.State.Metadata != nil {
+			if lh, ok := g.State.Metadata["last_hallazgo"].(string); ok {
+				lastHallazgo = strings.TrimSpace(lh)
+			}
+		}
+		if lastHallazgo != "" && !strings.Contains(strings.ToLower(lastHallazgo), "mind_episode") {
+			findingsSeed = append(findingsSeed, map[string]interface{}{
+				"url": "local-seed", "title": "hallazgo local", "status": 200,
+				"snippet": lastHallazgo, "source": "mind-dispatch",
+			})
+		}
 	}
 	n.mu.RUnlock()
 
 	body, _ := json.Marshal(map[string]interface{}{
 		"key": key, "package_cid": packageCID, "root_cid": rootCID, "mission": mission,
+		"last_hallazgo": lastHallazgo, "findings": findingsSeed,
 	})
 	client := &http.Client{Timeout: 25 * time.Second}
 	resp, err := client.Post(base+"/api/network/dispatch", "application/json", bytes.NewReader(body))
@@ -65,7 +78,20 @@ func (n *NodoAlset) DispatchGenToCloudflare(key, mission string) (map[string]int
 	}
 	reach, _ := out["reach"].(string)
 	if reach != "" {
-		_ = n.AnnounceRemoteGen(key, reach, "", rootCID, 0, 0)
+		_ = n.AnnounceRemoteGen(key, reach, "", rootCID, len(findingsSeed), 0)
+		// Sembrar hallazgos en el edge (worker puede ignorar campos viejos; seed refuerza)
+		if len(findingsSeed) > 0 {
+			seedBody, _ := json.Marshal(map[string]interface{}{
+				"package_cid": packageCID, "root_cid": rootCID, "mission": mission,
+				"findings": findingsSeed, "last_hallazgo": lastHallazgo,
+			})
+			if sreq, err := http.NewRequest(http.MethodPost, strings.TrimRight(reach, "/")+"/api/seed", bytes.NewReader(seedBody)); err == nil {
+				sreq.Header.Set("Content-Type", "application/json")
+				if sresp, err := client.Do(sreq); err == nil {
+					_ = sresp.Body.Close()
+				}
+			}
+		}
 		n.mu.Lock()
 		if g, ok := n.gens[key]; ok {
 			if g.State.Metadata == nil {

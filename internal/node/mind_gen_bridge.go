@@ -88,7 +88,6 @@ func (n *NodoAlset) BridgeSpeakGenFindings(key string) string {
 	if g.State.Metadata != nil {
 		if lh, ok := g.State.Metadata["last_hallazgo"].(string); ok {
 			low := strings.ToLower(lh)
-			// ignorar contaminación por pulsos mind_episode
 			if !strings.Contains(low, "mind_episode") && !strings.HasPrefix(low, "pulse:") {
 				last = lh
 			}
@@ -103,6 +102,15 @@ func (n *NodoAlset) BridgeSpeakGenFindings(key string) string {
 	loc := g.State.Location
 	if loc == "" {
 		loc = "local"
+	}
+	// Si está en borde y no hay texto útil, preguntar al edge
+	if (findN == 0 && last == "") || (last == "" && n.remoteHTTPBase(key) != "") {
+		if rh := n.remoteHTTPBase(key); rh != "" {
+			res := n.DialogueRemoteGen(key, "qué hallazgos tienes")
+			if v, ok := res["voice"].(string); ok && v != "" && !strings.Contains(strings.ToLower(v), "sin hallazgos") {
+				return fmt.Sprintf("Desde el borde (%s):\n%s", rh, v)
+			}
+		}
 	}
 	if findN == 0 && last == "" {
 		return fmt.Sprintf("El gen «%s» (%s) aún no tiene hallazgos. Puedes decir: explora gen %s https://ejemplo.org", key, loc, strings.TrimSuffix(key, ".ans"))

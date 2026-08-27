@@ -87,6 +87,15 @@ async function spawnGen(request, env, origin) {
   if (body.package_cid) existing.package_cid = body.package_cid;
   if (body.root_cid) existing.root_cid = body.root_cid;
   if (body.mission) existing.mission = body.mission;
+  if (Array.isArray(body.findings) && body.findings.length) {
+    existing.findings = body.findings.slice(-MAX_FINDINGS);
+  }
+  if (body.last_hallazgo && typeof body.last_hallazgo === "string") {
+    existing.last_hallazgo = body.last_hallazgo;
+    if (!existing.findings || !existing.findings.length) {
+      existing.findings = [{ url: "local-seed", title: "hallazgo local", status: 200, snippet: body.last_hallazgo }];
+    }
+  }
   existing.key = key;
   await env.GEN_KV.put("data:" + key, JSON.stringify(existing));
 
@@ -114,6 +123,15 @@ async function handleGen(request, env, key, path, origin) {
     if (body.package_cid) data.package_cid = body.package_cid;
     if (body.root_cid) data.root_cid = body.root_cid;
     if (body.mission) data.mission = body.mission;
+    if (Array.isArray(body.findings) && body.findings.length) {
+      data.findings = body.findings.slice(-MAX_FINDINGS);
+    }
+    if (body.last_hallazgo && typeof body.last_hallazgo === "string") {
+      data.last_hallazgo = body.last_hallazgo;
+      if (!data.findings || !data.findings.length) {
+        data.findings = [{ url: "local-seed", title: "hallazgo local", status: 200, snippet: body.last_hallazgo }];
+      }
+    }
     data.key = key;
     await env.GEN_KV.put("data:" + key, JSON.stringify(data));
     const short = key.replace(/\.ans$/, "");
@@ -183,7 +201,10 @@ function composeVoice(key, s, findings, root) {
   }
   if (s.includes("sabes") || s.includes("hallazgo") || s.includes("explor") || s.includes("viste")) {
     if (!findings.length) return "Sin hallazgos aún. Pide explorar una URL pública.";
-    return `Hallazgos (${findings.length}):\n` + findings.slice(-3).map((f) => `- ${f.url} · ${f.title || ""} · ${f.status}`).join("\n");
+    return `Hallazgos (${findings.length}):\n` + findings.slice(-3).map((f) => {
+      const sn = f.snippet || f.title || f.url || "";
+      return `- ${String(sn).slice(0, 180)}`;
+    }).join("\n");
   }
   if (s.includes("estado") || s.includes("oficio") || s.includes("misión") || s.includes("mision")) {
     return `Oficio CF: key=${key} hallazgos=${findings.length}.`;
