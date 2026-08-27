@@ -2074,5 +2074,15 @@
       "cierre fractal"
     ],
     "text": "Autosimilitud: las mismas reglas de combinación se reaplican sobre hechos derivados (nivel 2). No es un modelo generativo: es el mismo patrón a otra escala del grafo de premisas."
+  },
+  {
+    "type": "razon_ternaria",
+    "keys": [
+      "rft",
+      "razonamiento fractal",
+      "salto lógico",
+      "sumidero 2"
+    ],
+    "text": "RFT (Razonamiento Fractal-Ternario): 0 cierra el camino, 1 sostiene en el nivel, 2 es sumidero y salto a otro nivel (inversión, negación acotada o concreción). No es predicción de tokens ni imitación humana: es árbol auto-similar bajo Zyrion."
   }
 ]

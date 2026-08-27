@@ -459,6 +459,12 @@ func scoreFactAgainstQuery(f ternaryFact, qtoks []string) int {
 func reasonAboutQuery(userText string, extra []ternaryFact) string {
 	low := strings.ToLower(strings.TrimSpace(userText))
 	want := isReasoningRequest(low)
+	// RFT: árbol + saltos si hay cadena multi-premisa o pedido explícito
+	if isRFTRequest(userText) || want {
+		if rv := reasonRFT(userText, extra); rv != "" {
+			return rv
+		}
+	}
 	facts := collectReasonFacts(userText)
 	facts = append(facts, extra...)
 	seen := map[string]bool{}
