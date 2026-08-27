@@ -1954,7 +1954,7 @@
       "razón ternaria",
       "razon ternaria"
     ],
-    "text": "Un silogismo aquí no predice tokens: combina premisas con confianza 0 (no afirmar), 1 (matizar) o 2 (afirmar). Si A es B y B es C, se deduce A es C con conf = mínimo de las premisas. Si falta el eslabón B, no se inventa la conclusión."
+    "text": "Un silogismo en este nodo combina premisas con confianza 0 (no afirmar), 1 (matizar) o 2 (afirmar). Si A es B y B es C, se deduce A es C con conf mínima. Si falta el eslabón B, no se inventa la conclusión."
   },
   {
     "type": "razon_ternaria",
@@ -1983,7 +1983,7 @@
       "hombre mortal",
       "ejemplo silogismo"
     ],
-    "text": "Sócrates es hombre. Hombre es mortal. Por transitividad de es, Sócrates es mortal. Ejemplo canónico de deducción ternaria en este nodo."
+    "text": "Sócrates es hombre. Hombre es mortal."
   },
   {
     "type": "razon_ternaria",
@@ -2055,5 +2055,24 @@
       "conversar con reglas"
     ],
     "text": "Diálogo fluido aquí significa: recordar premisas, detectar el patrón aplicable, concluir solo si el eslabón existe, y corregir cuando el humano dice «no me refiero a…». No rellenar con prosa inventada."
+  },
+  {
+    "type": "razon_ternaria",
+    "keys": [
+      "extraer premisas",
+      "gramática lógica",
+      "cláusulas",
+      "oraciones"
+    ],
+    "text": "Para extraer reglas de un texto largo: partir en oraciones, luego en cláusulas con es/implica/tiene/parte de, descartar coletillas (ejemplo, por transitividad) y solo entonces aplicar el cierre fractal de las mismas reglas."
+  },
+  {
+    "type": "razon_ternaria",
+    "keys": [
+      "autosimilitud",
+      "fractal razón",
+      "cierre fractal"
+    ],
+    "text": "Autosimilitud: las mismas reglas de combinación se reaplican sobre hechos derivados (nivel 2). No es un modelo generativo: es el mismo patrón a otra escala del grafo de premisas."
   }
 ]

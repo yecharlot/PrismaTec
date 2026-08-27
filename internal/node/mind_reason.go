@@ -3,11 +3,12 @@ package node
 import (
 	"fmt"
 	"strings"
+	"unicode"
 )
 
-// Capa de razón ternaria (no LLM): hechos con confianza 0/1/2 y reglas de
-// combinación. 0 = no afirmar, 1 = matizar, 2 = afirmar.
-// Las reglas se aplican a premisas del usuario, memoria y corpus.
+// Capa de razón ternaria (no LLM): hechos 0/1/2 + reglas + extracción gramatical
+// de cláusulas en textos largos. Autosimilitud: las mismas reglas se reaplican
+// en un segundo nivel (cierre fractal).
 
 type ternaryFact struct {
 	Subj string
@@ -39,47 +40,104 @@ func zyrionMinConf(a, b int) int {
 func normalizeReasonToken(s string) string {
 	s = strings.ToLower(strings.TrimSpace(s))
 	s = strings.Trim(s, ".,;:!?«»\"'")
+	// una sola frase / sin basura
+	if i := strings.IndexAny(s, ".!?;"); i > 0 {
+		s = strings.TrimSpace(s[:i])
+	}
 	return s
 }
 
-func splitReasonClauses(text string) []string {
+// extractSentences: gramática mínima — cortar por . ! ? y por ;
+func extractSentences(text string) []string {
 	text = strings.TrimSpace(text)
 	if text == "" {
 		return nil
 	}
-	low := strings.ToLower(text)
-	for _, sep := range []string{"; entonces", ", entonces", " entonces", "; por tanto", " por tanto", "; por lo tanto", " por lo tanto"} {
-		if i := strings.Index(low, sep); i > 0 {
-			text = strings.TrimSpace(text[:i])
-			low = strings.ToLower(text)
+	var sents []string
+	start := 0
+	runes := []rune(text)
+	for i, r := range runes {
+		if r == '.' || r == '!' || r == '?' || r == ';' {
+			part := strings.TrimSpace(string(runes[start:i]))
+			if part != "" {
+				sents = append(sents, part)
+			}
+			start = i + 1
 		}
 	}
-	// Prefer " y " splits when both sides look like facts
-	var parts []string
-	if strings.Count(low, " y ") >= 1 {
-		parts = strings.Split(text, " y ")
-	} else {
-		parts = strings.Split(text, ", ")
-	}
-	var out []string
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p != "" {
-			out = append(out, p)
+	if start < len(runes) {
+		part := strings.TrimSpace(string(runes[start:]))
+		if part != "" {
+			sents = append(sents, part)
 		}
 	}
-	if len(out) == 0 {
+	if len(sents) == 0 {
 		return []string{text}
+	}
+	return sents
+}
+
+// extractClauses: oraciones → cláusulas por " y " / " pero " cuando ambas parecen predicados
+func extractClauses(text string) []string {
+	var out []string
+	for _, sent := range extractSentences(text) {
+		low := strings.ToLower(sent)
+		// quitar coletillas meta de deducción
+		for _, noise := range []string{
+			"por transitividad de es", "por transitividad", "ejemplo canónico",
+			"ejemplo de cadena", "no predicción", "deducción ternaria",
+		} {
+			if i := strings.Index(low, noise); i >= 0 {
+				sent = strings.TrimSpace(sent[:i])
+				low = strings.ToLower(sent)
+			}
+		}
+		if sent == "" {
+			continue
+		}
+		// split y solo si ambos lados tienen verbo relacional
+		if strings.Count(low, " y ") == 1 {
+			i := strings.Index(low, " y ")
+			left, right := strings.TrimSpace(sent[:i]), strings.TrimSpace(sent[i+3:])
+			if clauseLooksRelational(left) && clauseLooksRelational(right) {
+				out = append(out, left, right)
+				continue
+			}
+		}
+		out = append(out, sent)
 	}
 	return out
 }
 
-// parseRelationFact: X REL Y
+func clauseLooksRelational(s string) bool {
+	low := strings.ToLower(s)
+	keys := []string{" es ", " implica ", " tiene ", " parte de ", " pertenece ", " no es "}
+	for _, k := range keys {
+		if strings.Contains(low, k) {
+			return true
+		}
+	}
+	return false
+}
+
+func splitReasonClauses(text string) []string {
+	return extractClauses(text)
+}
+
 func parseRelationFact(text string, conf int, src string) (ternaryFact, bool) {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return ternaryFact{}, false
+	}
+	// solo primera oración
+	if sents := extractSentences(text); len(sents) > 0 {
+		text = sents[0]
+	}
 	low := strings.ToLower(strings.TrimSpace(text))
 	if strings.Contains(low, "?") || strings.HasPrefix(low, "qué ") || strings.HasPrefix(low, "que ") ||
 		strings.HasPrefix(low, "quién ") || strings.HasPrefix(low, "quien ") ||
-		strings.HasPrefix(low, "cómo ") || strings.HasPrefix(low, "como ") {
+		strings.HasPrefix(low, "cómo ") || strings.HasPrefix(low, "como ") ||
+		strings.HasPrefix(low, "por transitividad") || strings.HasPrefix(low, "ejemplo") {
 		return ternaryFact{}, false
 	}
 	type pat struct {
@@ -107,16 +165,14 @@ func parseRelationFact(text string, conf int, src string) (ternaryFact, bool) {
 		}
 		subj := normalizeReasonToken(text[:i])
 		rest := strings.TrimSpace(text[i+len(p.needle):])
-		for _, sep := range []string{",", ";", " y ", " pero ", " porque ", " entonces "} {
+		// cortar en puntuación y conjunciones
+		for _, sep := range []string{".", "!", "?", ";", ",", " y ", " pero ", " porque ", " entonces ", " —", " - "} {
 			if j := strings.Index(strings.ToLower(rest), sep); j > 0 {
 				rest = strings.TrimSpace(rest[:j])
 			}
 		}
 		obj := normalizeReasonToken(rest)
-		if len([]rune(subj)) < 2 || len([]rune(obj)) < 2 || len([]rune(subj)) > 56 || len([]rune(obj)) > 72 {
-			continue
-		}
-		if subj == "esto" || subj == "eso" || obj == "esto" || obj == "eso" {
+		if !validReasonTerm(subj) || !validReasonTerm(obj) {
 			continue
 		}
 		if conf < 0 {
@@ -128,6 +184,25 @@ func parseRelationFact(text string, conf int, src string) (ternaryFact, bool) {
 		return ternaryFact{Subj: subj, Rel: p.rel, Obj: obj, Conf: conf, Src: src}, true
 	}
 	return ternaryFact{}, false
+}
+
+func validReasonTerm(s string) bool {
+	s = strings.TrimSpace(s)
+	if len([]rune(s)) < 2 || len([]rune(s)) > 48 {
+		return false
+	}
+	// no párrafos ni meta
+	if strings.Contains(s, " transitividad") || strings.Contains(s, "ejemplo") ||
+		strings.Contains(s, "silogismo") || strings.Count(s, " ") > 6 {
+		return false
+	}
+	letters := 0
+	for _, r := range s {
+		if unicode.IsLetter(r) {
+			letters++
+		}
+	}
+	return letters >= 2
 }
 
 func parseEsFact(text string, conf int, src string) (ternaryFact, bool) {
@@ -149,23 +224,26 @@ func collectReasonFacts(userText string) []ternaryFact {
 		seen[k] = true
 		out = append(out, f)
 	}
-	for _, part := range splitReasonClauses(userText) {
+	for _, part := range extractClauses(userText) {
 		if f, ok := parseRelationFact(part, 2, "usuario"); ok {
 			add(f)
 		}
 	}
 	for _, e := range loadMindKnowledge() {
-		if f, ok := parseRelationFact(e.Text, 2, "corpus"); ok {
-			add(f)
+		// solo oraciones cortas del corpus (gramática limpia)
+		for _, sent := range extractSentences(e.Text) {
+			if len([]rune(sent)) > 100 {
+				continue
+			}
+			low := strings.ToLower(sent)
+			if strings.HasPrefix(low, "por ") || strings.HasPrefix(low, "ejemplo") ||
+				strings.Contains(low, "no predice") || strings.Contains(low, "léxico") {
+				continue
+			}
+			if f, ok := parseRelationFact(sent, 1, "corpus"); ok {
+				add(f)
+			}
 		}
-		sent := e.Text
-		if i := strings.Index(sent, "."); i > 0 {
-			sent = sent[:i]
-		}
-		if f, ok := parseRelationFact(sent, 1, "corpus"); ok {
-			add(f)
-		}
-		// keys as weak "topic es type" not used — avoid noise
 	}
 	return out
 }
@@ -174,7 +252,6 @@ func isIdentityRel(rel string) bool {
 	return rel == "es" || rel == "es_un"
 }
 
-// deduceAll applies the full rule set (combinaciones de premisas).
 func deduceAll(facts []ternaryFact) []ternaryFact {
 	var derived []ternaryFact
 	seen := map[string]bool{}
@@ -186,95 +263,85 @@ func deduceAll(facts []ternaryFact) []ternaryFact {
 		if seen[k] || f.Conf == 0 {
 			return
 		}
+		// evitar conclusiones basura
+		if !validReasonTerm(f.Subj) || !validReasonTerm(f.Obj) {
+			return
+		}
 		seen[k] = true
 		derived = append(derived, f)
 	}
 
-	for i := range facts {
-		for j := range facts {
-			if i == j {
-				continue
-			}
-			a, b := facts[i], facts[j]
-			conf := zyrionMinConf(a.Conf, b.Conf)
-
-			// 1) Transitividad de es / es_un: A es B, B es C ⇒ A es C
-			if isIdentityRel(a.Rel) && isIdentityRel(b.Rel) && a.Obj == b.Subj {
-				add(ternaryFact{Subj: a.Subj, Rel: "es", Obj: b.Obj, Conf: conf, Src: "regla:trans-es"})
-			}
-
-			// 2) Transitividad de implica: A implica B, B implica C ⇒ A implica C
-			if a.Rel == "implica" && b.Rel == "implica" && a.Obj == b.Subj {
-				add(ternaryFact{Subj: a.Subj, Rel: "implica", Obj: b.Obj, Conf: conf, Src: "regla:trans-implica"})
-			}
-
-			// 3) Transitividad parte_de: A parte_de B, B parte_de C ⇒ A parte_de C
-			if a.Rel == "parte_de" && b.Rel == "parte_de" && a.Obj == b.Subj {
-				add(ternaryFact{Subj: a.Subj, Rel: "parte_de", Obj: b.Obj, Conf: conf, Src: "regla:trans-parte"})
-			}
-
-			// 4) Cadena es + implica: A es B, B implica C ⇒ A implica C
-			if isIdentityRel(a.Rel) && b.Rel == "implica" && a.Obj == b.Subj {
-				add(ternaryFact{Subj: a.Subj, Rel: "implica", Obj: b.Obj, Conf: conf, Src: "regla:es+implica"})
-			}
-
-			// 5) Cadena implica + es: A implica B, B es C ⇒ A implica C
-			if a.Rel == "implica" && isIdentityRel(b.Rel) && a.Obj == b.Subj {
-				add(ternaryFact{Subj: a.Subj, Rel: "implica", Obj: b.Obj, Conf: conf, Src: "regla:implica+es"})
-			}
-
-			// 6) Cadena es + parte_de: A es B, B parte_de C ⇒ A parte_de C (matiz)
-			if isIdentityRel(a.Rel) && b.Rel == "parte_de" && a.Obj == b.Subj {
-				c := conf
-				if c > 1 {
-					c = 1 // matiz: no siempre idéntico a pertenencia
+	applyOnce := func(pool []ternaryFact) {
+		for i := range pool {
+			for j := range pool {
+				if i == j {
+					continue
 				}
-				add(ternaryFact{Subj: a.Subj, Rel: "parte_de", Obj: b.Obj, Conf: c, Src: "regla:es+parte"})
-			}
+				a, b := pool[i], pool[j]
+				conf := zyrionMinConf(a.Conf, b.Conf)
 
-			// 7) Herencia de tiene: A es B, B tiene C ⇒ A tiene C (matiz)
-			if isIdentityRel(a.Rel) && b.Rel == "tiene" && a.Obj == b.Subj {
-				c := conf
-				if c > 1 {
-					c = 1
+				if isIdentityRel(a.Rel) && isIdentityRel(b.Rel) && a.Obj == b.Subj {
+					add(ternaryFact{Subj: a.Subj, Rel: "es", Obj: b.Obj, Conf: conf, Src: "regla:trans-es"})
 				}
-				add(ternaryFact{Subj: a.Subj, Rel: "tiene", Obj: b.Obj, Conf: c, Src: "regla:es+tiene"})
-			}
-
-			// 8) Contraposición débil: A implica B, X no_es B no genera A automáticamente
-			//    (omitida: arriesgada sin cuantificadores)
-
-			// 9) Conflicto: A es B y A no_es B ⇒ no afirmar (conf 0 señal)
-			if isIdentityRel(a.Rel) && b.Rel == "no_es" && a.Subj == b.Subj && a.Obj == b.Obj {
-				add(ternaryFact{Subj: a.Subj, Rel: "no_es", Obj: a.Obj, Conf: 2, Src: "regla:conflicto"})
+				if a.Rel == "implica" && b.Rel == "implica" && a.Obj == b.Subj {
+					add(ternaryFact{Subj: a.Subj, Rel: "implica", Obj: b.Obj, Conf: conf, Src: "regla:trans-implica"})
+				}
+				if a.Rel == "parte_de" && b.Rel == "parte_de" && a.Obj == b.Subj {
+					add(ternaryFact{Subj: a.Subj, Rel: "parte_de", Obj: b.Obj, Conf: conf, Src: "regla:trans-parte"})
+				}
+				if isIdentityRel(a.Rel) && b.Rel == "implica" && a.Obj == b.Subj {
+					add(ternaryFact{Subj: a.Subj, Rel: "implica", Obj: b.Obj, Conf: conf, Src: "regla:es+implica"})
+				}
+				if a.Rel == "implica" && isIdentityRel(b.Rel) && a.Obj == b.Subj {
+					add(ternaryFact{Subj: a.Subj, Rel: "implica", Obj: b.Obj, Conf: conf, Src: "regla:implica+es"})
+				}
+				if isIdentityRel(a.Rel) && b.Rel == "parte_de" && a.Obj == b.Subj {
+					c := conf
+					if c > 1 {
+						c = 1
+					}
+					add(ternaryFact{Subj: a.Subj, Rel: "parte_de", Obj: b.Obj, Conf: c, Src: "regla:es+parte"})
+				}
+				if isIdentityRel(a.Rel) && b.Rel == "tiene" && a.Obj == b.Subj {
+					c := conf
+					if c > 1 {
+						c = 1
+					}
+					add(ternaryFact{Subj: a.Subj, Rel: "tiene", Obj: b.Obj, Conf: c, Src: "regla:es+tiene"})
+				}
+				// A tiene B, B es C ⇒ A tiene C (matiz)
+				if a.Rel == "tiene" && isIdentityRel(b.Rel) && a.Obj == b.Subj {
+					c := conf
+					if c > 1 {
+						c = 1
+					}
+					add(ternaryFact{Subj: a.Subj, Rel: "tiene", Obj: b.Obj, Conf: c, Src: "regla:tiene+es"})
+				}
+				// A parte_de B, B es C ⇒ A parte_de C (matiz)
+				if a.Rel == "parte_de" && isIdentityRel(b.Rel) && a.Obj == b.Subj {
+					c := conf
+					if c > 1 {
+						c = 1
+					}
+					add(ternaryFact{Subj: a.Subj, Rel: "parte_de", Obj: b.Obj, Conf: c, Src: "regla:parte+es"})
+				}
+				if isIdentityRel(a.Rel) && b.Rel == "no_es" && a.Subj == b.Subj && a.Obj == b.Obj {
+					add(ternaryFact{Subj: a.Subj, Rel: "no_es", Obj: a.Obj, Conf: 2, Src: "regla:conflicto"})
+				}
 			}
 		}
 	}
 
-	// Segunda pasada: cerrar un nivel más (A→B→C→D)
-	base := append([]ternaryFact{}, facts...)
-	base = append(base, derived...)
-	n0 := len(derived)
-	for i := range base {
-		for j := range base {
-			if i == j {
-				continue
-			}
-			a, b := base[i], base[j]
-			conf := zyrionMinConf(a.Conf, b.Conf)
-			if isIdentityRel(a.Rel) && isIdentityRel(b.Rel) && a.Obj == b.Subj {
-				add(ternaryFact{Subj: a.Subj, Rel: "es", Obj: b.Obj, Conf: conf, Src: "regla:trans-es-2"})
-			}
-			if a.Rel == "implica" && b.Rel == "implica" && a.Obj == b.Subj {
-				add(ternaryFact{Subj: a.Subj, Rel: "implica", Obj: b.Obj, Conf: conf, Src: "regla:trans-implica-2"})
-			}
-		}
-	}
-	_ = n0
+	// Nivel 0 → 1 (misma ley)
+	applyOnce(facts)
+	// Nivel fractal 2: reaplicar sobre hechos+derivados (autosimilitud)
+	pool := append([]ternaryFact{}, facts...)
+	pool = append(pool, derived...)
+	applyOnce(pool)
+
 	return derived
 }
 
-// deduceTransitive kept as alias for tests
 func deduceTransitive(facts []ternaryFact) []ternaryFact {
 	return deduceAll(facts)
 }
@@ -299,15 +366,28 @@ func relVoice(rel string) string {
 func formatDeductionVoice(premises []ternaryFact, concl ternaryFact) string {
 	var b strings.Builder
 	b.WriteString("Deducción ternaria (no predicción):\n")
-	shown := 0
+	shown := map[string]bool{}
+	n := 0
 	for _, p := range premises {
-		if shown >= 4 {
+		if n >= 4 {
 			break
 		}
-		if p.Subj == concl.Subj || p.Obj == concl.Subj || p.Obj == concl.Obj || p.Subj == concl.Obj {
-			b.WriteString(fmt.Sprintf("· Premisa (conf %d): «%s» %s «%s».\n", p.Conf, p.Subj, relVoice(p.Rel), p.Obj))
-			shown++
+		if !validReasonTerm(p.Subj) || !validReasonTerm(p.Obj) {
+			continue
 		}
+		if p.Subj == concl.Subj || p.Obj == concl.Subj || p.Obj == concl.Obj || p.Subj == concl.Obj {
+			k := factKey(p)
+			if shown[k] {
+				continue
+			}
+			shown[k] = true
+			b.WriteString(fmt.Sprintf("· Premisa (conf %d): «%s» %s «%s».\n", p.Conf, p.Subj, relVoice(p.Rel), p.Obj))
+			n++
+		}
+	}
+	if strings.Contains(concl.Src, "conflicto") {
+		b.WriteString(fmt.Sprintf("· Conflicto: «%s» no puede ser y no ser «%s» — no afirmo.\n", concl.Subj, concl.Obj))
+		return strings.TrimSpace(b.String())
 	}
 	mod := "afirmo"
 	switch concl.Conf {
@@ -315,10 +395,6 @@ func formatDeductionVoice(premises []ternaryFact, concl ternaryFact) string {
 		mod = "no afirmo"
 	case 1:
 		mod = "matizo"
-	}
-	if strings.Contains(concl.Src, "conflicto") {
-		b.WriteString(fmt.Sprintf("· Conflicto (conf %d): «%s» no puede ser y no ser «%s» a la vez — no afirmo la identidad.\n", concl.Conf, concl.Subj, concl.Obj))
-		return strings.TrimSpace(b.String())
 	}
 	b.WriteString(fmt.Sprintf("· Conclusión (%s, conf %d): «%s» %s «%s»", mod, concl.Conf, concl.Subj, relVoice(concl.Rel), concl.Obj))
 	if strings.HasPrefix(concl.Src, "regla:") {
@@ -329,13 +405,18 @@ func formatDeductionVoice(premises []ternaryFact, concl ternaryFact) string {
 
 func scoreFactAgainstQuery(f ternaryFact, qtoks []string) int {
 	sc := f.Conf
+	hit := false
 	for _, t := range qtoks {
-		if len(t) < 3 {
+		if len(t) < 4 {
 			continue
 		}
 		if strings.Contains(f.Subj, t) || strings.Contains(f.Obj, t) {
-			sc += 3
+			sc += 4
+			hit = true
 		}
+	}
+	if !hit {
+		return 0 // sin solape léxico con la pregunta, no empujar deducción
 	}
 	if strings.HasPrefix(f.Src, "regla:") {
 		sc += 2
@@ -348,7 +429,6 @@ func reasonAboutQuery(userText string, extra []ternaryFact) string {
 	want := isReasoningRequest(low)
 	facts := collectReasonFacts(userText)
 	facts = append(facts, extra...)
-	// Deduplicate
 	seen := map[string]bool{}
 	var uniq []ternaryFact
 	for _, f := range facts {
@@ -367,12 +447,12 @@ func reasonAboutQuery(userText string, extra []ternaryFact) string {
 	if want && len(derived) == 0 {
 		var lines []string
 		for _, f := range facts {
-			if f.Src == "usuario" || f.Conf >= 1 {
-				lines = append(lines, fmt.Sprintf("Premisa (conf %d): «%s» %s «%s» [%s].", f.Conf, f.Subj, relVoice(f.Rel), f.Obj, f.Src))
+			if f.Src == "usuario" && validReasonTerm(f.Subj) && validReasonTerm(f.Obj) {
+				lines = append(lines, fmt.Sprintf("Premisa (conf %d): «%s» %s «%s».", f.Conf, f.Subj, relVoice(f.Rel), f.Obj))
 			}
 		}
 		if len(lines) > 0 {
-			lines = append(lines, "Aún no cierro una regla (falta eslabón compartido B). Aporta otra premisa «X es/implica/parte de Y».")
+			lines = append(lines, "Aún no cierro una regla (falta eslabón B). Aporta otra premisa.")
 			return strings.Join(lines, "\n")
 		}
 		return ""
@@ -382,12 +462,18 @@ func reasonAboutQuery(userText string, extra []ternaryFact) string {
 	bestSc := -1
 	for _, f := range derived {
 		sc := scoreFactAgainstQuery(f, qtoks)
+		// si el usuario aportó premisas, preferir conclusiones de sus términos
+		for _, p := range facts {
+			if p.Src == "usuario" && (f.Subj == p.Subj || f.Obj == p.Obj) {
+				sc += 5
+			}
+		}
 		if sc > bestSc {
 			bestSc = sc
 			best = f
 		}
 	}
-	if bestSc < 0 {
+	if bestSc < 1 {
 		return ""
 	}
 	return formatDeductionVoice(facts, best)
@@ -395,12 +481,17 @@ func reasonAboutQuery(userText string, extra []ternaryFact) string {
 
 func isReasoningRequest(s string) bool {
 	low := strings.ToLower(strings.TrimSpace(s))
+	// no confundir definiciones
+	if strings.HasPrefix(low, "qué es ") || strings.HasPrefix(low, "que es ") ||
+		strings.HasPrefix(low, "qué es un ") || strings.HasPrefix(low, "que es un ") ||
+		strings.HasPrefix(low, "cómo razona") || strings.HasPrefix(low, "como razona") {
+		return false
+	}
 	if strings.Contains(low, "entonces") || strings.Contains(low, "por tanto") ||
 		strings.Contains(low, "por lo tanto") || strings.Contains(low, "se deduce") ||
-		strings.Contains(low, "deduce") || strings.Contains(low, "silogismo") ||
-		strings.Contains(low, "qué implica") || strings.Contains(low, "que implica") ||
-		strings.Contains(low, "lógicamente") || strings.Contains(low, "logicamente") ||
-		strings.Contains(low, "qué se sigue") || strings.Contains(low, "que se sigue") {
+		strings.Contains(low, "deduce") || strings.Contains(low, "qué implica") ||
+		strings.Contains(low, "que implica") || strings.Contains(low, "qué se sigue") ||
+		strings.Contains(low, "que se sigue") {
 		return true
 	}
 	if strings.Contains(low, "si ") && strings.Contains(low, " entonces") {
@@ -409,7 +500,7 @@ func isReasoningRequest(s string) bool {
 	if strings.Count(low, " es ") >= 2 && (strings.Contains(low, " y ") || strings.Contains(low, ",")) {
 		return true
 	}
-	if strings.Count(low, " implica ") >= 1 && (strings.Contains(low, " y ") || strings.Contains(low, "es ")) {
+	if strings.Count(low, " implica ") >= 2 {
 		return true
 	}
 	return false
@@ -418,7 +509,7 @@ func isReasoningRequest(s string) bool {
 func factsFromEpisodes(episodes []mindEpisodePayload) []ternaryFact {
 	var out []ternaryFact
 	for _, ep := range episodes {
-		for _, part := range splitReasonClauses(ep.Text) {
+		for _, part := range extractClauses(ep.Text) {
 			if f, ok := parseRelationFact(part, 1, "memoria"); ok {
 				out = append(out, f)
 			}
@@ -427,10 +518,18 @@ func factsFromEpisodes(episodes []mindEpisodePayload) []ternaryFact {
 	return out
 }
 
-// softReasonFromKnowledge: si la pregunta toca entidades del corpus con cadena deducible, habla con regla.
+// softReasonFromKnowledge: solo si hay solape real con la pregunta (no regurgitar Sócrates).
 func softReasonFromKnowledge(userText string) string {
 	low := strings.ToLower(userText)
 	if isCalmChat(low) || isIdentityTalk(low) || isCreativeWriteRequest(low) {
+		return ""
+	}
+	if strings.HasPrefix(low, "qué es") || strings.HasPrefix(low, "que es") ||
+		strings.HasPrefix(low, "cómo ") || strings.HasPrefix(low, "como ") ||
+		strings.HasPrefix(low, "quién ") || strings.HasPrefix(low, "quien ") {
+		return ""
+	}
+	if !isReasoningRequest(low) {
 		return ""
 	}
 	facts := collectReasonFacts(userText)
@@ -441,7 +540,6 @@ func softReasonFromKnowledge(userText string) string {
 	if len(derived) == 0 {
 		return ""
 	}
-	// solo si hay token de consulta que coincida con conclusión
 	qtoks := tokenizeMind(low)
 	best := ternaryFact{}
 	bestSc := -1
@@ -452,7 +550,7 @@ func softReasonFromKnowledge(userText string) string {
 			best = f
 		}
 	}
-	if bestSc < 5 {
+	if bestSc < 6 {
 		return ""
 	}
 	return formatDeductionVoice(facts, best)
