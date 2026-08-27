@@ -327,6 +327,7 @@ func isMemoryQuery(s string) bool {
 		"tu memoria", "esa es tu memoria", "cómo es tu memoria", "como es tu memoria",
 		"tienes memoria", "qué guardas", "que guardas",
 		"cuál es mi ", "cual es mi ", "qué te dije de mi", "que te dije de mi",
+		"nombre completo", "mi nombre completo", "cómo me llamo completo",
 	}
 	for _, k := range keys {
 		if strings.Contains(s, k) {
@@ -685,10 +686,18 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 		}
 	}
 	for _, ep := range episodes {
+		lowEp := strings.ToLower(ep.Text)
+		if strings.Contains(lowEp, "hallazgo sonda") || strings.Contains(lowEp, "scout-") ||
+			strings.Contains(lowEp, "deducción ternaria") || strings.Contains(lowEp, "fuente:") {
+			continue
+		}
 		if isWorldFact(ep.Text) {
 			ew := tokenizeMind(ep.Text)
 			qw := tokenizeMind(query)
 			for _, w := range qw {
+				if w == "nombre" || w == "llamo" || w == "apellido" || w == "cual" || w == "cuál" {
+					continue
+				}
 				for _, e := range ew {
 					if w == e && len(w) > 3 {
 						return "Recuerdo que dijiste: «" + truncateRunes(ep.Text, 120) + "»."
@@ -708,6 +717,76 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 	}
 	if len(episodes) > 0 {
 		return "Tengo algunas notas recientes, pero ninguna encaja del todo con eso. ¿Me das un detalle más?"
+	}
+	return ""
+}
+
+// recallFullName: nombre + apellidos → nombre completo (regla, no predicción).
+func recallFullName(q string, episodes []mindEpisodePayload, rawQuery string) string {
+	if !strings.Contains(q, "nombre completo") && !strings.Contains(q, "nombre full") &&
+		!(strings.Contains(q, "entonces") && strings.Contains(q, "nombre") && strings.Contains(q, "apellido")) {
+		// still allow "entonces cual es mi nombre completo"
+		if !strings.Contains(q, "completo") {
+			return ""
+		}
+	}
+	nombre, apellido := "", ""
+	// del propio mensaje
+	if slot, val := extractPersonalDeclaration(rawQuery); slot == "nombre" {
+		nombre = val
+	} else if slot, val := extractPersonalDeclaration(rawQuery); slot == "apellido" {
+		apellido = val
+	}
+	// parse both from long utterance
+	low := strings.ToLower(rawQuery)
+	for _, pref := range []string{"mi nombre es ", "me llamo "} {
+		if i := strings.Index(low, pref); i >= 0 {
+			rest := strings.TrimSpace(rawQuery[i+len(pref):])
+			for _, sep := range []string{" y ", ",", " entonces"} {
+				if j := strings.Index(strings.ToLower(rest), sep); j > 0 {
+					rest = strings.TrimSpace(rest[:j])
+				}
+			}
+			if n := firstNameTokens(rest, 2); n != "" {
+				nombre = n
+			}
+		}
+	}
+	for _, pref := range []string{"mis apellidos son ", "mi apellido es ", "apellidos son "} {
+		if i := strings.Index(low, pref); i >= 0 {
+			rest := strings.TrimSpace(rawQuery[i+len(pref):])
+			for _, sep := range []string{", entonces", " entonces", ",", "?"} {
+				if j := strings.Index(strings.ToLower(rest), sep); j > 0 {
+					rest = strings.TrimSpace(rest[:j])
+				}
+			}
+			if a := firstNameTokens(rest, 4); a != "" {
+				apellido = a
+			}
+		}
+	}
+	for _, ep := range episodes {
+		slot, val := extractPersonalDeclaration(ep.Text)
+		if slot == "nombre" && nombre == "" {
+			nombre = val
+		}
+		if slot == "apellido" && apellido == "" {
+			apellido = val
+		}
+		if name := extractDeclaredName(ep.Text); name != "" && nombre == "" {
+			nombre = name
+		}
+	}
+	if nombre != "" && apellido != "" {
+		full := strings.TrimSpace(nombre + " " + apellido)
+		setLastReasonConclusion("nombre completo es " + strings.ToLower(full))
+		return "Por composición (nombre + apellidos): tu nombre completo es " + full + "."
+	}
+	if nombre != "" {
+		return "Sé tu nombre de pila (" + nombre + "), pero me faltan los apellidos para el completo."
+	}
+	if apellido != "" {
+		return "Tengo apellidos «" + apellido + "», pero me falta el nombre de pila."
 	}
 	return ""
 }
@@ -775,11 +854,20 @@ func personalSlotMatchesQuery(q, slot string) bool {
 // extractPersonalDeclaration pulls structured personal facts from episode text.
 func extractPersonalDeclaration(text string) (slot, value string) {
 	low := strings.ToLower(strings.TrimSpace(text))
-	// apellido
-	for _, pref := range []string{"mi apellido es ", "mi apellido:", "apellido es ", "me apellido "} {
+	// apellido(s)
+	for _, pref := range []string{
+		"mis apellidos son ", "mis apellidos:", "mi apellido es ", "mi apellido:",
+		"apellido es ", "me apellido ", "apellidos son ",
+	} {
 		if i := strings.Index(low, pref); i >= 0 {
 			rest := strings.TrimSpace(text[i+len(pref):])
-			val := firstNameTokens(rest, 2)
+			// cortar en entonces / coma interrogativa
+			for _, sep := range []string{", entonces", " entonces", ",", "?", ";"} {
+				if j := strings.Index(strings.ToLower(rest), sep); j > 0 {
+					rest = strings.TrimSpace(rest[:j])
+				}
+			}
+			val := firstNameTokens(rest, 4)
 			if val != "" {
 				return "apellido", val
 			}

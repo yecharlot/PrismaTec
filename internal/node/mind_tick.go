@@ -541,6 +541,14 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		}
 	}
 
+	// 6a0-) Nombre completo (nombre + apellidos) por composición, no eco de sonda
+	if voice == "" && ethics.State != 2 {
+		if ans := recallFullName(strings.ToLower(text), recent, text); ans != "" {
+			voice = ans
+			primaryKind = "memory"
+		}
+	}
+
 	// 6a0) Razón ternaria: silogismos / reglas sobre corpus+memoria (no predicción)
 	if voice == "" && ethics.State != 2 {
 		extra := factsFromEpisodes(recent)

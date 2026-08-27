@@ -3,8 +3,40 @@ package node
 import (
 	"fmt"
 	"strings"
+	"sync"
+	"time"
 	"unicode"
 )
+
+var (
+	lastReasonMu         sync.Mutex
+	lastReasonConclusion string
+	lastReasonAt         time.Time
+)
+
+func setLastReasonConclusion(s string) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return
+	}
+	lastReasonMu.Lock()
+	lastReasonConclusion = s
+	lastReasonAt = time.Now()
+	lastReasonMu.Unlock()
+}
+
+func getLastReasonConclusion() string {
+	lastReasonMu.Lock()
+	defer lastReasonMu.Unlock()
+	if lastReasonConclusion == "" {
+		return ""
+	}
+	if time.Since(lastReasonAt) > 30*time.Minute {
+		return ""
+	}
+	return lastReasonConclusion
+}
+
 
 // Capa de razón ternaria (no LLM): hechos 0/1/2 + reglas + extracción gramatical
 // de cláusulas en textos largos. Autosimilitud: las mismas reglas se reaplican
@@ -476,6 +508,9 @@ func reasonAboutQuery(userText string, extra []ternaryFact) string {
 	if bestSc < 1 {
 		return ""
 	}
+	if sent := conclusionSentence(best); sent != "" {
+		setLastReasonConclusion(sent)
+	}
 	return formatDeductionVoice(facts, best)
 }
 
@@ -556,6 +591,15 @@ func softReasonFromKnowledge(userText string) string {
 	return formatDeductionVoice(facts, best)
 }
 
+func tokenOverlapTheme(theme, text string) bool {
+	for _, w := range strings.Fields(theme) {
+		if len([]rune(w)) >= 3 && strings.Contains(text, w) {
+			return true
+		}
+	}
+	return false
+}
+
 // conclusionSentence — frase corta usable como ancla creativa/compose.
 func conclusionSentence(f ternaryFact) string {
 	if !validReasonTerm(f.Subj) || !validReasonTerm(f.Obj) {
@@ -568,14 +612,21 @@ func conclusionSentence(f ternaryFact) string {
 // la mejor conclusión como ancla factual (no predicción libre).
 func reasonAnchorForTheme(theme, userText string, extra []ternaryFact) string {
 	theme = normalizeReasonToken(theme)
-	if theme == "" {
-		return ""
-	}
-	// Quitar artículos sueltos del tema creativo
-	for _, a := range []string{"el ", "la ", "los ", "las ", "un ", "una "} {
+	for _, a := range []string{"el ", "la ", "los ", "las ", "un ", "una ", "lo "} {
 		if strings.HasPrefix(theme, a) {
 			theme = strings.TrimSpace(theme[len(a):])
 		}
+	}
+	// Última conclusión del latido de razón (prioridad sobre corpus genérico)
+	if last := getLastReasonConclusion(); last != "" {
+		ll := strings.ToLower(last)
+		th := strings.ToLower(theme)
+		if th == "" || strings.Contains(ll, th) || tokenOverlapTheme(th, ll) {
+			return last
+		}
+	}
+	if theme == "" {
+		return ""
 	}
 	facts := collectReasonFacts(userText)
 	facts = append(facts, extra...)
