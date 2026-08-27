@@ -506,3 +506,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - Dispatch envía `findings` + `last_hallazgo` al edge y POST `/api/seed`.
 - Workers (KV/DO) aceptan siembra de hallazgos.
 - BridgeSpeakGenFindings consulta el borde si hace falta.
+
+## 2026-08-26 — Capa de razón ternaria (silogismos, no LLM)
+
+- `mind_reason.go`: hechos A—es—B con conf 0/1/2; transitividad; voz de deducción.
+- Gatillo: entonces / por tanto / deduce / «A es B y B es C».
+- Camino LispAI: ternarizar/desternarizar + zyrion como ley de confianza; no predicción de tokens.

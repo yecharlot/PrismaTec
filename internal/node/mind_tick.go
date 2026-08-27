@@ -541,6 +541,16 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		}
 	}
 
+	// 6a0) Razón ternaria: silogismos / transitividad (LispAI-Zyrion, no predicción)
+	if voice == "" && ethics.State != 2 && isReasoningRequest(normText) {
+		extra := factsFromEpisodes(recent)
+		if rv := reasonAboutQuery(text, extra); rv != "" {
+			voice = rv
+			primaryKind = "reason"
+			n.recordAction("reason", 2, text, rv, "", primaryKind, organs)
+		}
+	}
+
 	// 6a) Escritura creativa (poema/cuento) — no LLM; plantillas + ancla memoria/corpus
 	if voice == "" && ethics.State != 2 && isCreativeWriteRequest(normText) {
 		cv := mindComposeCreative(text, ethics.State, memSpeak, knowHit)
