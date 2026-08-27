@@ -169,10 +169,12 @@ func buildRFTTree(facts []ternaryFact) rftTree {
 		}
 	}
 
-	// Conclusión primaria: anclada a términos de premisas de usuario
+	// Conclusión: priorizar cierre L1 de premisas Src=usuario
+	var userFacts []ternaryFact
 	userTerms := map[string]bool{}
 	for _, n := range tree.Nodes {
-		if n.Kind == "premisa" && (n.Fact.Src == "usuario" || n.Fact.Src == "memoria") {
+		if n.Kind == "premisa" && n.Fact.Src == "usuario" {
+			userFacts = append(userFacts, n.Fact)
 			for _, w := range strings.Fields(n.Fact.Subj + " " + n.Fact.Obj) {
 				if len([]rune(w)) >= 3 {
 					userTerms[w] = true
@@ -182,33 +184,40 @@ func buildRFTTree(facts []ternaryFact) rftTree {
 	}
 	best := ternaryFact{}
 	bestSc := -1
-	for _, n := range tree.Nodes {
-		if n.Kind == "premisa" {
+	for _, f := range deduceAll(userFacts) {
+		if f.Subj == f.Obj {
 			continue
 		}
-		sc := n.Fact.Conf
-		if n.Kind == "trans" && n.Level == 1 {
-			sc += 8
+		sc := 20 + f.Conf
+		if sc > bestSc {
+			bestSc = sc
+			best = f
 		}
-		if n.Kind == "salto-neg" {
-			sc += 6
+	}
+	// saltos relevantes al tema del usuario
+	for _, n := range tree.Nodes {
+		if n.Kind != "salto-neg" && n.Kind != "salto-inv" {
+			continue
 		}
-		if n.Level == 3 {
-			sc -= 2 // evitar tautologías L3 (A es A)
+		if n.Fact.Subj == n.Fact.Obj {
+			continue
 		}
-		// exigir solape con premisas del usuario
 		hit := false
 		for w := range userTerms {
 			if strings.Contains(n.Fact.Subj, w) || strings.Contains(n.Fact.Obj, w) {
-				sc += 5
 				hit = true
+				break
 			}
 		}
-		if !hit && len(userTerms) > 0 {
+		if !hit {
 			continue
 		}
-		// penalizar tautología
-		if n.Fact.Subj == n.Fact.Obj {
+		sc := 12 + n.Fact.Conf
+		if n.Kind == "salto-neg" {
+			sc += 3
+		}
+		// no desplazar cierre L1 fuerte
+		if bestSc >= 20 && n.Kind == "salto-inv" {
 			continue
 		}
 		if sc > bestSc {
@@ -254,7 +263,8 @@ func formatRFTVoice(tree rftTree) string {
 		if n.Kind != "premisa" {
 			continue
 		}
-		if n.Fact.Src != "usuario" && n.Fact.Src != "memoria" {
+		// Solo premisas del mensaje actual
+		if n.Fact.Src != "usuario" {
 			continue
 		}
 		b.WriteString(fmt.Sprintf("· [L0 premisa conf %d] «%s» %s «%s»\n", n.Fact.Conf, n.Fact.Subj, relVoice(n.Fact.Rel), n.Fact.Obj))
@@ -328,10 +338,34 @@ func formatRFTVoice(tree rftTree) string {
 }
 
 func reasonRFT(userText string, extra []ternaryFact) string {
-	// Solo premisas del usuario + memoria del hilo. Sin volcar el corpus.
+	// Premisas SOLO del mensaje actual. La memoria de otros temas no entra al árbol.
 	facts := collectReasonFactsOpts(userText, false)
+	seed := map[string]bool{}
+	for _, f := range facts {
+		for _, w := range strings.Fields(f.Subj + " " + f.Obj) {
+			if len([]rune(w)) >= 3 {
+				seed[w] = true
+			}
+		}
+	}
+	for _, w := range tokenizeMind(userText) {
+		if len([]rune(w)) >= 4 {
+			seed[w] = true
+		}
+	}
+	// Extra (episodios) solo si solapa de verdad con este mensaje
 	for _, f := range extra {
-		if f.Src == "memoria" || f.Src == "usuario" {
+		if f.Src != "memoria" && f.Src != "usuario" {
+			continue
+		}
+		hit := false
+		for w := range seed {
+			if strings.Contains(f.Subj, w) || strings.Contains(f.Obj, w) {
+				hit = true
+				break
+			}
+		}
+		if hit {
 			facts = append(facts, f)
 		}
 	}
@@ -352,7 +386,6 @@ func reasonRFT(userText string, extra []ternaryFact) string {
 	if tree.Voice == "" {
 		return ""
 	}
-	// Si el usuario no pidió RFT explícito pero hay ≥2 premisas y saltos, usar RFT
 	if !isRFTRequest(userText) && len(tree.Saltos) == 0 && len(uniq) < 2 {
 		return ""
 	}
