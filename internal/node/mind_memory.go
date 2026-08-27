@@ -405,6 +405,9 @@ func isWorldFact(s string) bool {
 	if isCalmChat(s) || isIdentityTalk(s) || isMemoryQuery(s) || isMetaMemoryTalk(s) {
 		return false
 	}
+	if strings.Contains(s, "no me refiero") || strings.Contains(s, "no hablo de") || strings.Contains(s, "me refiero a") {
+		return false
+	}
 	if strings.HasPrefix(s, "qué ") || strings.HasPrefix(s, "que ") ||
 		strings.HasPrefix(s, "cuál ") || strings.HasPrefix(s, "cual ") ||
 		strings.HasPrefix(s, "cómo ") || strings.HasPrefix(s, "como ") ||
@@ -539,6 +542,24 @@ func knownUserNameFromEpisodes(episodes []mindEpisodePayload) string {
 	for _, ep := range episodes {
 		if name := extractDeclaredName(ep.Text); name != "" {
 			return name
+		}
+		// Respuestas previas de Mind: "Te llamas Esteban."
+		low := strings.ToLower(ep.Text)
+		for _, pref := range []string{"te llamas ", "te conocía como ", "te conocia como ", "ya te conozco como "} {
+			if i := strings.Index(low, pref); i >= 0 {
+				rest := strings.TrimSpace(ep.Text[i+len(pref):])
+				for _, cut := range []string{",", ".", "!", "?", ";", ":", "»", "\""} {
+					rest = strings.ReplaceAll(rest, cut, " ")
+				}
+				rest = strings.TrimSpace(rest)
+				parts := strings.Fields(rest)
+				if len(parts) >= 1 {
+					n := parts[0]
+					if len(n) >= 2 {
+						return strings.ToUpper(n[:1]) + n[1:]
+					}
+				}
+			}
 		}
 	}
 	return ""

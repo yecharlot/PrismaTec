@@ -551,12 +551,34 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		}
 	}
 
-	// 6b) Sonda web vía gen (explore → aprender → respuesta).
-	// Explicit "busca/quién es/investiga" must not be blocked by memory echoes or humor keywords.
+	// 6b) Correcciones de sentido (CID técnico vs El Cid) y sonda web.
 	if voice == "" && ethics.State != 2 {
 		norm := normalizeUserInput(text)
-		allowScout := forceWebScout(norm) || (speakFromKnowledge(text) == "" && memSpeak == "")
-		if allowScout {
+		if correctionWantsTechCid(norm) {
+			if k := speakFromKnowledge("qué es CID"); k != "" {
+				voice = naturalKnowledgeVoice(text, k, 1)
+				primaryKind = "knowledge"
+			}
+		} else if correctionWantsLiteraryCid(norm) || isLiteraryCidQuery(norm) {
+			if sv := n.MindScoutWeb("quién es Rodrigo Díaz de Vivar", ethics.State); sv != "" {
+				voice = sv
+				primaryKind = "tool"
+				if actuate.Explore >= 1 {
+					n.recordAction("explore", actuate.Explore, text, sv, "", primaryKind, organs)
+				}
+			}
+		} else if isTechCidQuery(norm) {
+			if k := speakFromKnowledge(text); k != "" {
+				voice = naturalKnowledgeVoice(text, k, 1)
+				primaryKind = "knowledge"
+			}
+		}
+	}
+	if voice == "" && ethics.State != 2 {
+		norm := normalizeUserInput(text)
+		allowScout := forceWebScout(norm) || isLiteraryCidQuery(norm) ||
+			(speakFromKnowledge(text) == "" && memSpeak == "")
+		if allowScout && !isTechCidQuery(norm) {
 			if sv := n.MindScoutWeb(text, ethics.State); sv != "" {
 				voice = sv
 				primaryKind = "tool"

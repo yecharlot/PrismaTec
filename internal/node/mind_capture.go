@@ -92,6 +92,9 @@ func isNovelDeclarative(s string) bool {
 	if s == "" || isCalmChat(s) || isIdentityTalk(s) || isMemoryQuery(s) || isPersonalFact(s) {
 		return false
 	}
+	if strings.Contains(s, "no me refiero") || strings.Contains(s, "me refiero a") {
+		return false
+	}
 	if isElaborationRequest(s) || isEpistemicCheck(s) || isContinuePrompt(s) || isConfirmationPrompt(s) {
 		return false
 	}

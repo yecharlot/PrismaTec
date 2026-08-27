@@ -110,20 +110,52 @@ func isQuienBareName(s string) bool {
 // forceWebScout: user explicitly wants the web; do not skip for corpus keyword hits.
 func isLiteraryCidQuery(s string) bool {
 	low := strings.ToLower(strings.TrimSpace(s))
-	if strings.Contains(low, "literario") || strings.Contains(low, "histórico") || strings.Contains(low, "historico") ||
-		strings.Contains(low, "campeador") || strings.Contains(low, "rodrigo") ||
-		strings.Contains(low, "no me refiero") && strings.Contains(low, "cid") {
+	// Corrección explícita hacia lo literario / histórico
+	if (strings.Contains(low, "literario") || strings.Contains(low, "histórico") || strings.Contains(low, "historico") ||
+		strings.Contains(low, "campeador") || strings.Contains(low, "rodrigo")) && strings.Contains(low, "cid") {
 		return true
 	}
-	// "el Cid" como personaje
-	if strings.Contains(low, "el cid") || strings.Contains(low, "al cid") {
+	if strings.Contains(low, "no me refiero") && strings.Contains(low, "cid") &&
+		(strings.Contains(low, "literario") || strings.Contains(low, "histórico") || strings.Contains(low, "historico") ||
+			strings.Contains(low, "persona") || strings.Contains(low, "héroe") || strings.Contains(low, "heroe")) {
 		return true
 	}
+	// Quién/quién fue el Cid = persona (no "qué es el CID" técnico)
 	if (strings.Contains(low, "quién es") || strings.Contains(low, "quien es") ||
-		strings.Contains(low, "quién fue") || strings.Contains(low, "quien fue")) &&
-		strings.Contains(low, "cid") &&
-		!strings.Contains(low, "tecnolog") && !strings.Contains(low, "alset") &&
-		!strings.Contains(low, "content") && !strings.Contains(low, "identificador") {
+		strings.Contains(low, "quién fue") || strings.Contains(low, "quien fue") ||
+		strings.Contains(low, "quién era") || strings.Contains(low, "quien era")) &&
+		(strings.Contains(low, "el cid") || strings.Contains(low, " al cid") || strings.HasSuffix(low, " cid")) {
+		return true
+	}
+	return false
+}
+
+func correctionWantsLiteraryCid(s string) bool {
+	low := strings.ToLower(strings.TrimSpace(s))
+	if !strings.Contains(low, "no me refiero") && !strings.Contains(low, "me refiero a") {
+		return false
+	}
+	if strings.Contains(low, "sino") && (strings.Contains(low, "literario") || strings.Contains(low, "histórico") ||
+		strings.Contains(low, "historico") || strings.Contains(low, "rodrigo") || strings.Contains(low, "campeador")) {
+		return true
+	}
+	if strings.Contains(low, "tecnolog") && strings.Contains(low, "sino") {
+		return true
+	}
+	return false
+}
+
+func correctionWantsTechCid(s string) bool {
+	low := strings.ToLower(strings.TrimSpace(s))
+	if !strings.Contains(low, "no me refiero") {
+		return false
+	}
+	if correctionWantsLiteraryCid(s) {
+		return false
+	}
+	// Rechaza literatura / camino → quiere el CID técnico
+	if strings.Contains(low, "literatura") || strings.Contains(low, "literario") ||
+		strings.Contains(low, "camino") || strings.Contains(low, "turismo") {
 		return true
 	}
 	return false
@@ -140,12 +172,13 @@ func isTechCidQuery(s string) bool {
 		strings.Contains(low, "generarcid") || strings.Contains(low, "memoria cid") {
 		return true
 	}
-	if strings.Contains(low, "el cid") {
+	// "qué es el CID" (definición) → técnico; "quién es el Cid" ya es literario
+	if strings.Contains(low, "quién") || strings.Contains(low, "quien") {
 		return false
 	}
-	return (strings.Contains(low, "qué es cid") || strings.Contains(low, "que es cid") ||
-		strings.Contains(low, "significa cid") || strings.Contains(low, "qué es un cid") ||
-		strings.Contains(low, "que es un cid")) && !strings.Contains(low, "el cid")
+	return strings.Contains(low, "qué es") || strings.Contains(low, "que es") ||
+		strings.Contains(low, "significa") || strings.Contains(low, "content") ||
+		strings.Contains(low, "identificador")
 }
 
 func forceWebScout(s string) bool {
@@ -171,7 +204,7 @@ func extractTopic(query string) string {
 	s = strings.TrimSuffix(s, "?")
 	s = strings.TrimSpace(s)
 	if isLiteraryCidQuery(s) {
-		return "El Cid"
+		return "Rodrigo Díaz de Vivar"
 	}
 
 	// Strip known prefixes (longest first)
@@ -365,11 +398,6 @@ func topicKeysMatch(a, b string) bool {
 	if a == b {
 		return true
 	}
-	// one is full phrase containing the other only if the shorter has ≥2 tokens
-	shorter, longer := a, b
-	if len(b) < len(a) {
-		shorter, longer = b, a
-	}
 	sig := func(s string) []string {
 		var out []string
 		for _, w := range strings.Fields(s) {
@@ -381,28 +409,27 @@ func topicKeysMatch(a, b string) bool {
 	}
 	sa, sb := sig(a), sig(b)
 	if len(sa) == 0 || len(sb) == 0 {
-		// single short token: only exact already handled
-		return false
+		// solo tokens cortos (p.ej. "cid"): igualdad exacta del string normalizado
+		return a == b
 	}
-	hit := 0
-	set := map[string]bool{}
+	// exigir ≥2 tokens significativos compartidos, o uno contenido si el corto tiene ≥2 sig
+	shared := 0
+	setB := map[string]bool{}
 	for _, w := range sb {
-		set[w] = true
+		setB[w] = true
 	}
 	for _, w := range sa {
-		if set[w] {
-			hit++
+		if setB[w] {
+			shared++
 		}
 	}
-	need := 2
-	if len(sa) == 1 && len(sb) == 1 {
-		return sa[0] == sb[0]
-	}
-	if hit >= need {
+	if shared >= 2 {
 		return true
 	}
-	// allow "bioinformática" vs "bio informatica" after typo norm already applied
-	if len(sa) == 1 && strings.Contains(longer, shorter) && len(shorter) >= 8 {
+	if len(sa) >= 2 && strings.Contains(b, a) {
+		return true
+	}
+	if len(sb) >= 2 && strings.Contains(a, b) {
 		return true
 	}
 	return false
@@ -516,6 +543,14 @@ func resolveWikipediaTitleOn(topic, host string) string {
 				if strings.Contains(low, tok) {
 					sc += 2 + len(tok)/3
 				}
+			}
+			// Prefer persona sobre rutas turísticas / desambiguaciones
+			if strings.Contains(low, "camino del") || strings.Contains(low, "sendero") ||
+				strings.Contains(low, "itinerario") || strings.Contains(low, "gr-") {
+				sc -= 20
+			}
+			if strings.Contains(low, "rodrigo") || strings.Contains(low, "vivar") || strings.Contains(low, "campeador") {
+				sc += 12
 			}
 			// prefer exact-ish multi-word match
 			if strings.Contains(low, strings.ToLower(v)) {
@@ -687,20 +722,22 @@ func stripEchoTitleLead(body string) string {
 	if body == "" {
 		return body
 	}
-	// "Cid. Cid hace…"
-	if i := strings.Index(body, ". "); i > 0 && i < 40 {
+	if i := strings.Index(body, ". "); i > 0 && i < 48 {
 		first := strings.TrimSpace(body[:i])
-		rest := strings.TrimSpace(body[i+1:])
-		if rest != "" {
-			// first word of rest equals first?
-			rw := strings.Fields(rest)
-			if len(rw) > 0 && strings.EqualFold(rw[0], first) {
-				return rest
-			}
-			// first equals title-like single token and rest starts with same
-			if !strings.Contains(first, " ") && strings.HasPrefix(strings.ToLower(rest), strings.ToLower(first)+" ") {
-				return rest
-			}
+		rest := strings.TrimSpace(body[i+2:])
+		if rest == "" {
+			return body
+		}
+		rw := strings.Fields(rest)
+		if len(rw) > 0 && strings.EqualFold(rw[0], first) {
+			return rest
+		}
+		if !strings.Contains(first, " ") && strings.HasPrefix(strings.ToLower(rest), strings.ToLower(first)+" ") {
+			return rest
+		}
+		// "Marie Curie. Maria Salomea…" — título corto + bio larga
+		if len([]rune(rest)) >= 80 && len(strings.Fields(first)) <= 4 {
+			return rest
 		}
 	}
 	return body

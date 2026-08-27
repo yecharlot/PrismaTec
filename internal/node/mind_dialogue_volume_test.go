@@ -331,3 +331,21 @@ func TestMergeNoTitleEchoBio(t *testing.T) {
 		t.Fatalf("title echoed: %q", got)
 	}
 }
+
+func TestCidDisambiguationQueries(t *testing.T) {
+	if !isLiteraryCidQuery("quién es el Cid") {
+		t.Fatal("quién es el Cid should be literary")
+	}
+	if isLiteraryCidQuery("qué es el CID") {
+		t.Fatal("qué es el CID should not force literary person path alone")
+	}
+	if !correctionWantsTechCid("no me refiero al CID de la literatura") {
+		t.Fatal("reject literature → tech")
+	}
+	if !correctionWantsLiteraryCid("no me refiero al CID de tu tecnología sino al Cid literario") {
+		t.Fatal("sino literario → literary")
+	}
+	if topicKeysMatch("cid", "camino del cid") {
+		t.Fatal("cid must not match camino del cid")
+	}
+}
