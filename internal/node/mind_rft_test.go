@@ -21,15 +21,11 @@ func TestRFTTiempoMemoria(t *testing.T) {
 	if strings.Contains(low, "sócrates") || strings.Contains(low, "socrates") || strings.Contains(low, "lisp") {
 		t.Fatalf("corpus flood in RFT: %q", v)
 	}
-	if strings.Count(low, "[l0 premisa") > 6 {
-		t.Fatalf("too many L0 premises: %q", v)
+	if strings.Contains(low, "[l0") || strings.Contains(low, "conf 2]") {
+		t.Fatalf("lab noise in natural voice: %q", v)
 	}
-	if !strings.Contains(low, "realidad") {
-		t.Fatalf("expected salto realidad: %q", v)
-	}
-	// L1 transitivo debe aparecer; guía no debe ser solo el salto si hay cierre
-	if !strings.Contains(low, "l1 cierre") && !strings.Contains(low, "[l1") {
-		t.Fatalf("expected L1 closure memoria→ilusión: %q", v)
+	if !strings.Contains(low, "entonces") && !strings.Contains(low, "memoria") {
+		t.Fatalf("expected natural deduction: %q", v)
 	}
 }
 

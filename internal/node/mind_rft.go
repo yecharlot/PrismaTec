@@ -243,13 +243,34 @@ func isIllusionLike(s string) bool {
 
 func enganoFix() string { return "engano" }
 
+func wantsLabReasoning(s string) bool {
+	low := strings.ToLower(strings.TrimSpace(s))
+	keys := []string{
+		"muestra el razonamiento", "muestra el rft", "explica el rft", "explica el razonamiento",
+		"árbol lógico", "arbol logico", "pasos de la deducción", "pasos de la deduccion",
+		"modo laboratorio", "modo lab", "detalle ternario", "ver premisas",
+	}
+	for _, k := range keys {
+		if strings.Contains(low, k) {
+			return true
+		}
+	}
+	return false
+}
+
 func formatRFTVoice(tree rftTree) string {
+	return formatRFTVoiceMode(tree, false)
+}
+
+func formatRFTVoiceMode(tree rftTree, lab bool) string {
 	if len(tree.Nodes) == 0 {
 		return ""
 	}
 	userTerms := map[string]bool{}
+	var premises []ternaryFact
 	for _, n := range tree.Nodes {
-		if n.Kind == "premisa" && (n.Fact.Src == "usuario" || n.Fact.Src == "memoria") {
+		if n.Kind == "premisa" && n.Fact.Src == "usuario" {
+			premises = append(premises, n.Fact)
 			for _, w := range strings.Fields(n.Fact.Subj + " " + n.Fact.Obj) {
 				if len([]rune(w)) >= 3 {
 					userTerms[w] = true
@@ -257,24 +278,22 @@ func formatRFTVoice(tree rftTree) string {
 			}
 		}
 	}
+	if tree.Primary.Subj != "" {
+		setLastReasonConclusion(conclusionSentence(tree.Primary))
+	}
+
+	if !lab {
+		return formatRFTNatural(premises, tree)
+	}
+
 	var b strings.Builder
-	b.WriteString("Razonamiento Fractal-Ternario (RFT — no lineal, no predicción):\n")
-	for _, n := range tree.Nodes {
-		if n.Kind != "premisa" {
-			continue
-		}
-		// Solo premisas del mensaje actual
-		if n.Fact.Src != "usuario" {
-			continue
-		}
-		b.WriteString(fmt.Sprintf("· [L0 premisa conf %d] «%s» %s «%s»\n", n.Fact.Conf, n.Fact.Subj, relVoice(n.Fact.Rel), n.Fact.Obj))
+	b.WriteString("Razonamiento Fractal-Ternario (detalle de laboratorio):\n")
+	for _, p := range premises {
+		b.WriteString(fmt.Sprintf("· Premisa: «%s» %s «%s»\n", p.Subj, relVoice(p.Rel), p.Obj))
 	}
 	shown := 0
 	for _, n := range tree.Nodes {
-		if n.Kind != "trans" || n.Level != 1 {
-			continue
-		}
-		if n.Fact.Subj == n.Fact.Obj {
+		if n.Kind != "trans" || n.Level != 1 || n.Fact.Subj == n.Fact.Obj {
 			continue
 		}
 		hit := len(userTerms) == 0
@@ -287,53 +306,79 @@ func formatRFTVoice(tree rftTree) string {
 		if !hit || shown >= 3 {
 			continue
 		}
-		b.WriteString(fmt.Sprintf("· [L1 cierre conf %d] «%s» %s «%s»\n", n.Fact.Conf, n.Fact.Subj, relVoice(n.Fact.Rel), n.Fact.Obj))
+		b.WriteString(fmt.Sprintf("· Cierre: «%s» %s «%s»\n", n.Fact.Subj, relVoice(n.Fact.Rel), n.Fact.Obj))
 		shown++
 	}
-	if len(tree.Saltos) > 0 {
-		b.WriteString("· Sumidero/salto (2 → otro nivel):\n")
-		ns := 0
-		for _, n := range tree.Saltos {
-			if ns >= 4 {
+	ns := 0
+	for _, n := range tree.Saltos {
+		if ns >= 3 {
+			break
+		}
+		ok := len(userTerms) == 0
+		for w := range userTerms {
+			if strings.Contains(n.Fact.Subj, w) || strings.Contains(n.Fact.Obj, w) {
+				ok = true
 				break
 			}
-			ok := len(userTerms) == 0
-			for w := range userTerms {
-				if strings.Contains(n.Fact.Subj, w) || strings.Contains(n.Fact.Obj, w) {
-					ok = true
-					break
-				}
+		}
+		if !ok {
+			continue
+		}
+		b.WriteString(fmt.Sprintf("· Salto: «%s» %s «%s»\n", n.Fact.Subj, relVoice(n.Fact.Rel), n.Fact.Obj))
+		ns++
+	}
+	if tree.Primary.Subj != "" {
+		b.WriteString(fmt.Sprintf("· Conclusión: «%s» %s «%s».\n", tree.Primary.Subj, relVoice(tree.Primary.Rel), tree.Primary.Obj))
+	}
+	return strings.TrimSpace(b.String())
+}
+
+// formatRFTNatural — lo que ve el usuario: diálogo, no laboratorio.
+func formatRFTNatural(premises []ternaryFact, tree rftTree) string {
+	if tree.Primary.Subj == "" && len(premises) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	if len(premises) >= 2 {
+		b.WriteString("Si ")
+		for i, p := range premises {
+			if i >= 3 {
+				break
 			}
-			if !ok {
-				continue
+			if i > 0 {
+				b.WriteString(" y ")
 			}
-			b.WriteString(fmt.Sprintf("  — %s [L%d conf %d]: «%s» %s «%s»\n", n.Kind, n.Level, n.Fact.Conf, n.Fact.Subj, relVoice(n.Fact.Rel), n.Fact.Obj))
-			ns++
+			b.WriteString(p.Subj + " " + relVoice(p.Rel) + " " + p.Obj)
+		}
+		b.WriteString(", entonces ")
+	} else if len(premises) == 1 {
+		b.WriteString("Partiendo de que " + premises[0].Subj + " " + relVoice(premises[0].Rel) + " " + premises[0].Obj + ", ")
+	}
+	if tree.Primary.Subj != "" {
+		if len(premises) >= 2 {
+			b.WriteString(tree.Primary.Subj + " " + relVoice(tree.Primary.Rel) + " " + tree.Primary.Obj + ".")
+		} else {
+			b.WriteString("se sostiene que " + tree.Primary.Subj + " " + relVoice(tree.Primary.Rel) + " " + tree.Primary.Obj + ".")
 		}
 	}
-	shown3 := 0
-	for _, n := range tree.Nodes {
-		if n.Level != 3 || n.Fact.Subj == n.Fact.Obj {
+	// Un salto útil como matiz conversacional (no etiqueta de lab)
+	for _, n := range tree.Saltos {
+		if n.Kind != "salto-neg" {
 			continue
 		}
 		hit := false
-		for w := range userTerms {
-			if strings.Contains(n.Fact.Subj, w) || strings.Contains(n.Fact.Obj, w) {
+		for _, p := range premises {
+			if strings.Contains(n.Fact.Obj, p.Subj) || strings.Contains(n.Fact.Obj, p.Obj) ||
+				strings.Contains(p.Subj, n.Fact.Obj) || strings.Contains(p.Obj, n.Fact.Obj) {
 				hit = true
 				break
 			}
 		}
-		if !hit || shown3 >= 2 {
-			continue
+		if hit {
+			b.WriteString(" En otro sentido, " + n.Fact.Subj + " " + relVoice(n.Fact.Rel) + " " + n.Fact.Obj + ".")
+			break
 		}
-		b.WriteString(fmt.Sprintf("· [L3 fractal conf %d] «%s» %s «%s»\n", n.Fact.Conf, n.Fact.Subj, relVoice(n.Fact.Rel), n.Fact.Obj))
-		shown3++
 	}
-	if tree.Primary.Subj != "" {
-		b.WriteString(fmt.Sprintf("· Conclusión guía: «%s» %s «%s» (conf %d).\n", tree.Primary.Subj, relVoice(tree.Primary.Rel), tree.Primary.Obj, tree.Primary.Conf))
-		setLastReasonConclusion(conclusionSentence(tree.Primary))
-	}
-	b.WriteString("El 2 no es «quizás»: es cambio de nivel (inversión, negación acotada o concreción).")
 	return strings.TrimSpace(b.String())
 }
 
@@ -383,11 +428,12 @@ func reasonRFT(userText string, extra []ternaryFact) string {
 		return ""
 	}
 	tree := buildRFTTree(uniq)
-	if tree.Voice == "" {
+	if len(tree.Nodes) == 0 {
 		return ""
 	}
 	if !isRFTRequest(userText) && len(tree.Saltos) == 0 && len(uniq) < 2 {
 		return ""
 	}
-	return tree.Voice
+	lab := wantsLabReasoning(userText)
+	return formatRFTVoiceMode(tree, lab)
 }

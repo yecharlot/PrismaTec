@@ -449,44 +449,50 @@ func relVoice(rel string) string {
 }
 
 func formatDeductionVoice(premises []ternaryFact, concl ternaryFact) string {
-	var b strings.Builder
-	b.WriteString("Deducción ternaria (no predicción):\n")
-	shown := map[string]bool{}
-	n := 0
-	for _, p := range premises {
-		if n >= 4 {
-			break
-		}
-		if !validReasonTerm(p.Subj) || !validReasonTerm(p.Obj) {
-			continue
-		}
-		if p.Subj == concl.Subj || p.Obj == concl.Subj || p.Obj == concl.Obj || p.Subj == concl.Obj {
-			k := factKey(p)
-			if shown[k] {
-				continue
-			}
-			shown[k] = true
-			b.WriteString(fmt.Sprintf("· Premisa (conf %d): «%s» %s «%s».\n", p.Conf, p.Subj, relVoice(p.Rel), p.Obj))
-			n++
-		}
-	}
 	if strings.Contains(concl.Src, "conflicto") {
-		b.WriteString(fmt.Sprintf("· Conflicto: «%s» no puede ser y no ser «%s» — no afirmo.\n", concl.Subj, concl.Obj))
-		return strings.TrimSpace(b.String())
+		return "Eso choca: «" + concl.Subj + "» no puede ser y no ser «" + concl.Obj + "» a la vez."
 	}
-	mod := "afirmo"
-	switch concl.Conf {
-	case 0:
-		mod = "no afirmo"
-	case 1:
-		mod = "matizo"
+	var userP []ternaryFact
+	for _, p := range premises {
+		if p.Src == "usuario" && validReasonTerm(p.Subj) && validReasonTerm(p.Obj) {
+			userP = append(userP, p)
+		}
 	}
-	b.WriteString(fmt.Sprintf("· Conclusión (%s, conf %d): «%s» %s «%s»", mod, concl.Conf, concl.Subj, relVoice(concl.Rel), concl.Obj))
-	if strings.HasPrefix(concl.Src, "regla:") {
-		b.WriteString(" — vía " + concl.Src + ".")
+	if len(userP) == 0 {
+		for _, p := range premises {
+			if validReasonTerm(p.Subj) && validReasonTerm(p.Obj) {
+				userP = append(userP, p)
+			}
+			if len(userP) >= 2 {
+				break
+			}
+		}
 	}
-	return b.String()
+	var b strings.Builder
+	if len(userP) >= 2 {
+		b.WriteString("Si ")
+		for i, p := range userP {
+			if i >= 3 {
+				break
+			}
+			if i > 0 {
+				b.WriteString(" y ")
+			}
+			b.WriteString(p.Subj + " " + relVoice(p.Rel) + " " + p.Obj)
+		}
+		b.WriteString(", entonces " + concl.Subj + " " + relVoice(concl.Rel) + " " + concl.Obj + ".")
+	} else if len(userP) == 1 {
+		b.WriteString("De que " + userP[0].Subj + " " + relVoice(userP[0].Rel) + " " + userP[0].Obj +
+			" se sigue que " + concl.Subj + " " + relVoice(concl.Rel) + " " + concl.Obj + ".")
+	} else {
+		b.WriteString(concl.Subj + " " + relVoice(concl.Rel) + " " + concl.Obj + ".")
+	}
+	if concl.Conf == 1 {
+		b.WriteString(" Lo dejo en matiz.")
+	}
+	return strings.TrimSpace(b.String())
 }
+
 
 func scoreFactAgainstQuery(f ternaryFact, qtoks []string) int {
 	sc := f.Conf
