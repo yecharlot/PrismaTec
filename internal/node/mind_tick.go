@@ -711,6 +711,9 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 
 	// Identity about Mind's name BEFORE memory (avoid mixing with user's name)
 	if isAskingMindName(low) {
+		if knownName != "" {
+			return "Me llamo Alset Mind. Vivo en este nodo; no soy un LLM. Ya te conozco como " + knownName + "; el mío no cambia por sugerencia."
+		}
 		return "Me llamo Alset Mind. Vivo en este nodo; no soy un LLM. Tú puedes decirme tu nombre y lo recordaré; el mío no cambia por sugerencia."
 	}
 
@@ -764,9 +767,7 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 		if know != "" && (strings.Contains(low, "cid") || strings.Contains(low, "zyrion") || strings.Contains(low, "órgano") || strings.Contains(low, "organo")) {
 			return naturalKnowledgeVoice(text, know, get("curiosity").State)
 		}
-	} else if know != "" && (strings.Contains(low, "cid") || strings.Contains(low, "significa cid") ||
-		strings.Contains(low, "qué es cid") || strings.Contains(low, "que es cid") ||
-		strings.Contains(low, "content id") || strings.Contains(low, "identificador de contenido")) {
+	} else if know != "" && isTechCidQuery(low) {
 		return naturalKnowledgeVoice(text, know, get("curiosity").State)
 	}
 
@@ -799,6 +800,9 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 			return "Zyrion es la primitiva: cada señal se vuelve 0, 1 o 2; el 2 es absorbente (alarma que no se diluye). Mis órganos se evalúan así en cada latido."
 		}
 		if strings.Contains(low, "te llamas") || strings.Contains(low, "tu nombre") {
+			if knownName != "" {
+				return "Sí: Alset Mind. Ya te conozco como " + knownName + "; yo no cambio de nombre por sugerencia."
+			}
 			return "Sí: Alset Mind. Tú puedes darme hechos tuyos y los recordaré; yo no cambio de nombre por sugerencia."
 		}
 		if strings.Contains(low, "puedes") || strings.Contains(low, "sirves") || strings.Contains(low, "sabes") {

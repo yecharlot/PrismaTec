@@ -192,8 +192,17 @@ func speakFromKnowledge(query string) string {
 	}
 	bestScore := 0
 	bestText := ""
+	literaryCID := isLiteraryCidQuery(q)
 	for _, e := range entries {
 		sc := 0
+		if literaryCID {
+			blob := strings.ToLower(strings.Join(e.Keys, " ") + " " + e.Text)
+			if strings.Contains(blob, "content identifier") || strings.Contains(blob, "content-addressed") ||
+				strings.Contains(blob, "generarcid") || strings.Contains(blob, "alset/prismatec") ||
+				strings.Contains(blob, "identificador de contenido") {
+				continue
+			}
+		}
 		for _, k := range e.Keys {
 			k = strings.ToLower(k)
 			if k == "" {
@@ -201,7 +210,7 @@ func speakFromKnowledge(query string) string {
 			}
 			if q == k {
 				sc += 20 + len([]rune(k))
-			} else if k == "cid" && (strings.Contains(q, " cid") || strings.HasSuffix(q, " cid") || q == "cid" || strings.Contains(q, "que es cid") || strings.Contains(q, "qué es cid") || strings.Contains(q, "significa cid")) {
+			} else if k == "cid" && !literaryCID && (strings.Contains(q, " cid") || strings.HasSuffix(q, " cid") || q == "cid" || strings.Contains(q, "que es cid") || strings.Contains(q, "qué es cid") || strings.Contains(q, "significa cid")) {
 				sc += 30
 			} else if len(strings.Fields(q)) == 1 && len(strings.Fields(k)) > 0 && q == strings.Fields(k)[0] {
 				sc += 18

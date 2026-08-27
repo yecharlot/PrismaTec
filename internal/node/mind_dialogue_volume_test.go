@@ -310,3 +310,24 @@ func TestStripEchoTitleLead(t *testing.T) {
 		t.Fatalf("merge still prefixed: %q", m)
 	}
 }
+
+func TestLiteraryCidNotTech(t *testing.T) {
+	if !isLiteraryCidQuery("quién es el Cid") {
+		t.Fatal("expected literary")
+	}
+	if isTechCidQuery("quién es el Cid") {
+		t.Fatal("should not be tech")
+	}
+	got := speakFromKnowledge("quién es el Cid")
+	if strings.Contains(strings.ToLower(got), "content identifier") || strings.Contains(strings.ToLower(got), "generarcid") {
+		t.Fatalf("tech leak: %q", got)
+	}
+}
+
+func TestMergeNoTitleEchoBio(t *testing.T) {
+	ex := "Maria Salomea Skłodowska-Curie, más conocida como Marie Curie, fue una física"
+	got := mergeTitleAndExtract("Marie Curie", ex)
+	if strings.HasPrefix(got, "Marie Curie.") {
+		t.Fatalf("title echoed: %q", got)
+	}
+}

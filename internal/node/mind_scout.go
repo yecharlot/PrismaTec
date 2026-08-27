@@ -44,8 +44,8 @@ func isScoutableQuestion(s string) bool {
 		strings.HasPrefix(s, "dónde queda ") || strings.HasPrefix(s, "donde queda ") ||
 		strings.HasPrefix(s, "busca ") || strings.HasPrefix(s, "investiga ") ||
 		strings.Contains(s, "en internet") || strings.Contains(s, "en la web") {
-		// Corpus técnico local gana a Wikipedia (ej. CID ≠ El Cid)
-		if speakFromKnowledge(s) != "" {
+		// Corpus técnico local gana a Wikipedia solo en sentido técnico (no El Cid literario)
+		if !isLiteraryCidQuery(s) && speakFromKnowledge(s) != "" {
 			return false
 		}
 		return true
@@ -108,8 +108,51 @@ func isQuienBareName(s string) bool {
 }
 
 // forceWebScout: user explicitly wants the web; do not skip for corpus keyword hits.
+func isLiteraryCidQuery(s string) bool {
+	low := strings.ToLower(strings.TrimSpace(s))
+	if strings.Contains(low, "literario") || strings.Contains(low, "histórico") || strings.Contains(low, "historico") ||
+		strings.Contains(low, "campeador") || strings.Contains(low, "rodrigo") ||
+		strings.Contains(low, "no me refiero") && strings.Contains(low, "cid") {
+		return true
+	}
+	// "el Cid" como personaje
+	if strings.Contains(low, "el cid") || strings.Contains(low, "al cid") {
+		return true
+	}
+	if (strings.Contains(low, "quién es") || strings.Contains(low, "quien es") ||
+		strings.Contains(low, "quién fue") || strings.Contains(low, "quien fue")) &&
+		strings.Contains(low, "cid") &&
+		!strings.Contains(low, "tecnolog") && !strings.Contains(low, "alset") &&
+		!strings.Contains(low, "content") && !strings.Contains(low, "identificador") {
+		return true
+	}
+	return false
+}
+
+func isTechCidQuery(s string) bool {
+	if isLiteraryCidQuery(s) {
+		return false
+	}
+	low := strings.ToLower(strings.TrimSpace(s))
+	if strings.Contains(low, "tecnolog") || strings.Contains(low, "alset") ||
+		strings.Contains(low, "content") || strings.Contains(low, "identificador") ||
+		strings.Contains(low, "ipfs") || strings.Contains(low, "blockstore") ||
+		strings.Contains(low, "generarcid") || strings.Contains(low, "memoria cid") {
+		return true
+	}
+	if strings.Contains(low, "el cid") {
+		return false
+	}
+	return (strings.Contains(low, "qué es cid") || strings.Contains(low, "que es cid") ||
+		strings.Contains(low, "significa cid") || strings.Contains(low, "qué es un cid") ||
+		strings.Contains(low, "que es un cid")) && !strings.Contains(low, "el cid")
+}
+
 func forceWebScout(s string) bool {
 	s = strings.ToLower(strings.TrimSpace(s))
+	if isLiteraryCidQuery(s) {
+		return true
+	}
 	if strings.HasPrefix(s, "busca ") || strings.HasPrefix(s, "investiga ") ||
 		strings.HasPrefix(s, "quién es ") || strings.HasPrefix(s, "quien es ") ||
 		strings.HasPrefix(s, "quién fue ") || strings.HasPrefix(s, "quien fue ") ||
@@ -127,6 +170,9 @@ func extractTopic(query string) string {
 	s := strings.ToLower(strings.TrimSpace(query))
 	s = strings.TrimSuffix(s, "?")
 	s = strings.TrimSpace(s)
+	if isLiteraryCidQuery(s) {
+		return "El Cid"
+	}
 
 	// Strip known prefixes (longest first)
 	prefixes := []string{
@@ -613,19 +659,18 @@ func mergeTitleAndExtract(title, extract string) string {
 	if extract == "" {
 		return title
 	}
+	// Cuerpo útil: no anteponer el título (evita "Marie Curie. Maria…", "Cid. Cid…")
+	if len([]rune(extract)) >= 48 {
+		return extract
+	}
 	if title == "" {
 		return extract
 	}
 	lowE := strings.ToLower(extract)
 	lowT := strings.ToLower(title)
-	if strings.HasPrefix(lowE, lowT) {
+	if strings.HasPrefix(lowE, lowT) || strings.HasPrefix(lowE, lowT+".") {
 		return extract
 	}
-	// "Title. rest" already
-	if strings.HasPrefix(lowE, lowT+".") {
-		return extract
-	}
-	// first sentence is the title repeated
 	if i := strings.Index(extract, ". "); i > 0 && i < 48 {
 		first := strings.TrimSpace(extract[:i])
 		if strings.EqualFold(first, title) {
