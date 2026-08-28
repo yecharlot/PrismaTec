@@ -427,6 +427,10 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 
 	organs := []MindOrganResult{dialog, act, mem, self, ethics, curiosity, humor}
 	actuate := evaluateActuate(text, organs)
+	profile := buildUserProfile(recent)
+	if profile.Nombre != "" {
+		knownName = profile.Nombre
+	}
 	knowHit := speakFromKnowledge(text)
 	// Escape hatch: no corpus hit + declarative novelty → raise memory organ
 	if shouldCaptureEscape(text, knowHit) {
@@ -618,11 +622,22 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			}
 		}
 	}
-	// Memoria personal ANTES de sonda (apellidos, nombre, «qué soy yo»)
-	if voice == "" && ethics.State != 2 && (isMemoryQuery(normText) || isMemoryQuery(text)) {
-		if ms := speakFromMemory(text, recent); ms != "" {
-			voice = ms
+	// Modelo personal estructurado (nombre, apellidos, yo soy…) — antes de web/corpus
+	if voice == "" && ethics.State != 2 {
+		if isSelfModelQuery(normText) || isSelfModelQuery(text) {
+			voice = speakFromProfile(text, profile)
 			primaryKind = "memory"
+		} else if isMemoryQuery(normText) || isMemoryQuery(text) {
+			if strings.Contains(strings.ToLower(text), "apellido") && profile.Apellidos != "" {
+				voice = speakFromProfile(text, profile)
+			} else if ms := speakFromMemory(text, recent); ms != "" {
+				voice = ms
+			} else if !profile.empty() && (strings.Contains(strings.ToLower(text), "nombre") || strings.Contains(strings.ToLower(text), "apellido")) {
+				voice = speakFromProfile(text, profile)
+			}
+			if voice != "" {
+				primaryKind = "memory"
+			}
 		}
 	}
 	// Declaraciones personales antes de corpus/sonda («yo soy hombre» ≠ Sócrates)
