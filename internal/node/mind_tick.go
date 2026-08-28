@@ -313,10 +313,24 @@ func looksLikeNodeAction(s string) bool {
 	return false
 }
 
+
+func isUserCorrection(s string) bool {
+	s = strings.ToLower(strings.TrimSpace(s))
+	keys := []string{"estás mal", "estas mal", "eso está mal", "eso esta mal", "incorrecto",
+		"te equivocas", "no es eso", "no es así", "no es asi", "fallaste", "error"}
+	for _, k := range keys {
+		if s == k || strings.HasPrefix(s, k) {
+			return true
+		}
+	}
+	return false
+}
+
 func isCalmChat(s string) bool {
 	if s == "hola" || s == "hi" || s == "hello" || s == "hey" || s == "buenas" ||
 		s == "bien" || s == "ok" || s == "okay" || s == "gracias" || s == "good" ||
 		s == "vale" || s == "de acuerdo" || s == "entendido" || s == "claro" ||
+		s == "vale entendido" || s == "ok entendido" || s == "esta bien" || s == "está bien" ||
 		s == "buen día" || s == "buenas tardes" || s == "buenas noches" || s == "saludos" {
 		return true
 	}
@@ -604,12 +618,26 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			}
 		}
 	}
+	// Memoria personal ANTES de sonda (apellidos, nombre, «qué soy yo»)
+	if voice == "" && ethics.State != 2 && (isMemoryQuery(normText) || isMemoryQuery(text)) {
+		if ms := speakFromMemory(text, recent); ms != "" {
+			voice = ms
+			primaryKind = "memory"
+		}
+	}
+	// Declaraciones personales antes de corpus/sonda («yo soy hombre» ≠ Sócrates)
+	if voice == "" && ethics.State != 2 && isPersonalFact(normText) {
+		v := mindVoice(text, organs, memSpeak, knownName)
+		if v != "" {
+			voice = v
+			primaryKind = "memory"
+		}
+	}
 	if voice == "" && ethics.State != 2 {
 		norm := normalizeUserInput(text)
-		allowScout := forceWebScout(norm) || isLiteraryCidQuery(norm) || isScoutableQuestion(norm) ||
-			(speakFromKnowledge(text) == "" && memSpeak == "")
-		// "qué es X" no debe quedar bloqueado por un eco de memoria lateral
-		if allowScout && !isTechCidQuery(norm) {
+		// NUNCA sondear por el solo hecho de no tener corpus: solo preguntas scoutables
+		allowScout := forceWebScout(norm) || isLiteraryCidQuery(norm) || isScoutableQuestion(norm)
+		if allowScout && !isTechCidQuery(norm) && !isMemoryQuery(norm) && !isPersonalFact(norm) {
 			if sv := n.MindScoutWeb(text, ethics.State); sv != "" {
 				voice = sv
 				primaryKind = "tool"
@@ -761,6 +789,10 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 		return "Entiendo la intención, pero no cambio el nodo sin un pedido más claro. ¿Solo consulta?"
 	}
 
+	if isUserCorrection(low) {
+		return "De acuerdo: tomo la corrección. Reformula el dato (nombre, apellido o hecho) y lo anclo bien."
+	}
+
 	// Identity about Mind's name BEFORE memory (avoid mixing with user's name)
 	if isAskingMindName(low) {
 		if knownName != "" {
@@ -779,7 +811,31 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 		if memSpeak != "" {
 			return memSpeak
 		}
+		if (strings.Contains(low, "qué soy") || strings.Contains(low, "que soy") ||
+			strings.Contains(low, "quién soy") || strings.Contains(low, "quien soy")) && knownName != "" {
+			return "Por lo que me confiaste, te llamas " + knownName + ". Si quieres apellidos u otros hechos, dímelos y los anclo."
+		}
 		return "Aún no tengo ese detalle. Si me lo dices con claridad, lo recordaré."
+	}
+
+	// Calm social BEFORE corpus (evita que «bien» robe una entrada de knowledge)
+	if isCalmChat(low) {
+		if strings.Contains(low, "cómo") || strings.Contains(low, "como") || strings.Contains(low, "qué tal") ||
+			strings.Contains(low, "que tal") || strings.Contains(low, "todo bien") {
+			return "Bien, aquí. Dime."
+		}
+		if strings.Contains(low, "qué haces") || strings.Contains(low, "que haces") {
+			return "Hablar contigo. Si importa, lo anclo; si es peligroso, me detengo."
+		}
+		if low == "gracias" {
+			return "De nada. Sigo cuando quieras."
+		}
+		if low == "ok" || low == "okay" || low == "bien" || low == "vale" ||
+			low == "de acuerdo" || low == "entendido" || low == "claro" ||
+			low == "vale entendido" || low == "está bien" || low == "esta bien" {
+			return "De acuerdo. Cuando quieras, seguimos."
+		}
+		return "Hola. Habla como quieras."
 	}
 
 	// Constructive / personal / world before knowledge so corpus keys do not steal intent
@@ -787,6 +843,9 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 		return "Entiendo que quieres crear o registrar algo. Puedo explicarte el flujo; si solo quieres consultar el nodo, dímelo."
 	}
 	if isPersonalFact(low) {
+		if strings.HasPrefix(low, "yo soy ") || strings.HasPrefix(low, "soy ") || strings.HasPrefix(low, "yo no soy ") {
+			return "Queda anotado: «" + strings.TrimSpace(text) + "». Si más adelante preguntas por ti, lo usaré sin mezclarlo con ejemplos del corpus."
+		}
 		if name := extractDeclaredName(text); name != "" {
 			mixed := strings.Contains(low, "tu nombre") || strings.Contains(low, "te llamas") ||
 				strings.Contains(low, "el tuyo") || strings.Contains(low, "y tú") || strings.Contains(low, "y tu")

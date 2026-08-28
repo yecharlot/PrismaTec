@@ -313,13 +313,14 @@ func isMemoryQuery(s string) bool {
 		"cómo me llamo", "como me llamo", "cuál es mi nombre", "cual es mi nombre",
 		"cómo me llamo?", "como me llamo?",
 		"cuál es mi apellido", "cual es mi apellido", "cómo me apellido", "como me apellido",
-		"qué apellido", "que apellido",
+		"qué apellido", "que apellido", "mis apellidos", "mi apellido", "y mis apellidos",
+		"apellidos cuales", "cuales son mis", "cuáles son mis", "mis apellidos cuales",
 		"cuál es mi edad", "cual es mi edad", "cuántos años", "cuantos años",
 		"dónde vivo", "donde vivo", "cuál es mi ciudad", "cual es mi ciudad",
 		"qué te dije", "que te dije", "qué te conté", "que te conte",
 		"te acuerdas", "te acuerda", "recuerdas", "recuerdas lo",
 		"qué sabes de mí", "que sabes de mi", "qué sabes de mi",
-		"me conoces", "quién soy yo", "quien soy yo",
+		"me conoces", "quién soy yo", "quien soy yo", "qué soy yo", "que soy yo", "quién soy", "quien soy",
 		"qué dije antes", "que dije antes", "lo que te dije",
 		"cómo es la ", "como es la ", "cómo es el ", "como es el ",
 		"qué te dije de", "que te dije de", "de qué color", "de que color",
@@ -381,7 +382,8 @@ func isPersonalFact(s string) bool {
 		}
 		return true
 	}
-	if strings.HasPrefix(s, "soy ") && len(s) < 40 {
+	if (strings.HasPrefix(s, "soy ") || strings.HasPrefix(s, "yo soy ") ||
+		strings.HasPrefix(s, "yo no soy ")) && len(s) < 80 {
 		return true
 	}
 	if strings.Contains(s, "mi apellido es") || strings.Contains(s, "mi apellido:") ||

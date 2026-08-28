@@ -247,3 +247,45 @@ func TestDialogueBatteryRoutesTable(t *testing.T) {
 		}
 	}
 }
+
+func TestPersonalApellidoNotScout(t *testing.T) {
+	for _, q := range []string{"mis apellidos", "y mis apellidos cuales son?", "cuál es mi apellido"} {
+		if isScoutableQuestion(q) {
+			t.Fatalf("should not scout personal: %q", q)
+		}
+		if !isMemoryQuery(q) {
+			t.Fatalf("should be memory query: %q", q)
+		}
+	}
+}
+
+func TestYoSoyNotCorpusHijack(t *testing.T) {
+	if !isPersonalFact("yo soy un hombre") {
+		t.Fatal("yo soy un hombre should be personal")
+	}
+	if !isPersonalFact("yo no soy Socrates") {
+		t.Fatal("yo no soy should be personal")
+	}
+	org := []MindOrganResult{{Name: "ethics", State: 0}, {Name: "act", State: 0}}
+	v := mindVoice("yo soy un hombre", org, "", "Esteban")
+	low := strings.ToLower(v)
+	if strings.Contains(low, "sócrates") || strings.Contains(low, "socrates") {
+		t.Fatalf("corpus socrates hijack: %s", v)
+	}
+}
+
+func TestCalmBienNotKnowledge(t *testing.T) {
+	org := []MindOrganResult{{Name: "ethics", State: 0}}
+	v := mindVoice("bien", org, "", "")
+	if strings.Contains(strings.ToLower(v), "conversación clara") {
+		t.Fatalf("knowledge stole bien: %s", v)
+	}
+}
+
+func TestUserCorrectionVoice(t *testing.T) {
+	org := []MindOrganResult{{Name: "ethics", State: 0}}
+	v := mindVoice("estas mal", org, "", "")
+	if !strings.Contains(strings.ToLower(v), "corrección") && !strings.Contains(strings.ToLower(v), "correg") {
+		t.Fatalf("correction: %s", v)
+	}
+}
