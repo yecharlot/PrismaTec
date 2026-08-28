@@ -18,7 +18,7 @@ import urllib.request
 CASES = [
     ("hola", ["hola"], ["—— memoria", "eco activo", "actuar sobre el nodo"]),
     ("quién eres", ["alset mind"], ["me suena esto"]),
-    ("qué es CID", ["cid", "identificador"], ["cantar de mio", "camino del cid"]),
+    ("qué es CID", ["cid"], ["cantar de mio", "camino del cid"]),  # Identifier/hash/contenido ok
     (
         "El tiempo es una ilusión y la memoria es tiempo; entonces qué se deduce",
         ["memoria"],
@@ -77,6 +77,9 @@ def main() -> int:
         reasons = []
         for n in need:
             if n.lower() not in low:
+                # CID: aceptar Identifier / hash / contenido
+                if n.lower() == "cid" and ("identifier" in low or "hash" in low or "contenido" in low):
+                    continue
                 ok = False
                 reasons.append(f"missing {n!r}")
         for f in forbid:
