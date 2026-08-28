@@ -518,3 +518,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - deduceAll: trans-es, trans-implica, trans-parte, es+implica, implica+es, es+parte, es+tiene, conflicto, cierre 2 niveles.
 - Corpus razon_ternaria + hechos_cadena + lexico_razon.
 - softReasonFromKnowledge en latido cuando hay cadena aplicable.
+
+## 2026-08-28 — Batería de estabilidad de diálogo (fase confianza)
+
+- `TestDialogueStabilityBattery` + `TestDialogueBatteryRoutesTable` en `mind_dialogue_battery_test.go`.
+- Script vivo: `scripts/mind_dialogue_battery.py --base http://localhost:8080`.
+- Criterio: silogismos, CID técnico, identidad, scoutable «qué es», sin ruido lab en voz natural, ethics veto.
