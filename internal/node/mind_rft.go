@@ -184,45 +184,47 @@ func buildRFTTree(facts []ternaryFact) rftTree {
 	}
 	best := ternaryFact{}
 	bestSc := -1
+	// Preferir cierres L1 (transitividad) sobre cualquier salto
 	for _, f := range deduceAll(userFacts) {
 		if f.Subj == f.Obj {
 			continue
 		}
-		sc := 20 + f.Conf
+		sc := 30 + f.Conf
+		// Priorizar sujeto que aparece en premisas como individuo (pepe), no inversión
+		for _, uf := range userFacts {
+			if termsMatch(f.Subj, uf.Subj) {
+				sc += 5
+			}
+		}
 		if sc > bestSc {
 			bestSc = sc
 			best = f
 		}
 	}
-	// saltos relevantes al tema del usuario
-	for _, n := range tree.Nodes {
-		if n.Kind != "salto-neg" && n.Kind != "salto-inv" {
-			continue
-		}
-		if n.Fact.Subj == n.Fact.Obj {
-			continue
-		}
-		hit := false
-		for w := range userTerms {
-			if strings.Contains(n.Fact.Subj, w) || strings.Contains(n.Fact.Obj, w) {
-				hit = true
-				break
+	// Saltos solo si NO hay cierre lineal
+	if bestSc < 0 {
+		for _, n := range tree.Nodes {
+			if n.Kind != "salto-neg" {
+				continue // inversión sola no es conclusión guía
 			}
-		}
-		if !hit {
-			continue
-		}
-		// Los saltos enriquecen el árbol; no sustituyen el cierre L1 si existe
-		if bestSc >= 20 {
-			continue
-		}
-		sc := 12 + n.Fact.Conf
-		if n.Kind == "salto-neg" {
-			sc += 3
-		}
-		if sc > bestSc {
-			bestSc = sc
-			best = n.Fact
+			if n.Fact.Subj == n.Fact.Obj {
+				continue
+			}
+			hit := false
+			for w := range userTerms {
+				if strings.Contains(n.Fact.Subj, w) || strings.Contains(n.Fact.Obj, w) {
+					hit = true
+					break
+				}
+			}
+			if !hit {
+				continue
+			}
+			sc := 12 + n.Fact.Conf
+			if sc > bestSc {
+				bestSc = sc
+				best = n.Fact
+			}
 		}
 	}
 	tree.Primary = best

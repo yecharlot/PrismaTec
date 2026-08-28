@@ -134,15 +134,48 @@ func extractClauses(text string) []string {
 				low = strings.ToLower(sent)
 			}
 		}
+		// Separar premisas de la pregunta de cierre
+		for _, end := range []string{" entonces ", " por tanto ", " por lo tanto ", " luego "} {
+			if i := strings.Index(low, end); i > 0 {
+				sent = strings.TrimSpace(sent[:i])
+				low = strings.ToLower(sent)
+				break
+			}
+		}
 		if sent == "" {
 			continue
 		}
-		// split y solo si ambos lados tienen verbo relacional
+		// split " y " si ambos lados parecen predicados
 		if strings.Count(low, " y ") == 1 {
 			i := strings.Index(low, " y ")
 			left, right := strings.TrimSpace(sent[:i]), strings.TrimSpace(sent[i+3:])
 			if clauseLooksRelational(left) && clauseLooksRelational(right) {
 				out = append(out, left, right)
+				continue
+			}
+		}
+		// split por coma: "A es B, C es D"
+		if strings.Contains(low, ",") {
+			parts := strings.Split(sent, ",")
+			var relParts []string
+			ok := true
+			for _, part := range parts {
+				part = strings.TrimSpace(part)
+				if part == "" {
+					continue
+				}
+				if clauseLooksRelational(part) {
+					relParts = append(relParts, part)
+				} else if len(relParts) > 0 {
+					// cola no relacional (p.ej. "entonces qué…") — ignorar
+					continue
+				} else {
+					ok = false
+					break
+				}
+			}
+			if ok && len(relParts) >= 2 {
+				out = append(out, relParts...)
 				continue
 			}
 		}
@@ -434,7 +467,7 @@ func deduceTransitive(facts []ternaryFact) []ternaryFact {
 func relVoice(rel string) string {
 	switch rel {
 	case "es_un":
-		return "es un/a"
+		return "es"
 	case "implica":
 		return "implica"
 	case "parte_de":

@@ -606,8 +606,9 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	}
 	if voice == "" && ethics.State != 2 {
 		norm := normalizeUserInput(text)
-		allowScout := forceWebScout(norm) || isLiteraryCidQuery(norm) ||
+		allowScout := forceWebScout(norm) || isLiteraryCidQuery(norm) || isScoutableQuestion(norm) ||
 			(speakFromKnowledge(text) == "" && memSpeak == "")
+		// "qué es X" no debe quedar bloqueado por un eco de memoria lateral
 		if allowScout && !isTechCidQuery(norm) {
 			if sv := n.MindScoutWeb(text, ethics.State); sv != "" {
 				voice = sv

@@ -121,3 +121,29 @@ func TestTransWithArticles(t *testing.T) {
 		t.Fatalf("expected memoria→ilusión: %+v", d)
 	}
 }
+
+func TestExtractClausesCommaPremises(t *testing.T) {
+	cs := extractClauses("el perro es un animal, pepe es un perro entonces que deduces")
+	if len(cs) < 2 {
+		t.Fatalf("want >=2 clauses, got %v", cs)
+	}
+	var facts []ternaryFact
+	for _, c := range cs {
+		if f, ok := parseRelationFact(c, 2, "usuario"); ok {
+			facts = append(facts, f)
+		}
+	}
+	if len(facts) < 2 {
+		t.Fatalf("want 2 facts, got %#v from clauses %#v", facts, cs)
+	}
+	der := deduceAll(facts)
+	found := false
+	for _, f := range der {
+		if termsMatch(f.Subj, "pepe") && termsMatch(f.Obj, "animal") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("want pepe→animal, derived=%#v", der)
+	}
+}

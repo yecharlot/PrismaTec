@@ -495,6 +495,7 @@ func extractDeclaredName(text string) string {
 		"tuyo": true, "mío": true, "mio": true, "mucho": true, "gusto": true,
 		"encantado": true, "encantada": true, "placer": true, "hola": true,
 		"buenas": true, "gracias": true, "por": true, "favor": true,
+		"hallazgo": true, "sonda": true, "scout": true, "entonces": true,
 	}
 	for _, pref := range []string{"me llamo ", "mi nombre es ", "mi nombre:", "te llamas "} {
 		i := strings.Index(low, pref)
@@ -541,30 +542,50 @@ func extractDeclaredName(text string) string {
 
 // knownUserNameFromEpisodes returns the most recent declared user name in episodes, if any.
 func knownUserNameFromEpisodes(episodes []mindEpisodePayload) string {
-	for _, ep := range episodes {
-		if name := extractDeclaredName(ep.Text); name != "" {
-			return name
+	// Preferir el nombre más reciente y limpio (1–2 tokens), no basura compuesta.
+	best := ""
+	bestScore := -1
+	consider := func(name string, score int) {
+		name = strings.TrimSpace(name)
+		if name == "" || len([]rune(name)) < 2 {
+			return
 		}
-		// Respuestas previas de Mind: "Te llamas Esteban."
+		parts := strings.Fields(name)
+		if len(parts) > 3 {
+			name = strings.Join(parts[:2], " ")
+		}
+		if score > bestScore {
+			bestScore = score
+			best = name
+		}
+	}
+	for i, ep := range episodes {
+		recency := i // lower index = more recent in typical reverse chronological lists; score inverse
+		if name := extractDeclaredName(ep.Text); name != "" {
+			sc := 10 + len(episodes) - i
+			if len(strings.Fields(name)) == 1 {
+				sc += 3
+			}
+			consider(name, sc)
+		}
 		low := strings.ToLower(ep.Text)
-		for _, pref := range []string{"te llamas ", "te conocía como ", "te conocia como ", "ya te conozco como "} {
-			if i := strings.Index(low, pref); i >= 0 {
-				rest := strings.TrimSpace(ep.Text[i+len(pref):])
+		for _, pref := range []string{"te llamas ", "perfecto, te llamas ", "sí, te llamas ", "si, te llamas "} {
+			if j := strings.Index(low, pref); j >= 0 {
+				rest := strings.TrimSpace(ep.Text[j+len(pref):])
 				for _, cut := range []string{",", ".", "!", "?", ";", ":", "»", "\""} {
 					rest = strings.ReplaceAll(rest, cut, " ")
 				}
-				rest = strings.TrimSpace(rest)
-				parts := strings.Fields(rest)
-				if len(parts) >= 1 {
+				parts := strings.Fields(strings.TrimSpace(rest))
+				if len(parts) >= 1 && len(parts[0]) >= 2 {
 					n := parts[0]
-					if len(n) >= 2 {
-						return strings.ToUpper(n[:1]) + n[1:]
-					}
+					n = strings.ToUpper(n[:1]) + n[1:]
+					consider(n, 20+len(episodes)-i)
 				}
 			}
 		}
+		_ = recency
 	}
-	return ""
+	return best
 }
 
 func namesEqual(a, b string) bool {

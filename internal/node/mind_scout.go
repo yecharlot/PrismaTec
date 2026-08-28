@@ -736,7 +736,7 @@ func stripEchoTitleLead(body string) string {
 			return rest
 		}
 		// "Marie Curie. Maria Salomea…" — título corto + bio larga
-		if len([]rune(rest)) >= 80 && len(strings.Fields(first)) <= 4 {
+		if len([]rune(rest)) >= 40 && len(strings.Fields(first)) <= 4 {
 			return rest
 		}
 	}
