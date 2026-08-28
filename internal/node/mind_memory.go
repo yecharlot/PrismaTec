@@ -662,8 +662,11 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 				strings.Contains(lowRel, "function(){") {
 				return ""
 			}
-			snip := truncateRunes(rel, 100)
-			return "Me suena esto: «" + snip + "». ¿Seguimos por ahí?"
+			if score < need+2 {
+				return ""
+			}
+			snip := truncateRunes(rel, 72)
+			return "Antes tocamos algo parecido: «" + snip + "». ¿Volvemos a eso o cambias de tema?"
 		}
 		return ""
 	}
@@ -677,7 +680,12 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 		if slot, val := extractPersonalDeclaration(rel); slot != "" && val != "" {
 			return formatPersonalRecall(slot, val)
 		}
-		return "Sí, recuerdo: «" + truncateRunes(rel, 120) + "»."
+		lowRel := strings.ToLower(rel)
+		if strings.Contains(lowRel, "hallazgo sonda") || strings.Contains(lowRel, "scout-") ||
+			strings.Contains(lowRel, "entonces qué se deduce") || strings.Contains(lowRel, "entonces que se deduce") {
+			return "Tengo notas recientes, pero no un recuerdo claro de eso. ¿Me das un detalle?"
+		}
+		return "Sí, lo tengo anotado: «" + truncateRunes(rel, 100) + "»."
 	}
 	for _, ep := range episodes {
 		if slot, val := extractPersonalDeclaration(ep.Text); slot != "" && val != "" {
@@ -701,7 +709,7 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 				}
 				for _, e := range ew {
 					if w == e && len(w) > 3 {
-						return "Recuerdo que dijiste: «" + truncateRunes(ep.Text, 120) + "»."
+						return "Sí: «" + truncateRunes(ep.Text, 100) + "»."
 					}
 				}
 			}

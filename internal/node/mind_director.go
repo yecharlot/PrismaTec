@@ -211,18 +211,13 @@ func (n *NodoAlset) resolveReferential(text string) string {
 
 // softAppendAllowed: only on thin open chat — never on tools/math/codegen/solid knowledge.
 func softAppendAllowed(primaryKind string, voice string) bool {
+	// Diálogo fluido: sin coletas de curiosity/humor salvo chat muy corto y abierto.
 	switch primaryKind {
 	case "tool", "math", "codegen", "memory", "capability", "referential", "identity", "veto",
-		"creative", "action_memory", "patterns":
+		"creative", "action_memory", "patterns", "knowledge", "reason":
 		return false
-	case "knowledge":
-		// corpus literario/gramática ya completo: sin coleta de menú
-		if len([]rune(voice)) >= 80 {
-			return false
-		}
-		return len([]rune(voice)) < 80
 	case "chat":
-		return true
+		return len([]rune(voice)) < 60
 	default:
 		return false
 	}

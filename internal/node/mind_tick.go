@@ -670,9 +670,8 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		}
 	}
 
-	if memHint != "" && memSpeak == "" {
-		voice = voice + "\n\n" + memoryHintLine(memHint)
-	}
+	// MemoryHint queda en el JSON del lab; no se pega al diálogo del usuario.
+	_ = memHint
 	if !isContinuePrompt(text) && !isConfirmationPrompt(text) && !isElaborationRequest(text) && !isEpistemicCheck(text) {
 		n.rememberMindThread(text, knowHit, memSpeak, voice)
 	}
@@ -858,14 +857,14 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 			return "Sí: Alset Mind. Tú puedes darme hechos tuyos y los recordaré; yo no cambio de nombre por sugerencia."
 		}
 		if strings.Contains(low, "puedes") || strings.Contains(low, "sirves") || strings.Contains(low, "sabes") {
-			return "Puedo conversar contigo, recordar lo que me digas y mirar este nodo si me lo pides. No invento hechos ni borro nada por mi cuenta. ¿Por dónde seguimos?"
+			return "Puedo conversar, recordar lo que me digas, orquestar genes y mirar este nodo si me lo pides. No invento hechos ni ejecuto órdenes destructivas."
 		}
 		if strings.Contains(low, "funcionas") || strings.Contains(low, "explic") || strings.Contains(low, "cuéntame") ||
 			strings.Contains(low, "cuentame") || strings.Contains(low, "hablar de ti") ||
 			strings.Contains(low, "de ti") {
 			return "En cada mensaje escucho, juzgo y respondo. Si algo importa, lo recuerdo; si es peligroso, me detengo. Hablar de mí es hablar de ese modo de decidir, no de una personalidad inventada."
 		}
-		return "Soy Alset Mind. Conversamos, recuerdo lo que me confías y puedo mirar este nodo si lo pides. Habla en natural."
+		return "Soy Alset Mind. Conversamos, recuerdo lo que me confías y actúo sobre este nodo cuando hace falta. Habla como quieras."
 	}
 
 	// Node body / tools intents — short lead-in; snapshot comes from mindSafeTools
@@ -881,10 +880,10 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 	if isCalmChat(low) {
 		if strings.Contains(low, "cómo") || strings.Contains(low, "como") || strings.Contains(low, "qué tal") ||
 			strings.Contains(low, "que tal") || strings.Contains(low, "todo bien") {
-			return "Bien. Aquí contigo. ¿De qué hablamos?"
+			return "Bien, aquí. Dime."
 		}
 		if strings.Contains(low, "qué haces") || strings.Contains(low, "que haces") {
-			return "Ahora mismo, hablar contigo. Si algo importa lo recuerdo; si es peligroso, me detengo."
+			return "Hablar contigo. Si importa, lo anclo; si es peligroso, me detengo."
 		}
 		if low == "gracias" {
 			return "De nada. Sigo en el campo cuando quieras."
@@ -894,7 +893,7 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 			return "De acuerdo. Cuando quieras, seguimos."
 		}
 		// hola / buenas / …
-		return "Hola. Soy Alset Mind. Habla como quieras."
+		return "Hola. Habla como quieras."
 	}
 
 	// Help / open questions
