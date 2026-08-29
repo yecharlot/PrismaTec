@@ -530,6 +530,14 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 					n.recordAction("explore", actuate.Explore, text, sv, "", primaryKind, organs)
 				}
 				recordDialogPattern(uxIntent, text)
+			} else {
+				topic := extractTopic(normForUX)
+				if topic == "" {
+					topic = "esa persona"
+				}
+				voice = "No pude traer ahora una ficha fiable sobre " + topic + ". Prueba de nuevo en un momento o reformula el nombre."
+				primaryKind = "chat"
+				recordDialogPattern(uxIntent, text)
 			}
 		case intentCreative:
 			// dejar que el bloque creative escriba; marcar para no caer en worldFact

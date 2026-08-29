@@ -104,7 +104,6 @@ func promoteScoutToKnowledge(topic, report string) {
 	mindKnowledgeCache = nil
 }
 
-
 // normalizeKnowledgeQuery fixes common typos before corpus overlap.
 func normalizeKnowledgeQuery(q string) string {
 	q = strings.ToLower(strings.TrimSpace(q))
@@ -188,6 +187,10 @@ func speakFromKnowledge(query string) string {
 	}
 	q := normalizeKnowledgeQuery(query)
 	if q == "" {
+		return ""
+	}
+	// Preguntas por personas externas no deben caer en identidad del nodo
+	if isPersonLookup(q) {
 		return ""
 	}
 	bestScore := 0
