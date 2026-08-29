@@ -484,7 +484,19 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	primaryKind := "chat"
 	var codegenCID string
 
-	if ethics.State == 2 {
+	// Flujo estructural de diálogo (plantillas + hilo + gates) — prioriza charla humana
+	if vFlow, kFlow := n.tryDialogFlow(text, profile, recent); vFlow != "" {
+		voice = vFlow
+		primaryKind = kFlow
+		if kFlow == "veto" {
+			ethics.State = 2
+		}
+		if kFlow == "tool" || kFlow == "creative" || kFlow == "math" {
+			recordDialogPattern(dialogIntent(kFlow), text)
+		}
+	}
+
+	if voice == "" && ethics.State == 2 {
 		if uxIntent == intentEthicsHard {
 			voice = speakEthicsHard(text)
 		} else {
@@ -575,6 +587,13 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		if mv := n.tryMindMath(normText); mv != "" {
 			voice = mv
 			primaryKind = "math"
+			// parse result for chain "y eso por N"
+			if i := strings.Index(mv, "Resultado: "); i >= 0 {
+				rest := strings.TrimSpace(mv[i+len("Resultado: "):])
+				var f float64
+				fmt.Sscanf(rest, "%f", &f)
+				n.setLastMath(f)
+			}
 			n.rememberThreadRefs("math", "", "", "")
 			if actuate.Reason >= 1 {
 				n.recordAction("reason", actuate.Reason, text, mv, "", primaryKind, organs)
@@ -686,6 +705,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			voice = cv
 			primaryKind = "creative"
 			n.recordAction("write", 2, text, cv, "", primaryKind, organs)
+			n.setLastCreative(cv)
 			if ra != "" {
 				n.recordAction("reason", 1, text, ra, "", "reason", organs)
 			}

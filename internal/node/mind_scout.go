@@ -35,9 +35,13 @@ func isScoutableQuestion(s string) bool {
 	if isGenToolIntent(s) || isCodeGenRequest(s) || isCapabilityQuestion(s) {
 		return false
 	}
+	if mustNotScout(s) {
+		return false
+	}
 	if isPersonalFact(s) || isMemoryQuery(s) || isIdentityTalk(s) || isCalmChat(s) {
 		return false
 	}
+	// No scout por solo llevar "?": evita wiki basura en meta/charla
 	if strings.HasPrefix(s, "qué es ") || strings.HasPrefix(s, "que es ") ||
 		strings.HasPrefix(s, "quién es ") || strings.HasPrefix(s, "quien es ") ||
 		strings.HasPrefix(s, "quién fue ") || strings.HasPrefix(s, "quien fue ") ||
@@ -58,9 +62,7 @@ func isScoutableQuestion(s string) bool {
 	if isQuienBareName(s) {
 		return true
 	}
-	if strings.Contains(s, "?") && len(s) > 12 && speakFromKnowledge(s) == "" {
-		return true
-	}
+	// Heurística "?" eliminada: generaba sondas absurdas ("estás inventando?").
 	return false
 }
 
@@ -685,7 +687,6 @@ func isMostlyEnglish(s string) bool {
 	return enN >= 2 && enN > esN
 }
 
-
 // mergeTitleAndExtract evita "Cid. Cid hace referencia…" / "Key. Key is…".
 // Prefiere el extracto; solo usa el título si no hay cuerpo útil.
 func mergeTitleAndExtract(title, extract string) string {
@@ -714,7 +715,6 @@ func mergeTitleAndExtract(title, extract string) string {
 	}
 	return extract
 }
-
 
 // stripEchoTitleLead quita "Nombre. Nombre …" al inicio del cuerpo.
 func stripEchoTitleLead(body string) string {

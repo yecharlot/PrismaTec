@@ -376,7 +376,7 @@ func isPersonalFact(s string) bool {
 		return false
 	}
 	// Declaration forms only (not "cómo me llamo …")
-	if strings.Contains(s, "me llamo ") || strings.Contains(s, "mi nombre es") ||
+	if strings.Contains(s, "me presento") || strings.Contains(s, "me llamo ") || strings.Contains(s, "mi nombre es") ||
 		strings.Contains(s, "mi nombre:") {
 		// Reject interrogative wrappers: "cómo me llamo", "como me llamo y …"
 		if strings.Contains(s, "cómo me") || strings.Contains(s, "como me") ||
@@ -503,7 +503,7 @@ func extractDeclaredName(text string) string {
 		"buenas": true, "gracias": true, "por": true, "favor": true,
 		"hallazgo": true, "sonda": true, "scout": true, "entonces": true,
 	}
-	for _, pref := range []string{"me llamo ", "mi nombre es ", "mi nombre:", "te llamas "} {
+	for _, pref := range []string{"me llamo ", "mi nombre es ", "mi nombre:", "soy "} {
 		i := strings.Index(low, pref)
 		if i < 0 {
 			continue
@@ -919,7 +919,7 @@ func extractPersonalDeclaration(text string) (slot, value string) {
 		}
 	}
 	// ciudad / vivo en
-	for _, pref := range []string{"vivo en ", "mi ciudad es ", "mi ciudad:", "radico en "} {
+	for _, pref := range []string{"vivo en ", "ahora vivo en ", "me mudé a ", "me mude a ", "mi ciudad es ", "mi ciudad:", "radico en "} {
 		if i := strings.Index(low, pref); i >= 0 {
 			rest := strings.TrimSpace(text[i+len(pref):])
 			val := firstNameTokens(rest, 3)

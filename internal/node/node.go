@@ -92,16 +92,20 @@ type NodoAlset struct {
 	store persistence.Store
 
 	// Continuidad de diálogo Mind (hilo + referentes de tools)
-	mindLastMu      sync.Mutex
-	mindLastQuery   string
-	mindLastKnow    string
-	mindLastMem     string
-	mindLastVoice   string
-	mindLastGen     string // último gen tocado
-	mindLastExplore string // último informe explore
-	mindLastCode    string // último esqueleto codegen
-	mindLastTopic      string // gen|explore|code|know|chat|math
-	mindLastScoutTopic string // último tema de sonda (ej. michael jordan)
+	mindLastMu         sync.Mutex
+	mindLastQuery      string
+	mindLastKnow       string
+	mindLastMem        string
+	mindLastVoice      string
+	mindLastGen        string  // último gen tocado
+	mindLastExplore    string  // último informe explore
+	mindLastCode       string  // último esqueleto codegen
+	mindLastTopic      string  // gen|explore|code|know|chat|math
+	mindLastScoutTopic string  // último tema de sonda (ej. michael jordan)
+	mindLastMathResult float64 // último resultado numérico del tick
+	mindLastMathOK     bool
+	mindLastCreative   string   // último texto creativo
+	mindTopicStack     []string // temas de diálogo recientes (máx 8)
 }
 
 type BlockInfo struct {
