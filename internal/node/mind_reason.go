@@ -37,7 +37,6 @@ func getLastReasonConclusion() string {
 	return lastReasonConclusion
 }
 
-
 // Capa de razón ternaria (no LLM): hechos 0/1/2 + reglas + extracción gramatical
 // de cláusulas en textos largos. Autosimilitud: las mismas reglas se reaplican
 // en un segundo nivel (cierre fractal).
@@ -225,6 +224,15 @@ func parseRelationFact(text string, conf int, src string) (ternaryFact, bool) {
 		{" no es ", "no_es"},
 		{" implica que ", "implica"},
 		{" implica ", "implica"},
+		{" requiere ", "requiere"},
+		{" necesita ", "requiere"},
+		{" causa ", "causa"},
+		{" provoca ", "causa"},
+		{" genera ", "genera"},
+		{" produce ", "genera"},
+		{" usa ", "usa"},
+		{" utiliza ", "usa"},
+		{" contiene ", "tiene"},
 		{" es parte de ", "parte_de"},
 		{" forma parte de ", "parte_de"},
 		{" pertenece a ", "parte_de"},
@@ -435,6 +443,49 @@ func deduceAll(facts []ternaryFact) []ternaryFact {
 					}
 					add(ternaryFact{Subj: a.Subj, Rel: "tiene", Obj: b.Obj, Conf: c, Src: "regla:tiene+es"})
 				}
+
+				// A requiere B, B es C ⇒ A requiere C (matiz)
+				if a.Rel == "requiere" && isIdentityRel(b.Rel) && termsMatch(a.Obj, b.Subj) {
+					c := conf
+					if c > 1 {
+						c = 1
+					}
+					add(ternaryFact{Subj: a.Subj, Rel: "requiere", Obj: b.Obj, Conf: c, Src: "regla:req+es"})
+				}
+				if a.Rel == "requiere" && b.Rel == "requiere" && termsMatch(a.Obj, b.Subj) {
+					add(ternaryFact{Subj: a.Subj, Rel: "requiere", Obj: b.Obj, Conf: conf, Src: "regla:trans-req"})
+				}
+				// A causa B, B causa C ⇒ A causa C
+				if a.Rel == "causa" && b.Rel == "causa" && termsMatch(a.Obj, b.Subj) {
+					add(ternaryFact{Subj: a.Subj, Rel: "causa", Obj: b.Obj, Conf: conf, Src: "regla:trans-causa"})
+				}
+				if isIdentityRel(a.Rel) && b.Rel == "causa" && termsMatch(a.Obj, b.Subj) {
+					add(ternaryFact{Subj: a.Subj, Rel: "causa", Obj: b.Obj, Conf: conf, Src: "regla:es+causa"})
+				}
+				// A genera B, B es C ⇒ A genera C (matiz)
+				if a.Rel == "genera" && isIdentityRel(b.Rel) && termsMatch(a.Obj, b.Subj) {
+					c := conf
+					if c > 1 {
+						c = 1
+					}
+					add(ternaryFact{Subj: a.Subj, Rel: "genera", Obj: b.Obj, Conf: c, Src: "regla:gen+es"})
+				}
+				if a.Rel == "usa" && isIdentityRel(b.Rel) && termsMatch(a.Obj, b.Subj) {
+					c := conf
+					if c > 1 {
+						c = 1
+					}
+					add(ternaryFact{Subj: a.Subj, Rel: "usa", Obj: b.Obj, Conf: c, Src: "regla:usa+es"})
+				}
+				// A implica B, B requiere C ⇒ A requiere C (matiz débil)
+				if a.Rel == "implica" && b.Rel == "requiere" && termsMatch(a.Obj, b.Subj) {
+					c := conf
+					if c > 1 {
+						c = 1
+					}
+					add(ternaryFact{Subj: a.Subj, Rel: "requiere", Obj: b.Obj, Conf: c, Src: "regla:imp+req"})
+				}
+
 				// A parte_de B, B es C ⇒ A parte_de C (matiz)
 				if a.Rel == "parte_de" && isIdentityRel(b.Rel) && termsMatch(a.Obj, b.Subj) {
 					c := conf
@@ -525,7 +576,6 @@ func formatDeductionVoice(premises []ternaryFact, concl ternaryFact) string {
 	}
 	return strings.TrimSpace(b.String())
 }
-
 
 func scoreFactAgainstQuery(f ternaryFact, qtoks []string) int {
 	sc := f.Conf

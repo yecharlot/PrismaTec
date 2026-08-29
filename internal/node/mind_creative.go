@@ -401,7 +401,8 @@ func naturalThemeImage(theme string) string {
 func pickLiteraryDevice(theme string, variant int) string {
 	devices := []string{
 		"metáfora", "símil", "anáfora", "verso libre", "haiku", "personificación",
-		"aliteración", "hipérbole",
+		"aliteración", "hipérbole", "paradoja", "sinestesia", "paralelismo",
+		"interrogación retórica", "apóstrofe", "gradación",
 	}
 	i := 0
 	for _, r := range theme {
@@ -853,6 +854,37 @@ func composeShortTale(theme, anchor, device string, variant int) string {
 		b.WriteString("La noche bajó el volumen del mundo.\n")
 		b.WriteString("Quedaron farolas, perros lejanos y la idea de que mañana también pedirá valor.\n")
 		b.WriteString("Cierre: dormirse fue un acto de confianza, no de rendición.")
+
+	case strings.Contains(low, "gen") || strings.Contains(low, "sonda"):
+		switch v {
+		case 1:
+			b.WriteString("Una semilla con nombre ANS cruzó el borde sin pedir aplauso.\n")
+			b.WriteString("No conquistaba: observaba, registraba un hallazgo y volvía con la voz justa.\n")
+			b.WriteString("Cierre: el gen no era héroe; era memoria que aprendió a viajar.")
+		case 2:
+			b.WriteString("En la frontera no había bandera, solo paquetes y preguntas.\n")
+			b.WriteString("La sonda tomó nota, selló un CID y no invadió lo que no le tocaba.\n")
+			b.WriteString("Cierre: explorar no es poseer.")
+		default:
+			b.WriteString("Alguien soltó una célula digital al torrente de la red.\n")
+			b.WriteString("Volvió más liviana de ego y más pesada de hechos.\n")
+			b.WriteString("Cierre: la misión cabía en una clave, no en un imperio.")
+		}
+
+	case strings.Contains(low, "nodo") || strings.Contains(low, "mind"):
+		b.WriteString("El nodo no dormía: escuchaba HTTP y contaba órganos.\n")
+		b.WriteString("Cada latido era un juicio en tres tonos, no un sueño de tokens.\n")
+		b.WriteString("Cierre: permanecer despierto era su forma de cuidar el campo.")
+
+	case strings.Contains(low, "memoria") || strings.Contains(low, "cid"):
+		b.WriteString("Guardaron una frase bajo un hash y el tiempo ya no pudo negar que había sido dicha.\n")
+		b.WriteString("No era nostalgia: era prueba.\n")
+		b.WriteString("Cierre: recordar con CID es prometer no reescribir el pasado a conveniencia.")
+
+	case strings.Contains(low, "zyrion") || strings.Contains(low, "ternar"):
+		b.WriteString("Tres caminos: seguir, matizar o sumidero.\n")
+		b.WriteString("El dos no negociaba promedios; el cero no fingía alarma.\n")
+		b.WriteString("Cierre: decidir con tres tonos es más pobre en adorno y más rico en honestidad.")
 
 	default:
 		sub := themeAsSubject(theme)

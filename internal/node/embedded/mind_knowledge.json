@@ -2084,5 +2084,504 @@
       "sumidero 2"
     ],
     "text": "RFT (Razonamiento Fractal-Ternario): 0 cierra el camino, 1 sostiene en el nivel, 2 es sumidero y salto a otro nivel (inversión, negación acotada o concreción). No es predicción de tokens ni imitación humana: es árbol auto-similar bajo Zyrion."
+  },
+  {
+    "type": "ciencia",
+    "keys": [
+      "qué es la física",
+      "que es la fisica",
+      "física",
+      "fisica"
+    ],
+    "text": "La física estudia la materia, la energía y sus interacciones. En este nodo no simulo laboratorios: puedo anclar definiciones, relacionar conceptos (fuerza, campo, información) y, si hace falta, traer un resumen verificado por sonda."
+  },
+  {
+    "type": "ciencia",
+    "keys": [
+      "qué es la química",
+      "que es la quimica",
+      "química",
+      "quimica"
+    ],
+    "text": "La química estudia la composición y transformación de la materia. Aquí la trato como red de hechos: elemento, enlace, reacción. Si falta detalle, la vía legítima es explorar y anclar, no inventar fórmulas."
+  },
+  {
+    "type": "ciencia",
+    "keys": [
+      "qué es la biología",
+      "que es la biologia",
+      "biología",
+      "biologia"
+    ],
+    "text": "La biología estudia los seres vivos y sus procesos. Para Mind, un organismo vivo y un organismo digital comparten metáfora de ciclo (percibir–decidir–recordar), pero no son la misma escala: no confundo célula con CID."
+  },
+  {
+    "type": "ciencia",
+    "keys": [
+      "que es un gen biológico",
+      "gen biológico"
+    ],
+    "text": "En biología, un gen es un segmento de información heredable. En Alset, un gen digital es otra cosa: identidad ANS, RootCID y misión. Comparten la idea de unidad que viaja y se expresa, no el mecanismo molecular."
+  },
+  {
+    "type": "ciencia",
+    "keys": [
+      "qué es una célula",
+      "que es una celula",
+      "célula",
+      "celula"
+    ],
+    "text": "La célula es la unidad básica de la vida orgánica. En el discurso de Alset-Gen, la 'célula madre digital' es metáfora de semilla autónoma, no una célula biológica."
+  },
+  {
+    "type": "ciencia",
+    "keys": [
+      "qué es la evolución",
+      "que es la evolucion",
+      "evolución biológica"
+    ],
+    "text": "La evolución biológica es cambio de frecuencias de rasgos en poblaciones a lo largo del tiempo. En Mind, 'mutar el genoma' es ajustar umbrales de decisión con evidencia de diálogo, no selección natural darwiniana literal."
+  },
+  {
+    "type": "ciencia",
+    "keys": [
+      "qué es la entropía",
+      "que es la entropia",
+      "entropía",
+      "entropia"
+    ],
+    "text": "La entropía mide dispersión o incertidumbre en un sistema. En diálogo, el estado 2 de Zyrion actúa como sumidero: corta caminos confusos en lugar de promediar ruido."
+  },
+  {
+    "type": "ciencia",
+    "keys": [
+      "qué es un algoritmo",
+      "que es un algoritmo",
+      "algoritmo"
+    ],
+    "text": "Un algoritmo es un procedimiento finito y definido para transformar entradas en salidas. LispAI y el latido de Mind son algoritmos; un LLM también lo es, pero optimiza otra función (siguiente token)."
+  },
+  {
+    "type": "ciencia",
+    "keys": [
+      "qué es la información",
+      "que es la informacion",
+      "teoría de la información"
+    ],
+    "text": "Información es distinción que reduce incertidumbre. Un CID fija un contenido; un episodio de memoria es información con dueño y tiempo, no solo un string flotante."
+  },
+  {
+    "type": "ciencia",
+    "keys": [
+      "qué es la computación",
+      "que es la computacion",
+      "computación"
+    ],
+    "text": "Computar es manipular símbolos según reglas. Este nodo computa órganos, reglas ternarias y plantillas; no 'sueña' tokens."
+  },
+  {
+    "type": "zyrion",
+    "keys": [
+      "qué es el estado 0",
+      "estado 0 zyrion",
+      "seguir 0"
+    ],
+    "text": "Estado 0: seguir / no alarma. El camino puede continuar sin intervención fuerte. En RFT, 0 cierra un ramal que no aporta."
+  },
+  {
+    "type": "zyrion",
+    "keys": [
+      "qué es el estado 1",
+      "estado 1 zyrion",
+      "matizar 1"
+    ],
+    "text": "Estado 1: matizar. Hay señal útil pero no sumidero. En RFT, 1 sostiene el razonamiento en el nivel actual."
+  },
+  {
+    "type": "zyrion",
+    "keys": [
+      "qué es el estado 2",
+      "estado 2 zyrion",
+      "alarma 2"
+    ],
+    "text": "Estado 2: sumidero o alarma. Domina el juicio: no se promedia con el resto. Puede vetar acciones (ethics) o forzar un salto de nivel en RFT."
+  },
+  {
+    "type": "zyrion",
+    "keys": [
+      "operador absorbente",
+      "2 absorbente",
+      "por qué el 2 domina"
+    ],
+    "text": "El 2 es absorbente: si cualquier subjuicio crítico vale 2, el conjunto no se 'suaviza' con ceros. Sirve para no diluir riesgos ni contradicciones."
+  },
+  {
+    "type": "ia_conceptos",
+    "keys": [
+      "qué es conocimiento",
+      "que es conocimiento",
+      "generar conocimiento"
+    ],
+    "text": "Conocimiento aquí es hecho anclado (corpus, CID, sonda) o conclusión derivada por reglas. No es inventar una teoría sin premisas. Mind genera conocimiento nuevo al importar, combinar y derivar con traza."
+  },
+  {
+    "type": "ia_conceptos",
+    "keys": [
+      "qué es inferencia",
+      "que es inferencia",
+      "inferir"
+    ],
+    "text": "Inferir es obtener un hecho no escrito literalmente a partir de otros con reglas (transitividad, implica, parte_de). RFT y razón ternaria hacen inferencia; el scout no infiere: trae texto externo."
+  },
+  {
+    "type": "ia_conceptos",
+    "keys": [
+      "qué es una premisa",
+      "que es una premisa",
+      "premisas"
+    ],
+    "text": "Una premisa es un hecho de partida. Sin premisas válidas, RFT no fabrica la conclusión: pide eslabón o declara que no cierra."
+  },
+  {
+    "type": "ia_conceptos",
+    "keys": [
+      "qué es trazabilidad",
+      "que es trazabilidad",
+      "explicable"
+    ],
+    "text": "Trazabilidad: poder decir qué órganos, qué reglas y qué fuentes sostienen una respuesta. action_memory y CIDs existen para eso."
+  },
+  {
+    "type": "ia_conceptos",
+    "keys": [
+      "composición simbólica",
+      "recombinar",
+      "generar sin llm"
+    ],
+    "text": "Composición simbólica: unir fragmentos de corpus, memoria y plantillas bajo reglas. Es generativo en el sentido de producir texto nuevo no copiado literal, sin ser predicción probabilística abierta."
+  },
+  {
+    "type": "prog_go",
+    "keys": [
+      "concurrencia en go"
+    ],
+    "text": "Una goroutine es un hilo ligero de ejecución en Go. El nodo Alset usa concurrencia con cuidado: no bloquear el latido HTTP con trabajo largo sin control."
+  },
+  {
+    "type": "prog_go",
+    "keys": [
+      "qué es un canal en go",
+      "canales go"
+    ],
+    "text": "Los canales en Go comunican goroutines con tipado. Sirven para coordinar, no para sustituir el diseño de APIs claras."
+  },
+  {
+    "type": "prog_go",
+    "keys": [
+      "qué es un interface en go"
+    ],
+    "text": "Una interface en Go define comportamiento. El backend del nodo separa responsabilidades (HTTP, Mind, Gen) para poder crecer sin un monolito opaco eterno."
+  },
+  {
+    "type": "prog_go",
+    "keys": [
+      "contexto en go",
+      "context.Context",
+      "cancelación"
+    ],
+    "text": "context.Context propaga cancelación y plazos. Útil en exploraciones y llamadas externas para no dejar sondas colgadas."
+  },
+  {
+    "type": "algoritmos",
+    "keys": [
+      "qué es recursión",
+      "que es recursion",
+      "recursividad"
+    ],
+    "text": "Recursión: una función se define en términos de sí misma con caso base. En Lisp es natural; en RFT, reaplicar reglas a hechos derivados es recursión de juicio, no de pila infinita."
+  },
+  {
+    "type": "algoritmos",
+    "keys": [
+      "qué es un grafo",
+      "que es un grafo",
+      "grafo"
+    ],
+    "text": "Un grafo es nodos y aristas. El árbol RFT es un grafo dirigido de hechos; la red libp2p es otro grafo: peers y enlaces."
+  },
+  {
+    "type": "algoritmos",
+    "keys": [
+      "qué es búsqueda",
+      "busqueda en grafo"
+    ],
+    "text": "Buscar en un grafo es recorrer nodos según una política. Scout busca fuera; RFT busca cierres dentro del grafo de premisas."
+  },
+  {
+    "type": "prog_lisp",
+    "keys": [
+      "qué es quote"
+    ],
+    "text": "quote evita evaluar una lista como llamada. En evaluar-zyrion, entradas y topología van entre quote para tratarse como datos."
+  },
+  {
+    "type": "prog_lisp",
+    "keys": [
+      "qué es un átomo lisp",
+      "atomo lisp",
+      "átomo"
+    ],
+    "text": "En Lisp clásico, átomo es lo que no es lista. Manipular átomos y listas es la base del intérprete embebido."
+  },
+  {
+    "type": "prog_lisp",
+    "keys": [
+      "metaprogramación",
+      "macros lisp",
+      "código como datos"
+    ],
+    "text": "Metaprogramación: el programa trata el código como datos. LispAI habilita eso en el nodo; Mind no reescribe su binario solo, pero sí puede orientar plantillas y reglas."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "content id"
+    ],
+    "text": "Un CID (content identifier) identifica contenido por su hash. Si el bytes cambian, el CID cambia. Por eso la memoria episódica puede ser inmutable y verificable."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "qué es ipfs",
+      "que es ipfs",
+      "interplanetary"
+    ],
+    "text": "IPFS es una red de contenido direccionado por hash. El nodo se apoya en esa idea de bloques y CIDs; no sustituye por sí solo un hosting clásico."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "que es libp2p",
+      "peer to peer"
+    ],
+    "text": "libp2p es la pila de protocolos P2P (identidad, transporte, descubrimiento). El peer_id del nodo es su identidad de red."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "qué es un peer",
+      "que es un peer",
+      "pares de la red"
+    ],
+    "text": "Un peer es otro nodo con el que se puede hablar. peers:0 en /api/v2/info significa que aún no hay vecinos visibles en esa sesión."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "qué es rootcid",
+      "rootcid del gen"
+    ],
+    "text": "RootCID es el CID de estado actual de un gen o entidad. Mutar con permiso cambia la forma; la clave ANS puede permanecer."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "qué es un pulso",
+      "pulsos alset",
+      "sse pulso"
+    ],
+    "text": "Un pulso es un latido de sincronización o evento en la red Alset. Mind tiene su propio latido cognitivo (tick); la red tiene pulsos de presencia."
+  },
+  {
+    "type": "prog_ethics",
+    "keys": [
+      "qué no debo pedir a mind",
+      "límites mind",
+      "limites mind"
+    ],
+    "text": "No pidas borrado masivo de secretos, dumps de tokens ni resets destructivos: ethics en 2 frena. Sí puedes preguntar, explorar temas públicos y pedir composiciones honestas."
+  },
+  {
+    "type": "prog_ethics",
+    "keys": [
+      "privacidad",
+      "datos personales",
+      "no guardes secretos"
+    ],
+    "text": "No envíes contraseñas ni secretos al tick. La memoria episódica guarda texto de diálogo: trátala como bitácora, no como caja fuerte."
+  },
+  {
+    "type": "social",
+    "keys": [
+      "qué es confianza",
+      "que es confianza",
+      "reputación"
+    ],
+    "text": "Confianza aquí es historial de acciones y vetos, no carisma. action_memory registra qué se ejecutó y con qué órganos."
+  },
+  {
+    "type": "literatura",
+    "keys": [
+      "que es un simil"
+    ],
+    "text": "Símil: comparación explícita (como / parece). Las plantillas creativas rotan símiles sin pretender biología ni historia inventada."
+  },
+  {
+    "type": "gramatica",
+    "keys": [
+      "singular y plural"
+    ],
+    "text": "Las plantillas creativas intentan concordar singular/plural del tema. Si falla, prioriza claridad sobre adorno."
+  },
+  {
+    "type": "hechos_cadena",
+    "keys": [
+      "mind es un organismo",
+      "alset mind es organismo"
+    ],
+    "text": "Alset Mind es un organismo digital de decisión ternaria."
+  },
+  {
+    "type": "hechos_cadena",
+    "keys": [
+      "organismo digital implica trazabilidad",
+      "trazabilidad implica cid"
+    ],
+    "text": "Un organismo digital de este diseño implica trazabilidad; la trazabilidad se apoya en CIDs y registros de acción."
+  },
+  {
+    "type": "hechos_cadena",
+    "keys": [
+      "scout implica fuente externa",
+      "sonda implica web"
+    ],
+    "text": "Una sonda de conocimiento implica fuente externa; el hallazgo debe poder anclarse antes de reutilizarse."
+  },
+  {
+    "type": "hechos_cadena",
+    "keys": [
+      "ethics 2 implica no actuar",
+      "veto implica effect 0"
+    ],
+    "text": "Ethics en 2 implica no ejecutar efecto sobre el nodo; effect queda en 0 para canales peligrosos."
+  },
+  {
+    "type": "hechos_cadena",
+    "keys": [
+      "zyrion usa tres estados",
+      "lógica ternaria tiene 0 1 2"
+    ],
+    "text": "Zyrion usa tres estados de juicio: 0, 1 y 2."
+  },
+  {
+    "type": "hechos_cadena",
+    "keys": [
+      "rft usa zyrion",
+      "rft implica niveles"
+    ],
+    "text": "RFT usa la lógica de Zyrion y añade niveles y saltos sobre el grafo de hechos."
+  },
+  {
+    "type": "aprendizaje",
+    "keys": [
+      "cómo aprende mind",
+      "como aprende mind",
+      "aprender en mind"
+    ],
+    "text": "Mind 'aprende' anclando episodios, hallazgos de sonda y, a veces, umbrales de genoma. No reentrena una red neuronal en cada frase."
+  },
+  {
+    "type": "aprendizaje",
+    "keys": [
+      "qué es el corpus",
+      "que es el corpus"
+    ],
+    "text": "El corpus es conocimiento curado en el nodo (y el live de sondas). Es la base estable; la memoria episódica es la bitácora personal del diálogo."
+  },
+  {
+    "type": "aprendizaje",
+    "keys": [
+      "diferencia corpus y memoria",
+      "corpus vs memoria"
+    ],
+    "text": "Corpus: general y curado. Memoria: hechos del diálogo (nombres, preferencias, hallazgos recientes). Las preguntas personales priorizan memoria."
+  },
+  {
+    "type": "matematicas",
+    "keys": [
+      "qué es una función",
+      "que es una funcion",
+      "función matemática"
+    ],
+    "text": "Una función asocia entradas a salidas de forma determinada. evaluar-zyrion es una función de topología y valores a un estado 0/1/2."
+  },
+  {
+    "type": "matematicas",
+    "keys": [
+      "qué es lógica",
+      "que es logica",
+      "lógica formal"
+    ],
+    "text": "La lógica estudia inferencias válidas. La ternaria añade un valor de sumidero además de verdadero/falso clásico."
+  },
+  {
+    "type": "matematicas",
+    "keys": [
+      "qué es un conjunto",
+      "que es un conjunto",
+      "teoría de conjuntos"
+    ],
+    "text": "Un conjunto es una colección de elementos. Los índices de conocimiento y creatividad son conjuntos de entradas con clave."
+  },
+  {
+    "type": "filosofia",
+    "keys": [
+      "qué es la duda",
+      "que es la duda",
+      "dudar"
+    ],
+    "text": "Dudar aquí es legítimo: curiosity alta y ethics abierta permiten preguntar sin actuar. El 1 matiza; el 2 frena."
+  },
+  {
+    "type": "filosofia",
+    "keys": [
+      "qué es la honestidad",
+      "honestidad del nodo"
+    ],
+    "text": "Honestidad: no presentar plantilla creativa como hecho enciclopédico, ni hallazgo de sonda como memoria personal."
+  },
+  {
+    "type": "filosofia",
+    "keys": [
+      "qué es el límite",
+      "limites del conocimiento",
+      "saber que no sé"
+    ],
+    "text": "Saber que no se sabe dispara sonda o pide premisa. Inventar el eslabón rompería la tesis del organismo."
+  },
+  {
+    "type": "patron_diseno",
+    "keys": [
+      "qué es un pipeline",
+      "pipeline de mind"
+    ],
+    "text": "El pipeline del tick ordena veto, tools, razón, creativo, scout y chat. El orden evita que un eco de memoria robe una sonda necesaria."
+  },
+  {
+    "type": "patron_diseno",
+    "keys": [
+      "separación de responsabilidades",
+      "modularidad mind"
+    ],
+    "text": "Scout, razón, creativo y actuate viven en módulos distintos para poder reforzar uno sin reescribir todo el latido."
+  },
+  {
+    "type": "patron_diseno",
+    "keys": [
+      "fail closed",
+      "fallar cerrado",
+      "seguridad por defecto"
+    ],
+    "text": "Ante duda destructiva, ethics tiende a cerrar (2) en lugar de abrir. Es fail-closed: mejor no actuar que actuar mal."
   }
 ]
