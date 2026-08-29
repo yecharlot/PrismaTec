@@ -30,6 +30,7 @@ type mindEpisodePayload struct {
 	Voice   string             `json:"voice"`
 	TS      string             `json:"ts"`
 	Agent   string             `json:"agent"`
+	Session string             `json:"session,omitempty"`
 	Organs  []MindOrganResult  `json:"organs"`
 }
 

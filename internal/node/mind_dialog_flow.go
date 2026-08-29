@@ -329,6 +329,35 @@ func (n *NodoAlset) tryDialogFlow(text string, profile UserProfile, recent []min
 		return v, k
 	}
 
+	// --- Fútbol / eventos sin inventar ---
+	if strings.Contains(low, "mundial") || strings.Contains(low, "fútbol") || strings.Contains(low, "futbol") {
+		if strings.Contains(low, "quién ganó") || strings.Contains(low, "quien gano") || strings.Contains(low, "último mundial") {
+			return "No tengo el marcador en vivo en este nodo. Para el último Mundial de fútbol masculino de mayores, conviene mirar una fuente deportiva actualizada; puedo hablar de reglas o historia si me das un año o un equipo.", "chat"
+		}
+		return "¿Quieres historia del fútbol, reglas básicas o un equipo concreto? Dime el ángulo y lo abordamos sin inventar resultados de hoy.", "chat"
+	}
+
+	// --- Confianza / presión meta ---
+	if strings.Contains(low, "no confío") || strings.Contains(low, "no confio") {
+		return "Es razonable dudar. Puedes pedirme la fuente (memoria tuya, corpus o exploración) o reformular la pregunta. No pretendo autoridad ciega.", "chat"
+	}
+
+	// --- Pedidos de formato ---
+	if strings.Contains(low, "pros y contras") || strings.Contains(low, "en 3 viñetas") || strings.Contains(low, "viñetas") {
+		return templateHumanAdvice(low), "chat"
+	}
+
+	// --- Recordatorio de tema en stack ---
+	if strings.Contains(low, "de qué hablamos") || strings.Contains(low, "de que hablamos") || strings.Contains(low, "qué tema") {
+		n.mindLastMu.Lock()
+		stack := append([]string{}, n.mindTopicStack...)
+		n.mindLastMu.Unlock()
+		if len(stack) == 0 {
+			return "Aún no hay un tema anclado en este hilo. Propón uno.", "chat"
+		}
+		return "Temas recientes en este hilo: " + strings.Join(stack, " · ") + ". ¿Cuál retomamos?", "chat"
+	}
+
 	// --- Perfil / qué sabes de mí ---
 	if strings.Contains(low, "qué sabes de mí") || strings.Contains(low, "que sabes de mi") ||
 		strings.Contains(low, "qué sabes de mi") {

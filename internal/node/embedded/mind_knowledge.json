@@ -3059,5 +3059,89 @@
       "logs métricas"
     ],
     "text": "Capacidad de ver qué hace el sistema en runtime. action_memory y calibrate son piezas de observabilidad cognitiva."
+  },
+  {
+    "type": "dialogo",
+    "keys": [
+      "sesión",
+      "session id",
+      "aislamiento"
+    ],
+    "text": "Cada cliente puede mandar un session en el tick (JSON session o cabecera X-Mind-Session). Así la memoria y el hilo no se mezclan entre usuarios del mismo nodo."
+  },
+  {
+    "type": "dialogo",
+    "keys": [
+      "neurona ternaria",
+      "capa neuronal",
+      "agentes neurona"
+    ],
+    "text": "Mind puede activar una red pequeña de neuronas ternarias (0/1/2) ancladas a agentes del nodo. No predicen tokens: propagan activaciones y eligen una ruta (rechazar, explorar, calcular, empatía, creativo, memoria)."
+  },
+  {
+    "type": "dialogo",
+    "keys": [
+      "cómo cambiar de tema",
+      "cambiar de tema",
+      "otro tema"
+    ],
+    "text": "Di «ahora hablemos de…» o «mejor de…». El nodo apila el tema y puede retomarlo con «vuelve a…»."
+  },
+  {
+    "type": "dialogo",
+    "keys": [
+      "retomar tema",
+      "vuelve al tema",
+      "de qué hablamos"
+    ],
+    "text": "Puedes decir «vuelve a Cleopatra» o preguntar «de qué hablamos». Se usa la pila de temas del hilo de sesión."
+  },
+  {
+    "type": "ciencia",
+    "keys": [
+      "qué es marie curie",
+      "marie curie"
+    ],
+    "text": "Marie Curie fue física y química, pionera de la radiactividad y doble premio Nobel. Para detalle biográfico el nodo puede explorar una ficha pública."
+  },
+  {
+    "type": "ciencia",
+    "keys": [
+      "qué es alan turing",
+      "alan turing"
+    ],
+    "text": "Alan Turing formalizó la computación y contribuyó a la criptografía en la Segunda Guerra Mundial. Es una referencia central de la informática."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "qué es el jazz",
+      "jazz"
+    ],
+    "text": "El jazz es un género musical nacido en Estados Unidos, con improvisación, swing y raíces afroamericanas."
+  },
+  {
+    "type": "social",
+    "keys": [
+      "horas extra",
+      "trabajo extra sin paga"
+    ],
+    "text": "El trabajo extra reiterado sin acuerdo ni compensación es una señal de alerta laboral. Mind puede ordenar opciones; no sustituye asesoría legal local."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "agente como neurona",
+      "neuronas en alset"
+    ],
+    "text": "Un agente Alset tiene identidad y RootCID. En la capa ternaria de Mind, agentes mind-neuron-* actúan como unidades de activación enlazadas por sinapsis 0/1/2."
+  },
+  {
+    "type": "ia_conceptos",
+    "keys": [
+      "cabo suelto",
+      "cuando zyrion no basta"
+    ],
+    "text": "Si plantillas y órganos no cierran el turno, la red ternaria de neuronas propone una ruta. Sigue siendo determinista: no rellena con prosa libre de un LLM."
   }
 ]

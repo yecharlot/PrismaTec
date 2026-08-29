@@ -106,6 +106,8 @@ type NodoAlset struct {
 	mindLastMathOK     bool
 	mindLastCreative   string   // último texto creativo
 	mindTopicStack     []string // temas de diálogo recientes (máx 8)
+	mindSessions       map[string]*mindSessionState
+	mindSessionMu      sync.Mutex
 }
 
 type BlockInfo struct {

@@ -15,6 +15,7 @@ type MindTickRequest struct {
 	Text     string             `json:"text"`
 	Signals  map[string]float64 `json:"signals"` // optional override
 	ForceMem bool               `json:"force_mem"`
+	Session  string             `json:"session"` // aislamiento de memoria/hilo por cliente
 }
 
 // MindOrganResult is one ternary organ reading.
@@ -402,7 +403,10 @@ func evalOrganPolar(name string, a, b, c float64, pa, pb, pc string) MindOrganRe
 	return MindOrganResult{Name: name, State: st, Label: labelForOrgan(name, st), Inputs: []float64{a, b, c}}
 }
 
-func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceMem bool) MindTickResponse {
+func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceMem bool, sessionID string) MindTickResponse {
+	sess := n.getOrCreateSession(sessionID)
+	n.bindSessionThread(sess)
+
 	sig := signalsFromTextMind(text)
 	for k, v := range override {
 		sig[k] = v
@@ -412,7 +416,10 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	if isMemoryQuery(text) {
 		recallN = 24 // deeper look when user asks to remember
 	}
-	recent := dedupeEpisodesByText(n.recallRecentEpisodes(recallN))
+	recent := dedupeEpisodesByText(filterEpisodesBySession(n.recallRecentEpisodes(recallN*2), sess.ID))
+	if len(recent) > recallN {
+		recent = recent[:recallN]
+	}
 	knownName := knownUserNameFromEpisodes(recent)
 	memHint := ""
 	memSpeak := ""
@@ -790,6 +797,19 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		}
 	}
 
+	// 6d) Capa neuronal ternaria (agentes-neurona) si aún no hay voz
+	if voice == "" {
+		if nv, nk, tr := n.ternaryNeuralAssist(text, organs); nv != "" {
+			voice = nv
+			primaryKind = nk
+			if tr != "" {
+				respNoteExtra := tr
+				_ = respNoteExtra
+			}
+			recordDialogPattern(dialogIntent(nk), text)
+		}
+	}
+
 	// 7) Voz clásica (identidad, memoria, corpus, compose)
 	if voice == "" {
 		voice = mindVoice(text, organs, memSpeak, knownName)
@@ -861,6 +881,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			"voice":   voice,
 			"ts":      time.Now().UTC().Format(time.RFC3339),
 			"agent":   mindAgentID,
+			"session": sess.ID,
 		}
 		raw, _ := json.Marshal(ep)
 		if cid, err := n.GenerarCID(raw); err == nil && cid != "" {
@@ -889,6 +910,10 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	}
 	if voice != "" {
 		recordVoiceAnomalies(text, voice)
+	}
+	n.saveSessionThread(sess)
+	if sess != nil && sess.ID != "" && sess.ID != "anon" {
+		resp.Note = resp.Note + "+session:" + sess.ID
 	}
 	return resp
 }
@@ -1575,7 +1600,10 @@ func (n *NodoAlset) handleMindTick(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "JSON inválido", 400)
 		return
 	}
-	out := n.runMindTick(req.Text, req.Signals, req.ForceMem)
+	if req.Session == "" {
+		req.Session = r.Header.Get("X-Mind-Session")
+	}
+	out := n.runMindTick(req.Text, req.Signals, req.ForceMem, req.Session)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(out)
 }
