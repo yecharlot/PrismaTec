@@ -287,15 +287,15 @@ func (n *NodoAlset) tryDialogFlow(text string, profile UserProfile, recent []min
 		return templateEmotionExtended(low), "chat"
 	}
 
+	// --- Comida con ingredientes (antes que consejo genérico "qué hago") ---
+	if strings.Contains(low, "plátano") || strings.Contains(low, "platano") || strings.Contains(low, "huevos") ||
+		strings.Contains(low, "tengo solo") {
+		return templateCooking(low), "chat"
+	}
+
 	// --- Consejo laboral / legal orientativo ---
 	if isHumanAdvice(low) {
 		return templateHumanAdvice(low), "chat"
-	}
-
-	// --- Comida con ingredientes ---
-	if strings.Contains(low, "plátano") || strings.Contains(low, "platano") || strings.Contains(low, "huevos") ||
-		(strings.Contains(low, "tengo solo") && strings.Contains(low, "qué hago")) {
-		return templateCooking(low), "chat"
 	}
 
 	// --- Ruido / saludo informal ---
