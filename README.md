@@ -1,35 +1,50 @@
-# Alset (P.TEC-AN v4.0)
+# PrismaTec / Alset
 
-Red peer-to-peer en Go: nodos libp2p, agentes, apps por CID, **LispAI**, lógica ternaria **Zyrion**, modelos ligeros, auth, módulos y **API v2**.
+Red peer-to-peer en **Go**: nodo libp2p, agentes, apps por CID, **LispAI**, lógica ternaria **Zyrion**, **Alset Mind** (organismo de decisión) y **Alset Gen** (células / sondas).
 
-| Recurso | Enlace |
-|---------|--------|
-| **Guía completa** | [docs/GUIA.md](docs/GUIA.md) |
-| LispAI y Zyrion | [docs/LISPAI.md](docs/LISPAI.md) |
-| Auth, módulos, API v2 | [docs/API_AUTH_MODULES_V2.md](docs/API_AUTH_MODULES_V2.md) |
-| Arquitectura | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
-| Alset Mind — roadmap | [docs/ALSET_MIND_ROADMAP.md](docs/ALSET_MIND_ROADMAP.md) |
-| Alset Mind — handoff | [docs/ALSET_MIND_HANDOFF.md](docs/ALSET_MIND_HANDOFF.md) |
-| Landing | https://yecharlot.github.io/PrismaTec/ |
-| Relay en vivo | https://prismatec.onrender.com |
-| API v2 info | https://prismatec.onrender.com/api/v2/info |
+> **No es un LLM.** Mind evalúa órganos 0/1/2, recuerda en CID y orquesta genes. La voz sale de corpus, memoria, plantillas y herramientas — no de predicción de tokens.
 
 ---
 
-## Modos
+## Documentación (solo 3 entradas)
 
-| Modo | Activación | Rol |
-|------|------------|-----|
-| **Local** | Sin `RENDER` | Nodo completo (API, pulsos cliente, red) |
-| **Relay** | Con `RENDER` | Servidor de pulsos y sincronización |
+| Doc | Rol |
+|-----|-----|
+| **[README.md](README.md)** (este archivo) | Mapa del repo, módulos, arranque |
+| **[docs/HANDOFF.md](docs/HANDOFF.md)** | Estado actual, tip de `main`, gaps, reglas |
+| **[docs/GUIA.md](docs/GUIA.md)** | Cómo usar Mind, Gen, API, sesiones, pruebas |
 
-## Qué necesitas para empezar
+El resto de `docs/ALSET_*.md` históricos queda como **archivo**; no empezar por ahí.
 
-- Go 1.26 o superior
-- (Opcional) Un proyecto en [Supabase](https://supabase.com) si quieres guardar el estado en la nube
-- (Opcional) Una cuenta en Render si vas a desplegar el relay
+---
 
-### Arranque en local
+## Mapa modular del repo
+
+```text
+cmd/prisma-tec/          → binario del nodo
+internal/node/           → corazón: HTTP, Mind, Gen, red, persistencia
+  mind_*.go              → Alset Mind (tick, sesiones, diálogo, razón, scout…)
+  gen_*.go               → Alset Gen (lifecycle, explore, dispatch, memoria)
+  embedded/              → UI lab + mind_knowledge.json (corpus)
+internal/lisp/           → LispAI
+internal/persistence/    → Store: local | Supabase | Cloudflare DO
+cloudflare/alset-gen-worker/ → red edge + AlsetStoreDO
+docs/                    → HANDOFF + GUIA (+ archivo histórico)
+scripts/                 → baterías de diálogo / utilidades
+```
+
+| Módulo | Qué es | Entrada típica |
+|--------|--------|----------------|
+| **Nodo** | API HTTP + libp2p | `go run ./cmd/prisma-tec` → `:8080` |
+| **Mind** | Órganos + genoma + voz | `POST /api/mind/tick` |
+| **Gen** | Células ANS + sondas | `POST /api/gen/*` |
+| **LispAI** | Evaluación Lisp / ternaria | integrado en nodo |
+| **Store** | Persistencia bloques/KV | env `ALSET_PERSIST` / CF / local |
+| **Edge** | Worker Cloudflare | `alset-network.*.workers.dev` |
+
+---
+
+## Arranque local
 
 ```bash
 git clone https://github.com/yecharlot/PrismaTec.git
@@ -37,404 +52,61 @@ cd PrismaTec
 go run ./cmd/prisma-tec
 ```
 
-El panel de administración queda en:
+- API: `http://localhost:8080`
+- Lab Mind: `http://localhost:8080/w/mind.app.ans`
+- Salud: `GET /api/v2/info`
 
-```
-http://localhost:8080/static/index.html
-```
-
-La API escucha en el puerto **8080** por defecto. Puedes pasar otro puerto como argumento:
+### Mind con sesión (memoria aislada por cliente)
 
 ```bash
-go run ./cmd/prisma-tec 9090
-```
-
-### Arranque con Supabase
-
-Define estas variables antes de lanzar el nodo:
-
-```bash
-export SUPABASE_URL="https://TU_PROYECTO.supabase.co"
-export SUPABASE_SERVICE_KEY="tu_secret_key"
-go run ./cmd/prisma-tec
-```
-
-Si no las defines, el nodo guarda todo en disco dentro de la carpeta `alset_data/`.
-
----
-
-## Cómo está organizado el código
-
-```
-PrismaTec/
-├── cmd/prisma-tec/     # Único punto de entrada
-├── internal/           # Lógica interna (no se importa desde fuera)
-├── docs/               # Documentación de arquitectura
-├── static/             # Panel web y apps estáticas
-├── alset_data/         # Datos locales (si no usas Supabase)
-├── Dockerfile          # Imagen para Render u otros hosts
-├── go.mod
-└── README.md
-```
-
-### `cmd/prisma-tec`
-
-Solo arranca el nodo. No contiene lógica de negocio. Si mañana quieres otro binario (por ejemplo una CLI de administración), se añade aquí sin tocar el resto.
-
-### `internal/node`
-
-El corazón del sistema. Aquí vive `NodoAlset`. El código está partido por responsabilidad:
-
-| Archivo | Responsabilidad |
-|---------|-----------------|
-| `node.go` | Estructura del nodo, constantes, `Run` |
-| `init.go` | Arranque de libp2p, DHT, GossipSub y Lisp |
-| `p2p.go` | Gossip, streams de datos y sincronización entre pares |
-| `persist.go` | Guardar y cargar estado |
-| `neural_ops.go` | Inferencia, memoria y sinapsis |
-| `sync.go` | Sync manager (rápida / completa) |
-| `admin.go` | Panel de administración e archivos estáticos |
-| `modules.go` | Módulos, entidades, tokens y handlers asociados |
-| `http.go` | Rutas HTTP (`buildHTTPHandler`) |
-| `pulse.go` | Clientes SSE de pulsos |
-| `host_adapter.go` | Implementación de `nodeiface.Host` para Lisp |
-| `types.go` / `helpers.go` | Tipos y utilidades |
-
-### `internal/config`
-
-Constantes de protocolo, directorios y tópicos PubSub. El nodo las reexporta para no romper el código existente.
-
-### `internal/lisp`
-
-Motor Lisp embebido. No conoce los detalles internos del nodo: habla con él a través de una interfaz (`nodeiface.Host`). Así se puede cambiar el nodo sin reescribir el intérprete.
-
-### `internal/nodeiface`
-
-Contrato que el motor Lisp (y en el futuro otros módulos) usa para pedir cosas al nodo: crear agentes, firmar, publicar en la red, etc.
-
-### `internal/agents`
-
-Modelos de agentes, módulos, entidades y un registro compartido (`agents.Global`) para no repartir mapas sueltos por todo el código.
-
-### `internal/neural`
-
-Tipos de la capa de IA distribuida: estado de neurona, pesos sinápticos, peticiones de inferencia y consultas de memoria.
-
-### `internal/poh`
-
-Proof of Humanity: eventos y pruebas de sesión. El estado vive en `poh.Global`.
-
-### `internal/persistence`
-
-Cómo se guarda y se carga el estado.
-
-| Backend | Cuándo se usa |
-|---------|----------------|
-| **Supabase** | Si están `SUPABASE_URL` y `SUPABASE_SERVICE_KEY` |
-| **Disco local** | En cualquier otro caso (`alset_data/`) |
-
-Tablas en Supabase:
-
-| Tabla | Contenido |
-|-------|-----------|
-| `alset_agents` | Un registro por agente |
-| `alset_blocks` | Un registro por bloque/CID |
-| `alset_neural_state` | Estado neuronal |
-| `alset_kv` | Nombres DNS y datos genéricos en formato clave/valor |
-
-### `internal/pulse`
-
-Tipos del sistema de pulsos (SSE). La lógica de conexión sigue en `node/pulse.go`; este paquete concentra las estructuras para poder reutilizarlas.
-
-### `internal/httpapi`
-
-Todas las rutas HTTP se registran aquí (`Mount` + `MountCore`). El nodo solo aporta las implementaciones (`httpHandlers` y el adaptador `Backend`).
-
-### `internal/pulse`
-
-Transporte SSE (`ListenSSE`, `FormatSSE`) y servidores conocidos. La lógica de negocio de cada evento sigue en el nodo.
-
-### `internal/sync`
-
-Tipos de modo, configuración y progreso de sincronización.
-
-### Carpetas reservadas (`blocks`, `p2p`)
-
-Siguiente nivel de extracción (helpers de bloques y setup libp2p puro).
-
----
-
-## Operaciones habituales por API
-
-### Crear un agente
-
-```bash
-curl -X POST https://TU_HOST/api/crear-agente
-```
-
-Respuesta típica:
-
-```json
-{
-  "id": "cc356735b1e69431",
-  "root_cid": "",
-  "balance_utxo": 0,
-  "ultima_actualizacion": 1785695861
-}
-```
-
-### Listar agentes
-
-```bash
-curl https://TU_HOST/api/agentes/
-```
-
-### Listar bloques
-
-```bash
-curl https://TU_HOST/api/ipfs/list
-```
-
-### Ver peers de la red
-
-```bash
-curl https://TU_HOST/api/network/peers
-```
-
-En local sustituye `TU_HOST` por `http://localhost:8080`.
-
----
-
-## Persistencia: cuándo se lee y se escribe
-
-1. **Al arrancar** el nodo carga agentes, nombres, bloques y estado neural (desde Supabase o desde disco).
-2. **Durante el uso** se guarda cuando creas o modificas agentes, registras DNS, publicas bloques o ejecutas ciertas funciones Lisp.
-3. **Al apagar** (Ctrl+C o reinicio del servicio) se hace un guardado final.
-
-Si usas Supabase, después de crear un agente deberías verlo en la tabla `alset_agents`.
-
----
-
-## Despliegue en Render
-
-1. Conecta este repositorio al servicio web de Render.
-2. Añade las variables de entorno:
-   - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_KEY`
-3. Render inyecta `RENDER` solo; con eso el nodo entra en modo relay.
-4. El `Dockerfile` del repo ya construye desde `./cmd/prisma-tec`.
-
-Tras un deploy limpio, en los logs debe aparecer algo como:
-
-```text
-✅ Persistencia: Supabase → https://….supabase.co
-🟢 Nodo ejecutándose en Render (servidor de pulsos)
-```
-
-Si ves mensajes de `GITHUB_TOKEN` o `github_config.json`, el servicio todavía está corriendo una versión antigua: fuerza un deploy con caché limpia.
-
----
-
-## Variables de entorno
-
-| Variable | Obligatoria | Descripción |
-|----------|-------------|-------------|
-| `RENDER` | No | Si existe, el nodo opera en modo relay |
-| `SUPABASE_URL` | No* | URL del proyecto Supabase |
-| `SUPABASE_SERVICE_KEY` | No* | Clave secret/service role |
-| `SUPABASE_TABLE` | No | Tabla KV (por defecto `alset_kv`) |
-
-\*Obligatorias solo si quieres persistencia en Supabase.
-
-No subas claves al repositorio. Usa secretos del proveedor (Render, etc.).
-
----
-
-## SQL inicial en Supabase
-
-Si el proyecto es nuevo, ejecuta esto en el SQL Editor:
-
-```sql
-create table if not exists alset_kv (
-  key        text primary key,
-  value      jsonb not null,
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists alset_agents (
-  id         text primary key,
-  data       jsonb not null,
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists alset_blocks (
-  cid        text primary key,
-  data       bytea,
-  size       integer,
-  created_at timestamptz not null default now()
-);
-
-create table if not exists alset_neural_state (
-  id         text primary key default 'main',
-  state      jsonb not null,
-  updated_at timestamptz not null default now()
-);
-
-create index if not exists idx_alset_kv_updated on alset_kv (updated_at desc);
-```
-
----
-
-## Compilar para producción
-
-```bash
-go build -o prisma-tec ./cmd/prisma-tec
-./prisma-tec
-```
-
-O con Docker:
-
-```bash
-docker build -t alset .
-docker run -p 8080:8080 \
-  -e SUPABASE_URL=... \
-  -e SUPABASE_SERVICE_KEY=... \
-  alset
-```
-
----
-
-## Dónde seguir leyendo
-
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — mapa de componentes y flujo de datos
-- Panel en runtime: `/static/index.html`
-
----
-
-
-
-
-
-## Página del proyecto
-
-Hay una landing en [`docs/index.html`](docs/index.html) pensada para **GitHub Pages**:
-
-1. En el repo: **Settings → Pages**
-2. Source: branch `main`, folder `/docs`
-3. La web quedará en `https://yecharlot.github.io/PrismaTec/`
-
-
-## LispAI (intérprete embebido)
-
-El nodo evalúa Lisp por HTTP (`POST /api/lispai` con `{"cmd":"..."}`).
-
-Incluye agentes, CID, DNS, **Zyrion** (lógica 0/1/2), embeddings y modelos ternarios por capas.
-
-Guía completa: [docs/LISPAI.md](docs/LISPAI.md)
-
-Auth, módulos y API v2: [docs/API_AUTH_MODULES_V2.md](docs/API_AUTH_MODULES_V2.md)
-
-```bash
-curl -s -X POST http://localhost:8080/api/lispai \
+curl -s -X POST http://localhost:8080/api/mind/tick \
   -H "Content-Type: application/json" \
-  -d '{"cmd":"(zyrion (list 1 1 0))"}'
-```
+  -d '{"text":"me llamo Diego","session":"s-a"}' | jq -r .voice
 
-## Tests
-
-El repositorio incluye tests unitarios en los paquetes de dominio y en el motor Lisp.
-
-### Ejecutar todos los tests
-
-```bash
-go test ./...
-```
-
-### Solo un paquete
-
-```bash
-go test ./internal/persistence/
-go test ./internal/lisp/
-go test ./internal/poh/
-go test ./internal/agents/
-go test ./internal/node/
-```
-
-### Con más detalle
-
-```bash
-go test ./... -v -count=1
-```
-
-Qué cubren hoy:
-
-| Paquete | Tipo | Qué se verifica |
-|---------|------|-----------------|
-| `persistence` | unitario + integración | Disco local (KV, agentes, bloques, neural); Supabase si hay variables de entorno |
-| `poh` | unitario | Sesión, eventos y reset |
-| `agents` | unitario | Registro de módulos, tokens y roles |
-| `lisp` | unitario | Tokenizado, parseo, entorno y aritmética (host simulado) |
-| `node` | unitario + integración | Helpers; API HTTP (`/api/crear-agente`, listado, peers); persistir y recargar estado |
-
-#
-
-## Página del proyecto
-
-Hay una landing en [`docs/index.html`](docs/index.html) pensada para **GitHub Pages**:
-
-1. En el repo: **Settings → Pages**
-2. Source: branch `main`, folder `/docs`
-3. La web quedará en `https://yecharlot.github.io/PrismaTec/`
-
-
-## LispAI (intérprete embebido)
-
-El nodo evalúa Lisp por HTTP (`POST /api/lispai` con `{"cmd":"..."}`).
-
-Incluye agentes, CID, DNS, **Zyrion** (lógica 0/1/2), embeddings y modelos ternarios por capas.
-
-Guía completa: [docs/LISPAI.md](docs/LISPAI.md)
-
-Auth, módulos y API v2: [docs/API_AUTH_MODULES_V2.md](docs/API_AUTH_MODULES_V2.md)
-
-```bash
-curl -s -X POST http://localhost:8080/api/lispai \
+curl -s -X POST http://localhost:8080/api/mind/tick \
   -H "Content-Type: application/json" \
-  -d '{"cmd":"(zyrion (list 1 1 0))"}'
+  -d '{"text":"cómo me llamo?","session":"s-a"}' | jq -r .voice
 ```
 
-## Tests de integración
+Detalle de frases, genes y sondas: **[docs/GUIA.md](docs/GUIA.md)**.
 
-```bash
-# HTTP + persistencia local (siempre)
-go test ./internal/node/ -run Integration -count=1
-go test ./internal/persistence/ -run Integration -count=1
+---
 
-# Supabase (solo si configuraste las variables)
-export SUPABASE_URL="https://….supabase.co"
-export SUPABASE_SERVICE_KEY="…"
-go test ./internal/persistence/ -run Supabase -count=1 -v
-```
+## Alset Mind (resumen)
 
-Los de integración HTTP no levantan libp2p: montan el mux real del nodo con un almacén en disco temporal. Así se valida crear agente, listarlo y que quede guardado, sin depender de la red P2P.
+- **7 órganos:** dialog, act, mem, self, ethics, curiosity, humor  
+- **Memoria:** episodios CID + **sesiones** (`session` / header `X-Mind-Session`)  
+- **Diálogo:** director de prioridad, flujo de temas, plantillas, batería de tests  
+- **Razón:** silogismos ternarios (`mind_reason`)  
+- **Scout:** si no hay corpus, sonda gen → web (Wikipedia) → ancla hallazgo  
+- **Codegen:** plantillas bajo ethics (no generación libre tipo LLM)
 
+## Alset Gen (resumen)
 
-## Licencia
+- Célula con key ANS + RootCID  
+- Explorar URL, despachar a Cloudflare, **retornar**, **eliminar**  
+- Gen-memoria: anclas CID  
+- Mind orquesta; ethics de Mind manda  
 
-Por definir por el autor del repositorio.
+---
 
+## Persistencia y borde
 
-## Vero — identidad comercial portable
+| Backend | Activación |
+|---------|------------|
+| Cloudflare DO | `ALSET_PERSIST=cloudflare` + `ALSET_CF_STORE_URL` |
+| Supabase | `SUPABASE_URL` + key (fallback) |
+| Local disco | sin env cloud |
 
-**Vero** (ES/EN: corto, fácil de decir: *pásame tu Vero* / *send me your Vero*).
+Worker: `cloudflare/alset-gen-worker` (`npx wrangler deploy`).
 
-- App: 
-- Perfil público: 
-- API: 
+---
 
-MVP: registro, negocio con slug, catálogo, WhatsApp, QR, reseñas básicas, estadísticas de visitas y clics.
+## Principios
 
+1. Ternario y CID, **no** wrapper LLM  
+2. Ethics puede vetar  
+3. Deploy Render **manual** (auto-deploy OFF en cuentas free)  
+4. Un handoff, una guía, este README  
 
-## Landing Prism@.TEC
-
-Página institucional del TCP: `/w/prismatec.app.ans`
+Estado y gaps: **[docs/HANDOFF.md](docs/HANDOFF.md)**.

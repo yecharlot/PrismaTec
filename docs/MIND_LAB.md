@@ -1,3 +1,11 @@
+> **Archivo histórico.** La documentación canónica es:
+> - [README.md](../README.md) — mapa del repo
+> - [HANDOFF.md](HANDOFF.md) — estado y gaps
+> - [GUIA.md](GUIA.md) — ayuda operativa
+>
+> Si este texto contradice el HANDOFF, **gana el HANDOFF**.
+
+---
 # Alset Mind — Laboratorio (guía rápida)
 
 Especie ternaria residente. No es un chatbot LLM.

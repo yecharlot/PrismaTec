@@ -3143,5 +3143,183 @@
       "cuando zyrion no basta"
     ],
     "text": "Si plantillas y órganos no cierran el turno, la red ternaria de neuronas propone una ruta. Sigue siendo determinista: no rellena con prosa libre de un LLM."
+  },
+  {
+    "type": "dialogo",
+    "keys": [
+      "profundiza",
+      "más profundo",
+      "mas profundo",
+      "en detalle"
+    ],
+    "text": "Para profundizar: elijo un eje (definición, mecanismo, límite, ejemplo) y lo desarrollo sin inventar fuera de corpus o memoria. Si el tema es nuevo, pido un hecho ancla o uso una sonda."
+  },
+  {
+    "type": "dialogo",
+    "keys": [
+      "no me quedó claro",
+      "no me queda claro",
+      "no entendi",
+      "no entendí"
+    ],
+    "text": "Reformulo en capas: (1) idea en una frase, (2) por qué importa, (3) ejemplo. Dime qué parte falló — la palabra, el mecanismo o el ejemplo."
+  },
+  {
+    "type": "dialogo",
+    "keys": [
+      "en otras palabras",
+      "o sea",
+      "resumiendo"
+    ],
+    "text": "Puedo comprimir lo dicho en una frase. Si venimos de memoria o corpus, el resumen no debe añadir hechos nuevos."
+  },
+  {
+    "type": "dialogo",
+    "keys": [
+      "opinión",
+      "qué piensas",
+      "que piensas",
+      "tu punto de vista"
+    ],
+    "text": "No tengo opiniones de persona. Puedo dar un juicio de diseño del nodo (qué conviene bajo ethics y claridad) o contrastar dos posturas del corpus."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "capital de méxico",
+      "capital de mexico",
+      "ciudad de méxico"
+    ],
+    "text": "La capital de México es la Ciudad de México (CDMX)."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "capital de argentina",
+      "buenos aires capital"
+    ],
+    "text": "La capital de Argentina es Buenos Aires."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "capital de españa",
+      "madrid capital"
+    ],
+    "text": "La capital de España es Madrid."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "quién fue newton",
+      "quien fue newton",
+      "isaac newton"
+    ],
+    "text": "Isaac Newton formuló leyes del movimiento y de la gravitación universal y aportó al cálculo; figura central de la ciencia moderna."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "quién fue einstein",
+      "quien fue einstein",
+      "albert einstein"
+    ],
+    "text": "Albert Einstein desarrolló la relatividad y explicó el efecto fotoeléctrico; transformó la física del siglo XX."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "primera guerra mundial",
+      "cuándo fue la primera guerra"
+    ],
+    "text": "La Primera Guerra Mundial se sitúa habitualmente entre 1914 y 1918."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "revolución francesa",
+      "cuándo fue la revolución francesa"
+    ],
+    "text": "La Revolución francesa estalla en 1789 y marca el paso hacia el final del Antiguo Régimen en Francia."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "amazonas",
+      "río amazonas",
+      "rio amazonas"
+    ],
+    "text": "El Amazonas es uno de los ríos más largos y de mayor caudal del mundo; su cuenca es clave para el clima y la biodiversidad."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "monte everest",
+      "everest"
+    ],
+    "text": "El Everest es la montaña más alta sobre el nivel del mar, en la cordillera del Himalaya."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "democracia",
+      "qué es la democracia",
+      "que es la democracia"
+    ],
+    "text": "Democracia, en sentido amplio, es un sistema donde el poder político se legitima por la participación ciudadana y reglas de representación; hay muchas variantes históricas."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "inflación",
+      "qué es la inflación",
+      "que es la inflacion"
+    ],
+    "text": "La inflación es el aumento generalizado de precios, que reduce el poder adquisitivo de la moneda. Se mide con índices de precios."
+  },
+  {
+    "type": "cultura",
+    "keys": [
+      "fotosíntesis para niños",
+      "explicar fotosíntesis fácil"
+    ],
+    "text": "Las plantas usan luz del sol, agua y aire para fabricar su alimento y sueltan oxígeno. Eso es la fotosíntesis en versión simple."
+  },
+  {
+    "type": "dialogo",
+    "keys": [
+      "me duele",
+      "síntoma",
+      "sintoma",
+      "diagnóstico",
+      "diagnostico"
+    ],
+    "text": "No diagnostico ni prescribo. Si hay dolor o malestar serio, consulta un profesional de salud. Puedo hablar de conceptos generales públicos, no de tu caso clínico."
+  },
+  {
+    "type": "dialogo",
+    "keys": [
+      "inversión garantizada",
+      "hazme rico",
+      "gana en bolsa"
+    ],
+    "text": "No prometo ganancias ni asesoría financiera personal. Puedo definir términos públicos (inflación, interés) sin recomendaciones de inversión."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "mind y el mundo",
+      "mind fuera del nodo",
+      "conocimiento del mundo"
+    ],
+    "text": "Mind combina corpus curado, memoria de sesión, razón ternaria y sondas (genes) hacia la web. No ‘sabe internet’: observa fragmentos y ancla lo útil en CID."
+  },
+  {
+    "type": "red_alset",
+    "keys": [
+      "fase superior diálogo",
+      "diálogo profundo mind"
+    ],
+    "text": "La fase superior de diálogo no es imitar un LLM: es enrutar bien, profundizar con estructura, admitir lagunas y usar sondas sin ensuciar la voz."
   }
 ]

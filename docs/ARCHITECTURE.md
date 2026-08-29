@@ -1,3 +1,5 @@
+> **Profundidad.** Operación diaria: [GUIA.md](GUIA.md) · Estado: [HANDOFF.md](HANDOFF.md).
+
 Documentación de uso orientada a personas: [GUIA.md](GUIA.md).
 
 # Arquitectura de Alset

@@ -1,3 +1,11 @@
+> **Archivo histórico.** La documentación canónica es:
+> - [README.md](../README.md) — mapa del repo
+> - [HANDOFF.md](HANDOFF.md) — estado y gaps
+> - [GUIA.md](GUIA.md) — ayuda operativa
+>
+> Si este texto contradice el HANDOFF, **gana el HANDOFF**.
+
+---
 # Alset / PrismaTec — Estado, destino y huecos (handoff)
 
 **Actualizado:** 2026-08-23  

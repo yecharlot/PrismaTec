@@ -1,3 +1,5 @@
+> **Profundidad.** Operación diaria: [GUIA.md](GUIA.md) · Estado: [HANDOFF.md](HANDOFF.md).
+
 # Alset Mind (IMind) — Tesis de descubrimiento y epopeya de construcción
 
 **Especie:** inteligencia no convencional, residente en el Nodo Alset  

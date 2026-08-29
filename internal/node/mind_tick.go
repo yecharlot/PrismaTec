@@ -825,6 +825,11 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		}
 	}
 
+	// Profundidad consolidada (knowledge/chat) sin coletillas de lab
+	if voice != "" {
+		voice = enrichDeepTurn(primaryKind, text, voice)
+	}
+
 	// Soft curiosity/humor SOLO si el director lo permite (anti-coletas)
 	if ethics.State != 2 && softAppendAllowed(primaryKind, voice) && softAppendAllowedUX(primaryKind) {
 		low := normText

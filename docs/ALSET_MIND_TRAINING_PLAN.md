@@ -1,3 +1,5 @@
+> **Profundidad.** Operación diaria: [GUIA.md](GUIA.md) · Estado: [HANDOFF.md](HANDOFF.md).
+
 # Alset Mind — Plan de entrenamiento (polímata digital)
 
 **Especie:** organismo ternario Zyrion, no LLM.  

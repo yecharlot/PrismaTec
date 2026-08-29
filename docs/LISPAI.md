@@ -1,3 +1,5 @@
+> **Profundidad.** Operación diaria: [GUIA.md](GUIA.md) · Estado: [HANDOFF.md](HANDOFF.md).
+
 # LispAI — motor embebido del nodo
 
 Cada nodo Alset incluye un intérprete Lisp invocable por HTTP. Sirve para automatizar agentes, contenido, reglas ternarias (Zyrion) y modelos ligeros guardados como agentes + CID.

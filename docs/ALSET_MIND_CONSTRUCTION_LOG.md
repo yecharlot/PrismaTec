@@ -524,3 +524,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - `TestDialogueStabilityBattery` + `TestDialogueBatteryRoutesTable` en `mind_dialogue_battery_test.go`.
 - Script vivo: `scripts/mind_dialogue_battery.py --base http://localhost:8080`.
 - Criterio: silogismos, CID técnico, identidad, scoutable «qué es», sin ruido lab en voz natural, ethics veto.
+
+## 2026-08-29 — Docs canónicas + diálogo profundo consolidado
+
+- **Docs:** solo 3 entradas activas — `README.md`, `docs/HANDOFF.md`, `docs/GUIA.md`. Legado ALSET_* marcado archivo.
+- **Diálogo:** `mind_depth.go` — profundiza answers de corpus; sustituye chat fino por unknown limpio; corpus +20 cultura/diálogo (~366).
+- **Fase:** consolidación hacia diálogo profundo multi-dominio (sin LLM).

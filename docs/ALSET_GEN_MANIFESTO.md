@@ -1,3 +1,5 @@
+> **Profundidad.** Operación diaria: [GUIA.md](GUIA.md) · Estado: [HANDOFF.md](HANDOFF.md).
+
 # MANIFIESTO ALSET-GEN: LA SEMILLA
 
 **Versión:** 1.1  
