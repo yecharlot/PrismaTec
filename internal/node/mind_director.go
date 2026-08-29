@@ -113,7 +113,7 @@ func isReferentialFollowUp(s string) bool {
 	return false
 }
 
-var mathExprRe = regexp.MustCompile(`(?i)(?:cu[aá]nto\s+(?:es|son)\s+)?(-?\d+(?:\.\d+)?)\s*([+\-*/x×])\s*(-?\d+(?:\.\d+)?)`)
+var mathExprRe = regexp.MustCompile(`(?i)(?:cu[aá]nto\s+(?:es|son)\s+)?(-?\d+(?:\.\d+)?)\s*([+\-*/x×]|\s+por\s+)\s*(-?\d+(?:\.\d+)?)`)
 var mathSumRe = regexp.MustCompile(`(?i)suma\s+(-?\d+(?:\.\d+)?)\s+y\s+(-?\d+(?:\.\d+)?)`)
 
 // tryMindMath: arithmetic via LispAI when possible; pure Go fallback.
@@ -129,7 +129,8 @@ func (n *NodoAlset) tryMindMath(text string) string {
 		a, _ = strconv.ParseFloat(m[1], 64)
 		op = m[2]
 		b, _ = strconv.ParseFloat(m[3], 64)
-		if op == "x" || op == "×" {
+		op = strings.TrimSpace(op)
+		if op == "x" || op == "×" || strings.EqualFold(op, "por") {
 			op = "*"
 		}
 	} else {
@@ -171,7 +172,7 @@ func capabilityVoice(s string) string {
 	if strings.Contains(s, "program") {
 		return "Puedo ensamblar código desde plantillas curadas (Go, Lisp, Python, JS) bajo ethics — no invento sistemas enteros como un LLM. Prueba: «genera código función sumar en go» o «escribe código factorial en lisp»."
 	}
-	return "Puedo dialogar, recordar hechos en CID, orquestar genes, despachar al borde, anclar memoria en gen-memoria, calcular con LispAI y proponer esqueletos de código. No soy un LLM ni ejecuto órdenes destructivas."
+	return "Puedo dialogar, conversar, recordar lo que me digas, explorar temas públicos, calcular y proponer esquemas de código sencillos. No invento datos ni ejecuto pedidos peligrosos."
 }
 
 // resolveReferential uses thread state for "qué significa esto".

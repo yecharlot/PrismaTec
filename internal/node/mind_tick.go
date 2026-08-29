@@ -313,7 +313,6 @@ func looksLikeNodeAction(s string) bool {
 	return false
 }
 
-
 func isUserCorrection(s string) bool {
 	s = strings.ToLower(strings.TrimSpace(s))
 	keys := []string{"estás mal", "estas mal", "eso está mal", "eso esta mal", "incorrecto",
@@ -343,31 +342,51 @@ func isCalmChat(s string) bool {
 }
 
 func isIdentityTalk(s string) bool {
-	return strings.Contains(s, "quién eres") || strings.Contains(s, "quien eres") ||
-		strings.Contains(s, "qué eres") || strings.Contains(s, "que eres") ||
-		strings.Contains(s, "qué puedes") || strings.Contains(s, "que puedes") ||
-		strings.Contains(s, "qué sabes") || strings.Contains(s, "que sabes") ||
-		strings.Contains(s, "para qué sirves") || strings.Contains(s, "para que sirves") ||
-		strings.Contains(s, "qué es alset") || strings.Contains(s, "que es alset") ||
-		strings.Contains(s, "qué es mind") || strings.Contains(s, "que es mind") ||
-		strings.Contains(s, "eres un gpt") || strings.Contains(s, "eres un llm") ||
-		strings.Contains(s, "eres inteligencia") || strings.Contains(s, "hablame de ti") ||
-		strings.Contains(s, "háblame de ti") || strings.Contains(s, "cuéntame") ||
-		strings.Contains(s, "cuentame") || strings.Contains(s, "explicame") ||
-		strings.Contains(s, "explícame") || strings.Contains(s, "como funcionas") ||
-		strings.Contains(s, "cómo funcionas") || strings.Contains(s, "qué es zyrion") ||
-		strings.Contains(s, "que es zyrion") || strings.Contains(s, "hablar de ti") ||
-		strings.Contains(s, "hablamos de ti") || strings.Contains(s, "hablemos de ti") ||
-		(strings.Contains(s, "vamo") && strings.Contains(s, "de ti")) ||
-		strings.Contains(s, "te llamas") || strings.Contains(s, "tu nombre") ||
-		strings.Contains(s, "cuántos órganos") || strings.Contains(s, "cuantos organos") ||
-		strings.Contains(s, "cuántos organos") || strings.Contains(s, "cuantos órganos") ||
-		strings.Contains(s, "qué órganos") || strings.Contains(s, "que organos") ||
-		strings.Contains(s, "tus órganos") || strings.Contains(s, "tus organos") ||
-		strings.Contains(s, "órganos tienes") || strings.Contains(s, "organos tienes") ||
-		strings.Contains(s, "no estás funcionando") || strings.Contains(s, "no estas funcionando") ||
-		strings.Contains(s, "no funcionas") || strings.Contains(s, "estás mal") ||
-		strings.Contains(s, "estas mal")
+	s = strings.ToLower(strings.TrimSpace(s))
+	// NO capturar "cuéntame X", "explícame Y", "quién fue Persona" — eso es chat/scout.
+	if strings.Contains(s, "quién fue") || strings.Contains(s, "quien fue") ||
+		strings.Contains(s, "quién es ") || strings.Contains(s, "quien es ") {
+		// "quién eres" sí; "quién es Mandela" no
+		if !strings.Contains(s, "quién eres") && !strings.Contains(s, "quien eres") &&
+			!strings.Contains(s, "quién eres?") && !strings.Contains(s, "quien eres?") {
+			if !(strings.Contains(s, "quién eres tú") || strings.Contains(s, "quien eres tu")) {
+				// persona/tercero
+				if !strings.Contains(s, "eres tú") && !strings.Contains(s, "eres tu") &&
+					!strings.HasSuffix(s, "quién eres") && !strings.HasSuffix(s, "quien eres") {
+					return false
+				}
+			}
+		}
+	}
+	keys := []string{
+		"quién eres", "quien eres", "qué eres", "que eres",
+		"para qué sirves", "para que sirves", "y para qué sirves", "y para que sirves",
+		"qué es alset mind", "que es alset mind", "qué es alset", "que es alset",
+		"qué es mind", "que es mind", "eres un gpt", "eres un llm", "eres inteligencia",
+		"háblame de ti", "hablame de ti", "hablar de ti", "hablemos de ti", "hablamos de ti",
+		"cómo funcionas", "como funcionas", "qué es zyrion", "que es zyrion",
+		"te llamas", "tu nombre", "cómo te llamas", "como te llamas",
+		"cuántos órganos", "cuantos organos", "cuántos organos", "cuantos órganos",
+		"qué órganos", "que organos", "tus órganos", "tus organos", "órganos tienes", "organos tienes",
+		"no estás funcionando", "no estas funcionando", "no funcionas", "estás mal", "estas mal",
+		"quién te creó", "quien te creo", "quién te hizo", "quien te hizo",
+	}
+	for _, k := range keys {
+		if strings.Contains(s, k) {
+			return true
+		}
+	}
+	if strings.Contains(s, "qué puedes") || strings.Contains(s, "que puedes") {
+		return true
+	}
+	if strings.Contains(s, "qué sabes") || strings.Contains(s, "que sabes") {
+		// "qué sabes de mí" es memoria de usuario
+		if strings.Contains(s, "de mí") || strings.Contains(s, "de mi") {
+			return false
+		}
+		return true
+	}
+	return false
 }
 
 // evalOrganPolar applies per-slot polarity: "H" alarm if high, "L" alarm if low.
@@ -431,7 +450,23 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	if profile.Nombre != "" {
 		knownName = profile.Nombre
 	}
+	normForUX := normalizeUserInput(text)
+	uxIntent := classifyDialogIntent(normForUX)
+	if isPrivacyInvasion(normForUX) || isPrivacyInvasion(strings.ToLower(text)) {
+		ethics.State = 2
+		ethics.Label = labelForOrgan("ethics", 2)
+		act.State = 2
+		act.Label = labelForOrgan("act", 2)
+		organs = []MindOrganResult{dialog, act, mem, self, ethics, curiosity, humor}
+		actuate = evaluateActuate(text, organs)
+		uxIntent = intentEthicsHard
+	}
 	knowHit := speakFromKnowledge(text)
+	if uxIntent == intentPerson || uxIntent == intentEmotion || uxIntent == intentAdvice ||
+		uxIntent == intentClarify || uxIntent == intentThanks || uxIntent == intentBye ||
+		uxIntent == intentTopicShift || uxIntent == intentCreative {
+		knowHit = ""
+	}
 	// Escape hatch: no corpus hit + declarative novelty → raise memory organ
 	if shouldCaptureEscape(text, knowHit) {
 		sig["novedad"] = clamp01(sig["novedad"] + 0.4)
@@ -450,8 +485,58 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	var codegenCID string
 
 	if ethics.State == 2 {
-		voice = mindVoice(text, organs, memSpeak, knownName)
+		if uxIntent == intentEthicsHard {
+			voice = speakEthicsHard(text)
+		} else {
+			voice = mindVoice(text, organs, memSpeak, knownName)
+		}
 		primaryKind = "veto"
+		recordDialogPattern(intentEthicsHard, text)
+	}
+
+	// 0) Diálogo humano: emoción, consejo, cortesía, personas — antes de corpus/tools genéricos
+	if voice == "" {
+		switch uxIntent {
+		case intentEmotion:
+			voice = speakEmotion(normForUX)
+			primaryKind = "chat"
+			recordDialogPattern(uxIntent, text)
+		case intentAdvice:
+			voice = speakAdvice(normForUX)
+			primaryKind = "chat"
+			recordDialogPattern(uxIntent, text)
+		case intentClarify:
+			voice = speakClarify()
+			primaryKind = "chat"
+			recordDialogPattern(uxIntent, text)
+		case intentThanks:
+			voice = speakThanks()
+			primaryKind = "chat"
+			recordDialogPattern(uxIntent, text)
+		case intentBye:
+			voice = speakBye()
+			primaryKind = "chat"
+			recordDialogPattern(uxIntent, text)
+		case intentTopicShift:
+			voice = speakTopicShift()
+			primaryKind = "chat"
+			recordDialogPattern(uxIntent, text)
+		case intentPerson:
+			// forzar scout de persona; no identity/corpus
+			if sv := n.MindScoutWeb(text, ethics.State); sv != "" {
+				voice = sv
+				primaryKind = "tool"
+				if actuate.Explore >= 1 {
+					n.recordAction("explore", actuate.Explore, text, sv, "", primaryKind, organs)
+				}
+				recordDialogPattern(uxIntent, text)
+			}
+		case intentCreative:
+			// dejar que el bloque creative escriba; marcar para no caer en worldFact
+			recordDialogPattern(uxIntent, text)
+		case intentMemory:
+			recordDialogPattern(uxIntent, text)
+		}
 	}
 
 	// 1) Referencias al hilo ("qué significa esto")
@@ -693,7 +778,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	}
 
 	// Soft curiosity/humor SOLO si el director lo permite (anti-coletas)
-	if ethics.State != 2 && softAppendAllowed(primaryKind, voice) {
+	if ethics.State != 2 && softAppendAllowed(primaryKind, voice) && softAppendAllowedUX(primaryKind) {
 		low := normText
 		if hv := humorVoice(text, humor.State); hv != "" {
 			playfulLead := humor.State >= 2 && (strings.Contains(low, "mago") || strings.Contains(low, "varita") ||
@@ -932,7 +1017,7 @@ func mindVoice(text string, organs []MindOrganResult, memSpeak string, knownName
 			return "Sí: Alset Mind. Tú puedes darme hechos tuyos y los recordaré; yo no cambio de nombre por sugerencia."
 		}
 		if strings.Contains(low, "puedes") || strings.Contains(low, "sirves") || strings.Contains(low, "sabes") {
-			return "Puedo conversar, recordar lo que me digas, orquestar genes y mirar este nodo si me lo pides. No invento hechos ni ejecuto órdenes destructivas."
+			return "Puedo conversar, recordar lo que me digas, explorar temas públicos y ayudar con cálculos o textos. No invento hechos ni ejecuto pedidos peligrosos."
 		}
 		if strings.Contains(low, "funcionas") || strings.Contains(low, "explic") || strings.Contains(low, "cuéntame") ||
 			strings.Contains(low, "cuentame") || strings.Contains(low, "hablar de ti") ||

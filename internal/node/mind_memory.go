@@ -330,6 +330,9 @@ func isMemoryQuery(s string) bool {
 		"tienes memoria", "qué guardas", "que guardas",
 		"cuál es mi ", "cual es mi ", "qué te dije de mi", "que te dije de mi",
 		"nombre completo", "mi nombre completo", "cómo me llamo completo",
+		"en qué trabajo", "en que trabajo", "dónde trabajo", "donde trabajo",
+		"qué trabajo tengo", "que trabajo tengo", "mi trabajo", "en qué trabajas yo",
+		"qué me gusta", "que me gusta", "cuáles son mis gustos",
 	}
 	for _, k := range keys {
 		if strings.Contains(s, k) {
@@ -445,6 +448,7 @@ func isDestructiveOrder(s string) bool {
 		"password", "contraseña", "contrasena", "secreto", "rm -", "drop table",
 		"apaga el servidor", "mata el proceso", "destruye", "limpia todas las cuentas",
 		"borra las cuentas", "borra las contrase",
+		"wifi del vecino", "contraseña del vecino", "password del vecino",
 	}
 	for _, k := range keys {
 		if strings.Contains(s, k) {
@@ -620,7 +624,6 @@ func isPronounFollowUp(s string) bool {
 	}
 	return false
 }
-
 
 func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 	if len(episodes) == 0 {
@@ -837,6 +840,12 @@ func recallPersonalSlot(query string, episodes []mindEpisodePayload) string {
 		want = "ciudad"
 	case strings.Contains(q, "edad") || strings.Contains(q, "años") || strings.Contains(q, "anos"):
 		want = "edad"
+	case strings.Contains(q, "trabajo") || strings.Contains(q, "trabajas") ||
+		strings.Contains(q, "ocupación") || strings.Contains(q, "ocupacion") ||
+		strings.Contains(q, "oficio") || strings.Contains(q, "profesión") || strings.Contains(q, "profesion"):
+		want = "trabajo"
+	case strings.Contains(q, "me gusta") || strings.Contains(q, "qué me gusta") || strings.Contains(q, "que me gusta"):
+		want = "gusto"
 	default:
 		return ""
 	}
@@ -864,6 +873,10 @@ func formatPersonalRecall(slot, val string) string {
 		return "Me dijiste que vives en " + val + "."
 	case "edad":
 		return "Me dijiste que tienes " + val + " años."
+	case "trabajo":
+		return "Me dijiste que trabajas en " + val + "."
+	case "gusto":
+		return "Me dijiste que te gusta " + val + "."
 	default:
 		return "Recuerdo: " + slot + " = " + val + "."
 	}
@@ -928,6 +941,37 @@ func extractPersonalDeclaration(text string) (slot, value string) {
 			}
 		}
 	}
+	// trabajo / empleo
+	for _, pref := range []string{
+		"trabajo en ", "trabajo como ", "trabajo de ", "mi trabajo es ", "mi empleo es ",
+		"soy empleado de ", "laburo en ",
+	} {
+		if i := strings.Index(low, pref); i >= 0 {
+			rest := strings.TrimSpace(text[i+len(pref):])
+			for _, sep := range []string{".", "!", "?", ";", ","} {
+				if j := strings.Index(rest, sep); j > 0 {
+					rest = strings.TrimSpace(rest[:j])
+				}
+			}
+			val := strings.TrimSpace(rest)
+			if val != "" && len([]rune(val)) < 80 {
+				return "trabajo", val
+			}
+		}
+	}
+	for _, pref := range []string{"me gusta ", "me gustan "} {
+		if i := strings.Index(low, pref); i >= 0 {
+			rest := strings.TrimSpace(text[i+len(pref):])
+			for _, sep := range []string{".", "!", "?"} {
+				if j := strings.Index(rest, sep); j > 0 {
+					rest = strings.TrimSpace(rest[:j])
+				}
+			}
+			if rest != "" && len([]rune(rest)) < 60 {
+				return "gusto", rest
+			}
+		}
+	}
 	if name := extractDeclaredName(text); name != "" {
 		return "nombre", name
 	}
@@ -953,7 +997,6 @@ func firstNameTokens(rest string, max int) string {
 	}
 	return strings.Join(good, " ")
 }
-
 
 func truncateRunes(s string, n int) string {
 	r := []rune(s)

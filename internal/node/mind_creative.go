@@ -97,6 +97,8 @@ func isCreativeWriteRequest(s string) bool {
 		"escribe una historia", "redacta un", "compón un", "compon un",
 		"haz un poema", "hazme un poema", "poema sobre", "cuento sobre",
 		"historia corta", "versos sobre", "rima sobre", "escribe un párrafo", "escribe un parrafo",
+		"escríbeme un", "escribeme un", "escríbeme una", "escribeme una",
+		"un cuento muy breve", "cuento muy breve", "poema corto",
 	}
 	for _, k := range keys {
 		if strings.Contains(low, k) {
