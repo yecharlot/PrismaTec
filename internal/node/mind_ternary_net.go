@@ -145,12 +145,15 @@ func senseFeaturesTernary(text string) map[string]int {
 		out["sense_clarify"] = 1
 	}
 
-	// math
-	if strings.Contains(low, "cuánto es") || strings.Contains(low, "cuanto es") ||
-		strings.Contains(low, " + ") || strings.Contains(low, " por ") ||
-		strings.Contains(low, " entre ") || strings.Contains(low, "×") ||
-		strings.Contains(low, " * ") || looksLikeArithmetic(low) {
-		out["sense_math"] = 2
+	// math (nunca «estado 2» del órgano ethics ni «explica…»)
+	if !strings.Contains(low, "ethics") && !strings.Contains(low, "órgano") && !strings.Contains(low, "organo") &&
+		!strings.Contains(low, "estado 0") && !strings.Contains(low, "estado 1") && !strings.Contains(low, "estado 2") {
+		if strings.Contains(low, "cuánto es") || strings.Contains(low, "cuanto es") ||
+			strings.Contains(low, " + ") || strings.Contains(low, " por ") ||
+			strings.Contains(low, " entre ") || strings.Contains(low, "×") ||
+			strings.Contains(low, " * ") || looksLikeArithmetic(low) {
+			out["sense_math"] = 2
+		}
 	}
 
 	// código
@@ -220,18 +223,41 @@ func senseFeaturesTernary(text string) map[string]int {
 }
 
 func looksLikeArithmetic(low string) bool {
-	// "12+5", "9*3", "100/4"
-	hasDigit := false
+	// Solo patrones tipo 12+5, 9*3, 100/4 — nunca la letra «x» suelta (evita «explica… estado 2» → math).
+	low = strings.TrimSpace(low)
+	if len(low) == 0 || len(low) > 48 {
+		return false
+	}
+	// requiere dígito y operador aritmético real (no letra x)
+	ops := []string{"+", "*", "/", "×", "÷", " - ", " + ", " * ", " / "}
 	hasOp := false
-	for _, r := range low {
-		if r >= '0' && r <= '9' {
-			hasDigit = true
-		}
-		if r == '+' || r == '*' || r == '/' || r == 'x' || r == '−' || r == '-' {
+	for _, op := range ops {
+		if strings.Contains(low, op) {
 			hasOp = true
+			break
 		}
 	}
-	return hasDigit && hasOp && len(low) < 40
+	// 12+5 sin espacios
+	if !hasOp {
+		for i, r := range low {
+			if (r == '+' || r == '*' || r == '/' || r == '×') && i > 0 {
+				prev := rune(low[i-1])
+				if prev >= '0' && prev <= '9' {
+					hasOp = true
+					break
+				}
+			}
+		}
+	}
+	if !hasOp {
+		return false
+	}
+	for _, r := range low {
+		if r >= '0' && r <= '9' {
+			return true
+		}
+	}
+	return false
 }
 
 func isReasonEdge(low string) bool {
@@ -258,6 +284,8 @@ func isAlsetDomain(low string) bool {
 		"ipfs", "libp2p", "mind.alset", "nodo alset", "latido", "sumidero",
 		"qué es un gen", "que es un gen", "qué es un cid", "que es un cid",
 		"memoria episódica", "memoria episodica", "prismatec",
+		"ethics", "órgano ethics", "organo ethics", "estado 2", "estado 0", "estado 1",
+		"sumidero", "veto", "calibración", "calibracion",
 	}
 	for _, k := range keys {
 		if strings.Contains(low, k) {
@@ -404,8 +432,15 @@ func (n *NodoAlset) ternaryNeuralAssist(text string, organs []MindOrganResult) (
 		return "Puedo crear, explorar, despachar, retornar o eliminar un gen si lo pides con nombre claro. Ejemplo: «crea gen sonda-precios» o «explora CID con el gen X».", "tool", trace
 
 	case "route_alset":
+		if strings.Contains(low, "ethics") || (strings.Contains(low, "ético") || strings.Contains(low, "etica") || strings.Contains(low, "ética")) ||
+			(strings.Contains(low, "estado") && (strings.Contains(low, "2") || strings.Contains(low, "sumidero") || strings.Contains(low, "veto"))) {
+			return "Ethics es el órgano que vigila riesgo y permiso. En estado 0 permite seguir; en 1 matiza; en estado 2 es sumidero: frena acciones peligrosas (borrados masivos, acceso ajeno, destrucción). No es un número para calcular: es veto de seguridad del organismo.", "knowledge", trace
+		}
 		if kv := speakFromKnowledge(text); kv != "" {
 			return kv, "knowledge", trace
+		}
+		if strings.Contains(low, "genoma") {
+			return "El genoma de Alset Mind son umbrales y sesgos mutables (alarmas, vetos, memoria mínima). Se ajusta por calibración y a veces por mutación si mejora el corpus; no es un LLM reentrenado.", "knowledge", trace
 		}
 		return "Alset Mind es un organismo ternario residente: órganos 0/1/2, memoria CID y genes-sonda. No predice tokens: evalúa el campo y actúa con límites. ¿Qué parte de la red quieres abrir?", "knowledge", trace
 

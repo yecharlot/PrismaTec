@@ -70,3 +70,32 @@ func mustSyn() []ternarySynapse {
 	_, syn := defaultTernaryCortex()
 	return syn
 }
+
+func TestCortexEthicsNotMath(t *testing.T) {
+	s := senseFeaturesTernary("explica ethics en estado 2")
+	if s["sense_math"] >= 2 {
+		t.Fatalf("ethics estado 2 must not be math: %v", s)
+	}
+	if s["sense_alset"] < 1 {
+		t.Fatalf("expected alset sense: %v", s)
+	}
+	dom := pickDominantRoute(propagateTernary(s, mustSyn()))
+	if dom == "route_math" {
+		t.Fatalf("got route_math")
+	}
+}
+
+func TestLooksLikeArithmeticNoExplica(t *testing.T) {
+	if looksLikeArithmetic("explica ethics en estado 2") {
+		t.Fatal("explica…estado 2 is not arithmetic")
+	}
+	if !looksLikeArithmetic("12+5") {
+		t.Fatal("12+5 should be arithmetic")
+	}
+}
+
+func TestDestructiveBorres(t *testing.T) {
+	if !isDestructiveOrder("no borres todos los archivos del servidor") {
+		t.Fatal("borres todos los archivos should be destructive")
+	}
+}

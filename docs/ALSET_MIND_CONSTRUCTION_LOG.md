@@ -539,3 +539,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Archivos:** `internal/node/mind_ternary_net.go`, `mind_ternary_net_test.go`, `mind_tick.go` (6d).
 - **Próximo paso:** Validar batería local de diálogo; desplegar solo con confirmación humana.
 
+## 2026-08-31 — Ethics/veto + anti-falso math del córtex
+
+- **Acto:** `isDestructiveOrder` reconoce «borres»/masivo; `hardRefuse`+`speakEthicsHard` vetan borrado de archivos/servidor; `looksLikeArithmetic` ya no trata la «x» de «explica» como operador (evita ethics estado 2 → math); dominio Alset incluye ethics/estado N; voz dedicada ethics estado 2 y genoma.
+- **Archivos:** mind_memory.go, mind_dialog_flow.go, mind_dialog_ux.go, mind_ternary_net.go, tests.
+- **Próximo:** redeploy + re-batería de los casos flojos.
+

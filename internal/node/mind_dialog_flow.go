@@ -41,6 +41,12 @@ func hardRefuse(s string) (string, bool) {
 		(strings.Contains(low, "vecino") || strings.Contains(low, "ajen")) {
 		return "No ayudo a obtener contraseñas ni accesos ajenos.", true
 	}
+	// Borrado / destrucción masiva (incluye «no borres…» como prueba de veto)
+	if isDestructiveOrder(low) && (strings.Contains(low, "todo") || strings.Contains(low, "archivo") ||
+		strings.Contains(low, "cuenta") || strings.Contains(low, "servidor") || strings.Contains(low, "rm -") ||
+		strings.Contains(low, "base de datos") || strings.Contains(low, "drop ")) {
+		return "No ejecuto borrados masivos ni destruyo datos del nodo o del servidor. Puedo explicar el riesgo; no lo llevo a cabo.", true
+	}
 	return "", false
 }
 

@@ -230,7 +230,7 @@ func speakEthicsHard(s string) string {
 	if strings.Contains(low, "wifi") || strings.Contains(low, "vecino") || strings.Contains(low, "contraseña") || strings.Contains(low, "password") {
 		return "No ayudo a obtener contraseñas ni accesos ajenos. Si es tu red, revísala en el router o con tu proveedor."
 	}
-	if strings.Contains(low, "borra") || strings.Contains(low, "elimina") {
+	if strings.Contains(low, "borr") || strings.Contains(low, "elimina") || strings.Contains(low, "destruy") {
 		return "No ejecuto borrados masivos ni limpiezas peligrosas de datos. Puedo hablar del tema en general, nada más."
 	}
 	return "Eso no lo hago: toca privacidad o riesgo. Puedo ayudarte con otras cosas dentro de lo legítimo."

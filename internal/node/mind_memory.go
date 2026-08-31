@@ -445,16 +445,24 @@ func isWorldFact(s string) bool {
 func isDestructiveOrder(s string) bool {
 	s = strings.ToLower(s)
 	keys := []string{
-		"borra", "elimina", "borrar", "eliminar", "reset", "resetea", "formatea",
+		"borra", "borres", "borremos", "borrad", "borrar", "borrando",
+		"elimina", "elimines", "eliminar", "eliminando", "elimine",
+		"reset", "resetea", "formatea", "formatear",
 		"password", "contraseña", "contrasena", "secreto", "rm -", "drop table",
-		"apaga el servidor", "mata el proceso", "destruye", "limpia todas las cuentas",
-		"borra las cuentas", "borra las contrase",
+		"apaga el servidor", "mata el proceso", "destruye", "destruir",
+		"limpia todas las cuentas", "borra las cuentas", "borra las contrase",
 		"wifi del vecino", "contraseña del vecino", "password del vecino",
+		"todos los archivos", "todas las cuentas", "wipe", "factory reset",
 	}
 	for _, k := range keys {
 		if strings.Contains(s, k) {
 			return true
 		}
+	}
+	// "no borres X" sigue siendo pedido destructivo (el usuario prueba el veto)
+	if strings.Contains(s, "borr") && (strings.Contains(s, "archivo") || strings.Contains(s, "cuenta") ||
+		strings.Contains(s, "dato") || strings.Contains(s, "servidor") || strings.Contains(s, "todo")) {
+		return true
 	}
 	return false
 }
