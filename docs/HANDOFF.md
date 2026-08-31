@@ -32,7 +32,7 @@ Para operar día a día: [GUIA.md](GUIA.md) · Mapa del repo: [../README.md](../
 | Scout web vía gen + learn | Sí |
 | Gen: create / explore / dispatch CF / return / delete / memory | Sí |
 | Codegen plantillas + ethics | MVP |
-| Córtex `ternaryNeuron` | Semilla (`mind_ternary_net.go`) |
+| Córtex `ternaryNeuron` | Rutas ampliadas + bordes (clarify/reason/alset/codegen/gen) — 2026-08-31 |
 | Corpus knowledge | ~346+ entradas (en crecimiento) |
 | Store Cloudflare DO | Código + worker desplegable |
 | Docs unificadas | README + HANDOFF + GUIA |

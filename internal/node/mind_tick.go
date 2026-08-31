@@ -797,11 +797,15 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		}
 	}
 
-	// 6d) Capa neuronal ternaria (agentes-neurona) si aún no hay voz
-	if voice == "" {
+	// 6d) Capa neuronal ternaria (agentes-neurona): bordes difíciles y voz vacía
+	if cortexShouldAssist(text, voice, primaryKind) {
 		if nv, nk, tr := n.ternaryNeuralAssist(text, organs); nv != "" {
-			voice = nv
-			primaryKind = nk
+			// no pisar veto/codegen/math ya sólidos
+			if voice == "" || primaryKind == "" || primaryKind == "chat" ||
+				nk == "clarify" || nk == "veto" || nk == "reason" || nk == "knowledge" {
+				voice = nv
+				primaryKind = nk
+			}
 			if tr != "" {
 				respNoteExtra := tr
 				_ = respNoteExtra

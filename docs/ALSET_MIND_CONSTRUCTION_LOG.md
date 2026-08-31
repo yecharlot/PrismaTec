@@ -530,3 +530,12 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Docs:** solo 3 entradas activas — `README.md`, `docs/HANDOFF.md`, `docs/GUIA.md`. Legado ALSET_* marcado archivo.
 - **Diálogo:** `mind_depth.go` — profundiza answers de corpus; sustituye chat fino por unknown limpio; corpus +20 cultura/diálogo (~366).
 - **Fase:** consolidación hacia diálogo profundo multi-dominio (sin LLM).
+
+## 2026-08-31 — Córtex ternario: más rutas y bordes difíciles
+
+- **Acto:** Ampliación de `mind_ternary_net.go`: sensores nuevos (clarify, code, reason, gen, alset, action, identity) y rutas asociadas; inhibiciones 0/1/2; `cortexShouldAssist` para intervenir en incompletos/gibberish/chat flojo ante señales fuertes.
+- **Observación:** El córtex solo actuaba con voz vacía; los bordes «dime tu», razón y dominio Alset no se notaban.
+- **Decisión:** Prioridad refuse → clarify → math → codegen → reason → gen → alset → scout…; riesgo e incompleto inhiben scout/codegen.
+- **Archivos:** `internal/node/mind_ternary_net.go`, `mind_ternary_net_test.go`, `mind_tick.go` (6d).
+- **Próximo paso:** Validar batería local de diálogo; desplegar solo con confirmación humana.
+
