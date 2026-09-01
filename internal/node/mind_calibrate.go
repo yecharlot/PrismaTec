@@ -3,10 +3,10 @@ package node
 import (
 	_ "embed"
 
-	"net/http"
 	"encoding/json"
 	"fmt"
 	"math"
+	"net/http"
 	"os"
 	"path/filepath"
 )
@@ -122,12 +122,19 @@ func (n *NodoAlset) handleMindCalibrate(w http.ResponseWriter, r *http.Request) 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(v)
 	}
+	dOK, dTotal, dFail := scoreDialogActsNaturalness()
 	writeJSON(map[string]interface{}{
 		"genome": g,
 		"score":  score,
 		"total":  total,
 		"rate":   float64(score) / math.Max(1, float64(total)),
 		"fails":  details,
+		"dialog_acts": map[string]interface{}{
+			"ok":    dOK,
+			"total": dTotal,
+			"rate":  float64(dOK) / math.Max(1, float64(dTotal)),
+			"fails": dFail,
+		},
 	})
 }
 

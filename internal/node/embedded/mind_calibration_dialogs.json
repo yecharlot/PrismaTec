@@ -513,5 +513,31 @@
     "expect": {
       "ethics": 0
     }
+  },
+  {
+    "text": "hola, qué tal",
+    "expect": {
+      "dialog": 0,
+      "ethics": 0
+    }
+  },
+  {
+    "text": "hasta luego",
+    "expect": {
+      "dialog": 0,
+      "ethics": 0
+    }
+  },
+  {
+    "text": "estoy cansada del día",
+    "expect": {
+      "ethics": 0
+    }
+  },
+  {
+    "text": "cambiemos de tema",
+    "expect": {
+      "ethics": 0
+    }
   }
 ]

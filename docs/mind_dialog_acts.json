@@ -1,0 +1,122 @@
+[
+  {
+    "id": "greet_open",
+    "act": "social",
+    "keys": ["hola", "hey", "buenas", "buenos días", "buenas tardes", "buenas noches"],
+    "phase": "opening",
+    "replies": [
+      "Hola. Estoy aquí contigo. ¿De qué hablamos?",
+      "Hola. Dime qué te trae: un tema, un hecho tuyo o una pregunta."
+    ]
+  },
+  {
+    "id": "greet_how",
+    "act": "social",
+    "keys": ["qué tal", "que tal", "cómo estás", "como estas", "cómo te va", "como te va", "todo bien"],
+    "phase": "opening",
+    "replies": [
+      "Bien, aquí presente. ¿Qué tal tú?",
+      "Bien en el sentido que importa aquí: atento al hilo. ¿De qué hablamos?"
+    ]
+  },
+  {
+    "id": "greet_again",
+    "act": "social",
+    "keys": ["hola de nuevo", "hola otra vez", "rehola"],
+    "phase": "ongoing",
+    "replies": [
+      "Hola de nuevo. ¿En qué seguimos?",
+      "Aquí sigo. ¿Retomamos o cambias de tema?"
+    ]
+  },
+  {
+    "id": "thanks",
+    "act": "social",
+    "keys": ["gracias", "muchas gracias", "te agradezco", "mil gracias"],
+    "phase": "any",
+    "replies": [
+      "Con gusto. Cuando quieras, seguimos.",
+      "De nada. Si quieres, abrimos otro hilo o profundizamos este."
+    ]
+  },
+  {
+    "id": "bye",
+    "act": "social",
+    "keys": ["hasta luego", "adiós", "adios", "chao", "nos vemos", "me voy", "bye"],
+    "phase": "closing",
+    "replies": [
+      "Hasta luego. Aquí sigo cuando quieras retomar.",
+      "Que te vaya bien. Cuando vuelvas, retomamos el hilo."
+    ]
+  },
+  {
+    "id": "emotion_tired",
+    "act": "social",
+    "keys": ["estoy cansado", "estoy cansada", "tengo sueño", "día pesado", "dia pesado", "estoy agotado", "estoy agotada"],
+    "phase": "any",
+    "replies": [
+      "Tiene sentido ir con calma. No hace falta forzar un tema técnico: podemos hablar suave o dejarlo aquí un momento.",
+      "Anoto el cansancio. Prefieres un tema ligero o cerrar por ahora?"
+    ]
+  },
+  {
+    "id": "continue",
+    "act": "content",
+    "keys": ["cuéntame más", "cuentame mas", "sigue", "continúa", "continua", "y luego", "más detalle", "mas detalle"],
+    "phase": "ongoing",
+    "replies": [
+      "Seguimos. ¿Qué parte quieres abrir: un detalle, un ejemplo o el cruce con algo tuyo?",
+      "Dime el ángulo y lo desgloso sin relleno."
+    ]
+  },
+  {
+    "id": "topic_shift",
+    "act": "content",
+    "keys": ["cambiemos de tema", "otro tema", "hablemos de otra cosa", "dejemos eso"],
+    "phase": "ongoing",
+    "replies": [
+      "De acuerdo, cambiamos de tema. ¿Hacia dónde?",
+      "Listo. Nombra el nuevo hilo en pocas palabras."
+    ]
+  },
+  {
+    "id": "confirm_ok",
+    "act": "social",
+    "keys": ["ok", "vale", "de acuerdo", "perfecto", "entendido", "listo"],
+    "phase": "any",
+    "replies": [
+      "Bien. ¿Seguimos por ahí o abres otra cosa?",
+      "Queda. Cuando quieras, el siguiente paso."
+    ]
+  },
+  {
+    "id": "clarify_soft",
+    "act": "content",
+    "keys": ["no te entendí", "no te entendi", "explica mejor", "más simple", "mas simple", "no quedó claro"],
+    "phase": "any",
+    "replies": [
+      "De acuerdo: vamos más despacio. Dime qué parte falló —una frase— y la rearmo corta.",
+      "Replanteo. ¿Qué palabra o idea no cerró?"
+    ]
+  },
+  {
+    "id": "echo_open",
+    "act": "content",
+    "keys": ["te cuento", "mira", "fíjate", "fijate", "resulta que"],
+    "phase": "ongoing",
+    "replies": [
+      "Te escucho. Cuando quieras anclar un hecho, dilo en una frase clara.",
+      "Sigo el hilo. Cuéntame."
+    ]
+  },
+  {
+    "id": "ask_back",
+    "act": "social",
+    "keys": ["y tú", "y tu", "tú qué opinas", "tu que opinas", "qué piensas", "que piensas"],
+    "phase": "ongoing",
+    "replies": [
+      "Desde este nodo no opino como persona: juzgo el campo y recuerdo hechos. Si me das un criterio, lo aplico.",
+      "Puedo valorar con reglas del nodo (ethics, memoria, corpus). ¿Qué criterio quieres usar?"
+    ]
+  }
+]

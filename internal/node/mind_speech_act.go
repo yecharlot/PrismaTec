@@ -102,6 +102,20 @@ func speakSpeechAct(text string, sess *mindSessionState) (voice string, kind str
 	if act != actSocial {
 		return "", ""
 	}
+	// Corpus de actos de diálogo (P2) — moldes revisables sin tocar código
+	if cv := speakFromDialogActs(text, sess); cv != "" {
+		low := strings.ToLower(text)
+		if isByeTalk(low) && sess != nil {
+			sess.Phase = phaseClosing
+			sess.LastAct = string(actSocial)
+		} else if sess != nil {
+			sess.LastAct = string(actSocial)
+			if sess.Phase == "" {
+				sess.Phase = phaseOpening
+			}
+		}
+		return cv, "chat"
+	}
 	phase := phaseOpening
 	turns := 0
 	if sess != nil {

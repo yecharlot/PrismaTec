@@ -17,6 +17,10 @@ func microComposeChat(text string, sess *mindSessionState, profile UserProfile, 
 	if act == actTask || act == actMeta {
 		return ""
 	}
+	// Corpus de actos (continue, topic shift, clarify…)
+	if cv := speakFromDialogActs(text, sess); cv != "" && act != actSocial {
+		return cv
+	}
 	phase := phaseOpening
 	turns := 0
 	lastQ := ""

@@ -572,3 +572,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** `mind_micro_compose.go` (eco/hilo); strip cola «entonces» en razón; `softSocialBridge`; test secuencia social + silogismo.
 - **P0** ya en main (speech-act + fase). **Deploy:** no (bajo confirmación).
 
+
+## 2026-09-02 — P2 corpus de actos de diálogo + score naturalidad
+
+- **Acto:** `mind_dialog_acts.go` + `embedded/mind_dialog_acts.json` (saludo, cierre, emoción, continue, topic shift…). Speech-act y micro-compose consultan el corpus. `/api/mind/calibrate` expone `dialog_acts.ok/total/rate`.
+- **Deploy:** no (confirmación humana).
+
