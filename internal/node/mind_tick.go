@@ -491,15 +491,29 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	primaryKind := "chat"
 	var codegenCID string
 
-	// Flujo estructural de diálogo (plantillas + hilo + gates) — prioriza charla humana
-	if vFlow, kFlow := n.tryDialogFlow(text, profile, recent); vFlow != "" {
-		voice = vFlow
-		primaryKind = kFlow
-		if kFlow == "veto" {
-			ethics.State = 2
+	// P0: acto de habla social + fase de sesión — antes de corpus/tools/unknown
+	if ethics.State != 2 {
+		if sv, sk := speakSpeechAct(text, sess); sv != "" {
+			voice = sv
+			primaryKind = sk
+			if sk == "" {
+				primaryKind = "chat"
+			}
+			recordDialogPattern(dialogIntent("chat"), text)
 		}
-		if kFlow == "tool" || kFlow == "creative" || kFlow == "math" {
-			recordDialogPattern(dialogIntent(kFlow), text)
+	}
+
+	// Flujo estructural de diálogo (plantillas + hilo + gates) — prioriza charla humana
+	if voice == "" {
+		if vFlow, kFlow := n.tryDialogFlow(text, profile, recent); vFlow != "" {
+			voice = vFlow
+			primaryKind = kFlow
+			if kFlow == "veto" {
+				ethics.State = 2
+			}
+			if kFlow == "tool" || kFlow == "creative" || kFlow == "math" {
+				recordDialogPattern(dialogIntent(kFlow), text)
+			}
 		}
 	}
 
@@ -945,6 +959,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	if voice != "" {
 		recordVoiceAnomalies(text, voice)
 	}
+	updateSessionAfterTurn(sess, text, primaryKind)
 	n.saveSessionThread(sess)
 	if sess != nil && sess.ID != "" && sess.ID != "anon" {
 		resp.Note = resp.Note + "+session:" + sess.ID

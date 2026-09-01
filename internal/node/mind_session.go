@@ -19,6 +19,9 @@ type mindSessionState struct {
 	LastScoutTopic string
 	LastKnow       string
 	LastMem        string
+	Phase          string // opening | ongoing | closing
+	LastAct        string // social | content | task | meta
+	TurnCount      int
 	UpdatedAt      time.Time
 }
 

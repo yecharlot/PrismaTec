@@ -559,3 +559,10 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Archivos:** mind_reason.go, mind_memory.go, mind_depth.go, mind_tick.go, mind_seed.go.
 - **Próximo:** deploy + batería multi-dominio.
 
+
+## 2026-09-02 — P0 diálogo: acto de habla + fase de sesión (sin deploy)
+
+- **Acto:** `mind_speech_act.go` — social/content/task/meta; fases opening/ongoing/closing en sesión; saludo/cierre/emoción antes de corpus/unknown. Guard en enrichDeepTurn.
+- **Archivos:** mind_speech_act.go, mind_session.go, mind_tick.go, mind_depth.go, tests.
+- **Deploy:** pendiente confirmación humana.
+

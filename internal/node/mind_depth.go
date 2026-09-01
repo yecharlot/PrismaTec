@@ -87,6 +87,10 @@ func enrichDeepTurn(kind, userText, voice string) string {
 	case "identity":
 		return deepenIdentityAnswer(userText, voice)
 	case "chat":
+		// No pisar saludo/charla social con "tema desconocido"
+		if classifySpeechAct(userText) == actSocial {
+			return voice
+		}
 		if isThinChatVoice(voice) && looksLikeInfoQuestion(userText) {
 			return unknownTopicVoice(userText)
 		}
