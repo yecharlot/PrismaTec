@@ -219,7 +219,6 @@ func splitReasonClauses(text string) []string {
 	return extractClauses(text)
 }
 
-
 func parseUniversalEsFact(text string, conf int, src string) (ternaryFact, bool) {
 	low := strings.ToLower(strings.TrimSpace(text))
 	low = strings.TrimSuffix(low, ".")

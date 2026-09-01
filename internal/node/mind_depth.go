@@ -75,18 +75,13 @@ func enrichDeepTurn(kind, userText, voice string) string {
 	case "knowledge":
 		return deepenKnowledgeAnswer(userText, voice)
 	case "reason":
-		if len([]rune(voice)) < 120 && !strings.Contains(voice, "
-") && !strings.HasSuffix(voice, "?") {
-			return voice + "
-
-Si aportas otra premisa, puedo encadenar otra deducción."
+		if len([]rune(voice)) < 120 && !strings.Contains(voice, "\n") && !strings.HasSuffix(voice, "?") {
+			return voice + "\n\nSi aportas otra premisa, puedo encadenar otra deducción."
 		}
 		return voice
 	case "memory":
 		if len([]rune(voice)) < 80 && looksLikeInfoQuestion(userText) && !strings.HasSuffix(strings.TrimSpace(voice), "?") {
-			return voice + "
-
-Si quieres otro dato de esta sesión, pregunta por nombre, lugar o lo que anotamos."
+			return voice + "\n\nSi quieres otro dato de esta sesión, pregunta por nombre, lugar o lo que anotamos."
 		}
 		return voice
 	case "identity":
@@ -104,9 +99,7 @@ Si quieres otro dato de esta sesión, pregunta por nombre, lugar o lo que anotam
 func deepenIdentityAnswer(userText, voice string) string {
 	low := strings.ToLower(userText)
 	if strings.Contains(low, "genoma") {
-		return "El genoma de Alset Mind son umbrales mutables (alarmas, vetos, pesos de memoria). Se calibra con el corpus y a veces muta si mejora el acierto; no es un reentrenamiento tipo LLM.
-
-" + voice
+		return "El genoma de Alset Mind son umbrales mutables (alarmas, vetos, pesos de memoria). Se calibra con el corpus y a veces muta si mejora el acierto; no es un reentrenamiento tipo LLM.\n\n" + voice
 	}
 	return voice
 }
