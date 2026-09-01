@@ -584,3 +584,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** isPureDialogue ya no trata memory/identity como charla; micro-compose rehúsa memoria/meta/razón/LLM; memoria temprana en tick antes del eco; "ok"/confirmaciones como social.
 - **Deploy:** sí, con batería de conversación.
 
+
+## 2026-09-02 — Prioridad memoria/meta > micro-compose; confirm social; cortex no pisa ok
+
+- **Acto:** self-model y memory queries no son exclusivos; meta/LLM antes de eco; «y dónde…» no es continue; ok/vale = social; cortex no override social.
+- **Deploy:** inmediato post-push.
+

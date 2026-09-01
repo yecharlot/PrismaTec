@@ -52,8 +52,14 @@ func microComposeChat(text string, sess *mindSessionState, profile UserProfile, 
 		return "" // leave to speech-act
 	}
 
-	// Continuidad: "y tú", "cuéntame más", "en serio", eco
-	if isContinuePrompt(low) || isElaborationRequest(low) || strings.HasPrefix(low, "y ") ||
+	// Continuidad: "cuéntame más" / "sigue" — NO "y dónde vivo" ni preguntas
+	if isMemoryQuery(low) || looksLikeInfoQuestion(low) {
+		return ""
+	}
+	contY := strings.HasPrefix(low, "y ") && !strings.Contains(low, "dónde") && !strings.Contains(low, "donde") &&
+		!strings.Contains(low, "cuál") && !strings.Contains(low, "cual") && !strings.Contains(low, "cómo") &&
+		!strings.Contains(low, "como") && !strings.Contains(low, "qué") && !strings.Contains(low, "que ")
+	if isContinuePrompt(low) || isElaborationRequest(low) || contY ||
 		low == "sigue" || low == "continúa" || low == "continua" {
 		if lastQ != "" {
 			return "Seguimos con eso. ¿Qué parte quieres abrir: un detalle, un ejemplo o el cruce con algo tuyo?"

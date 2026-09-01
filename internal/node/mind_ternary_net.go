@@ -355,11 +355,19 @@ func pickDominantRoute(routes map[string]int) string {
 
 // cortexShouldAssist: bordes donde el córtex debe notarse aunque otra capa haya hablado flojo.
 func cortexShouldAssist(text, voice, kind string) bool {
+	low := strings.ToLower(strings.TrimSpace(text))
+	// No pisar charla social / confirmaciones cortas ya respondidas
+	if voice != "" && (classifySpeechAct(text) == actSocial || isConfirmTalk(low) || isThanksTalk(low) || isByeTalk(low)) {
+		return false
+	}
 	if voice == "" {
 		return true
 	}
-	low := strings.ToLower(strings.TrimSpace(text))
 	if isIncompleteUtterance(low) || isGibberish(low) {
+		// si ya hay voz de chat, no forzar clarify sobre "ok"/"vale"
+		if kind == "chat" && (isConfirmTalk(low) || isNoiseOrGreeting(low)) {
+			return false
+		}
 		return true
 	}
 	// chat genérico ante señales fuertes de dominio

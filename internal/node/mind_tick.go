@@ -502,23 +502,41 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			recordDialogPattern(dialogIntent("chat"), text)
 		}
 	}
-	// Memoria / perfil ANTES de micro-compose
+	// Memoria / perfil ANTES de micro-compose (no exclusivos: probar ambos)
 	if voice == "" && ethics.State != 2 {
+		lowT := strings.ToLower(text)
 		if isSelfModelQuery(normText) || isSelfModelQuery(text) {
-			voice = speakFromProfile(text, profile)
+			if pv := speakFromProfile(text, profile); pv != "" {
+				voice = pv
+				primaryKind = "memory"
+			}
+		}
+		if voice == "" && (isMemoryQuery(normText) || isMemoryQuery(text)) {
+			if strings.Contains(lowT, "apellido") && profile.Apellidos != "" {
+				voice = speakFromProfile(text, profile)
+			}
+			if voice == "" {
+				if ms := speakFromMemory(text, recent); ms != "" {
+					voice = ms
+				}
+			}
+			if voice == "" && !profile.empty() && (strings.Contains(lowT, "nombre") || strings.Contains(lowT, "apellido") ||
+				strings.Contains(lowT, "llamo") || strings.Contains(lowT, "vivo") || strings.Contains(lowT, "ciudad")) {
+				voice = speakFromProfile(text, profile)
+			}
 			if voice != "" {
 				primaryKind = "memory"
 			}
-		} else if isMemoryQuery(normText) || isMemoryQuery(text) {
-			if strings.Contains(strings.ToLower(text), "apellido") && profile.Apellidos != "" {
-				voice = speakFromProfile(text, profile)
-			} else if ms := speakFromMemory(text, recent); ms != "" {
-				voice = ms
-			} else if !profile.empty() && (strings.Contains(strings.ToLower(text), "nombre") || strings.Contains(strings.ToLower(text), "apellido")) {
-				voice = speakFromProfile(text, profile)
-			}
-			if voice != "" {
-				primaryKind = "memory"
+		}
+		// Meta / vs LLM antes de eco de continuidad
+		if voice == "" && (strings.Contains(lowT, "chatgpt") || strings.Contains(lowT, "gpt") ||
+			strings.Contains(lowT, "llm") || isCapabilityQuestion(normText) || isIdentityTalk(lowT)) {
+			if kv := speakFromKnowledge(text); kv != "" {
+				voice = naturalKnowledgeVoice(text, kv, 1)
+				if voice == "" {
+					voice = kv
+				}
+				primaryKind = "knowledge"
 			}
 		}
 	}

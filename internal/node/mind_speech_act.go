@@ -56,8 +56,17 @@ func classifySpeechAct(text string) speechAct {
 	return actContent
 }
 
+func isConfirmTalk(low string) bool {
+	low = strings.TrimSpace(low)
+	switch low {
+	case "ok", "vale", "de acuerdo", "perfecto", "entendido", "listo", "claro", "sí", "si", "aja", "ajá":
+		return true
+	}
+	return false
+}
+
 func isSpeechSocial(low string) bool {
-	if isThanksTalk(low) || isByeTalk(low) {
+	if isThanksTalk(low) || isByeTalk(low) || isConfirmTalk(low) {
 		return true
 	}
 	if isNoiseOrGreeting(low) {
