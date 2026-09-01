@@ -356,8 +356,9 @@ func pickDominantRoute(routes map[string]int) string {
 // cortexShouldAssist: bordes donde el córtex debe notarse aunque otra capa haya hablado flojo.
 func cortexShouldAssist(text, voice, kind string) bool {
 	low := strings.ToLower(strings.TrimSpace(text))
-	// No pisar charla social / confirmaciones cortas ya respondidas
-	if voice != "" && (classifySpeechAct(text) == actSocial || isConfirmTalk(low) || isThanksTalk(low) || isByeTalk(low)) {
+	// No pisar charla social / identidad / confirmaciones ya respondidas
+	if voice != "" && (classifySpeechAct(text) == actSocial || isConfirmTalk(low) || isThanksTalk(low) || isByeTalk(low) ||
+		isIdentityTalk(low) || kind == "identity" || kind == "memory" || kind == "knowledge") {
 		return false
 	}
 	if voice == "" {

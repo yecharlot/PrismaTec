@@ -287,16 +287,23 @@ func isIncompleteUtterance(s string) bool {
 	if s == "" {
 		return true
 	}
+	// «qué eres tú» / «quién eres tú» están completos
+	if isIdentityTalk(s) || isMemoryQuery(s) || isCapabilityQuestion(s) {
+		return false
+	}
 	words := strings.Fields(s)
 	if len(words) <= 2 && (strings.HasPrefix(s, "dime") || strings.HasPrefix(s, "cuéntame") ||
 		strings.HasPrefix(s, "cuentame") || strings.HasPrefix(s, "y ") ||
-		strings.HasSuffix(s, " tu") || strings.HasSuffix(s, " el") || strings.HasSuffix(s, " la") ||
+		strings.HasSuffix(s, " el") || strings.HasSuffix(s, " la") ||
 		s == "dime" || s == "y" || s == "entonces") {
 		return true
 	}
-	// Trailing hanging pronoun / article
+	// Trailing hanging pronoun — but not identity/memory
 	if len(words) <= 3 && (strings.HasSuffix(s, " tu") || strings.HasSuffix(s, " tú") ||
 		strings.HasSuffix(s, " su") || strings.HasSuffix(s, " mi")) {
+		if strings.Contains(s, "eres") || strings.Contains(s, "llamas") || strings.Contains(s, "nombre") {
+			return false
+		}
 		return true
 	}
 	return false
@@ -779,8 +786,14 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 
 	// Identidad explícita antes de razón (evita «entonces qué eres» → silogismo)
 	if voice == "" && ethics.State != 2 && isIdentityTalk(strings.ToLower(text)) {
-		voice = "Soy Alset Mind: inteligencia ternaria residente en este nodo. Juzgo el campo 0/1/2, recuerdo en CID y no predigo tokens."
-		primaryKind = "identity"
+		idV := "Soy Alset Mind: inteligencia ternaria residente en este nodo. Juzgo el campo 0/1/2, recuerdo en CID y no predigo tokens."
+		if name := extractDeclaredName(text); name != "" {
+			voice = "Te llamas " + name + ".\n\n" + idV
+			primaryKind = "identity"
+		} else {
+			voice = idV
+			primaryKind = "identity"
+		}
 	}
 
 	// 6a0) Razón ternaria: silogismos / reglas sobre corpus+memoria (no predicción)
