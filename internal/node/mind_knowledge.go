@@ -181,6 +181,10 @@ func editDistanceOne(a, b string) bool {
 // speakFromKnowledge retrieves structured polymath knowledge by key/token overlap.
 // Not an LLM: fixed curated entries, ranked by match strength.
 func speakFromKnowledge(query string) string {
+	// no filosofía del «todo» ante «de cualquier cosa» / aperturas
+	if isCalmChat(query) || isSpeechSocial(strings.ToLower(strings.TrimSpace(query))) {
+		return ""
+	}
 	entries := loadMindKnowledge()
 	if len(entries) == 0 {
 		return ""

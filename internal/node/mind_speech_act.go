@@ -69,7 +69,7 @@ func isSpeechSocial(low string) bool {
 	if isThanksTalk(low) || isByeTalk(low) || isConfirmTalk(low) {
 		return true
 	}
-	if isNoiseOrGreeting(low) {
+	if isNoiseOrGreeting(low) || isCalmChat(low) {
 		return true
 	}
 	// cómo estás / qué tal (sin pedido de info profunda)
@@ -183,6 +183,19 @@ func speakSpeechAct(text string, sess *mindSessionState) (voice string, kind str
 		} else {
 			sess.Phase = phaseOngoing
 		}
+	}
+	if strings.Contains(low, "cualquier") || strings.Contains(low, "lo que sea") ||
+		strings.Contains(low, "da igual") || strings.Contains(low, "empecemos") ||
+		strings.Contains(low, "vamos a empezar") || strings.Contains(low, "vamos a hablar") ||
+		strings.Contains(low, "hablemos") || strings.Contains(low, "charlemos") {
+		if sess != nil {
+			sess.Phase = phaseOngoing
+			sess.LastAct = string(actSocial)
+		}
+		if strings.Contains(low, "empez") || strings.Contains(low, "hablar") || strings.Contains(low, "charl") {
+			return "Perfecto, empezamos. Dime un tema, un hecho tuyo o una pregunta.", "chat"
+		}
+		return "Vale, tema libre. Cuéntame algo o pregunta lo que quieras.", "chat"
 	}
 	if strings.Contains(low, "tal") || strings.Contains(low, "estás") || strings.Contains(low, "estas") ||
 		strings.Contains(low, "todo bien") || strings.Contains(low, "te va") {

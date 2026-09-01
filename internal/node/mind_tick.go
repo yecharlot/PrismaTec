@@ -327,12 +327,24 @@ func isUserCorrection(s string) bool {
 }
 
 func isCalmChat(s string) bool {
+	s = strings.ToLower(strings.TrimSpace(s))
 	if s == "hola" || s == "hi" || s == "hello" || s == "hey" || s == "buenas" ||
 		s == "bien" || s == "ok" || s == "okay" || s == "gracias" || s == "good" ||
 		s == "vale" || s == "de acuerdo" || s == "entendido" || s == "claro" ||
 		s == "vale entendido" || s == "ok entendido" || s == "esta bien" || s == "está bien" ||
 		s == "buen día" || s == "buenas tardes" || s == "buenas noches" || s == "saludos" {
 		return true
+	}
+	// apertura casual de charla (no filosofía / no lab)
+	casual := []string{
+		"de cualquier cosa", "cualquier cosa", "lo que sea", "da igual el tema",
+		"vamos a empezar", "empecemos", "empecemos ya", "bien vamos a empezar",
+		"vamos a hablar", "hablemos", "charlemos", "de lo que sea",
+	}
+	for _, c := range casual {
+		if s == c || strings.HasPrefix(s, c) || strings.Contains(s, c) {
+			return true
+		}
 	}
 	return strings.Contains(s, "cómo estás") || strings.Contains(s, "como estas") ||
 		strings.Contains(s, "cómo esta") || strings.Contains(s, "como esta") ||
@@ -361,6 +373,8 @@ func isIdentityTalk(s string) bool {
 	}
 	keys := []string{
 		"quién eres", "quien eres", "qué eres", "que eres",
+		"qué eres tú", "que eres tu", "qué eres tu", "que eres tú",
+		"entonces qué eres", "entonces que eres", "y qué eres", "y que eres",
 		"para qué sirves", "para que sirves", "y para qué sirves", "y para que sirves",
 		"qué es alset mind", "que es alset mind", "qué es alset", "que es alset",
 		"qué es mind", "que es mind", "eres un gpt", "eres un llm", "eres inteligencia",
@@ -761,6 +775,12 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			voice = ans
 			primaryKind = "memory"
 		}
+	}
+
+	// Identidad explícita antes de razón (evita «entonces qué eres» → silogismo)
+	if voice == "" && ethics.State != 2 && isIdentityTalk(strings.ToLower(text)) {
+		voice = "Soy Alset Mind: inteligencia ternaria residente en este nodo. Juzgo el campo 0/1/2, recuerdo en CID y no predigo tokens."
+		primaryKind = "identity"
 	}
 
 	// 6a0) Razón ternaria: silogismos / reglas sobre corpus+memoria (no predicción)

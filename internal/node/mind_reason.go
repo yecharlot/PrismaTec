@@ -798,11 +798,28 @@ func reasonAboutQuery(userText string, extra []ternaryFact) string {
 
 func isReasoningRequest(s string) bool {
 	low := strings.ToLower(strings.TrimSpace(s))
-	// no confundir definiciones
+	// no confundir definiciones ni identidad
+	if isIdentityTalk(low) || isCapabilityQuestion(low) {
+		return false
+	}
 	if strings.HasPrefix(low, "qué es ") || strings.HasPrefix(low, "que es ") ||
 		strings.HasPrefix(low, "qué es un ") || strings.HasPrefix(low, "que es un ") ||
+		strings.HasPrefix(low, "qué eres") || strings.HasPrefix(low, "que eres") ||
 		strings.HasPrefix(low, "cómo razona") || strings.HasPrefix(low, "como razona") {
 		return false
+	}
+	// «entonces qué eres» es charla, no silogismo
+	if strings.Contains(low, "entonces") {
+		conversational := strings.Contains(low, "qué eres") || strings.Contains(low, "que eres") ||
+			strings.Contains(low, "quién eres") || strings.Contains(low, "quien eres") ||
+			strings.Contains(low, "qué es") || strings.Contains(low, "que es") ||
+			strings.Contains(low, "entendido") || strings.Contains(low, "ok ") ||
+			strings.HasPrefix(low, "entonces qué") || strings.HasPrefix(low, "entonces que")
+		hasPremises := strings.Contains(low, "si ") || strings.Contains(low, "todos los") ||
+			strings.Contains(low, "todas las") || strings.Count(low, " es ") >= 2
+		if conversational && !hasPremises {
+			return false
+		}
 	}
 	if strings.Contains(low, "entonces") || strings.Contains(low, "por tanto") ||
 		strings.Contains(low, "por lo tanto") || strings.Contains(low, "se deduce") ||

@@ -464,5 +464,38 @@
       "Sí, aquí. ¿Seguimos?",
       "Presente. Dime."
     ]
+  },
+  {
+    "id": "topic_free",
+    "act": "social",
+    "keys": [
+      "de cualquier cosa",
+      "cualquier cosa",
+      "lo que sea",
+      "de lo que sea",
+      "da igual el tema"
+    ],
+    "phase": "any",
+    "replies": [
+      "Vale, tema libre. Cuéntame algo o pregunta lo que quieras.",
+      "Perfecto. Elige tú el hilo: un hecho tuyo, una pregunta o un tema."
+    ]
+  },
+  {
+    "id": "lets_start",
+    "act": "social",
+    "keys": [
+      "vamos a empezar",
+      "empecemos",
+      "bien vamos a empezar",
+      "vamos a hablar",
+      "charlemos",
+      "hablemos"
+    ],
+    "phase": "opening",
+    "replies": [
+      "Perfecto, empezamos. Dime un tema, un hecho tuyo o una pregunta.",
+      "Listo. ¿Por dónde quieres empezar?"
+    ]
   }
 ]
