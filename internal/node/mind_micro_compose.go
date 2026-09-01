@@ -12,12 +12,22 @@ func microComposeChat(text string, sess *mindSessionState, profile UserProfile, 
 	if low == "" {
 		return ""
 	}
+	if isMemoryQuery(low) || isSelfModelQuery(low) || isIdentityTalk(low) || isCapabilityQuestion(low) {
+		return ""
+	}
+	if isReasoningRequest(low) || isRFTRequest(low) {
+		return ""
+	}
+	if strings.Contains(low, "chatgpt") || strings.Contains(low, "gpt") || strings.Contains(low, "llm") {
+		return ""
+	}
+	if strings.Contains(low, "zyrion") || strings.Contains(low, "genoma") || strings.Contains(low, "alset mind") {
+		return ""
+	}
 	act := classifySpeechAct(text)
-	// Solo charla social / content liviano; no pisa tools
 	if act == actTask || act == actMeta {
 		return ""
 	}
-	// Corpus de actos (continue, topic shift, clarify…)
 	if cv := speakFromDialogActs(text, sess); cv != "" && act != actSocial {
 		return cv
 	}
@@ -65,8 +75,9 @@ func microComposeChat(text string, sess *mindSessionState, profile UserProfile, 
 		}
 	}
 
-	// Ancla de memoria en charla ongoing
-	if phase == phaseOngoing && turns >= 1 && name != "" && isPureDialogue(low) {
+	// Ancla de nombre solo en charla afirmativa (nunca preguntas)
+	if phase == phaseOngoing && turns >= 1 && name != "" && isPureDialogue(low) &&
+		!strings.Contains(low, "?") && !looksLikeInfoQuestion(low) {
 		return "Te sigo, " + name + ". Cuéntame más o pregunta con calma; si es un hecho que quieras anclar, dilo claro."
 	}
 

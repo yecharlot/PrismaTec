@@ -488,7 +488,11 @@ func isPureDialogue(s string) bool {
 		strings.Contains(s, "deten el") || strings.Contains(s, "detén el") {
 		return false
 	}
-	if isCalmChat(s) || isIdentityTalk(s) || isMemoryQuery(s) || isPersonalFact(s) || isWorldFact(s) {
+	// Memoria / identidad / hechos a anclar no son "charla pura"
+	if isMemoryQuery(s) || isIdentityTalk(s) || isPersonalFact(s) {
+		return false
+	}
+	if isCalmChat(s) || isWorldFact(s) {
 		return true
 	}
 	// short reflective statements without imperative node ops

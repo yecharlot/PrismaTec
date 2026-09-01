@@ -83,7 +83,10 @@ func isSpeechSocial(low string) bool {
 			return true
 		}
 	}
-	// mensajes muy cortos de contact social
+	switch low {
+	case "ok", "vale", "claro", "listo", "perfecto", "de acuerdo", "aja", "ajá", "sí", "si":
+		return true
+	}
 	words := strings.Fields(low)
 	if len(words) <= 4 {
 		for _, w := range words {

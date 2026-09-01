@@ -502,6 +502,26 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			recordDialogPattern(dialogIntent("chat"), text)
 		}
 	}
+	// Memoria / perfil ANTES de micro-compose
+	if voice == "" && ethics.State != 2 {
+		if isSelfModelQuery(normText) || isSelfModelQuery(text) {
+			voice = speakFromProfile(text, profile)
+			if voice != "" {
+				primaryKind = "memory"
+			}
+		} else if isMemoryQuery(normText) || isMemoryQuery(text) {
+			if strings.Contains(strings.ToLower(text), "apellido") && profile.Apellidos != "" {
+				voice = speakFromProfile(text, profile)
+			} else if ms := speakFromMemory(text, recent); ms != "" {
+				voice = ms
+			} else if !profile.empty() && (strings.Contains(strings.ToLower(text), "nombre") || strings.Contains(strings.ToLower(text), "apellido")) {
+				voice = speakFromProfile(text, profile)
+			}
+			if voice != "" {
+				primaryKind = "memory"
+			}
+		}
+	}
 	// P1: micro-compositor de continuidad (eco / hilo) si aún no hay voz
 	if voice == "" && ethics.State != 2 {
 		if mv := microComposeChat(text, sess, profile, recent); mv != "" {

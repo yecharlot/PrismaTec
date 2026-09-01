@@ -578,3 +578,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** `mind_dialog_acts.go` + `embedded/mind_dialog_acts.json` (saludo, cierre, emoción, continue, topic shift…). Speech-act y micro-compose consultan el corpus. `/api/mind/calibrate` expone `dialog_acts.ok/total/rate`.
 - **Deploy:** no (confirmación humana).
 
+
+## 2026-09-01 — Prioridad memoria/meta sobre micro-compose
+
+- **Acto:** isPureDialogue ya no trata memory/identity como charla; micro-compose rehúsa memoria/meta/razón/LLM; memoria temprana en tick antes del eco; "ok"/confirmaciones como social.
+- **Deploy:** sí, con batería de conversación.
+
