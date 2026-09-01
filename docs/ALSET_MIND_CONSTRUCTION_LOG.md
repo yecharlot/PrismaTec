@@ -566,3 +566,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Archivos:** mind_speech_act.go, mind_session.go, mind_tick.go, mind_depth.go, tests.
 - **Deploy:** pendiente confirmación humana.
 
+
+## 2026-09-02 — P1 micro-compositor + silogismo «entonces» + batería conversación
+
+- **Acto:** `mind_micro_compose.go` (eco/hilo); strip cola «entonces» en razón; `softSocialBridge`; test secuencia social + silogismo.
+- **P0** ya en main (speech-act + fase). **Deploy:** no (bajo confirmación).
+

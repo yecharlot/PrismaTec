@@ -502,6 +502,13 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			recordDialogPattern(dialogIntent("chat"), text)
 		}
 	}
+	// P1: micro-compositor de continuidad (eco / hilo) si aún no hay voz
+	if voice == "" && ethics.State != 2 {
+		if mv := microComposeChat(text, sess, profile, recent); mv != "" {
+			voice = mv
+			primaryKind = "chat"
+		}
+	}
 
 	// Flujo estructural de diálogo (plantillas + hilo + gates) — prioriza charla humana
 	if voice == "" {
@@ -847,6 +854,12 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	}
 
 	// 7) Voz clásica (identidad, memoria, corpus, compose)
+	if voice == "" {
+		if bv := softSocialBridge(text, voice); bv != "" {
+			voice = bv
+			primaryKind = "chat"
+		}
+	}
 	if voice == "" {
 		voice = mindVoice(text, organs, memSpeak, knownName)
 		if memSpeak != "" {

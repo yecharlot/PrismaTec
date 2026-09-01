@@ -219,6 +219,21 @@ func splitReasonClauses(text string) []string {
 	return extractClauses(text)
 }
 
+// stripReasonTail: quita «entonces…» del final para no contaminar el objeto del hecho.
+func stripReasonTail(s string) string {
+	low := strings.ToLower(strings.TrimSpace(s))
+	for _, tail := range []string{" entonces", " por tanto", " por lo tanto", " luego", " por ende"} {
+		if i := strings.Index(low, tail); i > 0 {
+			// solo si es final o seguido de puntuación / qué
+			rest := strings.TrimSpace(low[i+len(tail):])
+			if rest == "" || strings.HasPrefix(rest, "?") || strings.HasPrefix(rest, "qué") || strings.HasPrefix(rest, "que ") {
+				return strings.TrimSpace(s[:i])
+			}
+		}
+	}
+	return strings.TrimSpace(s)
+}
+
 func parseUniversalEsFact(text string, conf int, src string) (ternaryFact, bool) {
 	low := strings.ToLower(strings.TrimSpace(text))
 	low = strings.TrimSuffix(low, ".")
@@ -263,12 +278,14 @@ func parseParticularClauses(text string, conf int, src string) []ternaryFact {
 	seen := map[string]bool{}
 	for _, part := range parts {
 		part = strings.TrimSpace(part)
+		part = stripReasonTail(part)
 		pl := strings.ToLower(part)
 		if strings.HasPrefix(pl, "si ") {
 			part = strings.TrimSpace(part[3:])
+			part = stripReasonTail(part)
 			pl = strings.ToLower(part)
 		}
-		if strings.HasPrefix(pl, "entonces") {
+		if strings.HasPrefix(pl, "entonces") || part == "" {
 			continue
 		}
 		var f ternaryFact
@@ -342,9 +359,17 @@ func parseRelationFact(text string, conf int, src string) (ternaryFact, bool) {
 		subj := normalizeReasonToken(text[:i])
 		rest := strings.TrimSpace(text[i+len(p.needle):])
 		// cortar en puntuación y conjunciones
-		for _, sep := range []string{".", "!", "?", ";", ",", " y ", " pero ", " porque ", " entonces ", " —", " - "} {
+		for _, sep := range []string{".", "!", "?", ";", ",", " y ", " pero ", " porque ", " entonces ", " entonces", " —", " - "} {
 			if j := strings.Index(strings.ToLower(rest), sep); j > 0 {
 				rest = strings.TrimSpace(rest[:j])
+			}
+		}
+		// cola «entonces» / «por tanto» al final del objeto
+		rl := strings.ToLower(rest)
+		for _, tail := range []string{" entonces", " por tanto", " por lo tanto", " luego"} {
+			if strings.HasSuffix(rl, tail) {
+				rest = strings.TrimSpace(rest[:len(rest)-len(tail)])
+				rl = strings.ToLower(rest)
 			}
 		}
 		obj := normalizeReasonToken(rest)
