@@ -155,6 +155,17 @@ func speakSpeechAct(text string, sess *mindSessionState) (voice string, kind str
 		}
 		return speakEmotion(low), "chat"
 	}
+	// confirmaciones cortas
+	switch low {
+	case "ok", "vale", "claro", "listo", "perfecto", "de acuerdo", "aja", "ajá", "sí", "si":
+		if sess != nil {
+			sess.LastAct = string(actSocial)
+			if sess.Phase == phaseOpening {
+				sess.Phase = phaseOngoing
+			}
+		}
+		return "Bien. ¿Seguimos por ahí o abres otra cosa?", "chat"
+	}
 	// saludo / qué tal
 	if sess != nil {
 		sess.LastAct = string(actSocial)
