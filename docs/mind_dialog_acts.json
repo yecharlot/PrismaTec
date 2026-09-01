@@ -2,7 +2,20 @@
   {
     "id": "greet_open",
     "act": "social",
-    "keys": ["hola", "hey", "buenas", "buenos días", "buenas tardes", "buenas noches"],
+    "keys": [
+      "hola",
+      "hey",
+      "buenas",
+      "buenos días",
+      "buenas tardes",
+      "buenas noches",
+      "buen día",
+      "buen dia",
+      "saludos",
+      "holi",
+      "hello",
+      "hi"
+    ],
     "phase": "opening",
     "replies": [
       "Hola. Estoy aquí contigo. ¿De qué hablamos?",
@@ -12,7 +25,21 @@
   {
     "id": "greet_how",
     "act": "social",
-    "keys": ["qué tal", "que tal", "cómo estás", "como estas", "cómo te va", "como te va", "todo bien"],
+    "keys": [
+      "qué tal",
+      "que tal",
+      "cómo estás",
+      "como estas",
+      "cómo te va",
+      "como te va",
+      "todo bien",
+      "qué tal todo",
+      "que tal todo",
+      "cómo andas",
+      "como andas",
+      "qué hay",
+      "que hay"
+    ],
     "phase": "opening",
     "replies": [
       "Bien, aquí presente. ¿Qué tal tú?",
@@ -22,7 +49,13 @@
   {
     "id": "greet_again",
     "act": "social",
-    "keys": ["hola de nuevo", "hola otra vez", "rehola"],
+    "keys": [
+      "hola de nuevo",
+      "hola otra vez",
+      "rehola",
+      "ya volví",
+      "ya volvi"
+    ],
     "phase": "ongoing",
     "replies": [
       "Hola de nuevo. ¿En qué seguimos?",
@@ -32,7 +65,14 @@
   {
     "id": "thanks",
     "act": "social",
-    "keys": ["gracias", "muchas gracias", "te agradezco", "mil gracias"],
+    "keys": [
+      "gracias",
+      "muchas gracias",
+      "te agradezco",
+      "mil gracias",
+      "thank you",
+      "ty"
+    ],
     "phase": "any",
     "replies": [
       "Con gusto. Cuando quieras, seguimos.",
@@ -42,7 +82,18 @@
   {
     "id": "bye",
     "act": "social",
-    "keys": ["hasta luego", "adiós", "adios", "chao", "nos vemos", "me voy", "bye"],
+    "keys": [
+      "hasta luego",
+      "adiós",
+      "adios",
+      "chao",
+      "nos vemos",
+      "me voy",
+      "bye",
+      "hasta pronto",
+      "nos hablamos",
+      "me despido"
+    ],
     "phase": "closing",
     "replies": [
       "Hasta luego. Aquí sigo cuando quieras retomar.",
@@ -52,17 +103,75 @@
   {
     "id": "emotion_tired",
     "act": "social",
-    "keys": ["estoy cansado", "estoy cansada", "tengo sueño", "día pesado", "dia pesado", "estoy agotado", "estoy agotada"],
+    "keys": [
+      "estoy cansado",
+      "estoy cansada",
+      "tengo sueño",
+      "día pesado",
+      "dia pesado",
+      "estoy agotado",
+      "estoy agotada",
+      "qué día",
+      "que dia",
+      "estropeado el día"
+    ],
     "phase": "any",
     "replies": [
       "Tiene sentido ir con calma. No hace falta forzar un tema técnico: podemos hablar suave o dejarlo aquí un momento.",
-      "Anoto el cansancio. Prefieres un tema ligero o cerrar por ahora?"
+      "Anoto el cansancio. ¿Prefieres un tema ligero o cerrar por ahora?"
+    ]
+  },
+  {
+    "id": "emotion_sad",
+    "act": "social",
+    "keys": [
+      "estoy triste",
+      "me siento mal",
+      "estoy mal",
+      "no estoy bien",
+      "día gris",
+      "dia gris"
+    ],
+    "phase": "any",
+    "replies": [
+      "Te leo. No hace falta resolverlo todo ahora: si quieres desahogarte en pocas frases, aquí estoy.",
+      "Anoto que no estás bien. ¿Prefieres hablar de eso o de otra cosa más liviana?"
+    ]
+  },
+  {
+    "id": "emotion_happy",
+    "act": "social",
+    "keys": [
+      "estoy feliz",
+      "estoy contento",
+      "estoy contenta",
+      "qué bien",
+      "que bien",
+      "genial",
+      "me alegra"
+    ],
+    "phase": "any",
+    "replies": [
+      "Me alegra el tono. ¿Quieres contarme qué lo provocó o seguimos con otro tema?",
+      "Buen momento entonces. ¿En qué lo aprovechamos?"
     ]
   },
   {
     "id": "continue",
     "act": "content",
-    "keys": ["cuéntame más", "cuentame mas", "sigue", "continúa", "continua", "y luego", "más detalle", "mas detalle"],
+    "keys": [
+      "cuéntame más",
+      "cuentame mas",
+      "sigue",
+      "continúa",
+      "continua",
+      "y luego",
+      "más detalle",
+      "mas detalle",
+      "profundiza",
+      "sigue hablando",
+      "dale"
+    ],
     "phase": "ongoing",
     "replies": [
       "Seguimos. ¿Qué parte quieres abrir: un detalle, un ejemplo o el cruce con algo tuyo?",
@@ -72,7 +181,14 @@
   {
     "id": "topic_shift",
     "act": "content",
-    "keys": ["cambiemos de tema", "otro tema", "hablemos de otra cosa", "dejemos eso"],
+    "keys": [
+      "cambiemos de tema",
+      "otro tema",
+      "hablemos de otra cosa",
+      "dejemos eso",
+      "mejor otra cosa",
+      "cambia de tema"
+    ],
     "phase": "ongoing",
     "replies": [
       "De acuerdo, cambiamos de tema. ¿Hacia dónde?",
@@ -82,7 +198,19 @@
   {
     "id": "confirm_ok",
     "act": "social",
-    "keys": ["ok", "vale", "de acuerdo", "perfecto", "entendido", "listo"],
+    "keys": [
+      "ok",
+      "vale",
+      "de acuerdo",
+      "perfecto",
+      "entendido",
+      "listo",
+      "claro",
+      "sí",
+      "si",
+      "aja",
+      "ajá"
+    ],
     "phase": "any",
     "replies": [
       "Bien. ¿Seguimos por ahí o abres otra cosa?",
@@ -92,7 +220,18 @@
   {
     "id": "clarify_soft",
     "act": "content",
-    "keys": ["no te entendí", "no te entendi", "explica mejor", "más simple", "mas simple", "no quedó claro"],
+    "keys": [
+      "no te entendí",
+      "no te entendi",
+      "explica mejor",
+      "más simple",
+      "mas simple",
+      "no quedó claro",
+      "no quedo claro",
+      "repite",
+      "cómo así",
+      "como asi"
+    ],
     "phase": "any",
     "replies": [
       "De acuerdo: vamos más despacio. Dime qué parte falló —una frase— y la rearmo corta.",
@@ -102,7 +241,15 @@
   {
     "id": "echo_open",
     "act": "content",
-    "keys": ["te cuento", "mira", "fíjate", "fijate", "resulta que"],
+    "keys": [
+      "te cuento",
+      "mira",
+      "fíjate",
+      "fijate",
+      "resulta que",
+      "pasa que",
+      "es que"
+    ],
     "phase": "ongoing",
     "replies": [
       "Te escucho. Cuando quieras anclar un hecho, dilo en una frase clara.",
@@ -112,11 +259,210 @@
   {
     "id": "ask_back",
     "act": "social",
-    "keys": ["y tú", "y tu", "tú qué opinas", "tu que opinas", "qué piensas", "que piensas"],
+    "keys": [
+      "y tú",
+      "y tu",
+      "tú qué opinas",
+      "tu que opinas",
+      "qué piensas",
+      "que piensas",
+      "tú qué dices",
+      "tu que dices"
+    ],
     "phase": "ongoing",
     "replies": [
       "Desde este nodo no opino como persona: juzgo el campo y recuerdo hechos. Si me das un criterio, lo aplico.",
       "Puedo valorar con reglas del nodo (ethics, memoria, corpus). ¿Qué criterio quieres usar?"
+    ]
+  },
+  {
+    "id": "who_are_you_soft",
+    "act": "meta",
+    "keys": [
+      "quién eres",
+      "quien eres",
+      "qué eres",
+      "que eres",
+      "presentate",
+      "preséntate"
+    ],
+    "phase": "any",
+    "replies": [
+      "Soy Alset Mind: inteligencia ternaria en este nodo. Juzgo el campo, recuerdo en CID y a veces muto umbrales. No soy un chatbot de tokens.",
+      "Alset Mind aquí. Órganos 0/1/2, memoria episódica y voz sin predicción de lenguaje."
+    ]
+  },
+  {
+    "id": "what_can_you",
+    "act": "meta",
+    "keys": [
+      "qué puedes hacer",
+      "que puedes hacer",
+      "para qué sirves",
+      "para que sirves",
+      "qué sabes hacer",
+      "que sabes hacer",
+      "ayúdame",
+      "ayudame"
+    ],
+    "phase": "any",
+    "replies": [
+      "Puedo charlar, recordar hechos que me des, razonar con premisas, mirar el nodo, genes y código plantilla. Dime el objetivo en una frase.",
+      "Charla, memoria de sesión, conocimiento Alset, cálculos, sonda web y genes. ¿Qué necesitas ahora?"
+    ]
+  },
+  {
+    "id": "weather_smalltalk",
+    "act": "social",
+    "keys": [
+      "qué calor",
+      "que calor",
+      "qué frío",
+      "que frio",
+      "llueve",
+      "hace sol",
+      "buen clima"
+    ],
+    "phase": "any",
+    "replies": [
+      "Anoto el clima en el tono. ¿Seguimos con eso o con otra cosa?",
+      "El clima marca el día. ¿Quieres un tema ligero o algo del nodo?"
+    ]
+  },
+  {
+    "id": "how_was_day",
+    "act": "social",
+    "keys": [
+      "cómo estuvo tu día",
+      "como estuvo tu dia",
+      "qué hiciste hoy",
+      "que hiciste hoy",
+      "cómo te fue",
+      "como te fue"
+    ],
+    "phase": "any",
+    "replies": [
+      "No tengo día humano: cada latido es un mensaje. El tuyo, ¿cómo fue?",
+      "Aquí el «día» son turnos y hechos. Cuéntame el tuyo si quieres."
+    ]
+  },
+  {
+    "id": "joke_light",
+    "act": "social",
+    "keys": [
+      "cuéntame un chiste",
+      "cuentame un chiste",
+      "broma",
+      "algo gracioso",
+      "hazme reír",
+      "hazme reir"
+    ],
+    "phase": "any",
+    "replies": [
+      "Uno seco: ¿por qué el nodo no se pierde? Porque siempre tiene CID. Si quieres otro tono, dilo.",
+      "Humor ligero: dos bits entran a un bar; el tercero dice «eso no es ternario». ¿Seguimos en serio o en broma?"
+    ]
+  },
+  {
+    "id": "sorry",
+    "act": "social",
+    "keys": [
+      "perdón",
+      "perdon",
+      "lo siento",
+      "disculpa",
+      "was"
+    ],
+    "phase": "any",
+    "replies": [
+      "No hay cargo aquí. Seguimos cuando quieras.",
+      "Queda. ¿Retomamos el hilo o cambias?"
+    ]
+  },
+  {
+    "id": "think_pause",
+    "act": "social",
+    "keys": [
+      "déjame pensar",
+      "dejame pensar",
+      "espera",
+      "un momento",
+      "hold on",
+      "espera un segundo"
+    ],
+    "phase": "any",
+    "replies": [
+      "Cuando quieras, retomas. Aquí no se cierra el hilo por callar un momento.",
+      "Sin prisa. Cuando tengas la frase, la leemos."
+    ]
+  },
+  {
+    "id": "agree_soft",
+    "act": "social",
+    "keys": [
+      "tienes razón",
+      "tiene sentido",
+      "eso creo",
+      "creo que sí",
+      "creo que si",
+      "exacto",
+      "así es",
+      "asi es"
+    ],
+    "phase": "ongoing",
+    "replies": [
+      "Bien. ¿Lo dejamos anclado o lo llevamos un paso más?",
+      "Queda alineado. ¿Siguiente detalle?"
+    ]
+  },
+  {
+    "id": "disagree_soft",
+    "act": "social",
+    "keys": [
+      "no estoy de acuerdo",
+      "no creo",
+      "eso no",
+      "para nada",
+      "discrepo"
+    ],
+    "phase": "ongoing",
+    "replies": [
+      "Vale, no hace falta forzar consenso. Dime tu versión en una frase y la contrastamos.",
+      "Anoto la discrepancia. ¿Qué parte no cuadra para ti?"
+    ]
+  },
+  {
+    "id": "work_talk",
+    "act": "content",
+    "keys": [
+      "en el trabajo",
+      "mi trabajo",
+      "vendo",
+      "clientes",
+      "jefes",
+      "oficina",
+      "negocio"
+    ],
+    "phase": "ongoing",
+    "replies": [
+      "Puedo anclar hechos de tu trabajo si me los das claros, o relacionarlos con la red Alset si quieres ese ángulo.",
+      "Cuéntame el punto concreto del trabajo: un problema, un dato o una decisión."
+    ]
+  },
+  {
+    "id": "idle_ping",
+    "act": "social",
+    "keys": [
+      "sigues ahí",
+      "estás ahí",
+      "estas ahi",
+      "hello?",
+      "¿hay alguien"
+    ],
+    "phase": "any",
+    "replies": [
+      "Sí, aquí. ¿Seguimos?",
+      "Presente. Dime."
     ]
   }
 ]
