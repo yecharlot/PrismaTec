@@ -513,6 +513,14 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		recordDialogPattern(intentEthicsHard, text)
 	}
 
+	// CFT-v0 semilla: antes de corpus/CID knowledge (el payload puede mencionar CID)
+	if voice == "" && ethics.State != 2 && isSeedIntent(normText) {
+		if sv := speakSeed(normText); sv != "" {
+			voice = sv
+			primaryKind = "seed"
+		}
+	}
+
 	// 0) Diálogo humano: emoción, consejo, cortesía, personas — antes de corpus/tools genéricos
 	if voice == "" {
 		switch uxIntent {
@@ -794,14 +802,6 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		if pm := speakFromPatterns(normText); pm != "" {
 			voice = pm
 			primaryKind = "patterns"
-		}
-	}
-
-	// 6c2) Semilla CFT-v0 (texto→ternario): comprimir / huella explícita
-	if voice == "" && ethics.State != 2 {
-		if sv := speakSeed(normText); sv != "" {
-			voice = sv
-			primaryKind = "seed"
 		}
 	}
 

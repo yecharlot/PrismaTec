@@ -168,6 +168,9 @@ func isTechCidQuery(s string) bool {
 		return false
 	}
 	low := strings.ToLower(strings.TrimSpace(s))
+	if isSeedIntent(low) {
+		return false
+	}
 	if strings.Contains(low, "tecnolog") || strings.Contains(low, "alset") ||
 		strings.Contains(low, "content") || strings.Contains(low, "identificador") ||
 		strings.Contains(low, "ipfs") || strings.Contains(low, "blockstore") ||
