@@ -237,3 +237,7 @@ func bestSeedMatch(query string, episodes []mindEpisodePayload) (match string, s
 	}
 	return bestT, bestS, bestJ
 }
+
+func formatSeedScore(score float64) string {
+	return fmt.Sprintf("%.0f%%", score*100)
+}

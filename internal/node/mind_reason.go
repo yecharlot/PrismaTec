@@ -85,7 +85,28 @@ func normalizeReasonToken(s string) string {
 }
 
 func termsMatch(a, b string) bool {
-	return normalizeReasonToken(a) == normalizeReasonToken(b)
+	a, b = normalizeReasonToken(a), normalizeReasonToken(b)
+	if a == b {
+		return true
+	}
+	return stemLight(a) == stemLight(b)
+}
+
+func stemLight(s string) string {
+	s = strings.TrimSpace(s)
+	if len([]rune(s)) < 4 {
+		return s
+	}
+	if strings.HasSuffix(s, "es") && len([]rune(s)) > 4 {
+		base := strings.TrimSuffix(s, "es")
+		if len([]rune(base)) >= 3 {
+			return base
+		}
+	}
+	if strings.HasSuffix(s, "s") && !strings.HasSuffix(s, "ss") {
+		return strings.TrimSuffix(s, "s")
+	}
+	return s
 }
 
 // extractSentences: gramática mínima — cortar por . ! ? y por ;
@@ -196,6 +217,79 @@ func clauseLooksRelational(s string) bool {
 
 func splitReasonClauses(text string) []string {
 	return extractClauses(text)
+}
+
+
+func parseUniversalEsFact(text string, conf int, src string) (ternaryFact, bool) {
+	low := strings.ToLower(strings.TrimSpace(text))
+	low = strings.TrimSuffix(low, ".")
+	if i := strings.Index(low, " entonces"); i > 0 {
+		low = strings.TrimSpace(low[:i])
+	}
+	for _, pfx := range []string{"si todos los ", "si todas las ", "si todo ", "si toda ",
+		"todos los ", "todas las ", "todo ", "toda "} {
+		if !strings.HasPrefix(low, pfx) {
+			continue
+		}
+		rest := strings.TrimSpace(low[len(pfx):])
+		for _, mid := range []string{" son ", " es "} {
+			j := strings.Index(rest, mid)
+			if j <= 0 {
+				continue
+			}
+			subj := normalizeReasonToken(rest[:j])
+			objPart := strings.TrimSpace(rest[j+len(mid):])
+			if k := strings.Index(objPart, " y "); k > 0 {
+				objPart = strings.TrimSpace(objPart[:k])
+			}
+			obj := normalizeReasonToken(objPart)
+			if validReasonTerm(subj) && validReasonTerm(obj) {
+				return ternaryFact{Subj: subj, Rel: "es", Obj: obj, Conf: conf, Src: src}, true
+			}
+		}
+	}
+	return ternaryFact{}, false
+}
+
+func parseParticularClauses(text string, conf int, src string) []ternaryFact {
+	parts := []string{text}
+	for _, sep := range []string{" y ", ", ", "; "} {
+		var next []string
+		for _, part := range parts {
+			next = append(next, strings.Split(part, sep)...)
+		}
+		parts = next
+	}
+	var out []ternaryFact
+	seen := map[string]bool{}
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		pl := strings.ToLower(part)
+		if strings.HasPrefix(pl, "si ") {
+			part = strings.TrimSpace(part[3:])
+			pl = strings.ToLower(part)
+		}
+		if strings.HasPrefix(pl, "entonces") {
+			continue
+		}
+		var f ternaryFact
+		var ok bool
+		if f, ok = parseUniversalEsFact(part, conf, src); !ok {
+			if f, ok = parseRelationFact(part, conf, src); !ok {
+				f, ok = parseEsFact(part, conf, src)
+			}
+		}
+		if !ok {
+			continue
+		}
+		k := factKey(f)
+		if seen[k] {
+			continue
+		}
+		seen[k] = true
+		out = append(out, f)
+	}
+	return out
 }
 
 func parseRelationFact(text string, conf int, src string) (ternaryFact, bool) {
@@ -314,9 +408,15 @@ func collectReasonFactsOpts(userText string, includeCorpus bool) []ternaryFact {
 		out = append(out, f)
 	}
 	for _, part := range extractClauses(userText) {
+		if f, ok := parseUniversalEsFact(part, 2, "usuario"); ok {
+			add(f)
+		}
 		if f, ok := parseRelationFact(part, 2, "usuario"); ok {
 			add(f)
 		}
+	}
+	for _, f := range parseParticularClauses(userText, 2, "usuario") {
+		add(f)
 	}
 	if !includeCorpus {
 		return out
@@ -625,6 +725,16 @@ func reasonAboutQuery(userText string, extra []ternaryFact) string {
 		return ""
 	}
 	if want && len(derived) == 0 {
+		for _, f := range parseParticularClauses(userText, 2, "usuario") {
+			k := factKey(f)
+			if !seen[k] {
+				seen[k] = true
+				facts = append(facts, f)
+			}
+		}
+		derived = deduceAll(facts)
+	}
+	if want && len(derived) == 0 {
 		var lines []string
 		for _, f := range facts {
 			if f.Src == "usuario" && validReasonTerm(f.Subj) && validReasonTerm(f.Obj) {
@@ -632,10 +742,10 @@ func reasonAboutQuery(userText string, extra []ternaryFact) string {
 			}
 		}
 		if len(lines) > 0 {
-			lines = append(lines, "Aún no cierro una regla (falta eslabón B). Aporta otra premisa.")
+			lines = append(lines, "Aún no cierro una regla (falta eslabón B). Aporta otra premisa del tipo «C es A».")
 			return strings.Join(lines, "\n")
 		}
-		return ""
+		return "Plantea dos premisas claras (ej. «todos los humanos son mortales» y «Sócrates es humano») y cierro la deducción."
 	}
 	qtoks := tokenizeMind(low)
 	best := ternaryFact{}

@@ -521,6 +521,16 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		}
 	}
 
+	// Genoma — antes de identidad genérica
+	if voice == "" && ethics.State != 2 {
+		lowN := normText
+		if strings.Contains(lowN, "genoma") && (strings.Contains(lowN, "explica") || strings.Contains(lowN, "qué es") ||
+			strings.Contains(lowN, "que es") || strings.Contains(lowN, "cómo") || strings.Contains(lowN, "como")) {
+			voice = "El genoma de Alset Mind son umbrales y sesgos mutables (alarmas, vetos, memoria mínima, pesos). Se ajusta por calibración del corpus y a veces por mutación si mejora el acierto; no es un LLM reentrenado con terabytes."
+			primaryKind = "knowledge"
+		}
+	}
+
 	// 0) Diálogo humano: emoción, consejo, cortesía, personas — antes de corpus/tools genéricos
 	if voice == "" {
 		switch uxIntent {

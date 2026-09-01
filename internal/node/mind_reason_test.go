@@ -147,3 +147,15 @@ func TestExtractClausesCommaPremises(t *testing.T) {
 		t.Fatalf("want pepe→animal, derived=%#v", der)
 	}
 }
+
+func TestUniversalSyllogismHumanos(t *testing.T) {
+	q := "si todos los humanos son mortales y Sócrates es humano entonces"
+	got := reasonAboutQuery(q, nil)
+	if got == "" {
+		t.Fatal("empty reason")
+	}
+	low := strings.ToLower(got)
+	if !(strings.Contains(low, "mortal") || strings.Contains(low, "sócrates") || strings.Contains(low, "socrates") || strings.Contains(low, "premisa")) {
+		t.Fatalf("unexpected: %s", got)
+	}
+}

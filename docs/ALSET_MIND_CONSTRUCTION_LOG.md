@@ -552,3 +552,10 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Archivos:** mind_seed.go, mind_seed_test.go, mind_tick.go, mind_director.go.
 - **Uso:** `comprime este texto: …` · `semilla de …`
 
+
+## 2026-09-01 — Profundidad y fiabilidad multi-dominio
+
+- **Acto:** Silogismos «todos los X son Y»; stem plural; genoma dedicado; recall por semilla CFT; enrichDeepTurn en reason/memory/identity.
+- **Archivos:** mind_reason.go, mind_memory.go, mind_depth.go, mind_tick.go, mind_seed.go.
+- **Próximo:** deploy + batería multi-dominio.
+

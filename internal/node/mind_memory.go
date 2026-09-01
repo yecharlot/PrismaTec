@@ -759,6 +759,12 @@ func speakFromMemory(query string, episodes []mindEpisodePayload) string {
 			return "Recuerdo esto de ti: «" + truncateRunes(ep.Text, 120) + "»."
 		}
 	}
+	if match, score, j := bestSeedMatch(query, episodes); match != "" && j >= 1 {
+		lowM := strings.ToLower(match)
+		if !strings.Contains(lowM, "hallazgo sonda") && !strings.Contains(lowM, "scout-") {
+			return "Por huella ternaria se parece a lo que anotamos: «" + truncateRunes(match, 100) + "» (afinidad " + formatSeedScore(score) + ")."
+		}
+	}
 	if len(episodes) > 0 {
 		return "Tengo algunas notas recientes, pero ninguna encaja del todo con eso. ¿Me das un detalle más?"
 	}
