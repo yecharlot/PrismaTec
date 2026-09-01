@@ -214,7 +214,7 @@ func (n *NodoAlset) resolveReferential(text string) string {
 func softAppendAllowed(primaryKind string, voice string) bool {
 	// Diálogo fluido: sin coletas de curiosity/humor salvo chat muy corto y abierto.
 	switch primaryKind {
-	case "tool", "math", "codegen", "memory", "capability", "referential", "identity", "veto",
+	case "tool", "math", "codegen", "memory", "capability", "referential", "identity", "veto", "seed",
 		"creative", "action_memory", "patterns", "knowledge", "reason":
 		return false
 	case "chat":

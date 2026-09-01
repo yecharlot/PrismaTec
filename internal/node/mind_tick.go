@@ -797,6 +797,14 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		}
 	}
 
+	// 6c2) Semilla CFT-v0 (texto→ternario): comprimir / huella explícita
+	if voice == "" && ethics.State != 2 {
+		if sv := speakSeed(normText); sv != "" {
+			voice = sv
+			primaryKind = "seed"
+		}
+	}
+
 	// 6d) Capa neuronal ternaria (agentes-neurona): bordes difíciles y voz vacía
 	if cortexShouldAssist(text, voice, primaryKind) {
 		if nv, nk, tr := n.ternaryNeuralAssist(text, organs); nv != "" {
@@ -867,7 +875,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		Voice:      voice,
 		MemState:   mem.State,
 		MemoryHint: memHint,
-		Note:       "latido+memoria+compose+codegen+curiosity+humor+zyrion+actuate",
+		Note:       "latido+memoria+compose+codegen+curiosity+humor+zyrion+actuate+cft-seed",
 		Actuate:    &actuate,
 		Effect:     actuate.effectLevel(),
 	}
@@ -891,6 +899,13 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			"ts":      time.Now().UTC().Format(time.RFC3339),
 			"agent":   mindAgentID,
 			"session": sess.ID,
+		}
+		if seed := SeedFromText(text); seed.Conf >= 1 {
+			ep["seed"] = map[string]interface{}{
+				"hash":    seed.Hash,
+				"compact": seed.Compact,
+				"conf":    seed.Conf,
+			}
 		}
 		raw, _ := json.Marshal(ep)
 		if cid, err := n.GenerarCID(raw); err == nil && cid != "" {

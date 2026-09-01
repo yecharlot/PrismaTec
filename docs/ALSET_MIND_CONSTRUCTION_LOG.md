@@ -545,3 +545,10 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Archivos:** mind_memory.go, mind_dialog_flow.go, mind_dialog_ux.go, mind_ternary_net.go, tests.
 - **Próximo:** redeploy + re-batería de los casos flojos.
 
+## 2026-08-31 — CFT-v0 semillas ternarias de texto (sí aporta)
+
+- **Acto:** `mind_seed.go`: texto→embedding SHA→ternarizar 0/1/2→RLE; similitud ternaria; diálogo «comprime este texto:…»; campo `seed` en episodios CID. Sin audio/video.
+- **Decisión:** Aporta como índice/huella alineada a LispAI ternarizar; se descarta códec universal.
+- **Archivos:** mind_seed.go, mind_seed_test.go, mind_tick.go, mind_director.go.
+- **Uso:** `comprime este texto: …` · `semilla de …`
+
