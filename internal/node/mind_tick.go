@@ -1540,7 +1540,14 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 			}
 		}
 		if err != nil {
-			lines = append(lines, "No pude traerla de vuelta: "+err.Error()+".")
+			edges := n.edgeGenKeys()
+			msg := "No pude traerla de vuelta: " + err.Error() + "."
+			if len(edges) > 0 {
+				msg += " En el borde ahora: " + strings.Join(edges, ", ") + ". Prueba «trae la sonda " + strings.TrimSuffix(edges[0], ".ans") + "»."
+			} else {
+				msg += " No veo sondas marcadas en el borde ahora; «qué sondas tienes» para inventariar."
+			}
+			lines = append(lines, msg)
 		} else {
 			lines = append(lines, "La sonda «"+snap.Key+"» volvió a este nodo (antes: "+snap.Prev+").")
 		}
@@ -1847,16 +1854,22 @@ func extractGenNameFromText(s string) string {
 
 func (n *NodoAlset) edgeGenKeys() []string {
 	var out []string
+	seen := map[string]bool{}
 	for _, g := range n.listGens() {
 		loc := strings.ToLower(g.State.Location)
-		if strings.Contains(loc, "cloudflare") || strings.Contains(loc, "frontier") || strings.Contains(loc, "http") {
-			out = append(out, g.Key)
-			continue
-		}
+		edge := strings.Contains(loc, "cloudflare") || strings.Contains(loc, "frontier") ||
+			strings.Contains(loc, "http") || strings.Contains(loc, "workers.dev")
 		if g.State.Metadata != nil {
 			if rh, ok := g.State.Metadata["remote_http"].(string); ok && rh != "" {
-				out = append(out, g.Key)
+				edge = true
 			}
+			if d, ok := g.State.Metadata["dispatch"].(string); ok && (d == "cloudflare" || d == "frontier") {
+				edge = true
+			}
+		}
+		if edge && !seen[g.Key] {
+			seen[g.Key] = true
+			out = append(out, g.Key)
 		}
 	}
 	return out
