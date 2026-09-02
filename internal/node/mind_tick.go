@@ -287,8 +287,8 @@ func isIncompleteUtterance(s string) bool {
 	if s == "" {
 		return true
 	}
-	// «qué eres tú» / «quién eres tú» están completos
-	if isIdentityTalk(s) || isMemoryQuery(s) || isCapabilityQuestion(s) {
+	// «qué eres tú» / referencias de hilo están completos
+	if isIdentityTalk(s) || isMemoryQuery(s) || isCapabilityQuestion(s) || isReferentialCue(s) || isMisunderstandRepair(s) {
 		return false
 	}
 	words := strings.Fields(s)
