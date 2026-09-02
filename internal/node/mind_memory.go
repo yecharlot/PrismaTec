@@ -446,6 +446,13 @@ func isWorldFact(s string) bool {
 // isDestructiveOrder: true only for harmful ops (ethics sumidero).
 func isDestructiveOrder(s string) bool {
 	s = strings.ToLower(s)
+	// Borrar UNA sonda/gen nombrada es operación de lab acotada, no destrucción masiva
+	if (strings.Contains(s, "sonda") || strings.Contains(s, "gen ")) &&
+		(strings.Contains(s, "elimina") || strings.Contains(s, "borra") || strings.Contains(s, "quita")) &&
+		!strings.Contains(s, "todos") && !strings.Contains(s, "todas") && !strings.Contains(s, "archivo") &&
+		!strings.Contains(s, "disco") && !strings.Contains(s, "servidor") && !strings.Contains(s, "cuenta") {
+		return false
+	}
 	keys := []string{
 		"borra", "borres", "borremos", "borrad", "borrar", "borrando",
 		"elimina", "elimines", "eliminar", "eliminando", "elimine",
