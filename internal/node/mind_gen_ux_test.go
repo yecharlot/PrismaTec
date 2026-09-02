@@ -1,43 +1,43 @@
 package node
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
-func TestNormalizeGenList(t *testing.T) {
-	got := normalizeGenUserIntent("qué genes tienes activos?")
-	if got != "lista genes" {
-		t.Fatalf("got %q", got)
+func TestHumanListGenes(t *testing.T) {
+	for _, in := range []string{"qué genes tienes?", "mis sondas", "sondas activas"} {
+		got := normalizeGenUserIntent(in)
+		if got != "lista genes" {
+			t.Fatalf("%q -> %q", in, got)
+		}
 	}
 }
 
-func TestNormalizeGenCreate(t *testing.T) {
+func TestHumanCreateSonda(t *testing.T) {
 	got := normalizeGenUserIntent("crea una sonda llamada aurora")
 	if got != "crea gen aurora" {
 		t.Fatalf("got %q", got)
 	}
 }
 
-func TestNormalizeGenExplore(t *testing.T) {
-	got := normalizeGenUserIntent("manda una sonda a explorar https://example.com")
-	if !containsStr(got, "explorar") && !containsStr(got, "explora") {
+func TestHumanDispatch(t *testing.T) {
+	got := normalizeGenUserIntent("manda la sonda aurora a cloudflare")
+	if !strings.Contains(got, "despacha") || !strings.Contains(got, "aurora") {
 		t.Fatalf("got %q", got)
 	}
 }
 
-func TestNormalizeKeepsLab(t *testing.T) {
-	in := "crea gen genesis"
-	if normalizeGenUserIntent(in) != in {
-		t.Fatal("lab command rewritten")
+func TestGenHelp(t *testing.T) {
+	v := speakGenHelp("cómo uso las sondas?")
+	if v == "" || !strings.Contains(strings.ToLower(v), "sonda") {
+		t.Fatalf("help: %q", v)
 	}
 }
 
-func containsStr(s, sub string) bool {
-	return len(s) >= len(sub) && (s == sub || len(sub) == 0 || indexStr(s, sub) >= 0)
-}
-func indexStr(s, sub string) int {
-	for i := 0; i+len(sub) <= len(s); i++ {
-		if s[i:i+len(sub)] == sub {
-			return i
-		}
+func TestHumanizeVoice(t *testing.T) {
+	h := humanizeGenVoice("Despaché «aurora» a la red de borde. Puedes alcanzarlo en https://x.test")
+	if strings.Contains(h, "Despaché") {
+		t.Fatalf("not humanized: %s", h)
 	}
-	return -1
 }

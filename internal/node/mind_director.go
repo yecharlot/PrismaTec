@@ -67,7 +67,8 @@ func isGenToolIntent(s string) bool {
 		"explora", "explorar", "sirve gen", "gen memoria", "salva en gen", "guarda en gen",
 		"vincula memoria", "genes memoria", "qué sabe el gen", "que sabe el gen",
 		"elimina gen", "retorna gen", "trae de vuelta", "trae la sonda", "borra gen",
-		"qué genes", "que genes", "muestra los genes", "sondas activas", "mis genes",
+		"qué genes", "que genes", "muestra los genes", "sondas activas", "mis genes", "mis sondas",
+		"qué sondas", "que sondas", "ver genes", "ver sondas", "ayuda con las sondas",
 		"crea una sonda", "crear sonda", "haz un gen", "haz una sonda", "nueva sonda",
 		"al borde", "a cloudflare", "red de borde",
 	}

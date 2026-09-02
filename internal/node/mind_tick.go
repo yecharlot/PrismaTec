@@ -826,7 +826,13 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		}
 	}
 
-	// 5) Tools Gen (dominan sobre corpus) — P4 órdenes humanas
+	// 5) Tools Gen (dominan sobre corpus) — P4+ órdenes humanas
+	if voice == "" && ethics.State != 2 {
+		if gh := speakGenHelp(text); gh != "" {
+			voice = gh
+			primaryKind = "chat"
+		}
+	}
 	genText := text
 	if normG := normalizeGenUserIntent(text); normG != text {
 		genText = normG
@@ -1447,27 +1453,27 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 	if strings.Contains(s, "elimina gen") || strings.Contains(s, "eliminar gen") || strings.Contains(s, "borra gen") || strings.Contains(s, "borrar gen") || strings.Contains(s, "destruye gen") {
 		name := extractGenNameFromText(s)
 		if name == "" {
-			lines = append(lines, "Indica el gen: «elimina gen genesis».")
+			lines = append(lines, "Dime el nombre de la sonda (ej. «elimina la sonda genesis»).")
 			return lines
 		}
 		if err := n.DeleteAlsetGen(name); err != nil {
 			lines = append(lines, "No pude eliminar: "+err.Error()+".")
 		} else {
-			lines = append(lines, "Gen «"+normalizeGenKey(name)+"» eliminado del registro de este nodo.")
+			lines = append(lines, "Listo: quité la sonda «"+normalizeGenKey(name)+"» de este nodo.")
 		}
 		return lines
 	}
 	if strings.Contains(s, "retorna gen") || strings.Contains(s, "retornar gen") || strings.Contains(s, "regresa gen") || strings.Contains(s, "vuelve gen") || strings.Contains(s, "trae de vuelta") || strings.Contains(s, "haz retornar") {
 		name := extractGenNameFromText(s)
 		if name == "" {
-			lines = append(lines, "Indica el gen: «retorna gen genesis».")
+			lines = append(lines, "Dime el nombre de la sonda (ej. «trae la sonda genesis»).")
 			return lines
 		}
 		snap, err := n.ReturnGenHome(name)
 		if err != nil {
 			lines = append(lines, "No pude retornar el gen: "+err.Error()+".")
 		} else {
-			lines = append(lines, "Gen «"+snap.Key+"» de vuelta en el nodo (antes: "+snap.Prev+").")
+			lines = append(lines, "La sonda «"+snap.Key+"» volvió a este nodo (antes: "+snap.Prev+").")
 		}
 		return lines
 	}
@@ -1560,7 +1566,7 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 				if reach == "" {
 					reach = "red Cloudflare"
 				}
-				lines = append(lines, "Despaché «"+normalizeGenKey(name)+"» a la red de borde. Puedes alcanzarlo en "+reach+".")
+				lines = append(lines, "Envié la sonda «"+normalizeGenKey(name)+"» al borde de la red. Puedes abrirla en "+reach+".")
 			}
 		}
 		return lines
@@ -1635,7 +1641,7 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 	if strings.Contains(s, "explora") || strings.Contains(s, "explorar") {
 		u := extractURLFromText(text)
 		if u == "" {
-			lines = append(lines, "Para explorar, dime una URL pública https.")
+			lines = append(lines, "Para explorar necesito una dirección web pública (https://…).")
 		} else {
 			res := n.ExploreRemoteGen(name, u, "explore")
 			if err, ok := res["error"].(string); ok && err != "" && res["ok"] != true {
