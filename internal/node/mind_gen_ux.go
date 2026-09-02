@@ -367,9 +367,9 @@ func extractTrailingName(low string) string {
 	skip := map[string]bool{
 		"a": true, "la": true, "el": true, "de": true, "del": true, "qué": true, "que": true,
 		"está": true, "esta": true, "haciendo": true, "sonda": true, "gen": true, "dame": true,
-		"el": true, "resultado": true, "dime": true, "ve": true, "algo": true, "explicame": true,
+		"resultado": true, "dime": true, "ve": true, "algo": true, "explicame": true,
 		"explícame": true, "elimina": true, "borra": true, "trae": true, "traela": true, "tráela": true,
-		"de": true, "vuelta": true, "ahora": true, "tienes": true, "en": true, "borde": true,
+		"vuelta": true, "ahora": true, "tienes": true, "en": true, "borde": true,
 	}
 	fields := strings.Fields(low)
 	for i := len(fields) - 1; i >= 0; i-- {

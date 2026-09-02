@@ -74,6 +74,28 @@ Mind orquesta; el gen ejecuta y guarda hallazgos/CID.
 
 ---
 
+
+
+## 2b. Frases humanas → acción (Mind traduce)
+
+No hace falta memorizar el lab. Mind normaliza:
+
+| Dices | Mind ejecuta |
+|-------|----------------|
+| «qué sondas tienes» / «lista genes» | listar genes |
+| «crea una sonda llamada genesis» | `crea gen genesis` |
+| «crea una sonda de memoria» | `crea gen memoria …` |
+| «manda genesis a explorar https://…» | explore con URL |
+| «pregúntale a genesis quién eres» | diálogo con el gen |
+| «envía genesis al borde» / cloudflare | despacho |
+| «trae la sonda genesis» | retorna gen |
+| «elimina genesis» | elimina gen |
+| «qué está haciendo genesis» | estado del gen |
+| «qué ve / hallazgos de genesis» | findings |
+| «salva en mem-nodo: nota» | pin en gen memoria |
+
+Voz de respuesta: tono de sonda (humanize), no jerga de laboratorio salvo que lo pidas.
+
 ## 3. Lab UI
 
 `http://localhost:8080/w/mind.app.ans`  
