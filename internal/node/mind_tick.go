@@ -628,9 +628,7 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 				voice = extra
 				primaryKind = "tool"
 			} else {
-				voice = "Estado del nodo (solo lectura):
-" + strings.Join(n.mindBodySnapshot(lowN), "
-")
+				voice = "Estado del nodo (solo lectura):\n" + strings.Join(n.mindBodySnapshot(lowN), "\n")
 				primaryKind = "tool"
 			}
 		}
