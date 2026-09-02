@@ -94,13 +94,23 @@ func normalizeGenUserIntent(text string) string {
 
 	// retornar
 	if matchAny(low, []string{"trae", "devuelve", "recupera", "retorna", "haz volver", "vuelve a casa",
-		"trae de vuelta", "trae la sonda", "devuelve la sonda", "recupera la sonda"}) &&
-		matchAny(low, []string{"gen", "sonda"}) {
+		"trae de vuelta", "trae la sonda", "devuelve la sonda", "recupera la sonda", "del borde", "en el borde"}) &&
+		(matchAny(low, []string{"gen", "sonda", "borde", "cloudflare"}) || strings.Contains(low, "de vuelta")) {
 		name := extractGenNameFromText(low)
+		if name == "" && (strings.Contains(low, "borde") || strings.Contains(low, "cloudflare")) {
+			return "retorna gen" // mindGenTools resolverá la del borde
+		}
 		if name == "" {
 			return "retorna gen"
 		}
 		return "retorna gen " + name
+	}
+	// «se llama X» como continuación de traer sonda
+	if strings.HasPrefix(low, "se llama ") {
+		fields := strings.Fields(low)
+		if len(fields) >= 3 {
+			return "retorna gen " + fields[2]
+		}
 	}
 
 	// eliminar

@@ -534,6 +534,17 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	primaryKind := "chat"
 	var codegenCID string
 
+	// Ayuda de operador / sondas ANTES de knowledge genérico
+	if ethics.State != 2 {
+		if oh := speakOperatorHelp(text); oh != "" {
+			voice = oh
+			primaryKind = "chat"
+		} else if gh := speakGenHelp(text); gh != "" {
+			voice = gh
+			primaryKind = "chat"
+		}
+	}
+
 	// Retractación / cambio de nombre (antes de confirm «ok/si»)
 	if voice == "" && ethics.State != 2 && isNameRetraction(strings.ToLower(text)) {
 		voice = speakNameRetraction(text, profile)
@@ -1489,15 +1500,47 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 		}
 		return lines
 	}
-	if strings.Contains(s, "retorna gen") || strings.Contains(s, "retornar gen") || strings.Contains(s, "regresa gen") || strings.Contains(s, "vuelve gen") || strings.Contains(s, "trae de vuelta") || strings.Contains(s, "haz retornar") {
+	if strings.Contains(s, "retorna gen") || strings.Contains(s, "retornar gen") || strings.Contains(s, "regresa gen") || strings.Contains(s, "vuelve gen") || strings.Contains(s, "trae de vuelta") || strings.Contains(s, "haz retornar") ||
+		(strings.Contains(s, "trae") && (strings.Contains(s, "sonda") || strings.Contains(s, "gen"))) ||
+		(strings.Contains(s, "se llama") && (strings.Contains(s, "sonda") || len(extractGenNameFromText(s)) > 0)) {
 		name := extractGenNameFromText(s)
+		// «la del borde» / sin nombre → única sonda en edge
+		if name == "" && (strings.Contains(s, "borde") || strings.Contains(s, "cloudflare") || strings.Contains(s, "edge") || strings.Contains(s, "que tienes")) {
+			edges := n.edgeGenKeys()
+			if len(edges) == 1 {
+				name = strings.TrimSuffix(edges[0], ".ans")
+			} else if len(edges) > 1 {
+				lines = append(lines, "Hay varias sondas en el borde. Dime el nombre exacto: "+strings.Join(edges, ", ")+".")
+				return lines
+			}
+		}
+		// «se llama sonda» / nombre literal
+		if name == "" && strings.Contains(s, "se llama") {
+			name = extractGenNameFromText(s)
+			if name == "" {
+				rest := s
+				if i := strings.Index(s, "se llama "); i >= 0 {
+					fields := strings.Fields(s[i+len("se llama "):])
+					if len(fields) > 0 {
+						name = strings.Trim(fields[0], ".,")
+					}
+				}
+				_ = rest
+			}
+		}
 		if name == "" {
-			lines = append(lines, "Dime el nombre de la sonda (ej. «trae la sonda genesis»).")
+			lines = append(lines, "Dime el nombre de la sonda (ej. «trae la sonda genesis» o «trae la del borde»).")
 			return lines
 		}
 		snap, err := n.ReturnGenHome(name)
 		if err != nil {
-			lines = append(lines, "No pude retornar el gen: "+err.Error()+".")
+			// reintento con .ans
+			if !strings.HasSuffix(name, ".ans") {
+				snap, err = n.ReturnGenHome(name + ".ans")
+			}
+		}
+		if err != nil {
+			lines = append(lines, "No pude traerla de vuelta: "+err.Error()+".")
 		} else {
 			lines = append(lines, "La sonda «"+snap.Key+"» volvió a este nodo (antes: "+snap.Prev+").")
 		}
@@ -1746,9 +1789,20 @@ func extractURLFromText(text string) string {
 
 func extractGenNameFromText(s string) string {
 	s = strings.ToLower(s)
-	skip := map[string]bool{"a": true, "en": true, "con": true, "la": true, "el": true, "de": true,
+	skip := map[string]bool{
+		"a": true, "en": true, "con": true, "la": true, "el": true, "de": true,
 		"llamada": true, "llamado": true, "nombre": true, "memoria": true, "al": true, "del": true,
-		"una": true, "un": true, "sonda": true, "gen": true, "genes": true}
+		"una": true, "un": true, "gen": true, "genes": true, "que": true, "qué": true,
+		"tienes": true, "tiene": true, "hay": true, "ahora": true, "vuelta": true,
+		"borde": true, "edge": true, "cloudflare": true, "tra": true, "trae": true,
+		"retorna": true, "devuelve": true, "recupera": true, "esta": true, "está": true,
+		"las": true, "los": true, "por": true, "favor": true, "todas": true, "todos": true,
+	}
+	// «la sonda sonda» / «gen sonda» — nombre literal "sonda"
+	if strings.Contains(s, "sonda sonda") || strings.Contains(s, "gen sonda") ||
+		strings.Contains(s, "sonda llamada sonda") || strings.HasSuffix(strings.TrimSpace(s), " sonda") && strings.Count(s, "sonda") >= 2 {
+		return "sonda"
+	}
 	for _, pfx := range []string{"gen ", "célula ", "celula ", "semilla ", "sonda "} {
 		if i := strings.Index(s, pfx); i >= 0 {
 			rest := strings.TrimSpace(s[i+len(pfx):])
@@ -1763,9 +1817,6 @@ func extractGenNameFromText(s string) string {
 				if name == "" || skip[name] || strings.HasPrefix(name, "http") {
 					continue
 				}
-				if name == "cloudflare" || name == "borde" || name == "edge" || name == "vuelta" {
-					continue
-				}
 				return name
 			}
 		}
@@ -1773,10 +1824,42 @@ func extractGenNameFromText(s string) string {
 	if i := strings.Index(s, "llamada "); i >= 0 {
 		fields := strings.Fields(s[i+len("llamada "):])
 		if len(fields) > 0 {
-			return strings.Trim(fields[0], ".,;:\"'")
+			n := strings.Trim(fields[0], ".,;:\"'")
+			if n != "" && !skip[n] {
+				return n
+			}
+		}
+	}
+	if i := strings.Index(s, "se llama "); i >= 0 {
+		fields := strings.Fields(s[i+len("se llama "):])
+		if len(fields) > 0 {
+			n := strings.Trim(fields[0], ".,;:\"'")
+			if n != "" && !skip[n] {
+				return n
+			}
+			if n == "sonda" {
+				return "sonda"
+			}
 		}
 	}
 	return ""
+}
+
+func (n *NodoAlset) edgeGenKeys() []string {
+	var out []string
+	for _, g := range n.listGens() {
+		loc := strings.ToLower(g.State.Location)
+		if strings.Contains(loc, "cloudflare") || strings.Contains(loc, "frontier") || strings.Contains(loc, "http") {
+			out = append(out, g.Key)
+			continue
+		}
+		if g.State.Metadata != nil {
+			if rh, ok := g.State.Metadata["remote_http"].(string); ok && rh != "" {
+				out = append(out, g.Key)
+			}
+		}
+	}
+	return out
 }
 
 func (n *NodoAlset) mindBodySnapshot(s string) []string {
