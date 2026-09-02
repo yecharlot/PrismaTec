@@ -227,6 +227,7 @@ func updateSessionAfterTurn(sess *mindSessionState, text, kind string) {
 	low := strings.ToLower(strings.TrimSpace(text))
 	if isByeTalk(low) {
 		sess.Phase = phaseClosing
+		updateThreadFrame(sess, text, kind)
 		return
 	}
 	if sess.Phase == "" || sess.Phase == phaseOpening {
@@ -239,5 +240,5 @@ func updateSessionAfterTurn(sess *mindSessionState, text, kind string) {
 	if sess.Phase == phaseClosing && act != actSocial {
 		sess.Phase = phaseOngoing
 	}
-	_ = kind
+	updateThreadFrame(sess, text, kind)
 }

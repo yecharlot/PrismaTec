@@ -22,6 +22,9 @@ type mindSessionState struct {
 	Phase          string // opening | ongoing | closing
 	LastAct        string // social | content | task | meta
 	TurnCount      int
+	ActiveTopic    string // frame de hilo (P3)
+	LastUserFrame  string // último mensaje de usuario resumido
+	Expect         string // none | fact | clarify | close
 	UpdatedAt      time.Time
 }
 

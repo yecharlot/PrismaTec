@@ -123,6 +123,7 @@ func (n *NodoAlset) handleMindCalibrate(w http.ResponseWriter, r *http.Request) 
 		json.NewEncoder(w).Encode(v)
 	}
 	dOK, dTotal, dFail := scoreDialogActsNaturalness()
+	tOK, tTotal, tFail := scoreDialogThreadNaturalness()
 	writeJSON(map[string]interface{}{
 		"genome": g,
 		"score":  score,
@@ -130,10 +131,14 @@ func (n *NodoAlset) handleMindCalibrate(w http.ResponseWriter, r *http.Request) 
 		"rate":   float64(score) / math.Max(1, float64(total)),
 		"fails":  details,
 		"dialog_acts": map[string]interface{}{
-			"ok":    dOK,
-			"total": dTotal,
+			"ok": dOK, "total": dTotal,
 			"rate":  float64(dOK) / math.Max(1, float64(dTotal)),
 			"fails": dFail,
+		},
+		"dialog_thread": map[string]interface{}{
+			"ok": tOK, "total": tTotal,
+			"rate":  float64(tOK) / math.Max(1, float64(tTotal)),
+			"fails": tFail,
 		},
 	})
 }

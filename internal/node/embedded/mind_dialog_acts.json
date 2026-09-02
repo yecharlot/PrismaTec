@@ -497,5 +497,84 @@
       "Perfecto, empezamos. Dime un tema, un hecho tuyo o una pregunta.",
       "Listo. ¿Por dónde quieres empezar?"
     ]
+  },
+  {
+    "id": "ref_eso",
+    "act": "content",
+    "keys": [
+      "y eso",
+      "y eso?",
+      "eso?",
+      "de eso",
+      "sobre eso",
+      "ese tema"
+    ],
+    "phase": "ongoing",
+    "replies": [
+      "Seguimos con ese hilo. ¿Profundizamos, anclamos un hecho o cambias?",
+      "De eso que veníamos hablando: dime si quieres más detalle o otro ángulo."
+    ]
+  },
+  {
+    "id": "ref_antes",
+    "act": "content",
+    "keys": [
+      "lo de antes",
+      "lo anterior",
+      "retoma",
+      "retomar",
+      "sigue con eso"
+    ],
+    "phase": "ongoing",
+    "replies": [
+      "Retomamos lo anterior. ¿Qué parte quieres abrir?",
+      "Volvemos al hilo previo. Una palabra clave me basta."
+    ]
+  },
+  {
+    "id": "repair",
+    "act": "content",
+    "keys": [
+      "no me refería",
+      "no me referia",
+      "no era eso",
+      "me malinterpretaste",
+      "no entendiste",
+      "quiero decir",
+      "me refiero a"
+    ],
+    "phase": "any",
+    "replies": [
+      "De acuerdo, reencuadramos. Dime en una frase a qué te referías.",
+      "Corregimos el marco. ¿Cuál era tu intención en pocas palabras?"
+    ]
+  },
+  {
+    "id": "theme_work",
+    "act": "content",
+    "keys": [
+      "hablemos de trabajo",
+      "de mi trabajo",
+      "tema trabajo"
+    ],
+    "phase": "any",
+    "replies": [
+      "Hablemos de trabajo. Cuéntame el punto concreto: un problema, un dato o una decisión.",
+      "Trabajo: dime el hecho o la pregunta y lo anclamos o lo desglosamos."
+    ]
+  },
+  {
+    "id": "theme_alset",
+    "act": "meta",
+    "keys": [
+      "hablemos de alset",
+      "de la red",
+      "tema alset"
+    ],
+    "phase": "any",
+    "replies": [
+      "La red Alset: nodo, Mind, genes y borde. ¿Qué parte quieres: memoria CID, órganos o genes?",
+      "Alset en claro: identidad ANS, latido ternario y hechos en CID. ¿Ángulo?"
+    ]
   }
 ]

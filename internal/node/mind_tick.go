@@ -561,6 +561,13 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			}
 		}
 	}
+	// P3: referencias al hilo («eso», «lo de antes», malentendido)
+	if voice == "" && ethics.State != 2 {
+		if tv := speakThreadReference(text, sess); tv != "" {
+			voice = tv
+			primaryKind = "chat"
+		}
+	}
 	// P1: micro-compositor de continuidad (eco / hilo) si aún no hay voz
 	if voice == "" && ethics.State != 2 {
 		if mv := microComposeChat(text, sess, profile, recent); mv != "" {

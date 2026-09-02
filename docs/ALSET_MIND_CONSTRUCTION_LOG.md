@@ -590,3 +590,10 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** self-model y memory queries no son exclusivos; meta/LLM antes de eco; «y dónde…» no es continue; ok/vale = social; cortex no override social.
 - **Deploy:** inmediato post-push.
 
+
+## 2026-09-02 — P3 Hilo conversacional (topic frame + referencias + deploy)
+
+- **Acto:** `mind_thread.go` — ActiveTopic/LastUserFrame/Expect; «eso/antes/malentendido»; corpus actos v2; score `dialog_thread` en calibrate.
+- **Archivos:** mind_thread.go, mind_session.go, mind_tick.go, mind_speech_act.go, mind_calibrate.go, dialog_acts JSON.
+- **Deploy:** sí.
+
