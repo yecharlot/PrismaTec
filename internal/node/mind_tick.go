@@ -826,11 +826,38 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		}
 	}
 
-	// 5) Tools Gen (dominan sobre corpus) — P4+ órdenes humanas
+	// 5) Ayuda operador + Tools Gen — órdenes humanas
+	if voice == "" && ethics.State != 2 {
+		if oh := speakOperatorHelp(text); oh != "" {
+			voice = oh
+			primaryKind = "chat"
+		}
+	}
 	if voice == "" && ethics.State != 2 {
 		if gh := speakGenHelp(text); gh != "" {
 			voice = gh
 			primaryKind = "chat"
+		}
+	}
+	// Normalizar intención de nodo (estado/red/agentes)
+	nodeText := text
+	if normN := normalizeNodeUserIntent(text); normN != text {
+		nodeText = normN
+	}
+	if voice == "" && ethics.State != 2 && (isHumanNodeIntent(text) || expandWantStatusHuman(text)) {
+		if extra := n.mindSafeTools(nodeText); extra != "" {
+			voice = humanizeGenVoice(extra) // reusa suavizado de tono
+			if !strings.Contains(strings.ToLower(voice), "sonda") {
+				// snapshot de nodo: lead-in humano
+				if !strings.HasPrefix(voice, "Estado") && !strings.HasPrefix(voice, "——") {
+					voice = "Así veo el nodo ahora:
+" + voice
+				} else if strings.HasPrefix(voice, "——") {
+					voice = "Así veo el nodo ahora:
+" + voice
+				}
+			}
+			primaryKind = "tool"
 		}
 	}
 	genText := text
@@ -1417,7 +1444,8 @@ func (n *NodoAlset) mindSafeTools(text string) string {
 		strings.Contains(s, "mira el nodo") || strings.Contains(s, "mirar el nodo") ||
 		strings.Contains(s, "qué ves") || strings.Contains(s, "que ves") ||
 		strings.Contains(s, "qué vez") || strings.Contains(s, "que vez") ||
-		strings.HasPrefix(s, "dame ") || s == "dame" || s == "mira el nodo"
+		strings.HasPrefix(s, "dame ") || s == "dame" || s == "mira el nodo" ||
+		expandWantStatusHuman(s)
 	wantZyrion := strings.Contains(s, "zyrion") || strings.Contains(s, "evalua") ||
 		strings.Contains(s, "evalúa") || strings.Contains(s, "checkpoint") || strings.Contains(s, "topolog")
 	wantGen := strings.Contains(s, "gen ") || strings.Contains(s, "gens") || strings.Contains(s, "células") ||

@@ -603,3 +603,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Acto:** `mind_gen_ux.go` — normaliza frases naturales («qué genes tienes», «crea una sonda», «manda a explorar», «trae la sonda») a comandos de lab; `humanizeGenVoice`; `isGenToolIntent` ampliado.
 - **Deploy:** sí.
 
+
+## 2026-09-02 — P5 operador humano del nodo + guía de comandos
+
+- **Acto:** `mind_node_ux.go` (estado/red/agentes/apps en natural); `speakOperatorHelp`; knowledge Alset operativa; `docs/GUIA_COMANDOS_HUMANIZADOS.md`.
+- **Deploy:** sí.
+

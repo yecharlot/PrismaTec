@@ -3321,5 +3321,57 @@
       "diálogo profundo mind"
     ],
     "text": "La fase superior de diálogo no es imitar un LLM: es enrutar bien, profundizar con estructura, admitir lagunas y usar sondas sin ensuciar la voz."
+  },
+  {
+    "type": "alset_nodo",
+    "keys": [
+      "qué es un nodo alset",
+      "que es un nodo alset",
+      "nodo alset",
+      "nodo de la red"
+    ],
+    "text": "Un nodo Alset es una instancia de la red: agentes, nombres DNS internos, apps, pulsos P2P y, si está activo, Alset Mind. No es solo un servidor: publica identidad, puede sincronizar y aloja el latido ternario."
+  },
+  {
+    "type": "alset_red",
+    "keys": [
+      "red alset",
+      "qué es la red alset",
+      "que es la red alset",
+      "malla alset",
+      "peers alset"
+    ],
+    "text": "La red Alset enlaza nodos por libp2p/pulsos. Cada nodo ve peers, agentes y nombres. La memoria fuerte se ancla en CID; el borde (p. ej. Cloudflare) puede alojar sondas (genes) lejos del núcleo."
+  },
+  {
+    "type": "alset_agente",
+    "keys": [
+      "qué es un agente",
+      "que es un agente",
+      "agentes del nodo",
+      "agente alset"
+    ],
+    "text": "Un agente en el nodo es una identidad registrada (id, root CID, rol). Mind es un agente residente (mind-alset). No confundir con «agente de IA» genérico: aquí es entrada del directorio del nodo."
+  },
+  {
+    "type": "alset_neurona",
+    "keys": [
+      "neurona ternaria",
+      "neuronas del córtex",
+      "córtex ternario",
+      "cortex ternario",
+      "agentes neurona"
+    ],
+    "text": "El córtex ternario son rutas 0/1/2 (sentidos y sinapsis) que asisten el latido en bordes difíciles: aclarar, razón, identidad, código. No son redes neuronales estadísticas; son juicios discretos cableados."
+  },
+  {
+    "type": "alset_operacion",
+    "keys": [
+      "operar el nodo",
+      "usuario autorizado",
+      "comandos del nodo",
+      "sacar provecho al nodo"
+    ],
+    "text": "Un operador puede pedir en natural: estado del nodo, red/peers, órganos Zyrion, sondas (crear/enviar/explorar/traer), memoria de hechos, cálculos y plantillas de código. Ethics frena destrucción masiva y privacidad ajena."
   }
 ]

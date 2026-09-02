@@ -110,3 +110,6 @@ Worker: `cloudflare/alset-gen-worker` (`npx wrangler deploy`).
 4. Un handoff, una guía, este README  
 
 Estado y gaps: **[docs/HANDOFF.md](docs/HANDOFF.md)**.
+
+## Guía de comandos humanizados (Mind + nodo)
+Ver [docs/GUIA_COMANDOS_HUMANIZADOS.md](docs/GUIA_COMANDOS_HUMANIZADOS.md).
