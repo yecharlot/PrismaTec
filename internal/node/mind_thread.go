@@ -91,6 +91,22 @@ func isMisunderstandRepair(low string) bool {
 }
 
 // speakThreadReference: resuelve «eso / lo de antes» con el frame de sesión.
+func speakShortProbe(text string) string {
+	low := strings.ToLower(strings.TrimSpace(text))
+	low = strings.TrimSuffix(low, "?")
+	low = strings.TrimSpace(low)
+	if low == "lugar" || low == "ciudad" {
+		return "Si te pregunté por un lugar, era por si habías dicho ciudad o dónde vives. Si no lo has contado, puedes decir «vivo en…» y lo anclo."
+	}
+	if strings.Contains(low, "alarma absorbente") || low == "absorbente" || low == "alarma" {
+		if k := speakFromKnowledge("alarma absorbente estado 2"); k != "" {
+			return k
+		}
+		return "En Zyrion el estado 2 es absorbente: si un órgano crítico está en 2, no se promedia con ceros. Evita diluir un veto o una alarma."
+	}
+	return ""
+}
+
 func speakThreadReference(text string, sess *mindSessionState) string {
 	low := strings.ToLower(strings.TrimSpace(text))
 	if sess == nil {

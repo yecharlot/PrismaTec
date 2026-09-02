@@ -206,8 +206,6 @@
       "entendido",
       "listo",
       "claro",
-      "sí",
-      "si",
       "aja",
       "ajá"
     ],
@@ -488,9 +486,7 @@
       "vamos a empezar",
       "empecemos",
       "bien vamos a empezar",
-      "vamos a hablar",
-      "charlemos",
-      "hablemos"
+      "vamos a hablar"
     ],
     "phase": "opening",
     "replies": [

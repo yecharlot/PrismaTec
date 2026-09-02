@@ -93,7 +93,7 @@ func Test{{Name}}(t *testing.T) {
 }
 `,
 	},
-		{
+	{
 		ID: "go_sum_ab", Lang: "go",
 		Keys: []string{"sumar", "función sumar", "funcion sumar", "suma a y b", "sumar a y b", "func sumar"},
 		Body: `package {{pkg}}
@@ -315,7 +315,6 @@ app.listen(3000, () => console.log("listen :3000"));
 	},
 }
 
-
 // isCodeGenRequest detects explicit request to produce code (not mere explanation).
 func isCodeGenRequest(s string) bool {
 	s = strings.ToLower(strings.TrimSpace(s))
@@ -328,6 +327,9 @@ func isCodeGenRequest(s string) bool {
 		"dame el código", "dame el codigo", "código de", "codigo de",
 		"implementa ", "implementar ", "esqueleto de", "plantilla de",
 		"hazme un", "hazme una", "crea una función", "crea una funcion",
+		"crear una función", "crear una funcion", "creame una función", "creame una funcion",
+		"créame una función", "créame una funcion", "crea funcion", "crear funcion",
+		"función hola mundo", "funcion hola mundo", "hola mundo en ",
 		"crea un handler", "crea un endpoint", "código en go", "codigo en go",
 		"código en python", "codigo en python", "código en lisp", "codigo en lisp",
 		"write a function", "generate code", "boilerplate",

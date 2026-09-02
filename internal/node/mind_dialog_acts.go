@@ -66,9 +66,14 @@ func matchDialogAct(text string, sess *mindSessionState) (dialogActEntry, int) {
 			}
 			if low == k {
 				sc += 6
-			} else if strings.HasPrefix(low, k) {
+			} else if strings.HasPrefix(low, k+" ") || strings.HasPrefix(low, k+",") || strings.HasPrefix(low, k+"?") {
 				sc += 4
-			} else if strings.Contains(low, k) {
+			} else if len([]rune(k)) <= 3 {
+				// claves muy cortas (ok, si, ty): solo exactas o token completo
+				if containsWholeToken(low, k) {
+					sc += 4
+				}
+			} else if containsWholeToken(low, k) || (len([]rune(k)) >= 5 && strings.Contains(low, k)) {
 				sc += 2
 			}
 		}
@@ -137,4 +142,18 @@ func scoreDialogActsNaturalness() (ok, total int, details []string) {
 		ok++
 	}
 	return ok, total, details
+}
+
+func containsWholeToken(s, tok string) bool {
+	if tok == "" {
+		return false
+	}
+	for _, w := range strings.FieldsFunc(s, func(r rune) bool {
+		return r == ' ' || r == ',' || r == '.' || r == '?' || r == '!' || r == ';' || r == ':'
+	}) {
+		if w == tok {
+			return true
+		}
+	}
+	return false
 }

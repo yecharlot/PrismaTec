@@ -1071,3 +1071,26 @@ func memoryHintLine(hint string) string {
 	}
 	return "—— memoria ——\n" + hint
 }
+
+func isNameRetraction(s string) bool {
+	s = strings.ToLower(strings.TrimSpace(s))
+	return strings.Contains(s, "ya no me llamo") || strings.Contains(s, "no me llamo así") ||
+		strings.Contains(s, "no me llamo asi") || strings.Contains(s, "ese no es mi nombre") ||
+		strings.Contains(s, "mi nombre no es") || strings.Contains(s, "ahora me llamo") ||
+		strings.Contains(s, "me llamo ahora")
+}
+
+func speakNameRetraction(s string, profile UserProfile) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	if name := extractDeclaredName(s); name != "" && (strings.Contains(s, "ahora") || strings.Contains(s, "me llamo")) {
+		return "De acuerdo, actualizo: te llamas " + name + "."
+	}
+	if strings.Contains(s, "ya no me llamo") || strings.Contains(s, "no me llamo") {
+		prev := profile.Nombre
+		if prev != "" {
+			return "Entendido: dejo de usar «" + prev + "». Dime cómo quieres que te llame ahora."
+		}
+		return "Entendido. Dime el nombre correcto y lo anclo."
+	}
+	return "Dime el nombre correcto («me llamo…») y lo actualizo."
+}

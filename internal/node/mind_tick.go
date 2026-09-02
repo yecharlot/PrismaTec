@@ -333,6 +333,21 @@ func isUserCorrection(s string) bool {
 	return false
 }
 
+func isHowAreYouOnly(s string) bool {
+	s = strings.ToLower(strings.TrimSpace(s))
+	// solo saludo de estado, no «de qué estás hecho»
+	if strings.Contains(s, "hecho") || strings.Contains(s, "estructura") || strings.Contains(s, "compuesto") {
+		return false
+	}
+	bases := []string{"cómo estás", "como estas", "cómo esta", "como esta", "cómo te va", "como te va", "qué tal estás", "que tal estas"}
+	for _, b := range bases {
+		if s == b || s == b+"?" {
+			return true
+		}
+	}
+	return false
+}
+
 func isCalmChat(s string) bool {
 	s = strings.ToLower(strings.TrimSpace(s))
 	if s == "hola" || s == "hi" || s == "hello" || s == "hey" || s == "buenas" ||
@@ -346,15 +361,18 @@ func isCalmChat(s string) bool {
 	casual := []string{
 		"de cualquier cosa", "cualquier cosa", "lo que sea", "da igual el tema",
 		"vamos a empezar", "empecemos", "empecemos ya", "bien vamos a empezar",
-		"vamos a hablar", "hablemos", "charlemos", "de lo que sea",
+		"vamos a hablar", "charlemos", "de lo que sea",
 	}
 	for _, c := range casual {
-		if s == c || strings.HasPrefix(s, c) || strings.Contains(s, c) {
+		if s == c || strings.HasPrefix(s, c+" ") || (strings.HasPrefix(s, c) && len(s) <= len(c)+2) {
 			return true
 		}
 	}
-	return strings.Contains(s, "cómo estás") || strings.Contains(s, "como estas") ||
-		strings.Contains(s, "cómo esta") || strings.Contains(s, "como esta") ||
+	// «cómo estás» exacto / social — no «cómo estás hecho»
+	if isHowAreYouOnly(s) {
+		return true
+	}
+	return strings.Contains(s, "qué tal") || strings.Contains(s, "que tal") ||
 		strings.Contains(s, "qué tal") || strings.Contains(s, "que tal") ||
 		strings.Contains(s, "qué hay") || strings.Contains(s, "que hay") ||
 		strings.Contains(s, "todo bien") || strings.Contains(s, "qué haces") ||
@@ -512,6 +530,12 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 	primaryKind := "chat"
 	var codegenCID string
 
+	// Retractación / cambio de nombre (antes de confirm «ok/si»)
+	if voice == "" && ethics.State != 2 && isNameRetraction(strings.ToLower(text)) {
+		voice = speakNameRetraction(text, profile)
+		primaryKind = "memory"
+	}
+
 	// P0: acto de habla social + fase de sesión — antes de corpus/tools/unknown
 	if ethics.State != 2 {
 		if sv, sk := speakSpeechAct(text, sess); sv != "" {
@@ -566,6 +590,12 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		if tv := speakThreadReference(text, sess); tv != "" {
 			voice = tv
 			primaryKind = "chat"
+		}
+	}
+	if voice == "" && ethics.State != 2 {
+		if pv := speakShortProbe(text); pv != "" {
+			voice = pv
+			primaryKind = "knowledge"
 		}
 	}
 	// P1: micro-compositor de continuidad (eco / hilo) si aún no hay voz
@@ -793,14 +823,21 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 
 	// Identidad explícita antes de razón (evita «entonces qué eres» → silogismo)
 	if voice == "" && ethics.State != 2 && isIdentityTalk(strings.ToLower(text)) {
+		lowI := strings.ToLower(text)
 		idV := "Soy Alset Mind: inteligencia ternaria residente en este nodo. Juzgo el campo 0/1/2, recuerdo en CID y no predigo tokens."
+		if strings.Contains(lowI, "hecho") || strings.Contains(lowI, "estructura") || strings.Contains(lowI, "compuesto") {
+			idV = "Estoy hecho de latido ternario (órganos 0/1/2), genoma de umbrales, memoria episódica en CID y reglas explícitas — no de una red neuronal de lenguaje. La estructura del software vive en el nodo (mind_tick, órganos, memoria); la «estructura» útil al usuario es: percibir → juzgar → recordar → a veces mutar."
+		} else if strings.Contains(lowI, "consideras") || strings.Contains(lowI, "valoración") || strings.Contains(lowI, "valoracion") {
+			idV = "No me autoevalúo con ego. Mido acierto de corpus, vetos ethics y si el hilo del usuario avanza. Si fallo un turno, el arreglo es regla o memoria, no persuasión."
+		} else if strings.Contains(lowI, "cálculo") || strings.Contains(lowI, "calculo") || strings.Contains(lowI, "matem") {
+			idV = "Cálculos: aritmética y expresiones vía LispAI en el nodo (sumar, restar, multiplicar, dividir, etc.). Pide «cuánto es 12*7» o una expresión clara; no invento resultados."
+		}
 		if name := extractDeclaredName(text); name != "" {
 			voice = "Te llamas " + name + ".\n\n" + idV
-			primaryKind = "identity"
 		} else {
 			voice = idV
-			primaryKind = "identity"
 		}
+		primaryKind = "identity"
 	}
 
 	// 6a0) Razón ternaria: silogismos / reglas sobre corpus+memoria (no predicción)
