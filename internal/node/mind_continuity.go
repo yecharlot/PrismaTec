@@ -147,6 +147,7 @@ func (n *NodoAlset) continueMindThread(text string) string {
 	}
 	n.mindLastMu.Lock()
 	q, k, m, v := n.mindLastQuery, n.mindLastKnow, n.mindLastMem, n.mindLastVoice
+	lastScout := strings.TrimSpace(n.mindLastScoutTopic)
 	n.mindLastMu.Unlock()
 	low := strings.ToLower(text)
 	wantMem := strings.Contains(low, "memoria") || strings.Contains(low, "recuerdo")
@@ -157,11 +158,6 @@ func (n *NodoAlset) continueMindThread(text string) string {
 		if hit := speakFromKnowledge(focus); hit != "" {
 			return "Sobre «" + focus + "»:\n\n" + hit
 		}
-		// Reuse last voice only if focus IS the last scout subject
-		// (not a name mentioned inside another article, e.g. Harry text → Voldemort).
-		n.mindLastMu.Lock()
-		lastScout := strings.TrimSpace(n.mindLastScoutTopic)
-		n.mindLastMu.Unlock()
 		if lastScout != "" && topicKeysMatch(focus, lastScout) {
 			if m != "" && strings.Contains(strings.ToLower(m), strings.ToLower(focus)) {
 				return "Sobre «" + focus + "», de lo que hablamos:\n\n" + m
@@ -170,8 +166,15 @@ func (n *NodoAlset) continueMindThread(text string) string {
 				return "Sobre «" + focus + "»:\n\n" + compressVoiceBlock(v, 280)
 			}
 		}
-		// New entity focus → empty so runMindTick can dispatch MindScoutWeb
 		return ""
+	}
+
+	// Tras sonda de persona/tema: no saltar a corpus genérico
+	if lastScout != "" && !wantCorp && !wantMem {
+		if v != "" {
+			return "Siguiendo con «" + lastScout + "»:\n\n" + compressVoiceBlock(v, 320)
+		}
+		return "Podemos seguir con «" + lastScout + "». ¿Biografía, carrera u otro ángulo?"
 	}
 
 	// Name thread only if user did not point elsewhere
