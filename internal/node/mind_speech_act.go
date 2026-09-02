@@ -72,21 +72,18 @@ func isSpeechSocial(low string) bool {
 	if isNoiseOrGreeting(low) || isCalmChat(low) {
 		return true
 	}
-	// cómo estás / qué tal (sin pedido de info profunda)
+	// cómo estás / qué tal — no «cómo estás hecho»
+	if isHowAreYouOnly(low) {
+		return true
+	}
 	socialHow := []string{
-		"cómo estás", "como estas", "cómo esta", "como esta",
-		"qué tal", "que tal", "qué tal estás", "que tal estas",
-		"qué tal todo", "que tal todo", "todo bien", "cómo te va", "como te va",
+		"qué tal", "que tal", "qué tal todo", "que tal todo", "todo bien",
 		"buenos días", "buenas tardes", "buenas noches", "buen día", "buen dia",
-		"hey", "hi ", "hello",
+		"hey", "hello",
 	}
 	for _, k := range socialHow {
-		if low == k || strings.HasPrefix(low, k) || strings.Contains(low, k) {
-			// excluir "qué tal es X" tipo definición
-			if strings.Contains(low, " qué es") || strings.Contains(low, " que es") {
-				return false
-			}
-			if strings.Contains(low, "zyrion") || strings.Contains(low, "genoma") || strings.Contains(low, "cid") {
+		if low == k || low == k+"?" || strings.HasPrefix(low, k+" ") || strings.HasPrefix(low, k+",") {
+			if strings.Contains(low, "zyrion") || strings.Contains(low, "hecho") {
 				return false
 			}
 			return true

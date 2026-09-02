@@ -509,6 +509,10 @@ func isPureDialogue(s string) bool {
 // Ignores interrogatives ("cómo me llamo") and rejects non-name tokens.
 func extractDeclaredName(text string) string {
 	low := strings.ToLower(strings.TrimSpace(text))
+	if strings.Contains(low, "ya no me llamo") || strings.Contains(low, "no me llamo así") ||
+		strings.Contains(low, "no me llamo asi") {
+		return ""
+	}
 	stopName := map[string]bool{
 		"y": true, "qué": true, "que": true, "es": true, "el": true, "la": true,
 		"un": true, "una": true, "mi": true, "tu": true, "como": true, "cómo": true,
@@ -517,6 +521,7 @@ func extractDeclaredName(text string) string {
 		"encantado": true, "encantada": true, "placer": true, "hola": true,
 		"buenas": true, "gracias": true, "por": true, "favor": true,
 		"hallazgo": true, "sonda": true, "scout": true, "entonces": true,
+		"asi": true, "así": true, "asi.": true, "ya": true, "no": true,
 	}
 	for _, pref := range []string{"me llamo ", "mi nombre es ", "mi nombre:", "soy "} {
 		i := strings.Index(low, pref)
@@ -1082,15 +1087,16 @@ func isNameRetraction(s string) bool {
 
 func speakNameRetraction(s string, profile UserProfile) string {
 	s = strings.ToLower(strings.TrimSpace(s))
-	if name := extractDeclaredName(s); name != "" && (strings.Contains(s, "ahora") || strings.Contains(s, "me llamo")) {
-		return "De acuerdo, actualizo: te llamas " + name + "."
-	}
-	if strings.Contains(s, "ya no me llamo") || strings.Contains(s, "no me llamo") {
+	if strings.Contains(s, "ya no me llamo") || strings.Contains(s, "no me llamo así") ||
+		strings.Contains(s, "no me llamo asi") || strings.Contains(s, "ese no es mi nombre") {
 		prev := profile.Nombre
 		if prev != "" {
 			return "Entendido: dejo de usar «" + prev + "». Dime cómo quieres que te llame ahora."
 		}
-		return "Entendido. Dime el nombre correcto y lo anclo."
+		return "Entendido. Dime el nombre correcto («me llamo…») y lo anclo."
+	}
+	if name := extractDeclaredName(s); name != "" {
+		return "De acuerdo, actualizo: te llamas " + name + "."
 	}
 	return "Dime el nombre correcto («me llamo…») y lo actualizo."
 }
