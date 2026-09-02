@@ -129,6 +129,87 @@ func (n *NodoAlset) BridgeSpeakGenFindings(key string) string {
 	return msg
 }
 
+// BridgeSpeakGenStatus — qué está haciendo / dónde está la sonda, en humano.
+func (n *NodoAlset) BridgeSpeakGenStatus(key string) string {
+	key = normalizeGenKey(key)
+	n.ensureGens()
+	n.mu.RLock()
+	g, ok := n.gens[key]
+	n.mu.RUnlock()
+	if !ok {
+		return "No tengo la sonda «" + key + "» en este nodo. Prueba «qué sondas tienes»."
+	}
+	loc := g.State.Location
+	if loc == "" {
+		loc = "local"
+	}
+	travel := ""
+	mission := ""
+	lastURL := ""
+	findN := 0
+	if g.State.Metadata != nil {
+		if v, ok := g.State.Metadata["travel_status"].(string); ok {
+			travel = v
+		}
+		if v, ok := g.State.Metadata["mission"].(string); ok {
+			mission = v
+		}
+		if v, ok := g.State.Metadata["last_url"].(string); ok {
+			lastURL = v
+		}
+		if v, ok := g.State.Metadata["explore_url"].(string); ok && lastURL == "" {
+			lastURL = v
+		}
+		switch v := g.State.Metadata["findings"].(type) {
+		case []interface{}:
+			findN = len(v)
+		case []string:
+			findN = len(v)
+		}
+	}
+	edge := strings.Contains(strings.ToLower(loc), "cloudflare") || strings.Contains(strings.ToLower(loc), "http") ||
+		n.remoteHTTPBase(key) != ""
+
+	var b strings.Builder
+	b.WriteString("La sonda «" + key + "» ")
+	if edge {
+		b.WriteString("está en el borde de la red")
+		if rh := n.remoteHTTPBase(key); rh != "" {
+			b.WriteString(" (" + rh + ")")
+		} else {
+			b.WriteString(" (" + loc + ")")
+		}
+		b.WriteString(".")
+	} else {
+		b.WriteString("está en este nodo (" + loc + ").")
+	}
+	if travel != "" {
+		switch travel {
+		case "home":
+			b.WriteString(" Estado de viaje: en casa.")
+		case "in_transit":
+			b.WriteString(" Estado de viaje: en tránsito.")
+		case "arrived_remote", "announced":
+			b.WriteString(" Estado de viaje: desplegada en remoto.")
+		default:
+			b.WriteString(" Estado de viaje: " + travel + ".")
+		}
+	}
+	if mission != "" {
+		b.WriteString(" Misión anotada: " + mission + ".")
+	}
+	if lastURL != "" {
+		b.WriteString(" Última URL de exploración: " + lastURL + ".")
+	}
+	if findN > 0 {
+		b.WriteString(fmt.Sprintf(" Tiene %d hallazgo(s) registrados.", findN))
+	} else {
+		b.WriteString(" Aún no registra hallazgos.")
+	}
+	b.WriteString(" Puedes pedir «dime qué ve» o «dame el resultado» de esta sonda.")
+	return b.String()
+}
+
 func (n *NodoAlset) BridgePinEpisodeToMemGen(genKey, episodeCID, note string) string {
 	if episodeCID == "" {
 		return "No hay CID de episodio para anclar."

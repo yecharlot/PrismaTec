@@ -138,6 +138,78 @@ func normalizeGenUserIntent(text string) string {
 		return "pregunta al gen " + name
 	}
 
+	// estado / qué hace / dónde está
+	if matchAny(low, []string{
+		"qué está haciendo", "que esta haciendo", "qué esta haciendo", "que está haciendo",
+		"explícame qué está", "explicame que esta", "qué hace la", "que hace la",
+		"estado de la sonda", "estado del gen", "dónde está la sonda", "donde esta la sonda",
+		"dónde está el gen", "donde esta el gen",
+	}) {
+		name := extractGenNameFromText(low)
+		if name == "" {
+			name = extractTrailingName(low)
+		}
+		if name != "" {
+			return "estado gen " + name
+		}
+	}
+
+	// hallazgos / qué ve / resultado
+	if matchAny(low, []string{
+		"dame el resultado", "qué ve", "que ve", "qué vio", "que vio", "ve algo",
+		"dime qué ve", "dime que ve", "hallazgos de", "resultado de", "qué encontró", "que encontro",
+		"qué encontró", "qué ha visto", "que ha visto",
+	}) {
+		name := extractGenNameFromText(low)
+		if name == "" {
+			name = extractTrailingName(low)
+		}
+		if name != "" {
+			return "hallazgos gen " + name
+		}
+	}
+
+	// elimina a X (sin decir sonda)
+	if matchAny(low, []string{"elimina a ", "borra a ", "quita a ", "elimina ", "borra "}) &&
+		!matchAny(low, []string{"todos", "todas", "archivo", "cuenta", "disco"}) {
+		name := extractGenNameFromText(low)
+		if name == "" {
+			name = extractTrailingName(low)
+		}
+		if name != "" && name != "sonda" {
+			return "elimina gen " + name
+		}
+		if strings.Contains(low, "elimina a ") || strings.Contains(low, "borra a ") {
+			rest := low
+			for _, p := range []string{"elimina a ", "borra a ", "quita a "} {
+				if i := strings.Index(low, p); i >= 0 {
+					rest = strings.TrimSpace(low[i+len(p):])
+					break
+				}
+			}
+			fields := strings.Fields(rest)
+			if len(fields) > 0 {
+				return "elimina gen " + strings.Trim(fields[0], ".,")
+			}
+		}
+	}
+
+	// trae a X / tráela / traela
+	if matchAny(low, []string{"trae a ", "tráela", "traela", "tráelo", "traelo", "devuélvela", "devuelvela",
+		"trae de vuelta", "traela de vuelta", "tráela de vuelta"}) {
+		name := extractGenNameFromText(low)
+		if name == "" {
+			name = extractTrailingName(low)
+		}
+		if name != "" {
+			return "retorna gen " + name
+		}
+		if strings.Contains(low, "borde") {
+			return "retorna gen"
+		}
+		return "retorna gen"
+	}
+
 	// guardar
 	if matchAny(low, []string{"guarda en", "salva en", "ancla en", "pin en", "guarda esto en", "salva esto en"}) &&
 		matchAny(low, []string{"gen", "sonda"}) {
@@ -289,6 +361,28 @@ func humanizeGenVoice(raw string) string {
 		}
 	}
 	return out
+}
+
+func extractTrailingName(low string) string {
+	skip := map[string]bool{
+		"a": true, "la": true, "el": true, "de": true, "del": true, "qué": true, "que": true,
+		"está": true, "esta": true, "haciendo": true, "sonda": true, "gen": true, "dame": true,
+		"el": true, "resultado": true, "dime": true, "ve": true, "algo": true, "explicame": true,
+		"explícame": true, "elimina": true, "borra": true, "trae": true, "traela": true, "tráela": true,
+		"de": true, "vuelta": true, "ahora": true, "tienes": true, "en": true, "borde": true,
+	}
+	fields := strings.Fields(low)
+	for i := len(fields) - 1; i >= 0; i-- {
+		w := strings.Trim(fields[i], ".,;:¿?¡!")
+		if w == "" || skip[w] || strings.HasPrefix(w, "http") {
+			continue
+		}
+		if len([]rune(w)) < 2 {
+			continue
+		}
+		return w
+	}
+	return ""
 }
 
 func isHumanGenIntent(s string) bool {

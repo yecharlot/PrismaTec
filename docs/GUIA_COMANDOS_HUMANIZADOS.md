@@ -75,6 +75,16 @@
 
 | Dices | Efecto |
 |-------|--------|
+| qué está haciendo la sonda X / explícame qué hace X | Estado, ubicación, viaje, misión |
+| dime qué ve X / X ve algo? / dame el resultado de X | Hallazgos |
+| elimina a X / elimina la sonda X | Baja una sonda |
+| trae a X / tráela / trae de vuelta | Retorno al nodo |
+| crea / manda al borde / explora | Ciclo de vida |
+
+
+
+| Dices | Efecto |
+|-------|--------|
 | cómo uso las sondas | Manual corto |
 | qué sondas tienes / qué genes tienes | Lista |
 | crea una sonda llamada aurora | Alta local |

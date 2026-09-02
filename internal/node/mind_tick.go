@@ -1486,6 +1486,34 @@ func (n *NodoAlset) mindGenTools(text string) []string {
 	n.ensureGens()
 	var lines []string
 
+	// --- estado / actividad ---
+	if strings.Contains(s, "estado gen") || strings.Contains(s, "qué está haciendo") || strings.Contains(s, "que esta haciendo") {
+		name := extractGenNameFromText(s)
+		if name == "" {
+			name = extractTrailingName(s)
+		}
+		if name == "" {
+			lines = append(lines, "Dime de qué sonda hablas (ej. «qué está haciendo la sonda aurora»).")
+			return lines
+		}
+		lines = append(lines, n.BridgeSpeakGenStatus(name))
+		return lines
+	}
+	// --- hallazgos / qué ve ---
+	if strings.Contains(s, "hallazgos gen") || strings.Contains(s, "qué ve") || strings.Contains(s, "que ve") ||
+		strings.Contains(s, "dame el resultado") || strings.Contains(s, "ve algo") {
+		name := extractGenNameFromText(s)
+		if name == "" {
+			name = extractTrailingName(s)
+		}
+		if name == "" {
+			lines = append(lines, "Dime la sonda (ej. «dime qué ve aurora»).")
+			return lines
+		}
+		lines = append(lines, humanizeGenVoice(n.BridgeSpeakGenFindings(name)))
+		return lines
+	}
+
 	// --- eliminar / retornar gen (sonda a casa) ---
 	if strings.Contains(s, "elimina gen") || strings.Contains(s, "eliminar gen") || strings.Contains(s, "borra gen") || strings.Contains(s, "borrar gen") || strings.Contains(s, "destruye gen") {
 		name := extractGenNameFromText(s)

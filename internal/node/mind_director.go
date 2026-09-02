@@ -71,6 +71,8 @@ func isGenToolIntent(s string) bool {
 		"qué sondas", "que sondas", "ver genes", "ver sondas", "ayuda con las sondas",
 		"crea una sonda", "crear sonda", "haz un gen", "haz una sonda", "nueva sonda",
 		"al borde", "a cloudflare", "red de borde",
+		"qué está haciendo", "que esta haciendo", "qué ve", "que ve", "ve algo",
+		"dame el resultado", "hallazgos", "elimina a ", "trae a ", "tráela", "traela",
 	}
 	for _, k := range keys {
 		if strings.Contains(s, k) {
