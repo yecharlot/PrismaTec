@@ -358,7 +358,8 @@ func cortexShouldAssist(text, voice, kind string) bool {
 	low := strings.ToLower(strings.TrimSpace(text))
 	// No pisar charla social / identidad / confirmaciones ya respondidas
 	if voice != "" && (classifySpeechAct(text) == actSocial || isConfirmTalk(low) || isThanksTalk(low) || isByeTalk(low) ||
-		isIdentityTalk(low) || isReferentialCue(low) || kind == "identity" || kind == "memory" || kind == "knowledge") {
+		isIdentityTalk(low) || isReferentialCue(low) || isContinuePrompt(low) || isTopicShift(low) ||
+		kind == "identity" || kind == "memory" || kind == "knowledge" || kind == "tool") {
 		return false
 	}
 	if voice == "" {

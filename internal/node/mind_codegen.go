@@ -21,7 +21,7 @@ type codeTemplate struct {
 var codeTemplates = []codeTemplate{
 	{
 		ID: "go_http_handler", Lang: "go",
-		Keys: []string{"handler http", "http handler", "servidor http go", "endpoint go", "api go básica", "hola mundo go http", "mux go"},
+		Keys: []string{"handler http", "http handler", "servidor http go", "endpoint go", "api go básica", "mux go"},
 		Body: `package main
 
 import (
@@ -43,6 +43,18 @@ func main() {
 	mux.HandleFunc("/{{route}}", {{handler}})
 	log.Println("listen :8080")
 	log.Fatal(http.ListenAndServe(":8080", mux))
+}
+`,
+	},
+	{
+		ID: "go_hello", Lang: "go",
+		Keys: []string{"hola mundo", "hello world", "función hola", "funcion hola", "print hola", "fmt.println"},
+		Body: `package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("Hola mundo")
 }
 `,
 	},
@@ -395,8 +407,16 @@ func pickCodeTemplate(s string) *codeTemplate {
 			best = t
 		}
 	}
+	// hola mundo simple (sin http) gana sobre handler
+	if (strings.Contains(s, "hola mundo") || strings.Contains(s, "hello world")) &&
+		!strings.Contains(s, "http") && !strings.Contains(s, "handler") && !strings.Contains(s, "endpoint") {
+		for i := range codeTemplates {
+			if codeTemplates[i].ID == "go_hello" {
+				return &codeTemplates[i]
+			}
+		}
+	}
 	if bestScore == 0 {
-		// default by language hint
 		if strings.Contains(s, "lisp") {
 			return &codeTemplates[3]
 		}
@@ -406,7 +426,6 @@ func pickCodeTemplate(s string) *codeTemplate {
 		if strings.Contains(s, "javascript") || strings.Contains(s, " js") {
 			return &codeTemplates[8]
 		}
-		// safe default: small go handler
 		return &codeTemplates[0]
 	}
 	return best

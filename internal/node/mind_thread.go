@@ -91,6 +91,34 @@ func isMisunderstandRepair(low string) bool {
 }
 
 // speakThreadReference: resuelve «eso / lo de antes» con el frame de sesión.
+func speakSoftFollowUp(text string, sess *mindSessionState) string {
+	low := strings.ToLower(strings.TrimSpace(text))
+	low = strings.TrimSuffix(low, "?")
+	low = strings.TrimSpace(low)
+	if low == "como" || low == "cómo" || low == "cómo es" || low == "como es" {
+		if sess != nil && (sess.ActiveTopic == "identidad" || sess.LastAct == "meta" ||
+			strings.Contains(sess.LastUserFrame, "ti") || strings.Contains(sess.LastUserFrame, "eres")) {
+			return "En la práctica: en cada mensaje mido el campo, elijo 0/1/2 por órgano, consulto memoria CID si aplica y armo una respuesta. No improviso tokens: aplico reglas y hechos anclados."
+		}
+		if sess != nil && sess.ActiveTopic != "" {
+			return "Sobre «" + sess.ActiveTopic + "»: dime qué ángulo quieres (detalle, ejemplo o cruce con un hecho tuyo)."
+		}
+		return "¿Cómo… qué? Completa: cómo funciona X, cómo me llamo, cómo calculas…"
+	}
+	if strings.HasPrefix(low, "me gusta") || low == "me gusta eso" || low == "me gusta" {
+		return "Bien. ¿Quieres profundizar ese punto, anclarlo como hecho o cambiar de tema?"
+	}
+	// "con selena gomez" / "con X" tras sonda
+	if strings.HasPrefix(low, "con ") && len(strings.Fields(low)) <= 5 {
+		topic := strings.TrimSpace(strings.TrimPrefix(low, "con "))
+		if topic != "" && sess != nil {
+			sess.ActiveTopic = topic
+		}
+		return "" // dejar a continue/scout
+	}
+	return ""
+}
+
 func speakShortProbe(text string) string {
 	low := strings.ToLower(strings.TrimSpace(text))
 	low = strings.TrimSuffix(low, "?")

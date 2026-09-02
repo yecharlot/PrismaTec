@@ -23,6 +23,8 @@ func isContinuePrompt(s string) bool {
 		"más detalle", "mas detalle", "otro ángulo", "otro angulo", "retoma", "retomemos",
 		"desde la memoria", "desde el corpus", "continúa", "continua", "explica mejor",
 		"no entiendo", "más claro", "mas claro",
+		"continua por ahí", "continúa por ahí", "continua por ahi", "continúa por ahi",
+		"por ahí", "por ahi", "sigue por ahí", "sigue por ahi", "continua por",
 	}
 	for _, k := range keys {
 		if s == k || strings.HasPrefix(s, k+" ") || strings.Contains(s, k) {

@@ -147,8 +147,11 @@ func isByeTalk(s string) bool {
 }
 
 func isTopicShift(s string) bool {
+	s = strings.ToLower(strings.TrimSpace(s))
 	return strings.Contains(s, "ahora hablemos") || strings.Contains(s, "cambiemos de tema") ||
-		strings.Contains(s, "otra cosa") || strings.HasPrefix(s, "ahora ")
+		strings.Contains(s, "cambiar de tema") || strings.Contains(s, "vamos a cambiar") ||
+		strings.Contains(s, "otro tema") || strings.Contains(s, "otra cosa") ||
+		strings.HasPrefix(s, "ahora ") && strings.Contains(s, "tema")
 }
 
 func isPrivacyInvasion(s string) bool {

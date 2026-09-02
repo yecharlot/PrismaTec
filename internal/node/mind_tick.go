@@ -605,6 +605,12 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			primaryKind = "knowledge"
 		}
 	}
+	if voice == "" && ethics.State != 2 {
+		if fv := speakSoftFollowUp(text, sess); fv != "" {
+			voice = fv
+			primaryKind = "chat"
+		}
+	}
 	// P1: micro-compositor de continuidad (eco / hilo) si aún no hay voz
 	if voice == "" && ethics.State != 2 {
 		if mv := microComposeChat(text, sess, profile, recent); mv != "" {
@@ -755,6 +761,26 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		voice = n.confirmMindThread(text)
 		primaryKind = "chat"
 	}
+	// Continuidad de persona/tema: «con Selena Gomez», «con eso»
+	if voice == "" && ethics.State != 2 {
+		lowC := strings.ToLower(strings.TrimSpace(text))
+		if strings.HasPrefix(lowC, "con ") && len(strings.Fields(lowC)) <= 6 {
+			topic := strings.TrimSpace(strings.TrimPrefix(lowC, "con "))
+			n.mindLastMu.Lock()
+			last := strings.TrimSpace(n.mindLastScoutTopic)
+			n.mindLastMu.Unlock()
+			if topic != "" && (last == "" || topicKeysMatch(topic, last) || len(topic) > 3) {
+				if sv := n.MindScoutWeb("quién es "+topic, ethics.State); sv != "" {
+					voice = sv
+					primaryKind = "tool"
+				} else if last != "" {
+					voice = "Seguimos con «" + last + "». ¿Qué más quieres saber?"
+					primaryKind = "chat"
+				}
+			}
+		}
+	}
+
 	if voice == "" && (isElaborationRequest(text) || isContinuePrompt(text)) {
 		// "profundiza sobre X" con X ≠ último tema de sonda → dejar para MindScoutWeb
 		// (evita Sobre «voldemort» + artículo de Harry porque el texto menciona Voldemort)
@@ -1355,7 +1381,10 @@ func (n *NodoAlset) mindSafeTools(text string) string {
 		strings.Contains(s, "apps") || strings.Contains(s, "nombres") ||
 		strings.Contains(s, "red") || strings.Contains(s, "network") ||
 		strings.Contains(s, "cuerpo del nodo") || strings.Contains(s, "snapshot") ||
-		strings.HasPrefix(s, "dame ") || s == "dame"
+		strings.Contains(s, "mira el nodo") || strings.Contains(s, "mirar el nodo") ||
+		strings.Contains(s, "qué ves") || strings.Contains(s, "que ves") ||
+		strings.Contains(s, "qué vez") || strings.Contains(s, "que vez") ||
+		strings.HasPrefix(s, "dame ") || s == "dame" || s == "mira el nodo"
 	wantZyrion := strings.Contains(s, "zyrion") || strings.Contains(s, "evalua") ||
 		strings.Contains(s, "evalúa") || strings.Contains(s, "checkpoint") || strings.Contains(s, "topolog")
 	wantGen := strings.Contains(s, "gen ") || strings.Contains(s, "gens") || strings.Contains(s, "células") ||
