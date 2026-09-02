@@ -578,7 +578,10 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			}
 		}
 		// Meta / vs LLM antes de eco de continuidad
-		if voice == "" && (strings.Contains(lowT, "chatgpt") || strings.Contains(lowT, "gpt") ||
+		// composición/estructura las resuelve el bloque identity (no knowledge genérico)
+		compQ := strings.Contains(lowT, "hecho") || strings.Contains(lowT, "estructura") ||
+			strings.Contains(lowT, "consideras") || strings.Contains(lowT, "valoración") || strings.Contains(lowT, "valoracion")
+		if voice == "" && !compQ && (strings.Contains(lowT, "chatgpt") || strings.Contains(lowT, "gpt") ||
 			strings.Contains(lowT, "llm") || isCapabilityQuestion(normText) || isIdentityTalk(lowT)) {
 			if kv := speakFromKnowledge(text); kv != "" {
 				voice = naturalKnowledgeVoice(text, kv, 1)
