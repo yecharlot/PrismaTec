@@ -1713,19 +1713,35 @@ func extractURLFromText(text string) string {
 }
 
 func extractGenNameFromText(s string) string {
-	for _, pfx := range []string{"gen ", "célula ", "celula ", "semilla "} {
+	s = strings.ToLower(s)
+	skip := map[string]bool{"a": true, "en": true, "con": true, "la": true, "el": true, "de": true,
+		"llamada": true, "llamado": true, "nombre": true, "memoria": true, "al": true, "del": true,
+		"una": true, "un": true, "sonda": true, "gen": true, "genes": true}
+	for _, pfx := range []string{"gen ", "célula ", "celula ", "semilla ", "sonda "} {
 		if i := strings.Index(s, pfx); i >= 0 {
 			rest := strings.TrimSpace(s[i+len(pfx):])
 			rest = strings.TrimPrefix(rest, "a explorar ")
 			rest = strings.TrimPrefix(rest, "explorar ")
+			rest = strings.TrimPrefix(rest, "llamada ")
+			rest = strings.TrimPrefix(rest, "llamado ")
 			rest = strings.TrimPrefix(rest, "a ")
 			fields := strings.Fields(rest)
-			if len(fields) > 0 {
-				name := strings.Trim(fields[0], ".,;:\"'")
-				if name != "a" && name != "en" && name != "con" && !strings.HasPrefix(name, "http") {
-					return name
+			for _, f := range fields {
+				name := strings.Trim(f, ".,;:\"'«»")
+				if name == "" || skip[name] || strings.HasPrefix(name, "http") {
+					continue
 				}
+				if name == "cloudflare" || name == "borde" || name == "edge" || name == "vuelta" {
+					continue
+				}
+				return name
 			}
+		}
+	}
+	if i := strings.Index(s, "llamada "); i >= 0 {
+		fields := strings.Fields(s[i+len("llamada "):])
+		if len(fields) > 0 {
+			return strings.Trim(fields[0], ".,;:\"'")
 		}
 	}
 	return ""
