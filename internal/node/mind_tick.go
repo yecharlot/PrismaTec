@@ -850,11 +850,9 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			if !strings.Contains(strings.ToLower(voice), "sonda") {
 				// snapshot de nodo: lead-in humano
 				if !strings.HasPrefix(voice, "Estado") && !strings.HasPrefix(voice, "——") {
-					voice = "Así veo el nodo ahora:
-" + voice
+					voice = "Así veo el nodo ahora:\n" + voice
 				} else if strings.HasPrefix(voice, "——") {
-					voice = "Así veo el nodo ahora:
-" + voice
+					voice = "Así veo el nodo ahora:\n" + voice
 				}
 			}
 			primaryKind = "tool"
