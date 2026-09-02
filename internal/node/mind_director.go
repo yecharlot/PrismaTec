@@ -54,20 +54,32 @@ func normalizeUserInput(q string) string {
 
 func isGenToolIntent(s string) bool {
 	s = strings.ToLower(s)
+	// no confundir codegen "crea una función"
+	if strings.Contains(s, "función") || strings.Contains(s, "funcion") || strings.Contains(s, "código") || strings.Contains(s, "codigo") {
+		if !strings.Contains(s, "gen") && !strings.Contains(s, "sonda") {
+			return false
+		}
+	}
 	keys := []string{
 		"crea gen", "crear gen", "lista gen", "listar gen", "lista genes", "listar genes",
-		"despacha", "envía gen", "envia gen", "manda gen",
+		"despacha", "envía gen", "envia gen", "manda gen", "manda una sonda", "envía una sonda", "envia una sonda",
 		"pregunta al gen", "habla con gen", "dile al gen", "di al gen", "dialoga",
 		"explora", "explorar", "sirve gen", "gen memoria", "salva en gen", "guarda en gen",
 		"vincula memoria", "genes memoria", "qué sabe el gen", "que sabe el gen",
+		"elimina gen", "retorna gen", "trae de vuelta", "trae la sonda", "borra gen",
+		"qué genes", "que genes", "muestra los genes", "sondas activas", "mis genes",
+		"crea una sonda", "crear sonda", "haz un gen", "haz una sonda", "nueva sonda",
+		"al borde", "a cloudflare", "red de borde",
 	}
 	for _, k := range keys {
 		if strings.Contains(s, k) {
 			return true
 		}
 	}
-	// "envia al gen X a explorar"
-	if strings.Contains(s, "gen ") && (strings.Contains(s, "explora") || strings.Contains(s, "despacha") || strings.Contains(s, "cloudflare")) {
+	if (strings.Contains(s, "gen ") || strings.Contains(s, "sonda")) &&
+		(strings.Contains(s, "explora") || strings.Contains(s, "despacha") || strings.Contains(s, "cloudflare") ||
+			strings.Contains(s, "busca") || strings.Contains(s, "investiga") || strings.Contains(s, "elimina") ||
+			strings.Contains(s, "borra") || strings.Contains(s, "retorna") || strings.Contains(s, "trae")) {
 		return true
 	}
 	return false

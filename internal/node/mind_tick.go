@@ -826,10 +826,15 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 		}
 	}
 
-	// 5) Tools Gen (dominan sobre corpus)
-	if voice == "" && ethics.State != 2 && act.State != 2 && isGenToolIntent(normText) {
-		if extra := n.mindSafeTools(text); extra != "" {
-			voice = extra
+	// 5) Tools Gen (dominan sobre corpus) — P4 órdenes humanas
+	genText := text
+	if normG := normalizeGenUserIntent(text); normG != text {
+		genText = normG
+		normText = normalizeUserInput(normG)
+	}
+	if voice == "" && ethics.State != 2 && act.State != 2 && (isGenToolIntent(normText) || isHumanGenIntent(text)) {
+		if extra := n.mindSafeTools(genText); extra != "" {
+			voice = humanizeGenVoice(extra)
 			primaryKind = "tool"
 			if g := extractGenNameFromText(normText); g != "" {
 				n.rememberThreadRefs("gen", g, "", "")

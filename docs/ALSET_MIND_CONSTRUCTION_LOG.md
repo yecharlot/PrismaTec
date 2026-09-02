@@ -597,3 +597,9 @@ Redeploy en Render = filesystem efímero. El índice local se perdía aunque los
 - **Archivos:** mind_thread.go, mind_session.go, mind_tick.go, mind_speech_act.go, mind_calibrate.go, dialog_acts JSON.
 - **Deploy:** sí.
 
+
+## 2026-09-02 — P4 órdenes humanas Mind→Gen
+
+- **Acto:** `mind_gen_ux.go` — normaliza frases naturales («qué genes tienes», «crea una sonda», «manda a explorar», «trae la sonda») a comandos de lab; `humanizeGenVoice`; `isGenToolIntent` ampliado.
+- **Deploy:** sí.
+
