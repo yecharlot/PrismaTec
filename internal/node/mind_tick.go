@@ -592,6 +592,13 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			}
 		}
 	}
+	// Soft follow (me gusta / cómo?) antes de «eso» referencial
+	if voice == "" && ethics.State != 2 {
+		if fv := speakSoftFollowUp(text, sess); fv != "" {
+			voice = fv
+			primaryKind = "chat"
+		}
+	}
 	// P3: referencias al hilo («eso», «lo de antes», malentendido)
 	if voice == "" && ethics.State != 2 {
 		if tv := speakThreadReference(text, sess); tv != "" {
@@ -605,10 +612,27 @@ func (n *NodoAlset) runMindTick(text string, override map[string]float64, forceM
 			primaryKind = "knowledge"
 		}
 	}
-	if voice == "" && ethics.State != 2 {
-		if fv := speakSoftFollowUp(text, sess); fv != "" {
-			voice = fv
+	// Continuidad de hilo ANTES de micro (evita plantilla genérica)
+	if voice == "" && ethics.State != 2 && (isContinuePrompt(text) || isElaborationRequest(text)) {
+		if cv := n.continueMindThread(text); cv != "" {
+			voice = cv
 			primaryKind = "chat"
+		}
+	}
+	// Snapshot nodo temprano
+	if voice == "" && ethics.State != 2 {
+		lowN := strings.ToLower(text)
+		if strings.Contains(lowN, "mira el nodo") || strings.Contains(lowN, "mirar el nodo") ||
+			strings.Contains(lowN, "estado del nodo") {
+			if extra := n.mindSafeTools(text); extra != "" {
+				voice = extra
+				primaryKind = "tool"
+			} else {
+				voice = "Estado del nodo (solo lectura):
+" + strings.Join(n.mindBodySnapshot(lowN), "
+")
+				primaryKind = "tool"
+			}
 		}
 	}
 	// P1: micro-compositor de continuidad (eco / hilo) si aún no hay voz

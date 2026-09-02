@@ -53,6 +53,9 @@ func extractTopicFrame(text string) string {
 // isReferentialCue: el usuario apunta al hilo previo.
 func isReferentialCue(low string) bool {
 	low = strings.ToLower(strings.TrimSpace(low))
+	if strings.HasPrefix(low, "me gusta") || strings.HasPrefix(low, "me agrada") {
+		return false
+	}
 	cues := []string{
 		"eso", "eso?", "y eso", "y eso?", "lo de antes", "lo anterior",
 		"de eso", "sobre eso", "ese tema", "el tema", "aquello",
