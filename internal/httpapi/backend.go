@@ -279,16 +279,61 @@ func MountCore(mux *http.ServeMux, b Backend) {
 	})
 
 	mux.HandleFunc("/api/lispai", func(w http.ResponseWriter, r *http.Request) {
-		var req struct {
-			Cmd string `json:"cmd"`
-		}
-		_ = json.NewDecoder(r.Body).Decode(&req)
-		res, err := b.EvalLisp(req.Cmd)
-		if err != nil {
-			writeJSON(w, http.StatusOK, map[string]interface{}{"error": err.Error()})
+		if r.Method == http.MethodOptions {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		writeJSON(w, http.StatusOK, map[string]interface{}{"resultado": res})
+		if r.Method != http.MethodPost {
+			writeJSON(w, http.StatusMethodNotAllowed, map[string]interface{}{
+				"error": "usa POST con JSON {\"cmd\": \"(+ 1 2)\"}",
+			})
+			return
+		}
+		body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "no se pudo leer el cuerpo: " + err.Error()})
+			return
+		}
+		cmd := strings.TrimSpace(string(body))
+		// Aceptar JSON {cmd|code|expr|lisp} o texto plano Lisp
+		if len(body) > 0 && (body[0] == '{' || body[0] == '[') {
+			var req map[string]interface{}
+			if err := json.Unmarshal(body, &req); err != nil {
+				writeJSON(w, http.StatusBadRequest, map[string]interface{}{
+					"error": "JSON inválido: " + err.Error() + " — envía {\"cmd\": \"(+ 1 2)\"}",
+				})
+				return
+			}
+			cmd = ""
+			for _, k := range []string{"cmd", "code", "expr", "lisp", "expression"} {
+				if v, ok := req[k]; ok {
+					if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+						cmd = strings.TrimSpace(s)
+						break
+					}
+				}
+			}
+		}
+		if cmd == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]interface{}{
+				"error": "cmd vacío — ejemplo: {\"cmd\": \"(+ 1 2 3)\"} o cuerpo texto (+ 1 2 3)",
+			})
+			return
+		}
+		res, err := b.EvalLisp(cmd)
+		if err != nil {
+			// Nunca devolver solo "EOF": mensaje usable
+			msg := err.Error()
+			if msg == "EOF" || msg == "unexpected EOF" || strings.Contains(msg, "EOF") {
+				msg = "código Lisp vacío o incompleto (EOF). Cierra paréntesis y envía {\"cmd\": \"(+ 1 2)\"}"
+			}
+			writeJSON(w, http.StatusOK, map[string]interface{}{"error": msg, "cmd": cmd})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{"resultado": res, "cmd": cmd})
 	})
 
 	mux.HandleFunc("/api/ia/configurar", func(w http.ResponseWriter, r *http.Request) {

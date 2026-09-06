@@ -1,6 +1,7 @@
 package node
 
 import (
+	"strings"
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/hex"
@@ -196,6 +197,10 @@ func (b *httpAPIBackend) DeleteDNS(alias string) error {
 func (b *httpAPIBackend) EvalLisp(cmd string) (interface{}, error) {
 	if b.n.lisp == nil {
 		return nil, fmt.Errorf("lisp no inicializado")
+	}
+	cmd = strings.TrimSpace(cmd)
+	if cmd == "" {
+		return nil, fmt.Errorf("cmd vacío: usa {\"cmd\": \"(+ 1 2)\"}")
 	}
 	return b.n.lisp.Eval(cmd)
 }

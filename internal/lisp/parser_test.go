@@ -94,3 +94,14 @@ func TestEnvironment_ParentShadow(t *testing.T) {
 		t.Fatalf("parent = %#v", val)
 	}
 }
+
+func TestParseEmptyMessage(t *testing.T) {
+	p := NewLispParser("")
+	_, err := p.Parse()
+	if err == nil {
+		t.Fatal("expected error on empty")
+	}
+	if err.Error() == "EOF" || err.Error() == "unexpected EOF" {
+		t.Fatalf("raw EOF still exposed: %v", err)
+	}
+}

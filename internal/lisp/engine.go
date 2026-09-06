@@ -204,7 +204,7 @@ func (p *LispParser) Next() string {
 func (p *LispParser) Parse() (LispValue, error) {
 	tok := p.Peek()
 	if tok == "" {
-		return nil, fmt.Errorf("unexpected EOF")
+		return nil, fmt.Errorf("código Lisp vacío o incompleto: cierra paréntesis y no envíes cmd vacío")
 	}
 
 	switch tok {
@@ -398,6 +398,10 @@ func (e *Evaluator) expandMacros(expr LispValue, env *LispEnvironment) LispValue
 }
 
 func (e *Evaluator) Eval(code string) (LispValue, error) {
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return nil, fmt.Errorf("código Lisp vacío: pasa una expresión, ej. (+ 1 2)")
+	}
 	parser := NewLispParser(code)
 	expr, err := parser.Parse()
 	if err != nil {
