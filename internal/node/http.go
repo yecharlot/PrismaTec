@@ -19,6 +19,7 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 	n.ensureStaticFiles()
 	n.ensureVeroAppFiles()
 	n.ensurePrismatecApp()
+	n.ensureFinanzasApp()
 	n.ensureMindApp()
 	mux := http.NewServeMux()
 	h := n.httpHandlers()
@@ -69,6 +70,13 @@ func (n *NodoAlset) httpHandlers() httpapi.Handlers {
 		}
 		if alias == "prismatec" {
 			n.ensurePrismatecApp()
+			if _, err := os.Stat(appPath); err == nil {
+				http.ServeFile(w, r, appPath)
+				return
+			}
+		}
+		if alias == "finanzas" {
+			n.ensureFinanzasApp()
 			if _, err := os.Stat(appPath); err == nil {
 				http.ServeFile(w, r, appPath)
 				return

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mapa del sistema financiero en apertura · Prism@.TEC</title>
+<meta name="description" content="Guía académica y práctica: banca privada, IF no bancarias, mercado cambiario digital, agentes de última milla y el rol de la infraestructura de decisión. Prism@.TEC · Guantánamo.">
+<meta name="theme-color" content="#0a0b0f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #08090c;
+  --bg-elev: #0e1016;
+  --bg-card: #12151e;
+  --line: rgba(255,255,255,.08);
+  --line-strong: rgba(255,255,255,.14);
+  --text: #e9ebe8;
+  --muted: #9aa09a;
+  --dim: #6b716c;
+  --gold: #c9a227;
+  --gold-soft: rgba(201,162,39,.15);
+  --teal: #3d9b8f;
+  --teal-soft: rgba(61,155,143,.12);
+  --rose: #c4786a;
+  --ink: #1a1d27;
+  --max: 1120px;
+  --ease: cubic-bezier(.22,1,.36,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:"IBM Plex Sans",system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.65;
+  font-weight:400;
+  font-size:16px;
+  overflow-x:hidden;
+}
+body::before{
+  content:"";
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 90% 50% at 10% -5%, rgba(201,162,39,.09), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 95% 20%, rgba(61,155,143,.07), transparent 45%),
+    radial-gradient(ellipse 50% 30% at 50% 100%, rgba(196,120,106,.04), transparent 40%);
+}
+.noise{
+  position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.035;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.wrap{position:relative;z-index:2;max-width:var(--max);margin:0 auto;padding:0 1.5rem}
+a{color:var(--gold);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* NAV */
+nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1.1rem 0;border-bottom:1px solid var(--line);
+  position:sticky;top:0;backdrop-filter:blur(14px);
+  background:rgba(8,9,12,.75);z-index:50;
+}
+.brand{display:flex;align-items:baseline;gap:.5rem;font-weight:600;color:var(--text);text-decoration:none}
+.brand span{font-family:"Cormorant Garamond",Georgia,serif;font-size:1.35rem;letter-spacing:.02em}
+.brand small{font-size:.7rem;color:var(--dim);font-weight:400;letter-spacing:.12em;text-transform:uppercase}
+.nav-links{display:flex;gap:1.25rem;flex-wrap:wrap}
+.nav-links a{color:var(--muted);font-size:.82rem;letter-spacing:.04em;text-decoration:none}
+.nav-links a:hover{color:var(--gold)}
+
+/* TYPO */
+.serif{font-family:"Cormorant Garamond",Georgia,serif}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+h1,h2,h3{font-family:"Cormorant Garamond",Georgia,serif;font-weight:600;line-height:1.15;letter-spacing:-.01em}
+h1{font-size:clamp(2.4rem,5.5vw,3.75rem)}
+h2{font-size:clamp(1.75rem,3.2vw,2.35rem);margin-bottom:.75rem}
+h3{font-size:1.35rem;margin-bottom:.5rem}
+.lead{font-size:1.15rem;color:var(--muted);max-width:38rem;font-weight:300}
+.kicker{
+  font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:.85rem;font-weight:500;
+}
+.section{padding:4.5rem 0;border-bottom:1px solid var(--line)}
+.section:last-of-type{border-bottom:none}
+
+/* HERO */
+.hero{padding:4rem 0 3.5rem;display:grid;gap:2.5rem}
+@media(min-width:880px){
+  .hero{grid-template-columns:1.15fr .85fr;align-items:center;min-height:78vh}
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:.5rem;
+  border:1px solid var(--line-strong);border-radius:999px;
+  padding:.35rem .85rem;font-size:.75rem;color:var(--muted);margin-bottom:1.25rem;
+}
+.hero-badge i{width:6px;height:6px;border-radius:50%;background:var(--teal);box-shadow:0 0 10px var(--teal);animation:pulse 2.4s ease infinite}
+@keyframes pulse{50%{opacity:.4}}
+.hero h1 em{font-style:italic;color:var(--gold);font-weight:400}
+.hero-actions{display:flex;flex-wrap:wrap;gap:.75rem;margin-top:1.75rem}
+.btn{
+  display:inline-flex;align-items:center;gap:.45rem;
+  padding:.7rem 1.15rem;border-radius:8px;font-size:.88rem;font-weight:500;
+  border:1px solid transparent;cursor:pointer;text-decoration:none;transition:transform .25s var(--ease),background .25s,border-color .25s;
+}
+.btn:hover{transform:translateY(-2px);text-decoration:none}
+.btn-primary{background:var(--gold);color:#12100a}
+.btn-ghost{background:transparent;border-color:var(--line-strong);color:var(--text)}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+
+/* HERO DIAGRAM */
+.diagram-card{
+  background:var(--bg-card);border:1px solid var(--line);border-radius:16px;
+  padding:1.25rem;position:relative;overflow:hidden;
+  box-shadow:0 24px 60px rgba(0,0,0,.35);
+}
+.diagram-card::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--gold-soft),transparent 40%,var(--teal-soft));
+  pointer-events:none;
+}
+.diagram-svg{width:100%;height:auto;display:block;position:relative;z-index:1}
+.flow-node{animation:floatY 5s ease-in-out infinite}
+.flow-node:nth-child(2){animation-delay:.4s}
+.flow-node:nth-child(3){animation-delay:.8s}
+@keyframes floatY{50%{transform:translateY(-4px)}}
+.flow-line{stroke-dasharray:4 6;animation:dash 18s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-200}}
+
+/* GRID CARDS */
+.grid-3{display:grid;gap:1rem}
+@media(min-width:720px){.grid-3{grid-template-columns:repeat(3,1fr)}}
+.grid-2{display:grid;gap:1.25rem}
+@media(min-width:720px){.grid-2{grid-template-columns:1fr 1fr}}
+.card{
+  background:var(--bg-card);border:1px solid var(--line);border-radius:14px;
+  padding:1.35rem 1.4rem;transition:border-color .3s,transform .35s var(--ease);
+}
+.card:hover{border-color:rgba(201,162,39,.35);transform:translateY(-3px)}
+.card .num{
+  font-family:"Cormorant Garamond",serif;font-size:1.8rem;color:var(--gold);
+  line-height:1;margin-bottom:.6rem
+}
+.card p{color:var(--muted);font-size:.92rem}
+.card h3{margin-bottom:.4rem}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{padding:.85rem 1rem;text-align:left;border-bottom:1px solid var(--line)}
+th{background:var(--bg-elev);color:var(--muted);font-weight:500;font-size:.75rem;letter-spacing:.06em;text-transform:uppercase}
+tr:last-child td{border-bottom:none}
+td strong{color:var(--text);font-weight:500}
+
+/* ROADMAP */
+.roadmap{position:relative;padding-left:1.5rem}
+.roadmap::before{
+  content:"";position:absolute;left:5px;top:.3rem;bottom:.3rem;width:2px;
+  background:linear-gradient(var(--gold),var(--teal),var(--line));
+}
+.rm-item{position:relative;padding:0 0 1.75rem 1.5rem}
+.rm-item:last-child{padding-bottom:0}
+.rm-item::before{
+  content:"";position:absolute;left:-1.5rem;top:.35rem;
+  width:12px;height:12px;border-radius:50%;
+  background:var(--bg);border:2px solid var(--gold);
+  box-shadow:0 0 0 4px var(--gold-soft);
+}
+.rm-item.phase-2::before{border-color:var(--teal);box-shadow:0 0 0 4px var(--teal-soft)}
+.rm-item.phase-3::before{border-color:var(--rose);box-shadow:0 0 0 4px rgba(196,120,106,.15)}
+.rm-item h3{font-size:1.2rem}
+.rm-meta{font-size:.75rem;color:var(--dim);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.35rem}
+
+/* QUOTE */
+.quote{
+  border-left:3px solid var(--gold);padding:1rem 0 1rem 1.25rem;margin:1.5rem 0;
+  font-family:"Cormorant Garamond",serif;font-size:1.35rem;font-style:italic;color:var(--text);
+}
+.quote cite{display:block;margin-top:.6rem;font-size:.8rem;font-style:normal;color:var(--dim);font-family:"IBM Plex Sans",sans-serif;letter-spacing:.04em}
+
+/* LAYERS DIAGRAM */
+.layers{display:flex;flex-direction:column;gap:.65rem}
+.layer{
+  border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;
+  display:grid;grid-template-columns:auto 1fr;gap:1rem;align-items:center;
+  background:var(--bg-card);transition:transform .3s var(--ease);
+}
+.layer:hover{transform:scale(1.01)}
+.layer-tag{
+  font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;
+  padding:.35rem .55rem;border-radius:6px;font-weight:600;white-space:nowrap;
+}
+.tag-reg{background:rgba(196,120,106,.15);color:var(--rose)}
+.tag-lic{background:var(--gold-soft);color:var(--gold)}
+.tag-ops{background:var(--teal-soft);color:var(--teal)}
+.tag-intel{background:rgba(91,141,239,.12);color:#7ba3f0}
+
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
+.reveal.on{opacity:1;transform:none}
+.d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}.d4{transition-delay:.32s}
+
+/* FOOTER */
+footer{
+  padding:2.5rem 0 3rem;border-top:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:1rem;justify-content:space-between;align-items:flex-end;
+  color:var(--dim);font-size:.82rem
+}
+footer strong{color:var(--muted);font-weight:500}
+
+/* NOTE ACADEMIC */
+.note{
+  background:var(--bg-elev);border:1px solid var(--line);border-radius:10px;
+  padding:1rem 1.15rem;font-size:.85rem;color:var(--muted);margin-top:1.25rem
+}
+.note strong{color:var(--text)}
+
+/* STACK VISUAL */
+.stack-flow{
+  display:grid;gap:.5rem;margin-top:1.5rem
+}
+.stack-row{
+  display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;justify-content:center
+}
+.chip{
+  border:1px solid var(--line-strong);border-radius:999px;padding:.4rem .9rem;
+  font-size:.78rem;color:var(--muted);background:rgba(255,255,255,.02)
+}
+.chip.hi{border-color:rgba(201,162,39,.45);color:var(--gold);background:var(--gold-soft)}
+.arrow-down{text-align:center;color:var(--dim);font-size:1.1rem;line-height:1;opacity:.7}
+
+@media(max-width:640px){
+  .nav-links{display:none}
+  .hero{min-height:auto;padding-top:2.5rem}
+}
+</style>
+</head>
+<body>
+<div class="noise" aria-hidden="true"></div>
+
+<div class="wrap">
+  <nav>
+    <a class="brand" href="#top"><span>Prism@.TEC</span><small>Mapa financiero</small></a>
+    <div class="nav-links">
+      <a href="#mapa">Mapa</a>
+      <a href="#piezas">Piezas</a>
+      <a href="#mercado">Mercado FX</a>
+      <a href="#if">IF &amp; remesas</a>
+      <a href="#roadmap">Roadmap</a>
+      <a href="#rol">Nuestro rol</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="hero" id="top">
+    <div>
+      <div class="hero-badge"><i></i> Guía de orientación · No es asesoría legal ni del BCC</div>
+      <p class="kicker">Apertura financiera · Cuba 2025–2026</p>
+      <h1 class="reveal">El sistema se abre.<br><em>Hay que saber leerlo.</em></h1>
+      <p class="lead reveal d1" style="margin-top:1.1rem">
+        Banca privada, instituciones no bancarias, mercado cambiario digital y agentes de última milla
+        no son eslóganes: son <strong style="color:var(--text);font-weight:500">roles distintos</strong>.
+        Esta página ordena el mapa —con rigor académico y utilidad práctica— para quien quiera operar sin confundir las piezas.
+      </p>
+      <div class="hero-actions reveal d2">
+        <a class="btn btn-primary" href="#roadmap">Ver roadmap</a>
+        <a class="btn btn-ghost" href="#rol">Por qué Prism@.TEC</a>
+      </div>
+    </div>
+
+    <div class="diagram-card reveal d2" aria-hidden="true">
+      <svg class="diagram-svg" viewBox="0 0 420 340" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#c9a227" stop-opacity=".9"/>
+            <stop offset="100%" stop-color="#3d9b8f" stop-opacity=".9"/>
+          </linearGradient>
+        </defs>
+        <!-- connections -->
+        <path class="flow-line" d="M210 58 L210 100" stroke="#c9a227" stroke-width="1.5" fill="none" opacity=".5"/>
+        <path class="flow-line" d="M120 160 L210 120" stroke="#3d9b8f" stroke-width="1.5" fill="none" opacity=".45"/>
+        <path class="flow-line" d="M300 160 L210 120" stroke="#c9a227" stroke-width="1.5" fill="none" opacity=".45"/>
+        <path class="flow-line" d="M120 200 L120 248" stroke="#9aa09a" stroke-width="1.2" fill="none" opacity=".4"/>
+        <path class="flow-line" d="M300 200 L300 248" stroke="#9aa09a" stroke-width="1.2" fill="none" opacity=".4"/>
+        <path class="flow-line" d="M210 200 L210 248" stroke="#9aa09a" stroke-width="1.2" fill="none" opacity=".4"/>
+
+        <!-- BCC -->
+        <g class="flow-node">
+          <rect x="145" y="28" width="130" height="36" rx="8" fill="#1a1d27" stroke="#c9a227" stroke-width="1.2"/>
+          <text x="210" y="51" text-anchor="middle" fill="#e9ebe8" font-size="12" font-family="IBM Plex Sans,sans-serif">BCC · Supervisor</text>
+        </g>
+        <!-- Core -->
+        <g class="flow-node">
+          <rect x="145" y="100" width="130" height="36" rx="8" fill="#12151e" stroke="rgba(255,255,255,.14)" stroke-width="1"/>
+          <text x="210" y="123" text-anchor="middle" fill="#c9a227" font-size="11" font-family="IBM Plex Sans,sans-serif">Licencias &amp; reglas</text>
+        </g>
+        <!-- Three pillars -->
+        <g class="flow-node">
+          <rect x="40" y="160" width="120" height="44" rx="8" fill="#12151e" stroke="#3d9b8f" stroke-width="1"/>
+          <text x="100" y="180" text-anchor="middle" fill="#e9ebe8" font-size="11" font-family="IBM Plex Sans,sans-serif">Banco / IF</text>
+          <text x="100" y="195" text-anchor="middle" fill="#9aa09a" font-size="9" font-family="IBM Plex Sans,sans-serif">capital · crédito</text>
+        </g>
+        <g class="flow-node">
+          <rect x="150" y="160" width="120" height="44" rx="8" fill="#12151e" stroke="#c9a227" stroke-width="1"/>
+          <text x="210" y="180" text-anchor="middle" fill="#e9ebe8" font-size="11" font-family="IBM Plex Sans,sans-serif">Mercado FX</text>
+          <text x="210" y="195" text-anchor="middle" fill="#9aa09a" font-size="9" font-family="IBM Plex Sans,sans-serif">digital · agentes</text>
+        </g>
+        <g class="flow-node">
+          <rect x="260" y="160" width="120" height="44" rx="8" fill="#12151e" stroke="#c4786a" stroke-width="1"/>
+          <text x="320" y="180" text-anchor="middle" fill="#e9ebe8" font-size="11" font-family="IBM Plex Sans,sans-serif">Remesas</text>
+          <text x="320" y="195" text-anchor="middle" fill="#9aa09a" font-size="9" font-family="IBM Plex Sans,sans-serif">canal + última milla</text>
+        </g>
+        <!-- Base: intelligence -->
+        <g class="flow-node">
+          <rect x="70" y="255" width="280" height="50" rx="10" fill="url(#g1)" opacity=".95"/>
+          <text x="210" y="278" text-anchor="middle" fill="#12100a" font-size="12" font-weight="600" font-family="IBM Plex Sans,sans-serif">Capa de decisión · rastro · coordinación</text>
+          <text x="210" y="294" text-anchor="middle" fill="#1a1508" font-size="10" font-family="IBM Plex Sans,sans-serif">donde Prism@.TEC aporta valor</text>
+        </g>
+      </svg>
+    </div>
+  </header>
+
+  <!-- MAPA -->
+  <section class="section" id="mapa">
+    <p class="kicker reveal">01 · Cartografía</p>
+    <h2 class="reveal">Cuatro capas que no se deben mezclar</h2>
+    <p class="lead reveal d1" style="margin-bottom:1.75rem">Confundir banco con fintech, o agente de entrega con licencia de transmisión, es el error más caro del momento.</p>
+
+    <div class="layers">
+      <div class="layer reveal">
+        <span class="layer-tag tag-reg">Capa 0</span>
+        <div>
+          <h3>Regulación y supervisión</h3>
+          <p style="color:var(--muted);font-size:.92rem">Banco Central (BCC): quién puede operar, con qué capital, bajo qué reportes. Sin esta capa, no hay “banco privado” ni IF seria.</p>
+        </div>
+      </div>
+      <div class="layer reveal d1">
+        <span class="layer-tag tag-lic">Capa 1</span>
+        <div>
+          <h3>Licencia y balance</h3>
+          <p style="color:var(--muted);font-size:.92rem">Banco comercial, IF no bancaria, casa de cambio, transmisor de dinero. Cada uno tiene un <em>core</em>, capital y permisos distintos.</p>
+        </div>
+      </div>
+      <div class="layer reveal d2">
+        <span class="layer-tag tag-ops">Capa 2</span>
+        <div>
+          <h3>Operación y última milla</h3>
+          <p style="color:var(--muted);font-size:.92rem">Sistemas de pago, puntos de entrega, agentes autorizados, liquidez en efectivo. Aquí se gana o se pierde la confianza del usuario.</p>
+        </div>
+      </div>
+      <div class="layer reveal d3">
+        <span class="layer-tag tag-intel">Capa 3</span>
+        <div>
+          <h3>Inteligencia operativa</h3>
+          <p style="color:var(--muted);font-size:.92rem">Decisión con criterios explícitos, bitácora auditable, coordinación de red, radar de mercado. No sustituye la licencia: la hace viable.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="note reveal">
+      <strong>Nota de método.</strong> Las transformaciones presentadas ante la Asamblea (paquete de ~176 medidas, junio 2026) anuncian figuras como el mercado cambiario digital y el agente de pago de última milla. Eso es <em>orientación de política</em>. La operatoria concreta se concreta en resoluciones del BCC (licencias nominativas, normas de pagos y divisas). Esta guía distingue ambos niveles.
+    </div>
+  </section>
+
+  <!-- PIEZAS -->
+  <section class="section" id="piezas">
+    <p class="kicker reveal">02 · Lexicón operativo</p>
+    <h2 class="reveal">Las piezas, en español llano</h2>
+    <div class="grid-3" style="margin-top:1.5rem">
+      <article class="card reveal">
+        <div class="num">01</div>
+        <h3>Banco privado</h3>
+        <p>Entidad con licencia bancaria: puede captar depósitos y otorgar crédito bajo supervisión continua. No es una mipyme con “app de pagos”.</p>
+      </article>
+      <article class="card reveal d1">
+        <div class="num">02</div>
+        <h3>IF no bancaria</h3>
+        <p>Intermediación acotada (microcrédito, pagos, transmisión de dinero, cambio) sin ser banco depositario clásico. Suele ser el primer escalón realista.</p>
+      </article>
+      <article class="card reveal d2">
+        <div class="num">03</div>
+        <h3>Core bancario</h3>
+        <p>El sistema central de cuentas, saldos y movimientos. La app es la fachada; el core es el libro mayor digital.</p>
+      </article>
+      <article class="card reveal">
+        <div class="num">04</div>
+        <h3>KYC</h3>
+        <p>Conocer al cliente: identidad y, cuando corresponde, origen de fondos. Puede ser presencial o digital; siempre es obligación de cumplimiento.</p>
+      </article>
+      <article class="card reveal d1">
+        <div class="num">05</div>
+        <h3>Agente de última milla</h3>
+        <p>Quien completa el tramo final: entrega de efectivo o cierre del pago al beneficiario. No reemplaza, por sí solo, la licencia de transmisión.</p>
+      </article>
+      <article class="card reveal d2">
+        <div class="num">06</div>
+        <h3>Fintech</h3>
+        <p>Tecnología aplicada a servicios financieros. Puede operar con licencia propia o aliada a un banco/IF. Software ≠ permiso del supervisor.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- MERCADO FX -->
+  <section class="section" id="mercado">
+    <p class="kicker reveal">03 · Tipo de cambio</p>
+    <h2 class="reveal">Mercado cambiario digital en tiempo real</h2>
+    <p class="lead reveal d1" style="margin-bottom:1.25rem">
+      La propuesta de política habla de un mercado <strong style="color:var(--text);font-weight:500">digital</strong>, con precio que se actualiza de forma continua, operado por <strong style="color:var(--text);font-weight:500">agentes autorizados</strong>.
+    </p>
+
+    <div class="quote reveal">
+      «Crear un mercado cambiario digital, en tiempo real, con agentes autorizados.»
+      <cite>— Propuestas de transformación presentadas en la ANPP (jun 2026), según cobertura de la sesión</cite>
+    </div>
+
+    <div class="grid-2" style="margin-top:1.5rem">
+      <div class="card reveal">
+        <h3>Qué resuelve</h3>
+        <p>Reduce la opacidad de un sistema de tasas múltiples. Ofrece un canal formal donde oferta y demanda pueden encontrarse con reglas y trazabilidad, en lugar de solo fijar precios por decreto.</p>
+      </div>
+      <div class="card reveal d1">
+        <h3>Qué exige para funcionar</h3>
+        <p>Liquidez real (alguien vende divisas), licencias claras, liquidación confiable en cuentas y competencia suficiente entre agentes. Sin oferta, el mercado cotiza pero no liquida.</p>
+      </div>
+    </div>
+
+    <div class="stack-flow reveal" style="margin-top:2rem">
+      <div class="stack-row">
+        <span class="chip">Exportador / remesa / saldo en divisas</span>
+        <span class="chip">Demanda (importador, mipyme, persona)</span>
+      </div>
+      <div class="arrow-down">↓</div>
+      <div class="stack-row"><span class="chip hi">Agentes autorizados · libro de órdenes / subasta</span></div>
+      <div class="arrow-down">↓</div>
+      <div class="stack-row"><span class="chip">Liquidación en cuentas · reporte al BCC</span></div>
+    </div>
+  </section>
+
+  <!-- IF -->
+  <section class="section" id="if">
+    <p class="kicker reveal">04 · Flujos y remesas</p>
+    <h2 class="reveal">IF no bancarias y canalización de flujos</h2>
+    <div class="quote reveal">
+      «Crear instituciones financieras no bancarias estatales y privadas que se dediquen a la canalización de flujos financieros, incluyendo las remesas, a través de operaciones cambiarias.»
+      <cite>— Mismo bloque de propuestas de transformación (sesión ANPP, jun 2026)</cite>
+    </div>
+
+    <p class="lead reveal" style="margin:1.25rem 0 1.5rem">
+      Aquí el acento no está en “ser banco”, sino en <strong style="color:var(--text);font-weight:500">mover valor</strong> —remesas y otros flujos— y, cuando haga falta, <strong style="color:var(--text);font-weight:500">convertir monedas</strong> dentro del circuito supervisado.
+    </p>
+
+    <div class="table-wrap reveal">
+      <table>
+        <thead>
+          <tr>
+            <th>Actor</th>
+            <th>Función</th>
+            <th>No es</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>IF no bancaria</strong></td>
+            <td>Licencia, sistemas, relación con el BCC, producto de remesa/cambio/crédito acotado</td>
+            <td>Banco que capta depósitos masivos del público</td>
+          </tr>
+          <tr>
+            <td><strong>Transmisor autorizado</strong></td>
+            <td>Canalizar fondos desde el exterior; a veces entrega en efectivo (resoluciones nominativas del BCC)</td>
+            <td>Permiso genérico para cualquier particular</td>
+          </tr>
+          <tr>
+            <td><strong>Agente de última milla</strong></td>
+            <td>Completar la entrega al beneficiario en el territorio</td>
+            <td>Sustituto de la licencia institucional</td>
+          </tr>
+          <tr>
+            <td><strong>Mercado FX digital</strong></td>
+            <td>Formar y ejecutar el tipo de cambio con agentes autorizados</td>
+            <td>Garantía automática de liquidez</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note reveal">
+      <strong>Evidencia de operatoria ya publicada.</strong> Además del anuncio de política, el BCC ha emitido autorizaciones concretas a entidades para transmisión de dinero y entrega de efectivo (p. ej. resoluciones a transmisores e IF). El camino legal visible hoy es <em>licencia nominativa</em>, no un formulario genérico de “agente de última milla” en abstracto.
+    </div>
+  </section>
+
+  <!-- ROADMAP -->
+  <section class="section" id="roadmap">
+    <p class="kicker reveal">05 · Trayectoria</p>
+    <h2 class="reveal">Roadmap para no quemarse</h2>
+    <p class="lead reveal d1" style="margin-bottom:2rem">Tres horizontes. El error clásico es empezar por el cartel de “banco” sin haber cerrado capital, cumplimiento ni corresponsalía.</p>
+
+    <div class="roadmap">
+      <div class="rm-item reveal">
+        <div class="rm-meta">Fase A · Orientación</div>
+        <h3>Nombrar el objeto correcto</h3>
+        <p style="color:var(--muted);font-size:.95rem">¿Banco, IF, casa de cambio, transmisor, red de agentes, software de coordinación? Una sola frase de alcance. Glosario compartido con socios y abogados. Lectura de Gaceta y circulares del BCC vigentes.</p>
+      </div>
+      <div class="rm-item phase-2 reveal d1">
+        <div class="rm-meta">Fase B · Estructura</div>
+        <h3>Licencia, capital, gobierno</h3>
+        <p style="color:var(--muted);font-size:.95rem">Expediente serio: accionistas, origen de fondos, directivos idóneos, manuales de riesgo y PLD/FT, core mínimo, KYC. Sin esto no hay piloto creíble ante el supervisor.</p>
+      </div>
+      <div class="rm-item phase-2 reveal d2">
+        <div class="rm-meta">Fase C · Operación estrecha</div>
+        <h3>Un producto, un territorio, métricas</h3>
+        <p style="color:var(--muted);font-size:.95rem">Microcrédito, pagos o remesas acotadas —no “todo el país el día uno”. Medir tiempo de liquidación, incidencias de última milla, mora, reportes al BCC.</p>
+      </div>
+      <div class="rm-item phase-3 reveal d3">
+        <div class="rm-meta">Fase D · Capa de inteligencia</div>
+        <h3>Decisión, rastro, coordinación</h3>
+        <p style="color:var(--muted);font-size:.95rem">Bitácora auditable de casos, reglas explícitas (permitir / revisar / detener), radar de mercado, orquestación de puntos de entrega. Aquí escala la operación sin improvisar.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROL -->
+  <section class="section" id="rol">
+    <p class="kicker reveal">06 · Prism@.TEC</p>
+    <h2 class="reveal">No somos el banco.<br>Somos el sistema nervioso.</h2>
+    <p class="lead reveal d1" style="margin:1rem 0 1.75rem">
+      Prism@.TEC (TCP, Guantánamo) construye infraestructura tecnológica y de decisión sobre la red <strong style="color:var(--text);font-weight:500">Alset</strong>.
+      En un mercado que se abre, el cuello de botella no solo es la licencia: es operar con criterio, memoria y coordinación.
+    </p>
+
+    <div class="grid-2">
+      <article class="card reveal">
+        <h3>Qué aportamos</h3>
+        <p>
+          · Mapas y formación (talleres, glosarios, demos).<br>
+          · Capa de decisión con reglas visibles y rastro auditable.<br>
+          · Agentes de información y coordinación operativa (última milla, radar de mercado).<br>
+          · Integración por API con quien sí tenga licencia del BCC.
+        </p>
+      </article>
+      <article class="card reveal d1">
+        <h3>Qué no prometemos</h3>
+        <p>
+          · No otorgamos licencias bancarias ni del BCC.<br>
+          · No sustituimos al oficial de cumplimiento ni al auditor.<br>
+          · No garantizamos corresponsalía internacional.<br>
+          · No improvisamos “bancos” de papel.
+        </p>
+      </article>
+    </div>
+
+    <div class="diagram-card reveal" style="margin-top:1.75rem;padding:1.5rem">
+      <p class="mono" style="font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:1rem">Posicionamiento</p>
+      <p class="serif" style="font-size:1.55rem;line-height:1.35;max-width:36rem">
+        “La referencia conceptual y operativa para quienes entran al sistema financiero en apertura —sin confundir el mapa con el territorio.”
+      </p>
+    </div>
+
+    <div class="hero-actions reveal" style="margin-top:2rem">
+      <a class="btn btn-primary" href="/w/prismatec.app.ans">Conocer Prism@.TEC</a>
+      <a class="btn btn-ghost" href="/w/mind.app.ans">Laboratorio Alset Mind</a>
+    </div>
+  </section>
+
+  <footer>
+    <div>
+      <strong>Prism@.TEC</strong> · TCP · Guantánamo, Cuba<br>
+      Documento orientativo. No constituye asesoría legal, financiera ni del Banco Central de Cuba.
+    </div>
+    <div style="text-align:right">
+      <span class="mono" style="font-size:.75rem">mapa-financiero · Alset / PrismaTec</span>
+    </div>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('on'); });
+  },{threshold:0.12, rootMargin:'0px 0px -8% 0px'});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+})();
+</script>
+</body>
+</html>
