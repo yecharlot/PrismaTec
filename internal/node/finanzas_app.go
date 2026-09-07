@@ -14,8 +14,6 @@ var finanzasAppHTML []byte
 const finanzasAppID = "app-finanzas-mapa"
 const finanzasAlias = "finanzas.app.ans"
 
-// ensureFinanzasApp writes the financial-map landing, stores a CID block,
-// and registers finanzas.app.ans so /w/finanzas.app.ans resolves.
 func (n *NodoAlset) ensureFinanzasApp() {
 	if len(finanzasAppHTML) == 0 {
 		fmt.Println("⚠️ Mapa financiero embed vacío")
@@ -27,13 +25,11 @@ func (n *NodoAlset) ensureFinanzasApp() {
 	if err := os.WriteFile(path, finanzasAppHTML, 0644); err != nil {
 		fmt.Println("⚠️ No se pudo escribir mapa financiero:", err)
 	}
-
 	cid, err := n.GenerarCID(finanzasAppHTML)
 	if err != nil || cid == "" {
 		fmt.Println("⚠️ CID mapa financiero:", err)
 		return
 	}
-
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	if n.agentes == nil {
