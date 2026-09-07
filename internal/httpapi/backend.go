@@ -279,16 +279,32 @@ func MountCore(mux *http.ServeMux, b Backend) {
 	})
 
 	mux.HandleFunc("/api/lispai", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		if r.Method == http.MethodOptions {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
-			w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		if r.Method == http.MethodGet {
+			writeJSON(w, http.StatusOK, map[string]interface{}{
+				"ok": true,
+				"endpoint": "POST /api/lispai",
+				"ejemplos": []map[string]string{
+					{"cmd": "(+ 1 2 3)"},
+					{"cmd": "(* 6 7)"},
+					{"cmd": "(list 1 2 3)"},
+					{"cmd": "(zyrion (list 1 1 0))"},
+					{"cmd": "(embedding \"hola\")"},
+					{"cmd": "(ternarizar (list 0.1 0.5 0.9))"},
+				},
+				"nota": "Envía JSON {\"cmd\": \"(+ 1 2)\"} con Content-Type: application/json. Evita que el shell se coma los paréntesis.",
+			})
 			return
 		}
 		if r.Method != http.MethodPost {
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]interface{}{
-				"error": "usa POST con JSON {\"cmd\": \"(+ 1 2)\"}",
+				"error": "usa POST con JSON {\"cmd\": \"(+ 1 2)\"} o GET para ejemplos",
 			})
 			return
 		}
@@ -298,20 +314,34 @@ func MountCore(mux *http.ServeMux, b Backend) {
 			return
 		}
 		cmd := strings.TrimSpace(string(body))
-		// Aceptar JSON {cmd|code|expr|lisp} o texto plano Lisp
+		// query ?cmd= de respaldo
+		if q := strings.TrimSpace(r.URL.Query().Get("cmd")); q != "" && (cmd == "" || cmd == "{}") {
+			cmd = q
+		}
 		if len(body) > 0 && (body[0] == '{' || body[0] == '[') {
 			var req map[string]interface{}
 			if err := json.Unmarshal(body, &req); err != nil {
-				writeJSON(w, http.StatusBadRequest, map[string]interface{}{
-					"error": "JSON inválido: " + err.Error() + " — envía {\"cmd\": \"(+ 1 2)\"}",
-				})
+				msg := err.Error()
+				if strings.Contains(msg, "EOF") || strings.Contains(msg, "unexpected end") {
+					msg = "JSON incompleto o cuerpo vacío — ejemplo: {\"cmd\": \"(+ 1 2)\"}"
+				}
+				writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "JSON inválido: " + msg})
 				return
 			}
 			cmd = ""
 			for _, k := range []string{"cmd", "code", "expr", "lisp", "expression"} {
 				if v, ok := req[k]; ok {
-					if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
-						cmd = strings.TrimSpace(s)
+					switch s := v.(type) {
+					case string:
+						if strings.TrimSpace(s) != "" {
+							cmd = strings.TrimSpace(s)
+						}
+					default:
+						// por si envían número u objeto
+						b2, _ := json.Marshal(s)
+						cmd = strings.TrimSpace(string(b2))
+					}
+					if cmd != "" {
 						break
 					}
 				}
@@ -319,24 +349,24 @@ func MountCore(mux *http.ServeMux, b Backend) {
 		}
 		if cmd == "" {
 			writeJSON(w, http.StatusBadRequest, map[string]interface{}{
-				"error": "cmd vacío — ejemplo: {\"cmd\": \"(+ 1 2 3)\"} o cuerpo texto (+ 1 2 3)",
+				"error": "cmd vacío — ejemplo: {\"cmd\": \"(+ 1 2 3)\"}",
+				"hint":  "curl -s -X POST http://localhost:8080/api/lispai -H 'Content-Type: application/json' -d '{\"cmd\":\"(+ 1 2)\"}'",
 			})
 			return
 		}
 		res, err := b.EvalLisp(cmd)
 		if err != nil {
-			// Nunca devolver solo "EOF": mensaje usable
 			msg := err.Error()
-			if msg == "EOF" || msg == "unexpected EOF" || strings.Contains(msg, "EOF") {
-				msg = "código Lisp vacío o incompleto (EOF). Cierra paréntesis y envía {\"cmd\": \"(+ 1 2)\"}"
+			if msg == "EOF" || msg == "unexpected EOF" || strings.Contains(strings.ToLower(msg), "eof") {
+				msg = "código Lisp incompleto o vacío. Cierra paréntesis/comillas. Ejemplo: {\"cmd\": \"(+ 1 2)\"}"
 			}
-			writeJSON(w, http.StatusOK, map[string]interface{}{"error": msg, "cmd": cmd})
+			writeJSON(w, http.StatusOK, map[string]interface{}{"ok": false, "error": msg, "cmd": cmd})
 			return
 		}
-		writeJSON(w, http.StatusOK, map[string]interface{}{"resultado": res, "cmd": cmd})
+		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "resultado": res, "cmd": cmd})
 	})
 
-	mux.HandleFunc("/api/ia/configurar", func(w http.ResponseWriter, r *http.Request) {
+mux.HandleFunc("/api/ia/configurar", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 			return

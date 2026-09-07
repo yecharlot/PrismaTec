@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"redalset/internal/httpapi"
+	"redalset/internal/lisp"
 )
 
 type httpAPIBackend struct{ n *NodoAlset }
@@ -202,7 +203,11 @@ func (b *httpAPIBackend) EvalLisp(cmd string) (interface{}, error) {
 	if cmd == "" {
 		return nil, fmt.Errorf("cmd vacío: usa {\"cmd\": \"(+ 1 2)\"}")
 	}
-	return b.n.lisp.Eval(cmd)
+	res, err := b.n.lisp.Eval(cmd)
+	if err != nil {
+		return nil, err
+	}
+	return lisp.ExportJSON(res), nil
 }
 
 func (b *httpAPIBackend) ConfigureNeural(cfg httpapi.NeuralConfig) (map[string]interface{}, error) {

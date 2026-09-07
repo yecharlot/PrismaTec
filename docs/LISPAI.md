@@ -32,6 +32,34 @@ El estado de `setq` / `defun` vive en la **RAM del proceso** hasta reinicio. Lo 
 
 ---
 
+## curl (importante)
+
+Los paréntesis los interpreta el shell. Usa **comillas simples** por fuera y JSON por dentro:
+
+```bash
+curl -s -X POST http://localhost:8080/api/lispai \
+  -H 'Content-Type: application/json' \
+  -d '{"cmd":"(+ 1 2 3)"}'
+
+curl -s -X POST http://localhost:8080/api/lispai \
+  -H 'Content-Type: application/json' \
+  -d '{"cmd":"(* 6 7)"}'
+
+curl -s -X POST http://localhost:8080/api/lispai \
+  -H 'Content-Type: application/json' \
+  -d '{"cmd":"(list 1 2 3)"}'
+
+curl -s -X POST http://localhost:8080/api/lispai \
+  -H 'Content-Type: application/json' \
+  -d '{"cmd":"(zyrion (list 1 1 0))"}'
+
+# ejemplos del endpoint
+curl -s http://localhost:8080/api/lispai | jq .
+```
+
+Si ves `EOF` o "incompleto": casi siempre es cuerpo vacío, paréntesis sin cerrar o el shell comiéndose el `cmd`.
+
+
 ## Núcleo del lenguaje
 
 Formas especiales: `quote`, `if`, `progn`, `let`, `let*`, `lambda`, `defun`, `defmacro`, `setq`, `defvar`.

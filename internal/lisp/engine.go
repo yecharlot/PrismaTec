@@ -101,24 +101,28 @@ func NewLispParser(input string) *LispParser {
 func tokenizeLisp(s string) []string {
 	var tokens []string
 	var current strings.Builder
-	i := 0
-	n := len(s)
+	runes := []rune(s)
+	n := len(runes)
 
-	for i < n {
-		r := rune(s[i])
+	flush := func() {
+		if current.Len() > 0 {
+			tokens = append(tokens, current.String())
+			current.Reset()
+		}
+	}
+
+	for i := 0; i < n; {
+		r := runes[i]
 
 		if r == ';' {
-			for i < n && s[i] != '\n' {
+			for i < n && runes[i] != '\n' {
 				i++
 			}
 			continue
 		}
 
 		if r == ' ' || r == '\t' || r == '\n' || r == '\r' {
-			if current.Len() > 0 {
-				tokens = append(tokens, current.String())
-				current.Reset()
-			}
+			flush()
 			i++
 			continue
 		}
@@ -126,35 +130,45 @@ func tokenizeLisp(s string) []string {
 		if r == '"' {
 			current.WriteRune(r)
 			i++
-			for i < n && (s[i] != '"' || (i > 0 && s[i-1] == '\\')) {
-				current.WriteRune(rune(s[i]))
+			escaped := false
+			for i < n {
+				ch := runes[i]
+				current.WriteRune(ch)
 				i++
-			}
-			if i < n {
-				current.WriteRune('"')
-				i++
+				if escaped {
+					escaped = false
+					continue
+				}
+				if ch == '\\' {
+					escaped = true
+					continue
+				}
+				if ch == '"' {
+					break
+				}
 			}
 			tokens = append(tokens, current.String())
 			current.Reset()
 			continue
 		}
 
+		if r == '\'' {
+			flush()
+			tokens = append(tokens, "'")
+			i++
+			continue
+		}
+
 		if r == '`' {
-			if current.Len() > 0 {
-				tokens = append(tokens, current.String())
-				current.Reset()
-			}
+			flush()
 			tokens = append(tokens, "`")
 			i++
 			continue
 		}
 
 		if r == ',' {
-			if current.Len() > 0 {
-				tokens = append(tokens, current.String())
-				current.Reset()
-			}
-			if i+1 < n && s[i+1] == '@' {
+			flush()
+			if i+1 < n && runes[i+1] == '@' {
 				tokens = append(tokens, ",@")
 				i += 2
 			} else {
@@ -165,10 +179,7 @@ func tokenizeLisp(s string) []string {
 		}
 
 		if r == '(' || r == ')' {
-			if current.Len() > 0 {
-				tokens = append(tokens, current.String())
-				current.Reset()
-			}
+			flush()
 			tokens = append(tokens, string(r))
 			i++
 			continue
@@ -177,11 +188,7 @@ func tokenizeLisp(s string) []string {
 		current.WriteRune(r)
 		i++
 	}
-
-	if current.Len() > 0 {
-		tokens = append(tokens, current.String())
-	}
-
+	flush()
 	return tokens
 }
 
@@ -397,18 +404,135 @@ func (e *Evaluator) expandMacros(expr LispValue, env *LispEnvironment) LispValue
 	return result
 }
 
-func (e *Evaluator) Eval(code string) (LispValue, error) {
+func normalizeLispSource(code string) string {
 	code = strings.TrimSpace(code)
+	code = strings.TrimPrefix(code, "\ufeff")
+	repl := []struct{ old, new string }{
+		{"\u201c", "\""}, {"\u201d", "\""},
+		{"\u2018", "'"}, {"\u2019", "'"},
+		{"\u00ab", "\""}, {"\u00bb", "\""},
+	}
+	for _, p := range repl {
+		code = strings.ReplaceAll(code, p.old, p.new)
+	}
+	return strings.TrimSpace(code)
+}
+
+func balanceParens(code string) error {
+	depth := 0
+	inStr := false
+	escaped := false
+	for _, r := range code {
+		if inStr {
+			if escaped {
+				escaped = false
+				continue
+			}
+			if r == '\\' {
+				escaped = true
+				continue
+			}
+			if r == '"' {
+				inStr = false
+			}
+			continue
+		}
+		if r == '"' {
+			inStr = true
+			continue
+		}
+		if r == '(' {
+			depth++
+		}
+		if r == ')' {
+			depth--
+			if depth < 0 {
+				return fmt.Errorf("paréntesis de cierre de más")
+			}
+		}
+	}
+	if inStr {
+		return fmt.Errorf("cadena sin cerrar (falta comilla)")
+	}
+	if depth > 0 {
+		return fmt.Errorf("faltan %d paréntesis de cierre", depth)
+	}
+	return nil
+}
+
+// ExportJSON convierte valores Lisp a tipos JSON-seguros.
+func ExportJSON(v LispValue) interface{} {
+	switch x := v.(type) {
+	case nil:
+		return nil
+	case bool, float64, string:
+		return x
+	case int:
+		return float64(x)
+	case LispSymbol:
+		return string(x)
+	case LispList:
+		out := make([]interface{}, len(x))
+		for i, el := range x {
+			out[i] = ExportJSON(el)
+		}
+		return out
+	default:
+		return fmt.Sprintf("%v", x)
+	}
+}
+
+func (e *Evaluator) Eval(code string) (LispValue, error) {
+	code = normalizeLispSource(code)
 	if code == "" {
 		return nil, fmt.Errorf("código Lisp vacío: pasa una expresión, ej. (+ 1 2)")
 	}
+	if err := balanceParens(code); err != nil {
+		return nil, fmt.Errorf("%v — revisa la expresión: %s", err, truncateLisp(code, 120))
+	}
 	parser := NewLispParser(code)
-	expr, err := parser.Parse()
-	if err != nil {
-		return nil, err
+	var forms []LispValue
+	for parser.pos < len(parser.tokens) {
+		if parser.Peek() == "" {
+			break
+		}
+		expr, err := parser.Parse()
+		if err != nil {
+			msg := err.Error()
+			if msg == "EOF" || msg == "unexpected EOF" || strings.Contains(msg, "EOF") {
+				return nil, fmt.Errorf("código incompleto: cierra paréntesis y comillas — %s", truncateLisp(code, 120))
+			}
+			return nil, err
+		}
+		forms = append(forms, expr)
+	}
+	if len(forms) == 0 {
+		return nil, fmt.Errorf("no se pudo parsear ninguna expresión")
+	}
+	var expr LispValue
+	if len(forms) == 1 {
+		expr = forms[0]
+	} else {
+		list := make(LispList, 0, len(forms)+1)
+		list = append(list, LispSymbol("progn"))
+		list = append(list, forms...)
+		expr = list
 	}
 	expanded := e.expandMacros(expr, e.globalEnv)
-	return e.eval(expanded, e.globalEnv), nil
+	res := e.eval(expanded, e.globalEnv)
+	if s, ok := res.(string); ok && strings.HasPrefix(s, "error:") {
+		return nil, fmt.Errorf("%s", s)
+	}
+	return res, nil
+}
+
+func truncateLisp(s string, n int) string {
+	s = strings.TrimSpace(s)
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n]) + "…"
 }
 
 func (e *Evaluator) ExpandDebug(code string) (LispValue, error) {
