@@ -354,6 +354,7 @@ func (n *NodoAlset) httpHandlers() httpapi.Handlers {
 	h.Extra["/api/mind/memory"] = n.handleMindMemory
 	h.Extra["/api/mind/calibrate"] = n.handleMindCalibrate
 	h.Extra["/api/mind/feedback"] = n.handleMindFeedback
+	n.registerFinanzasEngagement(h.Extra)
 	n.registerGenHTTP(h.Extra)
 
 	h.Extra["/api/apps/register"] = n.handleAppsRegister

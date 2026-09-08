@@ -114,6 +114,22 @@ p{margin:.55rem 0}ul.plain{margin:.5rem 0 .5rem 1.2rem;color:var(--muted)}ul.pla
   .brand img{animation:none}
   a{color:#F4B400}
 }
+
+.visit-pill{display:inline-flex;align-items:center;gap:.45rem;border:1px solid var(--line-strong);border-radius:999px;
+  padding:.4rem .9rem;font-size:.8rem;color:var(--muted);background:rgba(244,180,0,.06)}
+.visit-pill strong{color:var(--gold);font-weight:600;font-variant-numeric:tabular-nums}
+.comments-list{display:flex;flex-direction:column;gap:.85rem;margin-top:1.1rem}
+.comment-item{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1rem 1.1rem}
+.comment-item .meta{font-size:.75rem;color:var(--dim);margin-bottom:.35rem;display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap}
+.comment-item .meta strong{color:var(--gold);font-weight:600}
+.comment-item .body{color:var(--muted);font-size:.92rem;white-space:pre-wrap;word-break:break-word}
+.comment-form{display:grid;gap:.65rem;margin-top:1rem}
+.comment-form input,.comment-form textarea{width:100%;background:var(--bg-alt);border:1px solid var(--line);border-radius:10px;
+  padding:.7rem .85rem;color:var(--ink);font-family:var(--sans);font-size:.92rem}
+.comment-form textarea{min-height:110px;resize:vertical}
+.comment-form input:focus,.comment-form textarea:focus{outline:none;border-color:var(--gold)}
+.comment-msg{font-size:.85rem;color:var(--cyan);min-height:1.2em}
+
 </style>
 </head>
 <body>
@@ -141,12 +157,14 @@ p{margin:.55rem 0}ul.plain{margin:.5rem 0 .5rem 1.2rem;color:var(--muted)}ul.pla
     Documento orientativo de estudio. No sustituye la normativa del Banco Central de Cuba ni el criterio de asesores autorizados.</p>
   <p class="lead" style="margin:.75rem auto 0;font-size:.95rem;text-align:center">Contacto TCP Prism@.TEC: <a href="tel:+5351069717" style="color:var(--gold);font-weight:600;text-decoration:none">+53 51069717</a>
   </p>
+    <div style="margin-top:1.5rem" class="visit-pill" id="visit-pill">Visitas: <strong id="visit-count">—</strong></div>
   <div class="toc">
     <a href="#tema">Tema central</a>
     <a href="#piezas">Figuras</a>
     <a href="#ejemplos">Ejemplos prácticos</a>
     <a href="#hitos">Orden de trabajo</a>
     <a href="#flujo">Flujo de remesa</a>
+    <a href="#comentarios">Comentarios</a>
   </div>
 </header>
 
@@ -320,6 +338,22 @@ Desembolso de préstamo en cuenta → Debe Cartera / Haber Depósitos (o liquide
   </div>
 </section>
 
+
+<section class="chapter" id="comentarios">
+  <p class="eyebrow">Participación</p>
+  <h2>Comentarios</h2>
+  <p class="lead">Deja tu opinión o pregunta sobre el material. Los comentarios son públicos en esta página.</p>
+  <form class="comment-form" id="comment-form">
+    <input type="text" id="c-name" name="name" maxlength="80" placeholder="Nombre (opcional)" autocomplete="name">
+    <textarea id="c-body" name="body" maxlength="1200" placeholder="Tu comentario..." required></textarea>
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center">
+      <button type="submit" class="btn btn-primary">Publicar comentario</button>
+      <span class="comment-msg" id="c-msg"></span>
+    </div>
+  </form>
+  <div class="comments-list" id="comments-list"></div>
+</section>
+
 <footer>
   <div>
     <strong style="color:var(--muted)">Prism@.TEC</strong> · Trabajo por cuenta propia · Guantánamo, Cuba<br>
@@ -359,6 +393,83 @@ Desembolso de préstamo en cuenta → Debe Cartera / Haber Depósitos (o liquide
   document.getElementById('flow-next').onclick=()=>{fi=Math.min(5,fi+1);paint()};
   document.getElementById('flow-reset').onclick=()=>{fi=-1;paint()};
 })();
+
+  // Visitas + comentarios
+  (function(){
+    var visitKey = 'finanzas_visit_v1';
+    function api(path, opts){
+      return fetch(path, opts).then(function(r){ return r.json(); });
+    }
+    function fmtDate(iso){
+      try {
+        var d = new Date(iso);
+        return d.toLocaleString('es-CU', {dateStyle:'medium', timeStyle:'short'});
+      } catch(e){ return iso; }
+    }
+    function renderComments(list){
+      var el = document.getElementById('comments-list');
+      if(!el) return;
+      if(!list || !list.length){
+        el.innerHTML = '<p style="color:var(--dim);font-size:.9rem">Sé la primera persona en comentar.</p>';
+        return;
+      }
+      el.innerHTML = list.map(function(c){
+        var name = (c.name || 'Anónimo').replace(/</g,'');
+        var body = (c.body || '').replace(/</g,'');
+        return '<article class="comment-item"><div class="meta"><strong>'+name+'</strong><span>'+fmtDate(c.created)+'</span></div><div class="body">'+body+'</div></article>';
+      }).join('');
+    }
+    function refreshStats(){
+      api('/api/finanzas/stats').then(function(d){
+        if(d && d.ok){
+          var v = document.getElementById('visit-count');
+          if(v) v.textContent = (d.visits||0).toLocaleString('es');
+          if(d.comments_list) renderComments(d.comments_list);
+        }
+      }).catch(function(){});
+    }
+    // count visit once per browser session
+    try {
+      if(!sessionStorage.getItem(visitKey)){
+        api('/api/finanzas/visit', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'})
+          .then(function(d){
+            sessionStorage.setItem(visitKey, '1');
+            var v = document.getElementById('visit-count');
+            if(v && d && d.visits != null) v.textContent = Number(d.visits).toLocaleString('es');
+          })
+          .catch(function(){})
+          .finally(refreshStats);
+      } else {
+        refreshStats();
+      }
+    } catch(e){ refreshStats(); }
+
+    var form = document.getElementById('comment-form');
+    if(form){
+      form.addEventListener('submit', function(ev){
+        ev.preventDefault();
+        var name = (document.getElementById('c-name').value || '').trim();
+        var body = (document.getElementById('c-body').value || '').trim();
+        var msg = document.getElementById('c-msg');
+        if(!body){ msg.textContent = 'Escribe un comentario.'; return; }
+        msg.textContent = 'Enviando…';
+        api('/api/finanzas/comments', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({name:name, body:body})
+        }).then(function(d){
+          if(d && d.ok){
+            msg.textContent = 'Gracias. Tu comentario ya es visible.';
+            document.getElementById('c-body').value = '';
+            refreshStats();
+          } else {
+            msg.textContent = (d && d.error) || 'No se pudo publicar.';
+          }
+        }).catch(function(){ msg.textContent = 'Error de red. Intenta de nuevo.'; });
+      });
+    }
+  })();
+
 </script>
 </body>
 </html>
