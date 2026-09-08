@@ -24,8 +24,9 @@ type finanzasComment struct {
 }
 
 type finanzasEngageStore struct {
-	Visits   int64             `json:"visits"`
-	Comments []finanzasComment `json:"comments"`
+	Visits           int64             `json:"visits"`
+	PrismatecVisits  int64             `json:"prismatec_visits"`
+	Comments         []finanzasComment `json:"comments"`
 }
 
 var (
@@ -178,8 +179,46 @@ func (n *NodoAlset) handleFinanzasComments(w http.ResponseWriter, r *http.Reques
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "comment": c, "count": len(st.Comments)})
 }
 
+
+
+func (n *NodoAlset) handlePrismatecStats(w http.ResponseWriter, r *http.Request) {
+	finanzasEngageCORS(w)
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(204)
+		return
+	}
+	finanzasEngageMu.Lock()
+	defer finanzasEngageMu.Unlock()
+	st := loadFinanzasEngage()
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"ok":     true,
+		"visits": st.PrismatecVisits,
+	})
+}
+
+func (n *NodoAlset) handlePrismatecVisit(w http.ResponseWriter, r *http.Request) {
+	finanzasEngageCORS(w)
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(204)
+		return
+	}
+	if r.Method != http.MethodPost {
+		w.WriteHeader(405)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "POST required"})
+		return
+	}
+	finanzasEngageMu.Lock()
+	defer finanzasEngageMu.Unlock()
+	st := loadFinanzasEngage()
+	st.PrismatecVisits++
+	_ = saveFinanzasEngage(st)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "visits": st.PrismatecVisits})
+}
+
 func (n *NodoAlset) registerFinanzasEngagement(extra map[string]http.HandlerFunc) {
 	extra["/api/finanzas/stats"] = n.handleFinanzasStats
 	extra["/api/finanzas/visit"] = n.handleFinanzasVisit
 	extra["/api/finanzas/comments"] = n.handleFinanzasComments
+	extra["/api/prismatec/stats"] = n.handlePrismatecStats
+	extra["/api/prismatec/visit"] = n.handlePrismatecVisit
 }
