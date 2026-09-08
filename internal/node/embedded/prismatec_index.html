@@ -667,6 +667,27 @@
       font-variant-numeric: tabular-nums;
     }
 
+  
+    .pt-comment-form { display: grid; gap: .65rem; margin-top: 1.25rem; max-width: 560px; }
+    .pt-comment-form input, .pt-comment-form textarea {
+      width: 100%; background: rgba(0,0,0,.25); border: 1px solid rgba(244,180,0,.2);
+      border-radius: 10px; padding: .7rem .9rem; color: #F5F3EE; font-family: inherit; font-size: .92rem;
+    }
+    .pt-comment-form textarea { min-height: 110px; resize: vertical; }
+    .pt-comment-form input:focus, .pt-comment-form textarea:focus { outline: none; border-color: #F4B400; }
+    .pt-comment-msg { font-size: .85rem; color: #00ACC1; min-height: 1.2em; }
+    .pt-comments-list { display: flex; flex-direction: column; gap: .85rem; margin-top: 1.5rem; }
+    .pt-comment-item {
+      background: rgba(27,28,33,.9); border: 1px solid rgba(244,180,0,.16);
+      border-radius: 12px; padding: 1rem 1.15rem;
+    }
+    .pt-comment-item .meta {
+      font-size: .75rem; color: #7a7975; margin-bottom: .35rem;
+      display: flex; justify-content: space-between; gap: .5rem; flex-wrap: wrap;
+    }
+    .pt-comment-item .meta strong { color: #F4B400; }
+    .pt-comment-item .body { color: #ABA9A3; font-size: .92rem; white-space: pre-wrap; word-break: break-word; }
+
   </style>
 </head>
 <body>
@@ -709,7 +730,7 @@
         </div>
         <div class="hero-meta">
           <div><strong>3</strong><span>Apps en producción</span></div>
-          <div><strong>P2P</strong><span>Red propia, sin depender de terceros</span></div>
+          <div><strong>P2P</strong><span>Red descentralizada con tecnología propia</span></div>
           <div><strong>GTMO</strong><span>Con sede en Guantánamo, Cuba</span></div>
         </div>
       </div>
@@ -727,15 +748,11 @@
     <div class="container">
       <div class="section-head reveal">
         <div class="eyebrow">Lo que hacemos</div>
-        <h2>Un mismo equipo, seis frentes de trabajo</h2>
-        <p>Somos un trabajo por cuenta propia (TCP). Integramos infraestructura, software, finanzas y apoyo académico con el mismo nivel de rigor.</p>
+        <h2>Un mismo equipo, varios frentes de trabajo</h2>
+        <p>Somos un trabajo por cuenta propia (TCP). Integramos desarrollo de software, finanzas y apoyo académico con el mismo nivel de rigor.</p>
       </div>
       <div class="services-grid">
-        <div class="facet-card reveal">
-          <div class="facet-icon">⌁</div>
-          <h3>Cableado estructurado &amp; redes</h3>
-          <p>Instalación, mantenimiento y certificación de redes de datos y telefonía. Infraestructura pensada para crecer contigo.</p>
-        </div>
+
         <div class="facet-card reveal">
           <div class="facet-icon">⧉</div>
           <h3>Desarrollo de software</h3>
@@ -863,31 +880,22 @@ zyrion(lista) → capa ternaria</div>
     <div class="container">
       <div class="section-head reveal">
         <div class="eyebrow">Opiniones</div>
-        <h2>Lo que dicen quienes trabajan con nosotros</h2>
-        <p>Referencias de clientes y colaboradores del TCP. Cada proyecto se mide por claridad, plazos y resultados.</p>
+        <h2>Lo que dicen quienes nos visitan</h2>
+        <p>Espacio abierto para comentarios reales de clientes, colaboradores y visitantes. Sin reseñas inventadas: lo que se publica aquí lo escriben las personas que usan esta página.</p>
       </div>
-      <div class="opinions-grid">
-        <div class="opinion-card reveal">
-          <p>Nos organizaron la contabilidad del TCP y el flujo de reportes. Por fin tenemos números claros a final de mes, sin improvisar.</p>
-          <div class="who">María L.<span>TCP · comercio minorista · Guantánamo</span></div>
+      <form class="pt-comment-form reveal" id="pt-opinion-form">
+        <input type="text" id="pt-op-name" maxlength="80" placeholder="Nombre (opcional)" autocomplete="name">
+        <textarea id="pt-op-body" maxlength="1200" placeholder="Tu opinión o experiencia con Prism@.TEC…" required></textarea>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center">
+          <button type="submit" class="btn btn-primary">Publicar opinión</button>
+          <span class="pt-comment-msg" id="pt-op-msg"></span>
         </div>
-        <div class="opinion-card reveal">
-          <p>El estudio de factibilidad nos evitó invertir a ciegas. Entregaron escenarios de costos y punto de equilibrio que pudimos defender ante la familia y el banco.</p>
-          <div class="who">Carlos R.<span>Proyecto de inversión · servicios</span></div>
-        </div>
-        <div class="opinion-card reveal">
-          <p>Contratamos el desarrollo de una herramienta interna. Comunican en español llano, cumplen hitos y dejan documentación usable, no solo código.</p>
-          <div class="who">Equipo administrativo<span>Empresa estatal · oriente</span></div>
-        </div>
-        <div class="opinion-card reveal">
-          <p>La revisión de la tesis fue rigurosa y a tiempo. Corrigieron estilo y estructura sin cambiar el sentido de mi investigación.</p>
-          <div class="who">Ana P.<span>Estudiante de posgrado</span></div>
-        </div>
-      </div>
+      </form>
+      <div class="pt-comments-list" id="pt-opinions-list"></div>
     </div>
   </section>
 
-  <!-- CONTACTO -->
+<!-- CONTACTO -->
   <section id="contacto" class="contact">
     <div class="container">
       <div class="section-head reveal">
@@ -1003,6 +1011,58 @@ zyrion(lista) → capa ternaria</div>
         .catch(refresh);
     } else refresh();
   } catch(e){ refresh(); }
+})();
+</script>
+
+
+<script>
+(function(){
+  function esc(s){ return String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fmtDate(iso){
+    try { return new Date(iso).toLocaleString('es-CU',{dateStyle:'medium',timeStyle:'short'}); }
+    catch(e){ return iso||''; }
+  }
+  function render(list){
+    var el = document.getElementById('pt-opinions-list');
+    if(!el) return;
+    if(!list || !list.length){
+      el.innerHTML = '<p style="color:#7a7975;font-size:.9rem">Aún no hay opiniones publicadas. Sé la primera persona en dejar la tuya.</p>';
+      return;
+    }
+    el.innerHTML = list.map(function(c){
+      return '<article class="pt-comment-item reveal on"><div class="meta"><strong>'+esc(c.name||'Anónimo')+'</strong><span>'+esc(fmtDate(c.created))+'</span></div><div class="body">'+esc(c.body)+'</div></article>';
+    }).join('');
+  }
+  function load(){
+    fetch('/api/prismatec/comments').then(function(r){return r.json()}).then(function(d){
+      if(d && d.ok) render(d.comments||[]);
+    }).catch(function(){});
+  }
+  load();
+  var form = document.getElementById('pt-opinion-form');
+  if(form){
+    form.addEventListener('submit', function(ev){
+      ev.preventDefault();
+      var name = (document.getElementById('pt-op-name').value||'').trim();
+      var body = (document.getElementById('pt-op-body').value||'').trim();
+      var msg = document.getElementById('pt-op-msg');
+      if(!body){ msg.textContent = 'Escribe tu opinión.'; return; }
+      msg.textContent = 'Publicando…';
+      fetch('/api/prismatec/comments', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({name:name, body:body})
+      }).then(function(r){return r.json()}).then(function(d){
+        if(d && d.ok){
+          msg.textContent = 'Gracias. Tu opinión ya es visible.';
+          document.getElementById('pt-op-body').value = '';
+          load();
+        } else {
+          msg.textContent = (d && d.error) || 'No se pudo publicar.';
+        }
+      }).catch(function(){ msg.textContent = 'Error de red. Intenta de nuevo.'; });
+    });
+  }
 })();
 </script>
 

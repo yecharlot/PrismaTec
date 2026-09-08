@@ -25,8 +25,9 @@ type finanzasComment struct {
 
 type finanzasEngageStore struct {
 	Visits           int64             `json:"visits"`
-	PrismatecVisits  int64             `json:"prismatec_visits"`
-	Comments         []finanzasComment `json:"comments"`
+	PrismatecVisits    int64             `json:"prismatec_visits"`
+	PrismatecComments []finanzasComment `json:"prismatec_comments"`
+	Comments           []finanzasComment `json:"comments"`
 }
 
 var (
@@ -46,6 +47,9 @@ func loadFinanzasEngage() finanzasEngageStore {
 	_ = json.Unmarshal(b, &st)
 	if st.Comments == nil {
 		st.Comments = []finanzasComment{}
+	}
+	if st.PrismatecComments == nil {
+		st.PrismatecComments = []finanzasComment{}
 	}
 	return st
 }
@@ -215,10 +219,84 @@ func (n *NodoAlset) handlePrismatecVisit(w http.ResponseWriter, r *http.Request)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "visits": st.PrismatecVisits})
 }
 
+
+func (n *NodoAlset) handlePrismatecComments(w http.ResponseWriter, r *http.Request) {
+	finanzasEngageCORS(w)
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(204)
+		return
+	}
+	finanzasEngageMu.Lock()
+	defer finanzasEngageMu.Unlock()
+	st := loadFinanzasEngage()
+
+	if r.Method == http.MethodGet {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"ok":       true,
+			"comments": st.PrismatecComments,
+			"count":    len(st.PrismatecComments),
+		})
+		return
+	}
+	if r.Method != http.MethodPost {
+		w.WriteHeader(405)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "GET or POST"})
+		return
+	}
+
+	var in struct {
+		Name string `json:"name"`
+		Body string `json:"body"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		w.WriteHeader(400)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "JSON inválido"})
+		return
+	}
+	name := strings.TrimSpace(in.Name)
+	body := strings.TrimSpace(in.Body)
+	if name == "" {
+		name = "Anónimo"
+	}
+	if utf8.RuneCountInString(name) > finanzasMaxName {
+		name = string([]rune(name)[:finanzasMaxName])
+	}
+	if body == "" {
+		w.WriteHeader(400)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "Escribe un comentario"})
+		return
+	}
+	if utf8.RuneCountInString(body) > finanzasMaxBody {
+		body = string([]rune(body)[:finanzasMaxBody])
+	}
+	name = strings.ReplaceAll(name, "<", "")
+	name = strings.ReplaceAll(name, ">", "")
+	body = strings.ReplaceAll(body, "<", "")
+	body = strings.ReplaceAll(body, ">", "")
+
+	c := finanzasComment{
+		ID:      time.Now().UTC().Format("20060102T150405.000"),
+		Name:    name,
+		Body:    body,
+		Created: time.Now().UTC().Format(time.RFC3339),
+	}
+	st.PrismatecComments = append([]finanzasComment{c}, st.PrismatecComments...)
+	if len(st.PrismatecComments) > finanzasMaxComments {
+		st.PrismatecComments = st.PrismatecComments[:finanzasMaxComments]
+	}
+	if err := saveFinanzasEngage(st); err != nil {
+		w.WriteHeader(500)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "No se pudo guardar"})
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "comment": c, "count": len(st.PrismatecComments)})
+}
+
 func (n *NodoAlset) registerFinanzasEngagement(extra map[string]http.HandlerFunc) {
 	extra["/api/finanzas/stats"] = n.handleFinanzasStats
 	extra["/api/finanzas/visit"] = n.handleFinanzasVisit
 	extra["/api/finanzas/comments"] = n.handleFinanzasComments
 	extra["/api/prismatec/stats"] = n.handlePrismatecStats
 	extra["/api/prismatec/visit"] = n.handlePrismatecVisit
+	extra["/api/prismatec/comments"] = n.handlePrismatecComments
 }
