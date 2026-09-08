@@ -50,44 +50,24 @@ func (n *NodoAlset) httpHandlers() httpapi.Handlers {
 			return
 		}
 		alias := strings.TrimSuffix(parts[2], ".app.ans")
-		// Always refresh first-party Mind UI from embed (avoid stale static in Docker image)
+		// Always refresh first-party UIs from embed (avoid stale static on persistent volumes)
 		if alias == "mind" {
 			n.ensureMindApp()
+		}
+		if alias == "prismatec" {
+			n.ensurePrismatecApp()
+		}
+		if alias == "finanzas" {
+			n.ensureFinanzasApp()
+		}
+		if alias == "vero" {
+			n.ensureVeroAppFiles()
 		}
 		appPath := filepath.Join(StaticDir, "apps", alias, "index.html")
 		if _, err := os.Stat(appPath); err == nil {
 			w.Header().Set("Cache-Control", "no-store")
 			http.ServeFile(w, r, appPath)
 			return
-		}
-		// Embedded fallback for first-party apps (survives empty/persistent static volumes)
-		if alias == "vero" {
-			n.ensureVeroAppFiles()
-			if _, err := os.Stat(appPath); err == nil {
-				http.ServeFile(w, r, appPath)
-				return
-			}
-		}
-		if alias == "prismatec" {
-			n.ensurePrismatecApp()
-			if _, err := os.Stat(appPath); err == nil {
-				http.ServeFile(w, r, appPath)
-				return
-			}
-		}
-		if alias == "finanzas" {
-			n.ensureFinanzasApp()
-			if _, err := os.Stat(appPath); err == nil {
-				http.ServeFile(w, r, appPath)
-				return
-			}
-		}
-		if alias == "mind" {
-			n.ensureMindApp()
-			if _, err := os.Stat(appPath); err == nil {
-				http.ServeFile(w, r, appPath)
-				return
-			}
 		}
 		n.mu.RLock()
 		targetID, ok := n.nombres[alias+".app.ans"]
