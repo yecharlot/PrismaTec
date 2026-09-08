@@ -26,11 +26,12 @@ RUN apk --no-cache add ca-certificates tzdata \
 
 WORKDIR /home/appuser
 
-# Solo el binario: las UIs first-party salen del embed (go:embed) al arrancar /w/
-# Evita static/ de solo lectura (root) que bloqueaba ensurePrismatecApp bajo appuser.
 COPY --from=builder /app/PrismaTec ./PrismaTec
+# Apps estáticas (Sales Hub, assets, etc.). Debe ser escribible por appuser
+# para que ensurePrismatecApp / ensureFinanzasApp actualicen el HTML embebido.
+COPY --from=builder /app/static ./static
 
-RUN mkdir -p /home/appuser/static/apps /home/appuser/data \
+RUN mkdir -p /home/appuser/data /home/appuser/alset_data \
     && chown -R appuser:appuser /home/appuser
 
 USER appuser
