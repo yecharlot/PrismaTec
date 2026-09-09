@@ -86,7 +86,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
 .card-vale{border-radius:20px;overflow:hidden;border:1px solid var(--line);margin-top:1rem;background:#12141c;
   box-shadow:0 20px 50px rgba(0,0,0,.35);text-align:center}
 .card-hero{height:200px;background:#111;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.card-hero img{width:100%;height:100%;object-fit:cover;display:block}
+.card-hero img{width:100%;height:100%;object-fit:cover;display:block;position:relative;z-index:1}
 .card-hero.def{background:linear-gradient(135deg,#FFC400 0%,#FF9100 55%,#c45c00 100%)}
 .card-hero.def span{font-weight:800;color:#111;font-size:1.15rem}
 .card-body{padding:1.2rem 1.1rem 1.25rem;text-align:center}
@@ -98,9 +98,9 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
 #qrbox{background:#fff;padding:10px;border-radius:12px;width:fit-content;margin:.9rem auto}
 
 
-.card-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(7,8,12,.88),rgba(7,8,12,.15) 55%,transparent)}
+.card-hero.has-photo::after{display:none}
 
-.card-hero.def::after{display:none}
+.card-hero.def::after{display:none !important}
 
 
 
@@ -115,6 +115,13 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
 .check input{width:auto;margin:0}
 .field-add{display:flex;gap:.4rem;align-items:center}
 .field-add input{margin:0;flex:1}
+
+.result-actions{display:flex;flex-direction:column;gap:.5rem;margin-top:1rem}
+#formPanel.hid,#photoWrap.hid,#btnGenWrap.hid{display:none !important}
+#resultPanel{display:none}
+#resultPanel.on{display:block;animation:in .28s ease}
+.money-row{display:grid;grid-template-columns:1fr 1.2fr;gap:.5rem}
+#customMoneda{display:none;margin-top:.35rem}
 </style>
 </head>
 <body>
@@ -135,26 +142,37 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
       <div class="queue" id="queue-msg" style="display:none"></div>
       <div id="announce"></div>
       <div class="glass">
-        <div id="form"></div>
-        <div class="photo-wrap">
-          <div class="photo-preview-box" id="photoBox"><img id="photoPrev" alt="Vista previa"></div>
-          <div class="photo-pick">
-            <div class="photo-fake" id="photoFake"><strong>＋ Foto del producto</strong>Toca para elegir o tomar (opcional)</div>
-            <input type="file" id="photo" accept="image/*" capture="environment">
+        <div id="formPanel">
+          <div id="form"></div>
+          <label>Precio</label>
+          <div class="money-row">
+            <input id="f_precio" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
+            <select id="f_moneda"></select>
           </div>
+          <input id="customMoneda" type="text" placeholder="Nombre de la moneda personalizada">
+          <div class="photo-wrap" id="photoWrap">
+            <div class="photo-preview-box" id="photoBox"><img id="photoPrev" alt="Vista previa"></div>
+            <div class="photo-pick">
+              <div class="photo-fake" id="photoFake"><strong>＋ Foto del producto</strong>Toca para elegir o tomar (opcional)</div>
+              <input type="file" id="photo" accept="image/*" capture="environment">
+            </div>
+          </div>
+          <div id="btnGenWrap"><button type="button" class="btn btn-gold" id="btn-gen">Generar vale</button></div>
         </div>
-        <button type="button" class="btn btn-gold" id="btn-gen">Generar vale</button>
-        <div id="out" style="display:none">
+        <div id="resultPanel">
           <div class="card-vale">
             <div class="card-hero def" id="cardHero"><span>ValesPlus</span></div>
             <div class="card-body">
               <div class="card-code" id="cardCode">VP-0000</div>
               <div id="cardSecs"></div>
               <div id="qrbox"></div>
-              <button type="button" class="btn btn-mint" id="btn-wa" style="margin-top:.4rem">Enviar por WhatsApp</button>
-              <button type="button" class="btn btn-ghost" id="btn-copy" style="margin-top:.4rem">Copiar texto</button>
               <p class="sub" style="margin:.6rem 0 0;font-size:.75rem;text-align:center" id="cardLink"></p>
             </div>
+          </div>
+          <div class="result-actions">
+            <button type="button" class="btn btn-ghost" id="btn-edit">Editar datos</button>
+            <button type="button" class="btn btn-mint" id="btn-wa">Enviar por WhatsApp</button>
+            <button type="button" class="btn btn-ghost" id="btn-copy">Copiar texto</button>
           </div>
         </div>
       </div>
@@ -272,6 +290,60 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
     coreCfg.querySelectorAll('[data-i]').forEach(function(cb){f.core[+cb.getAttribute('data-i')].on=cb.checked});
     jset(KF,f);renderForm();toast('Campos guardados');go('s-home');
   };
+
+  var CURRENCIES=[
+    {code:'USD', flag:'🇺🇸', name:'USD — Dólar estadounidense'},
+    {code:'CUP', flag:'🇨🇺', name:'CUP — Peso cubano'},
+    {code:'EUR', flag:'🇪🇺', name:'EUR — Euro'},
+    {code:'ZELLE', flag:'🇺🇸', name:'ZELLE'},
+    {code:'CAD', flag:'🇨🇦', name:'CAD — Dólar canadiense'},
+    {code:'MXN', flag:'🇲🇽', name:'MXN — Peso mexicano'},
+    {code:'COP', flag:'🇨🇴', name:'COP — Peso colombiano'},
+    {code:'ARS', flag:'🇦🇷', name:'ARS — Peso argentino'},
+    {code:'CLP', flag:'🇨🇱', name:'CLP — Peso chileno'},
+    {code:'PEN', flag:'🇵🇪', name:'PEN — Sol peruano'},
+    {code:'BRL', flag:'🇧🇷', name:'BRL — Real brasileño'},
+    {code:'UYU', flag:'🇺🇾', name:'UYU — Peso uruguayo'},
+    {code:'VES', flag:'🇻🇪', name:'VES — Bolívar'},
+    {code:'DOP', flag:'🇩🇴', name:'DOP — Peso dominicano'},
+    {code:'CRC', flag:'🇨🇷', name:'CRC — Colón costarricense'},
+    {code:'GTQ', flag:'🇬🇹', name:'GTQ — Quetzal'},
+    {code:'HNL', flag:'🇭🇳', name:'HNL — Lempira'},
+    {code:'NIO', flag:'🇳🇮', name:'NIO — Córdoba'},
+    {code:'PAB', flag:'🇵🇦', name:'PAB — Balboa'},
+    {code:'BOB', flag:'🇧🇴', name:'BOB — Boliviano'},
+    {code:'PYG', flag:'🇵🇾', name:'PYG — Guaraní'},
+    {code:'GBP', flag:'🇬🇧', name:'GBP — Libra esterlina'},
+    {code:'CHF', flag:'🇨🇭', name:'CHF — Franco suizo'},
+    {code:'JPY', flag:'🇯🇵', name:'JPY — Yen'},
+    {code:'CNY', flag:'🇨🇳', name:'CNY — Yuan'},
+    {code:'RUB', flag:'🇷🇺', name:'RUB — Rublo'},
+    {code:'INR', flag:'🇮🇳', name:'INR — Rupia india'},
+    {code:'OTHER', flag:'💱', name:'Otra moneda…'}
+  ];
+  function fillMonedas(){
+    var sel=document.getElementById('f_moneda');
+    if(!sel||sel.options.length) return;
+    sel.innerHTML=CURRENCIES.map(function(c){
+      return '<option value="'+c.code+'" data-flag="'+c.flag+'">'+c.flag+' '+c.name+'</option>';
+    }).join('');
+    sel.value='USD';
+    sel.onchange=function(){
+      document.getElementById('customMoneda').style.display=sel.value==='OTHER'?'block':'none';
+    };
+  }
+  function selectedMoneda(){
+    var sel=document.getElementById('f_moneda');
+    var code=sel.value;
+    var flag=sel.options[sel.selectedIndex]?sel.options[sel.selectedIndex].getAttribute('data-flag'):'';
+    var name=code;
+    if(code==='OTHER'){
+      name=(document.getElementById('customMoneda').value||'OTRA').trim();
+      flag='💱';
+    }
+    return {code:name, flag:flag};
+  }
+
   function renderForm(){
     var f=fields(),h='';
     f.core.forEach(function(c){if(!c.on)return;
@@ -281,6 +353,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
     });
     f.custom.forEach(function(c){if(c.on)h+='<label>'+c.label+'</label><input id="f_'+c.id+'" type="text">' });
     form.innerHTML=h;
+    fillMonedas();
   }
 
   function fmtPhone(s){
@@ -321,13 +394,14 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
     var L=['VALE '+v.code,'— Cliente —'];
     if(v.cliente)L.push('Nombre: '+v.cliente);
     if(v.direccion)L.push('Dirección: '+v.direccion);
-    if(v.telCliente)L.push('Tel: '+v.telCliente);
+    if(v.telCliente)L.push('Tel: '+fmtPhone(v.telCliente));
     if(v.ci)L.push('CI: '+v.ci);
     L.push('— Pedido —');
     if(v.producto)L.push(v.producto+(v.cantidad?' × '+v.cantidad:''));
+    if(v.precio)L.push('Precio: '+(v.monedaFlag?v.monedaFlag+' ':'')+(v.moneda||'')+' '+v.precio);
     if(v.notas)L.push('Notas: '+v.notas);
     (v.extra||[]).forEach(function(e){L.push(e.label+': '+e.value)});
-    L.push('— Gestor —','Nombre: '+v.gestor,'Tel: '+v.telGestor);
+    L.push('— Gestor —','Nombre: '+v.gestor,'Tel: '+fmtPhone(v.telGestor));
     if(v.negocio)L.push('Negocio: '+v.negocio);
     if(v.cardUrl)L.push('Tarjeta: '+v.cardUrl);
     L.push('ValesPlus · Prism@.TEC');
@@ -335,36 +409,60 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
   }
 
   function showVale(v){
-    last=v;out.style.display='block';
+    last=v;
+    document.getElementById('formPanel').classList.add('hid');
+    document.getElementById('resultPanel').classList.add('on');
     cardCode.textContent=v.code;
-    var secs='';
     function sec(t,b){if(!b)return'';return '<div class="card-sec"><h4>'+t+'</h4><p>'+String(b).replace(/</g,'&lt;')+'</p></div>'}
     var cliente=[v.cliente,v.direccion,v.telCliente?fmtPhone(v.telCliente):'',v.ci].filter(Boolean).join('\n');
-    var pedido=[v.producto+(v.cantidad?' × '+v.cantidad:''),v.notas].filter(Boolean).join('\n');
+    var precioLine='';
+    if(v.precio){precioLine=(v.monedaFlag||'')+' '+(v.moneda||'')+' '+v.precio}
+    var pedido=[v.producto+(v.cantidad?' × '+v.cantidad:''),precioLine,v.notas].filter(Boolean).join('\n');
     (v.extra||[]).forEach(function(e){pedido+=(pedido?'\n':'')+e.label+': '+e.value});
     var gestor=[v.gestor,v.telGestor?fmtPhone(v.telGestor):'',v.negocio].filter(Boolean).join('\n');
     document.getElementById('cardSecs').innerHTML=sec('Cliente',cliente)+sec('Pedido',pedido)+sec('Gestor',gestor);
-    var hero=cardHero;
+    var hero=document.getElementById('cardHero');
     var photoSrc=v.photo||'';
-    if(!photoSrc && v.serverId) photoSrc='/api/valesplus/photo/'+v.serverId;
+    if(!photoSrc && v.serverId) photoSrc='/api/valesplus/photo/'+v.serverId+'?t='+Date.now();
     if(photoSrc){
-      hero.className='card-hero';
-      hero.innerHTML='<img src="'+photoSrc+'" alt="producto">';
+      hero.className='card-hero has-photo';
+      hero.innerHTML='';
+      var im=document.createElement('img');
+      im.alt='producto';
+      im.src=photoSrc;
+      im.onload=function(){ /* ok */ };
+      im.onerror=function(){
+        if(v.serverId && photoSrc.indexOf('/api/')<0){
+          im.src='/api/valesplus/photo/'+v.serverId+'?t='+Date.now();
+        } else {
+          hero.className='card-hero def';
+          hero.innerHTML='<span>ValesPlus</span>';
+        }
+      };
+      hero.appendChild(im);
     } else {
       hero.className='card-hero def';
       hero.innerHTML='<span>ValesPlus</span>';
     }
-    qrbox.innerHTML='';
-    try{new QRCode(qrbox,{text:(v.cardUrl||v.code)+'',width:140,height:140})}catch(e){}
-    cardLink.textContent=v.cardUrl?('Tarjeta: '+v.cardUrl):(v.pending?'Se publicará la tarjeta al tener internet':'');
+    var qb=document.getElementById('qrbox'); qb.innerHTML='';
+    try{new QRCode(qb,{text:(v.cardUrl||v.code)+'',width:140,height:140})}catch(e){}
+    document.getElementById('cardLink').textContent=v.cardUrl?('Tarjeta: '+v.cardUrl):(v.pending?'Se publicará la tarjeta al tener internet':'');
   }
+  function showForm(){
+    document.getElementById('formPanel').classList.remove('hid');
+    document.getElementById('resultPanel').classList.remove('on');
+  }
+  document.getElementById('btn-edit').onclick=function(){
+    showForm();
+    toast('Puedes corregir y volver a generar');
+  };
 
   async function publish(v){
     if(!online)return null;
     try{
       var res=await fetch('/api/valesplus/vale',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
         code:v.code,text:v.text,cliente:v.cliente,producto:v.producto,cantidad:v.cantidad,gestor:v.gestor,telGestor:v.telGestor,
-        negocio:v.negocio,extra:v.extra,photo:v.photo||'',deviceId:deviceId()
+        negocio:v.negocio,extra:v.extra,photo:v.photo||'',deviceId:deviceId(),precio:v.precio||'',moneda:v.moneda||'',monedaFlag:v.monedaFlag||''
       })});
       var d=await res.json();
       if(d&&d.ok){v.cardUrl=d.cardUrl;v.serverId=d.id;v.pending=false;v.text=buildText(v);return v}
@@ -394,20 +492,39 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
   document.getElementById('btn-gen').onclick=async function(){
     var p=jget(KP,{});
     if(!p.nombre||!p.tel){toast('Completa tu perfil');go('s-profile');return}
-    var f=fields(),v={code:nextCode(),ts:new Date().toISOString(),gestor:p.nombre,telGestor:p.tel,negocio:p.negocio||'',wa:p.wa||'',extra:[],photo:photo||'',pending:true};
+    var f=fields(), mon=selectedMoneda();
+    var v={code:nextCode(),ts:new Date().toISOString(),gestor:p.nombre,telGestor:p.tel,negocio:p.negocio||'',wa:p.wa||'',extra:[],photo:photo||'',pending:true,
+      precio:(document.getElementById('f_precio').value||'').trim(), moneda:mon.code, monedaFlag:mon.flag};
     var ok=true;
     f.core.forEach(function(c){if(!c.on)return;var el=document.getElementById('f_'+c.id);var val=el?el.value.trim():'';v[c.id]=val;if(c.req&&!val)ok=false});
     if(!ok){toast('Faltan campos obligatorios');return}
     f.custom.forEach(function(c){if(!c.on)return;var el=document.getElementById('f_'+c.id);var val=el?el.value.trim():'';if(val)v.extra.push({label:c.label,value:val})});
     if(!v.cantidad)v.cantidad='1';
+    // keep live photo reference (don't rely only on localStorage)
+    v.photo = photo || v.photo || '';
     v.text=buildText(v);
+    showVale(v); // show card immediately with photo
     var pub=await publish(v);
-    if(pub)v=pub;else{var q=jget(KQ,[]);q.push(v.code);jset(KQ,q)}
-    var arr=jget(KV,[]);arr.unshift(v);if(arr.length>60)arr=arr.slice(0,60);
-    try{jset(KV,arr)}catch(e){arr.forEach(function(x,i){if(i>0)x.photo=''});jset(KV,arr)}
-    showVale(v);renderList();netUI();toast(v.cardUrl?'Vale listo · tarjeta online':'Vale guardado offline');
+    if(pub){
+      pub.photo = pub.photo || v.photo;
+      v=pub;
+      showVale(v);
+    } else {
+      var q=jget(KQ,[]); if(q.indexOf(v.code)<0) q.push(v.code); jset(KQ,q);
+    }
+    var arr=jget(KV,[]);
+    var store=Object.assign({},v);
+    // if storage fails with photo, still keep photo in memory on last
+    try{
+      arr.unshift(store); if(arr.length>40) arr=arr.slice(0,40);
+      jset(KV,arr);
+    }catch(e){
+      store.photo=''; arr.unshift(store); try{jset(KV,arr)}catch(e2){}
+      toast('Vale listo (foto solo en memoria de esta sesión)');
+    }
+    renderList();netUI();
+    toast(v.cardUrl?'Vale listo · tarjeta online':'Vale listo');
   };
-
   document.getElementById('btn-wa').onclick=function(){
     if(!last)return;
     // Link primero y solo: WhatsApp genera mejor la vista previa

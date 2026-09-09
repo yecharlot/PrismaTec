@@ -33,6 +33,9 @@ type vpVale struct {
 	TelGestor string              `json:"telGestor"`
 	Negocio   string              `json:"negocio"`
 	Extra     []map[string]string `json:"extra,omitempty"`
+	Precio    string              `json:"precio,omitempty"`
+	Moneda    string              `json:"moneda,omitempty"`
+	MonedaFlag string             `json:"monedaFlag,omitempty"`
 	HasPhoto  bool                `json:"hasPhoto"`
 	Created   string              `json:"created"`
 	DeviceID  string              `json:"deviceId,omitempty"`
@@ -271,6 +274,9 @@ func (n *NodoAlset) handleValesPlusVale(w http.ResponseWriter, r *http.Request) 
 		Extra     []map[string]string `json:"extra"`
 		Photo     string              `json:"photo"`
 		DeviceID  string              `json:"deviceId"`
+		Precio    string              `json:"precio"`
+		Moneda    string              `json:"moneda"`
+		MonedaFlag string             `json:"monedaFlag"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 		w.WriteHeader(400)
@@ -286,7 +292,7 @@ func (n *NodoAlset) handleValesPlusVale(w http.ResponseWriter, r *http.Request) 
 	v := vpVale{
 		ID: id, Code: in.Code, Text: in.Text, Cliente: in.Cliente, Producto: in.Producto,
 		Cantidad: in.Cantidad, Gestor: in.Gestor, TelGestor: in.TelGestor, Negocio: in.Negocio,
-		Extra: in.Extra, HasPhoto: hasPhoto, Created: time.Now().UTC().Format(time.RFC3339), DeviceID: in.DeviceID,
+		Extra: in.Extra, Precio: in.Precio, Moneda: in.Moneda, MonedaFlag: in.MonedaFlag, HasPhoto: hasPhoto, Created: time.Now().UTC().Format(time.RFC3339), DeviceID: in.DeviceID,
 	}
 	b, _ := json.MarshalIndent(v, "", "  ")
 	_ = os.WriteFile(filepath.Join(vpDir(), id+".json"), b, 0o644)
@@ -332,6 +338,9 @@ func (n *NodoAlset) handleValesPlusCard(w http.ResponseWriter, r *http.Request) 
 	pedidoLine := html.EscapeString(strings.TrimSpace(v.Producto))
 	if strings.TrimSpace(v.Cantidad) != "" {
 		pedidoLine += " × " + html.EscapeString(v.Cantidad)
+	}
+	if strings.TrimSpace(v.Precio) != "" {
+		pedidoLine += "<br>" + html.EscapeString(strings.TrimSpace(v.MonedaFlag+" "+v.Moneda+" "+v.Precio))
 	}
 	gestorLine := html.EscapeString(strings.TrimSpace(v.Gestor))
 	if strings.TrimSpace(v.TelGestor) != "" {
