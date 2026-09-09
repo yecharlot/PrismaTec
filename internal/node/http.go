@@ -20,6 +20,7 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 	n.ensureVeroAppFiles()
 	n.ensurePrismatecApp()
 	n.ensureFinanzasApp()
+	n.ensureValesPlusApp()
 	n.ensureMindApp()
 	mux := http.NewServeMux()
 	h := n.httpHandlers()
@@ -59,6 +60,9 @@ func (n *NodoAlset) httpHandlers() httpapi.Handlers {
 		}
 		if alias == "finanzas" {
 			n.ensureFinanzasApp()
+		}
+		if alias == "valesplus" {
+			n.ensureValesPlusApp()
 		}
 		if alias == "vero" {
 			n.ensureVeroAppFiles()

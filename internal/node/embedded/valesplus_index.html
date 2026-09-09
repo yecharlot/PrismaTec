@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0b0f">
+<meta name="description" content="ValesPlus — El vale del gestor, en un toque. Numerado, con QR y listo para WhatsApp. SaaS de Prism@.TEC.">
+<title>ValesPlus · El estándar del vale para gestores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  --bg:#0a0b0f; --bg2:#12141c; --card:#161922; --line:rgba(255,196,0,.14);
+  --gold:#FFC400; --amber:#FF9100; --mint:#00E5A8; --ink:#F7F5F0; --muted:#9A968C;
+  --danger:#FF5C5C; --radius:16px;
+  --font: 'Archivo', system-ui, sans-serif;
+  --serif: 'Instrument Serif', Georgia, serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1.55;min-height:100dvh}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(255,196,0,.12), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(0,229,168,.08), transparent 45%),
+    radial-gradient(ellipse 50% 30% at 50% 100%, rgba(255,145,0,.06), transparent 40%)}
+a{color:var(--gold);text-decoration:none}
+.wrap{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:0 1.15rem 4rem}
+
+/* NAV */
+.nav{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 0;position:sticky;top:0;z-index:50;
+  background:rgba(10,11,15,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:.65rem;font-weight:800;font-size:1.15rem;letter-spacing:-.02em;color:var(--ink)}
+.brand-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--gold),var(--amber));
+  display:grid;place-items:center;color:#111;font-weight:800;font-size:.85rem;box-shadow:0 8px 24px rgba(255,196,0,.25)}
+.nav-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.7rem 1.15rem;border-radius:999px;
+  font-weight:600;font-size:.88rem;border:1px solid transparent;cursor:pointer;font-family:var(--font);transition:.2s}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:linear-gradient(120deg,var(--gold),var(--amber));color:#111}
+.btn-ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+.btn-mint{background:rgba(0,229,168,.12);border-color:rgba(0,229,168,.35);color:var(--mint)}
+.btn-block{width:100%}
+
+/* HERO */
+.hero{display:grid;gap:2.5rem;padding:2.5rem 0 3rem}
+@media(min-width:900px){.hero{grid-template-columns:1.15fr .85fr;align-items:center;min-height:78vh}}
+.eyebrow{display:inline-flex;align-items:center;gap:.5rem;font-size:.72rem;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.eyebrow i{width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 12px var(--mint);animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.4}}
+h1{font-family:var(--serif);font-weight:400;font-size:clamp(2.4rem,5.5vw,3.6rem);line-height:1.05;letter-spacing:-.02em}
+h1 em{font-style:italic;color:var(--gold)}
+.hero-lead{margin-top:1.15rem;color:var(--muted);font-size:1.08rem;max-width:34rem}
+.hero-cta{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.75rem}
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-top:2rem}
+.hero-stats div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.85rem}
+.hero-stats strong{display:block;font-size:1.25rem;color:var(--gold)}
+.hero-stats span{font-size:.72rem;color:var(--muted)}
+
+.phone{background:linear-gradient(160deg,#1a1d28,#0e1016);border:1px solid var(--line);border-radius:28px;
+  padding:1rem;box-shadow:0 40px 80px rgba(0,0,0,.45);position:relative;overflow:hidden}
+.phone::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:40%;height:18px;
+  background:#0a0b0f;border-radius:0 0 12px 12px}
+.phone-inner{background:var(--bg2);border-radius:20px;padding:1.25rem 1rem 1rem;min-height:420px}
+.fake-vale{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:1rem;font-size:.82rem}
+.fake-vale .num{color:var(--gold);font-weight:700;font-size:.75rem;letter-spacing:.08em}
+.fake-vale h3{font-size:1rem;margin:.35rem 0 .6rem;font-family:var(--serif)}
+.fake-vale dl{display:grid;grid-template-columns:auto 1fr;gap:.2rem .6rem;color:var(--muted)}
+.fake-vale dt{color:var(--muted);opacity:.7}
+.fake-vale dd{color:var(--ink)}
+.qr-demo{margin-top:.8rem;display:flex;justify-content:center}
+
+/* SECTIONS */
+section{padding:3rem 0;border-top:1px solid var(--line)}
+h2{font-family:var(--serif);font-size:clamp(1.75rem,3vw,2.35rem);font-weight:400;margin-bottom:.5rem}
+.section-lead{color:var(--muted);max-width:36rem;margin-bottom:1.75rem}
+.grid-3{display:grid;gap:1rem}@media(min-width:760px){.grid-3{grid-template-columns:repeat(3,1fr)}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.25rem 1.3rem;transition:.25s}
+.card:hover{border-color:rgba(255,196,0,.35);transform:translateY(-2px)}
+.card .ico{font-size:1.4rem;margin-bottom:.5rem}
+.card h3{font-size:1.05rem;margin-bottom:.35rem}
+.card p{color:var(--muted);font-size:.9rem}
+
+/* MODEL */
+.model-grid{display:grid;gap:1rem}@media(min-width:800px){.model-grid{grid-template-columns:1.2fr .8fr}}
+.model-list{list-style:none;margin-top:1rem}
+.model-list li{padding:.75rem 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1.5rem 1fr;gap:.5rem;color:var(--muted);font-size:.92rem}
+.model-list li::before{content:"→";color:var(--mint)}
+.price-card{background:linear-gradient(160deg,rgba(255,196,0,.12),var(--card));border:1px solid rgba(255,196,0,.35);
+  border-radius:var(--radius);padding:1.5rem}
+.price-card .tag{font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.price-card .amount{font-family:var(--serif);font-size:2.4rem;margin:.4rem 0}
+.price-card .amount span{font-size:1rem;color:var(--muted)}
+
+/* APP SHELL */
+#app{display:none}
+#app.on{display:block}
+#marketing.hid{display:none}
+.app-bar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 0;border-bottom:1px solid var(--line);margin-bottom:1rem}
+.tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem}
+.tab{padding:.5rem .9rem;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--muted);
+  font-size:.82rem;font-weight:600;cursor:pointer;font-family:var(--font)}
+.tab.on{border-color:var(--gold);color:var(--gold);background:rgba(255,196,0,.08)}
+.panel{display:none}.panel.on{display:block}
+label{display:block;font-size:.75rem;font-weight:600;color:var(--muted);margin:0 0 .3rem;letter-spacing:.04em}
+input,textarea,select{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:.75rem .9rem;
+  color:var(--ink);font-family:var(--font);font-size:.95rem;margin-bottom:.75rem}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--gold)}
+.row-2{display:grid;gap:.75rem}@media(min-width:560px){.row-2{grid-template-columns:1fr 1fr}}
+.vale-preview{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.25rem;margin-top:1rem}
+.vale-preview .code{color:var(--gold);font-weight:700;letter-spacing:.06em}
+#qrcode{display:flex;justify-content:center;margin:1rem 0;padding:1rem;background:#fff;border-radius:12px;width:fit-content;margin-left:auto;margin-right:auto}
+.vale-item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem;margin-bottom:.65rem;cursor:pointer}
+.vale-item:hover{border-color:var(--gold)}
+.vale-item .meta{font-size:.75rem;color:var(--muted);display:flex;justify-content:space-between;gap:.5rem}
+.empty{color:var(--muted);font-size:.9rem;padding:1.5rem;text-align:center;border:1px dashed var(--line);border-radius:12px}
+.toast{position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--gold);
+  padding:.75rem 1.25rem;border-radius:999px;font-size:.85rem;z-index:100;display:none;box-shadow:0 12px 40px rgba(0,0,0,.4)}
+.toast.on{display:block;animation:fadeUp .35s ease}
+@keyframes fadeUp{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}}
+footer{border-top:1px solid var(--line);padding:1.5rem 0;margin-top:2rem;color:var(--muted);font-size:.8rem;
+  display:flex;flex-wrap:wrap;gap:1rem;justify-content:space-between}
+.note{font-size:.8rem;color:var(--muted);margin-top:.5rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="nav">
+    <a class="brand" href="#top"><span class="brand-mark">V+</span> ValesPlus</a>
+    <div class="nav-actions">
+      <a class="btn btn-ghost" href="#modelo">Modelo SaaS</a>
+      <button type="button" class="btn btn-primary" id="btn-open-app">Abrir app</button>
+    </div>
+  </nav>
+
+  <div id="marketing">
+    <header class="hero" id="top">
+      <div>
+        <div class="eyebrow"><i></i> Prism@.TEC · SaaS para gestores de ventas</div>
+        <h1>El vale que antes escribías a mano,<br><em>ahora sale en un toque</em></h1>
+        <p class="hero-lead">
+          ValesPlus es el estándar del vale entre gestor y negocio: datos del cliente, del gestor, número único,
+          código QR y mensaje listo para WhatsApp. Sigues en el chat de siempre — nosotros ponemos orden, velocidad y rastro.
+        </p>
+        <div class="hero-cta">
+          <button type="button" class="btn btn-primary" id="btn-start">Empezar gratis (gestor)</button>
+          <a class="btn btn-ghost" href="#flujo">Ver cómo funciona</a>
+        </div>
+        <div class="hero-stats">
+          <div><strong>0</strong><span>apps que instalar</span></div>
+          <div><strong>1</strong><span>formato de vale</span></div>
+          <div><strong>WA</strong><span>sigue siendo el canal</span></div>
+        </div>
+      </div>
+      <div class="phone" aria-hidden="true">
+        <div class="phone-inner">
+          <div class="fake-vale">
+            <div class="num">VALE VP-0042</div>
+            <h3>Pedido listo para el negocio</h3>
+            <dl>
+              <dt>Cliente</dt><dd>Yaima Rodríguez</dd>
+              <dt>Dir.</dt><dd>Calle 10 #603, San Justo</dd>
+              <dt>Tel.</dt><dd>+53 5 XXX XXXX</dd>
+              <dt>Pedido</dt><dd>Producto A × 2</dd>
+              <dt>Gestor</dt><dd>Tú · contacto en el vale</dd>
+            </dl>
+            <div class="qr-demo" id="hero-qr"></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section id="flujo">
+      <h2>Hecho para el ritmo del gestor</h2>
+      <p class="section-lead">Tres pasos. Sin capacitar a todo el barrio. Sin sacar al negocio de WhatsApp.</p>
+      <div class="grid-3">
+        <div class="card"><div class="ico">①</div><h3>Activas tu perfil</h3><p>Nombre y teléfono del gestor se guardan. Cada vale ya sale firmado por ti.</p></div>
+        <div class="card"><div class="ico">②</div><h3>Armas el vale</h3><p>Cliente, dirección, contacto, carnet si hace falta, producto y cantidad. Campos claros, menos olvidos.</p></div>
+        <div class="card"><div class="ico">③</div><h3>WhatsApp + QR</h3><p>Un toque envía el texto al negocio. El QR abre el vale si hay que escanear en mostrador o almacén.</p></div>
+      </div>
+    </section>
+
+    <section id="dolor">
+      <h2>Lo que duele hoy</h2>
+      <p class="section-lead">No es falta de WhatsApp. Es falta de estándar.</p>
+      <div class="grid-3">
+        <div class="card"><h3>Cada quien escribe distinto</h3><p>El negocio pierde tiempo descifrando mensajes incompletos o en desorden.</p></div>
+        <div class="card"><h3>Sin número de vale</h3><p>Imposible rastrear “el de ayer en la tarde” cuando hay disputa o retraso.</p></div>
+        <div class="card"><h3>Datos del gestor sueltos</h3><p>Si hay que devolver o aclarar, no siempre está claro quién tramitó el pedido.</p></div>
+      </div>
+    </section>
+
+    <section id="modelo">
+      <h2>Modelo SaaS · el negocio paga el estándar</h2>
+      <p class="section-lead">
+        La idea es simple y difícil de copiar en la práctica: <strong style="color:var(--ink)">los gestores adoptan el formato porque les ahorra tiempo;
+        el negocio paga porque unifica a toda su red</strong>. ValesPlus no se queda con comisión de la venta: cobra por el riel del vale.
+      </p>
+      <div class="model-grid">
+        <div>
+          <ul class="model-list">
+            <li><span><strong style="color:var(--ink)">Cara grátis para el gestor</strong> — crear vales y enviar por WhatsApp sin fricción. Así se extiende el hábito.</span></li>
+            <li><span><strong style="color:var(--ink)">Cara de pago: el negocio</strong> — plantilla oficial, varios gestores, historial del día, estados (recibido / armado / entregado).</span></li>
+            <li><span><strong style="color:var(--ink)">Efecto red local</strong> — cuando el dueño dice “solo despacho con número ValesPlus”, el estándar se vuelve referente.</span></li>
+            <li><span><strong style="color:var(--ink)">Prism@.TEC (TCP)</strong> — setup, soporte y personalización de plantilla; software como servicio, no intermediación de mercancía.</span></li>
+          </ul>
+        </div>
+        <div class="price-card">
+          <div class="tag">Plan de referencia</div>
+          <div class="amount">Setup + mes<span>/ negocio</span></div>
+          <p style="color:var(--muted);font-size:.9rem;margin-bottom:1rem">
+            Incluye hasta 5 gestores, numeración, QR y soporte por WhatsApp.
+            Plan gestor free: vales ilimitados en modo personal (historial local del dispositivo).
+          </p>
+          <p style="color:var(--muted);font-size:.85rem;margin-bottom:1rem">
+            Precio final en CUP según acuerdo con el TCP. El piloto de 15 días convierte el hábito antes de cobrar la cuota.
+          </p>
+          <button type="button" class="btn btn-primary btn-block" id="btn-start-2">Probar el flujo ahora</button>
+          <p class="note">Contacto comercial: +53 5 106 9717 · lhmolam@gmail.com</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Por qué esto puede ser referente</h2>
+      <div class="grid-3">
+        <div class="card"><h3>No pelea con WhatsApp</h3><p>Se apoya en el canal que ya ganó. Solo fija el formato del vale.</p></div>
+        <div class="card"><h3>Un artefacto visible</h3><p>El número VP-#### y el QR se reconocen. Eso es marca en el territorio.</p></div>
+        <div class="card"><h3>SaaS de TCP cubano</h3><p>Entrega local, soporte en español, sin depender de APIs de pago de Meta.</p></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- APP -->
+  <div id="app">
+    <div class="app-bar">
+      <div>
+        <div class="brand"><span class="brand-mark">V+</span> ValesPlus</div>
+        <div class="note" id="gestor-chip">Sin perfil de gestor</div>
+      </div>
+      <button type="button" class="btn btn-ghost" id="btn-back-mkt">Marketing</button>
+    </div>
+    <div class="tabs">
+      <button type="button" class="tab on" data-tab="t-nuevo">Nuevo vale</button>
+      <button type="button" class="tab" data-tab="t-lista">Historial</button>
+      <button type="button" class="tab" data-tab="t-perfil">Perfil gestor</button>
+    </div>
+
+    <div id="t-perfil" class="panel">
+      <h2 style="font-size:1.4rem">Tu perfil de gestor</h2>
+      <p class="section-lead">Estos datos salen en cada vale. Llénalos una vez.</p>
+      <label>Nombre y apellidos</label>
+      <input id="g-nombre" placeholder="Ej. Luis Hernández" autocomplete="name">
+      <label>Teléfono de contacto</label>
+      <input id="g-tel" placeholder="+53 5 …" inputmode="tel" autocomplete="tel">
+      <label>Negocio destino (nombre)</label>
+      <input id="g-negocio" placeholder="Nombre del negocio que recibe el vale">
+      <label>WhatsApp del negocio (solo números, con código país)</label>
+      <input id="g-wa" placeholder="5351069717" inputmode="numeric">
+      <button type="button" class="btn btn-primary btn-block" id="btn-save-perfil">Guardar perfil</button>
+    </div>
+
+    <div id="t-nuevo" class="panel on">
+      <h2 style="font-size:1.4rem">Nuevo vale</h2>
+      <p class="section-lead">Cliente + pedido. El gestor se completa desde tu perfil.</p>
+      <div class="row-2">
+        <div>
+          <label>Nombre del cliente</label>
+          <input id="c-nombre" placeholder="Nombre y apellidos">
+        </div>
+        <div>
+          <label>Teléfono del cliente</label>
+          <input id="c-tel" placeholder="Teléfono" inputmode="tel">
+        </div>
+      </div>
+      <label>Dirección</label>
+      <input id="c-dir" placeholder="Calle, número, reparto, municipio">
+      <label>Carnet de identidad (opcional)</label>
+      <input id="c-ci" placeholder="Solo si el negocio lo exige" inputmode="numeric">
+      <div class="row-2">
+        <div>
+          <label>Producto / pedido</label>
+          <input id="c-prod" placeholder="Nombre del producto o servicio">
+        </div>
+        <div>
+          <label>Cantidad</label>
+          <input id="c-cant" type="number" min="1" value="1">
+        </div>
+      </div>
+      <label>Notas</label>
+      <textarea id="c-notas" rows="2" placeholder="Horario, color, referencia…"></textarea>
+      <button type="button" class="btn btn-primary btn-block" id="btn-gen">Generar vale</button>
+
+      <div class="vale-preview" id="vale-box" style="display:none">
+        <div class="code" id="v-code">VP-0000</div>
+        <div id="v-body" style="margin-top:.75rem;font-size:.9rem;color:var(--muted);white-space:pre-wrap"></div>
+        <div id="qrcode"></div>
+        <button type="button" class="btn btn-mint btn-block" id="btn-wa">Enviar por WhatsApp</button>
+        <button type="button" class="btn btn-ghost btn-block" id="btn-copy" style="margin-top:.5rem">Copiar texto del vale</button>
+        <p class="note">El QR apunta a un resumen local del vale (número + datos esenciales). En plan negocio puede ser un link online del TCP.</p>
+      </div>
+    </div>
+
+    <div id="t-lista" class="panel">
+      <h2 style="font-size:1.4rem">Historial en este dispositivo</h2>
+      <p class="section-lead">En el plan negocio el historial vive en el servidor del TCP. Aquí guardamos el piloto local.</p>
+      <div id="lista-vales" class="empty">Aún no hay vales.</div>
+    </div>
+  </div>
+
+  <footer>
+    <div><strong style="color:var(--ink)">ValesPlus</strong> · vertical de Prism@.TEC (TCP · Guantánamo)<br>
+      Software de vales para gestores · no es medio de pago ni banco.</div>
+    <div>+53 5 106 9717 · lhmolam@gmail.com</div>
+  </footer>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+(function(){
+  var KEY_P = 'valesplus_perfil_v1';
+  var KEY_V = 'valesplus_vales_v1';
+  var KEY_N = 'valesplus_seq_v1';
+
+  function toast(m){
+    var t = document.getElementById('toast');
+    t.textContent = m; t.classList.add('on');
+    setTimeout(function(){ t.classList.remove('on'); }, 2200);
+  }
+  function loadPerfil(){
+    try { return JSON.parse(localStorage.getItem(KEY_P) || '{}'); } catch(e){ return {}; }
+  }
+  function savePerfil(p){ localStorage.setItem(KEY_P, JSON.stringify(p)); }
+  function loadVales(){
+    try { return JSON.parse(localStorage.getItem(KEY_V) || '[]'); } catch(e){ return []; }
+  }
+  function saveVales(arr){ localStorage.setItem(KEY_V, JSON.stringify(arr)); }
+  function nextCode(){
+    var n = parseInt(localStorage.getItem(KEY_N) || '0', 10) + 1;
+    localStorage.setItem(KEY_N, String(n));
+    return 'VP-' + String(n).padStart(4, '0');
+  }
+  function chip(){
+    var p = loadPerfil();
+    var el = document.getElementById('gestor-chip');
+    if(p.nombre) el.textContent = p.nombre + (p.tel ? ' · ' + p.tel : '');
+    else el.textContent = 'Sin perfil de gestor — completa la pestaña Perfil';
+  }
+  function openApp(){
+    document.getElementById('marketing').classList.add('hid');
+    document.getElementById('app').classList.add('on');
+    chip();
+    renderLista();
+    var p = loadPerfil();
+    if(!p.nombre) showTab('t-perfil');
+  }
+  function showMkt(){
+    document.getElementById('marketing').classList.remove('hid');
+    document.getElementById('app').classList.remove('on');
+  }
+  function showTab(id){
+    document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('on', t.getAttribute('data-tab')===id); });
+    document.querySelectorAll('.panel').forEach(function(p){ p.classList.toggle('on', p.id===id); });
+  }
+  document.querySelectorAll('.tab').forEach(function(t){
+    t.addEventListener('click', function(){ showTab(t.getAttribute('data-tab')); });
+  });
+  document.getElementById('btn-open-app').onclick = openApp;
+  document.getElementById('btn-start').onclick = openApp;
+  document.getElementById('btn-start-2').onclick = openApp;
+  document.getElementById('btn-back-mkt').onclick = showMkt;
+
+  // fill perfil fields
+  (function(){
+    var p = loadPerfil();
+    if(p.nombre) document.getElementById('g-nombre').value = p.nombre;
+    if(p.tel) document.getElementById('g-tel').value = p.tel;
+    if(p.negocio) document.getElementById('g-negocio').value = p.negocio;
+    if(p.wa) document.getElementById('g-wa').value = p.wa;
+  })();
+
+  document.getElementById('btn-save-perfil').onclick = function(){
+    var p = {
+      nombre: document.getElementById('g-nombre').value.trim(),
+      tel: document.getElementById('g-tel').value.trim(),
+      negocio: document.getElementById('g-negocio').value.trim(),
+      wa: document.getElementById('g-wa').value.replace(/\D/g,'')
+    };
+    if(!p.nombre || !p.tel){ toast('Nombre y teléfono del gestor son obligatorios'); return; }
+    savePerfil(p); chip(); toast('Perfil guardado'); showTab('t-nuevo');
+  };
+
+  var lastVale = null;
+
+  function buildText(v){
+    return (
+      'VALE '+v.code+'\n'+
+      '— Cliente —\n'+
+      'Nombre: '+v.cliente+'\n'+
+      'Dirección: '+v.direccion+'\n'+
+      'Tel: '+v.telCliente+'\n'+
+      (v.ci ? ('CI: '+v.ci+'\n') : '')+
+      '— Pedido —\n'+
+      v.producto+' × '+v.cantidad+'\n'+
+      (v.notas ? ('Notas: '+v.notas+'\n') : '')+
+      '— Gestor —\n'+
+      'Nombre: '+v.gestor+'\n'+
+      'Tel: '+v.telGestor+'\n'+
+      (v.negocio ? ('Negocio: '+v.negocio+'\n') : '')+
+      'ValesPlus · Prism@.TEC'
+    );
+  }
+
+  document.getElementById('btn-gen').onclick = function(){
+    var p = loadPerfil();
+    if(!p.nombre || !p.tel){ toast('Primero guarda tu perfil de gestor'); showTab('t-perfil'); return; }
+    var v = {
+      code: nextCode(),
+      ts: new Date().toISOString(),
+      cliente: document.getElementById('c-nombre').value.trim(),
+      direccion: document.getElementById('c-dir').value.trim(),
+      telCliente: document.getElementById('c-tel').value.trim(),
+      ci: document.getElementById('c-ci').value.trim(),
+      producto: document.getElementById('c-prod').value.trim(),
+      cantidad: document.getElementById('c-cant').value || '1',
+      notas: document.getElementById('c-notas').value.trim(),
+      gestor: p.nombre,
+      telGestor: p.tel,
+      negocio: p.negocio || '',
+      wa: p.wa || ''
+    };
+    if(!v.cliente || !v.producto){ toast('Cliente y producto son obligatorios'); return; }
+    v.text = buildText(v);
+    lastVale = v;
+    var arr = loadVales();
+    arr.unshift(v);
+    if(arr.length > 100) arr = arr.slice(0,100);
+    saveVales(arr);
+    document.getElementById('vale-box').style.display = 'block';
+    document.getElementById('v-code').textContent = v.code;
+    document.getElementById('v-body').textContent = v.text;
+    var qr = document.getElementById('qrcode');
+    qr.innerHTML = '';
+    // QR payload: compact summary (scannable without server)
+    var payload = v.code+'|'+v.cliente+'|'+v.producto+'x'+v.cantidad+'|G:'+v.gestor+'|'+v.telGestor;
+    if(payload.length > 180) payload = v.code+'|'+v.cliente+'|'+v.producto+'x'+v.cantidad+'|'+v.telGestor;
+    try {
+      new QRCode(qr, { text: payload, width: 160, height: 160, correctLevel: QRCode.CorrectLevel.M });
+    } catch(e){ qr.textContent = 'QR no disponible'; }
+    renderLista();
+    toast('Vale '+v.code+' generado');
+  };
+
+  document.getElementById('btn-wa').onclick = function(){
+    if(!lastVale) return;
+    var phone = lastVale.wa || loadPerfil().wa || '';
+    var url = phone
+      ? 'https://wa.me/'+phone+'?text='+encodeURIComponent(lastVale.text)
+      : 'https://wa.me/?text='+encodeURIComponent(lastVale.text);
+    window.open(url, '_blank');
+  };
+  document.getElementById('btn-copy').onclick = function(){
+    if(!lastVale) return;
+    navigator.clipboard.writeText(lastVale.text).then(function(){ toast('Texto copiado'); }).catch(function(){ toast('Copia manual desde el cuadro'); });
+  };
+
+  function renderLista(){
+    var arr = loadVales();
+    var el = document.getElementById('lista-vales');
+    if(!arr.length){ el.className='empty'; el.textContent='Aún no hay vales.'; return; }
+    el.className='';
+    el.innerHTML = arr.map(function(v,i){
+      return '<div class="vale-item" data-i="'+i+'"><div class="meta"><span>'+v.code+'</span><span>'+(v.ts||'').slice(0,16).replace('T',' ')+'</span></div>'+
+        '<div style="margin-top:.35rem;font-size:.9rem">'+v.cliente+' · '+v.producto+' × '+v.cantidad+'</div></div>';
+    }).join('');
+    el.querySelectorAll('.vale-item').forEach(function(node){
+      node.onclick = function(){
+        var v = arr[+node.getAttribute('data-i')];
+        lastVale = v;
+        showTab('t-nuevo');
+        document.getElementById('vale-box').style.display = 'block';
+        document.getElementById('v-code').textContent = v.code;
+        document.getElementById('v-body').textContent = v.text;
+        var qr = document.getElementById('qrcode'); qr.innerHTML='';
+        try { new QRCode(qr, { text: v.code+'|'+v.cliente+'|'+v.producto, width: 160, height: 160 }); } catch(e){}
+      };
+    });
+  }
+
+  // hero qr decorative
+  try {
+    var hq = document.getElementById('hero-qr');
+    if(hq && window.QRCode) new QRCode(hq, { text: 'ValesPlus·VP-DEMO', width: 88, height: 88 });
+  } catch(e){}
+})();
+</script>
+</body>
+</html>
