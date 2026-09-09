@@ -1,0 +1,25 @@
+{
+  "name": "ValesPlus",
+  "short_name": "ValesPlus",
+  "description": "Vales para gestores de ventas",
+  "start_url": "/w/valesplus.app.ans",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0b0f",
+  "theme_color": "#0a0b0f",
+  "icons": [
+    {
+      "src": "/static/apps/valesplus/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/apps/valesplus/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
