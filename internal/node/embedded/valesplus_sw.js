@@ -1,4 +1,4 @@
-const CACHE='valesplus-v3';
+const CACHE='valesplus-v4';
 const SHELL=[
   '/w/valesplus.app.ans',
   '/static/apps/valesplus/manifest.webmanifest',

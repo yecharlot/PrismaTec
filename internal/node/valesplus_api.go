@@ -1,10 +1,16 @@
 package node
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"html"
+	"image"
+	"image/color"
+	"image/draw"
+	"image/jpeg"
+	_ "image/png"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -132,6 +138,116 @@ func loadVPVale(id string) (*vpVale, error) {
 	return &v, nil
 }
 
+
+func vpFormatPhone(s string) string {
+	d := make([]rune, 0, len(s))
+	for _, r := range s {
+		if r >= '0' && r <= '9' {
+			d = append(d, r)
+		}
+	}
+	if len(d) == 0 {
+		return strings.TrimSpace(s)
+	}
+	// Cuba mobile 53 + 8 digits
+	if len(d) == 10 && d[0] == '5' {
+		// 5xxxxxxx -> +53 5 xxx xxxx if 8 after? 
+	}
+	if len(d) >= 10 && d[0] == '5' && d[1] == '3' {
+		rest := string(d[2:])
+		if len(rest) == 8 {
+			return "+53 " + rest[0:1] + " " + rest[1:4] + " " + rest[4:]
+		}
+		return "+53 " + rest
+	}
+	if len(d) == 8 && d[0] == '5' {
+		return "+53 " + string(d[0:1]) + " " + string(d[1:4]) + " " + string(d[4:])
+	}
+	if len(d) == 8 {
+		return string(d[0:4]) + " " + string(d[4:])
+	}
+	return string(d)
+}
+
+func vpWritePhotoAndOG(id string, dataURL string) bool {
+	if !strings.HasPrefix(dataURL, "data:image/") {
+		// still write default OG without product photo
+		_ = vpRenderOG(id, nil, "ValesPlus", "")
+		return false
+	}
+	parts := strings.SplitN(dataURL, ",", 2)
+	if len(parts) != 2 {
+		_ = vpRenderOG(id, nil, "ValesPlus", "")
+		return false
+	}
+	raw, err := base64.StdEncoding.DecodeString(parts[1])
+	if err != nil {
+		raw, err = base64.RawStdEncoding.DecodeString(parts[1])
+	}
+	if err != nil || len(raw) < 32 || len(raw) > 2<<20 {
+		_ = vpRenderOG(id, nil, "ValesPlus", "")
+		return false
+	}
+	_ = os.WriteFile(filepath.Join(vpDir(), id+".jpg"), raw, 0o644)
+	img, _, err := image.Decode(bytes.NewReader(raw))
+	if err != nil {
+		_ = vpRenderOG(id, nil, "ValesPlus", "")
+		return true // photo file exists even if decode for OG fails
+	}
+	_ = vpRenderOG(id, img, "ValesPlus", "")
+	return true
+}
+
+// vpRenderOG builds a 1200x630 JPEG for WhatsApp / Open Graph previews.
+func vpRenderOG(id string, product image.Image, title, subtitle string) error {
+	const W, H = 1200, 630
+	dst := image.NewRGBA(image.Rect(0, 0, W, H))
+	// background dark
+	bg := color.RGBA{10, 11, 15, 255}
+	draw.Draw(dst, dst.Bounds(), &image.Uniform{bg}, image.Point{}, draw.Src)
+	// gold bar top
+	gold := color.RGBA{255, 196, 0, 255}
+	draw.Draw(dst, image.Rect(0, 0, W, 12), &image.Uniform{gold}, image.Point{}, draw.Src)
+	if product != nil {
+		// fit product into left/center area
+		pb := product.Bounds()
+		pw, ph := pb.Dx(), pb.Dy()
+		if pw < 1 || ph < 1 {
+			return nil
+		}
+		// target box 1200x480
+		boxW, boxH := W, 480
+		scale := float64(boxW) / float64(pw)
+		if float64(ph)*scale > float64(boxH) {
+			scale = float64(boxH) / float64(ph)
+		}
+		tw := int(float64(pw) * scale)
+		th := int(float64(ph) * scale)
+		ox := (W - tw) / 2
+		oy := 20
+		// nearest-neighbor scale
+		for y := 0; y < th; y++ {
+			sy := pb.Min.Y + y*ph/th
+			for x := 0; x < tw; x++ {
+				sx := pb.Min.X + x*pw/tw
+				dst.Set(ox+x, oy+y, product.At(sx, sy))
+			}
+		}
+		// bottom strip
+		draw.Draw(dst, image.Rect(0, 500, W, H), &image.Uniform{color.RGBA{22, 25, 34, 255}}, image.Point{}, draw.Src)
+		draw.Draw(dst, image.Rect(0, 500, W, 504), &image.Uniform{gold}, image.Point{}, draw.Src)
+	} else {
+		// gold gradient-ish block
+		draw.Draw(dst, image.Rect(80, 80, W-80, 480), &image.Uniform{color.RGBA{255, 160, 0, 255}}, image.Point{}, draw.Src)
+	}
+	var buf bytes.Buffer
+	if err := jpeg.Encode(&buf, dst, &jpeg.Options{Quality: 85}); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(vpDir(), id+"_og.jpg"), buf.Bytes(), 0o644)
+}
+
+
 func (n *NodoAlset) handleValesPlusVale(w http.ResponseWriter, r *http.Request) {
 	vpCORS(w)
 	if r.Method == http.MethodOptions {
@@ -166,21 +282,7 @@ func (n *NodoAlset) handleValesPlusVale(w http.ResponseWriter, r *http.Request) 
 	}
 	id := vpRandID()
 	_ = vpEnsureDir()
-	hasPhoto := false
-	if strings.HasPrefix(in.Photo, "data:image/") {
-		parts := strings.SplitN(in.Photo, ",", 2)
-		if len(parts) == 2 {
-			raw, err := base64.StdEncoding.DecodeString(parts[1])
-			if err != nil {
-				// try raw std without padding issues
-				raw, err = base64.RawStdEncoding.DecodeString(parts[1])
-			}
-			if err == nil && len(raw) > 32 && len(raw) < 2<<20 {
-				_ = os.WriteFile(filepath.Join(vpDir(), id+".jpg"), raw, 0o644)
-				hasPhoto = true
-			}
-		}
-	}
+	hasPhoto := vpWritePhotoAndOG(id, in.Photo)
 	v := vpVale{
 		ID: id, Code: in.Code, Text: in.Text, Cliente: in.Cliente, Producto: in.Producto,
 		Cantidad: in.Cantidad, Gestor: in.Gestor, TelGestor: in.TelGestor, Negocio: in.Negocio,
@@ -211,18 +313,36 @@ func (n *NodoAlset) handleValesPlusCard(w http.ResponseWriter, r *http.Request) 
 	base := vpBaseURL(r)
 	title := html.EscapeString(v.Code + " · " + v.Producto)
 	desc := html.EscapeString(strings.TrimSpace(v.Cliente + " · " + v.Producto + " × " + v.Cantidad + " · Gestor: " + v.Gestor))
-	img := base + "/static/apps/valesplus/icon-512.png"
-	if v.HasPhoto {
-		img = base + "/api/valesplus/photo/" + id
+	img := base + "/api/valesplus/og/" + id
+	// fallback chain
+	if _, err := os.Stat(filepath.Join(vpDir(), id+"_og.jpg")); err != nil {
+		if v.HasPhoto {
+			img = base + "/api/valesplus/photo/" + id
+		} else {
+			img = base + "/static/apps/valesplus/icon-512.png"
+		}
 	}
-	textHTML := html.EscapeString(v.Text)
-	textHTML = strings.ReplaceAll(textHTML, "\n", "<br>")
 	photoBlock := ""
 	if v.HasPhoto {
-		photoBlock = `<div class="hero" style="background-image:url('/api/valesplus/photo/` + id + `')"></div>`
+		photoBlock = `<div class="hero"><img src="` + base + `/api/valesplus/photo/` + id + `" alt="producto" width="420" height="220"></div>`
 	} else {
 		photoBlock = `<div class="hero default"><span>ValesPlus</span></div>`
 	}
+	clienteLine := html.EscapeString(strings.TrimSpace(v.Cliente))
+	pedidoLine := html.EscapeString(strings.TrimSpace(v.Producto))
+	if strings.TrimSpace(v.Cantidad) != "" {
+		pedidoLine += " × " + html.EscapeString(v.Cantidad)
+	}
+	gestorLine := html.EscapeString(strings.TrimSpace(v.Gestor))
+	if strings.TrimSpace(v.TelGestor) != "" {
+		gestorLine += "<br>" + html.EscapeString(vpFormatPhone(v.TelGestor))
+	}
+	if strings.TrimSpace(v.Negocio) != "" {
+		gestorLine += "<br>" + html.EscapeString(v.Negocio)
+	}
+	sections := `<div class="sec"><h4>Cliente</h4><p>` + clienteLine + `</p></div>` +
+		`<div class="sec"><h4>Pedido</h4><p>` + pedidoLine + `</p></div>` +
+		`<div class="sec"><h4>Gestor</h4><p>` + gestorLine + `</p></div>`
 	page := `<!DOCTYPE html><html lang="es"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>` + title + `</title>
@@ -230,32 +350,57 @@ func (n *NodoAlset) handleValesPlusCard(w http.ResponseWriter, r *http.Request) 
 <meta property="og:title" content="` + title + `">
 <meta property="og:description" content="` + desc + `">
 <meta property="og:image" content="` + html.EscapeString(img) + `">
-<meta property="og:image:width" content="512">
-<meta property="og:image:height" content="512">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="` + title + `">
 <meta name="twitter:description" content="` + desc + `">
 <meta name="twitter:image" content="` + html.EscapeString(img) + `">
 <style>
 body{margin:0;font-family:system-ui,sans-serif;background:#0a0b0f;color:#f5f3ee;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
-.card{width:100%;max-width:400px;border-radius:20px;overflow:hidden;background:#161922;border:1px solid rgba(255,196,0,.2);box-shadow:0 24px 60px rgba(0,0,0,.45)}
-.hero{height:200px;background-size:cover;background-position:center;position:relative}
-.hero::after{content:"";position:absolute;inset:0;backdrop-filter:blur(0px);background:linear-gradient(to top,rgba(10,11,15,.85),transparent 55%)}
-.hero.default{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#FFC400,#FF9100);color:#111;font-weight:800;font-size:1.4rem}
-.hero.default::after{display:none}
-.body{padding:1.15rem 1.25rem 1.4rem}
-.code{color:#FFC400;font-weight:700;letter-spacing:.06em;font-size:.85rem}
-.meta{color:#9a968c;font-size:.9rem;margin-top:.75rem;line-height:1.55}
-.foot{margin-top:1rem;font-size:.75rem;color:#7a7975}
+.card{width:100%;max-width:420px;border-radius:22px;overflow:hidden;background:#161922;border:1px solid rgba(255,196,0,.22);box-shadow:0 24px 60px rgba(0,0,0,.45);text-align:center}
+.hero{height:220px;background:#111;position:relative;display:flex;align-items:center;justify-content:center}
+.hero img{width:100%;height:100%;object-fit:cover;display:block}
+.hero.default{background:linear-gradient(135deg,#FFC400,#FF9100);color:#111;font-weight:800;font-size:1.5rem}
+.body{padding:1.35rem 1.4rem 1.55rem;text-align:center}
+.code{color:#FFC400;font-weight:700;letter-spacing:.1em;font-size:.9rem;margin-bottom:1rem}
+.sec{margin:0.85rem 0;padding:0.75rem 0;border-top:1px solid rgba(255,196,0,.12)}
+.sec:first-of-type{border-top:none;padding-top:0}
+.sec h4{color:#FFC400;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;margin:0 0 .45rem;font-weight:700}
+.sec p{color:#d8d4cc;font-size:.95rem;line-height:1.55;margin:0;white-space:pre-wrap}
+.foot{margin-top:1.15rem;font-size:.78rem;color:#8a8680}
 </style></head><body>
 <div class="card">` + photoBlock + `
 <div class="body"><div class="code">` + html.EscapeString(v.Code) + `</div>
-<div class="meta">` + textHTML + `</div>
+` + sections + `
 <div class="foot">ValesPlus · Prism@.TEC</div></div></div>
 </body></html>`
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "public, max-age=300")
 	_, _ = w.Write([]byte(page))
+}
+
+func (n *NodoAlset) handleValesPlusOG(w http.ResponseWriter, r *http.Request) {
+	vpCORS(w)
+	id := strings.TrimPrefix(r.URL.Path, "/api/valesplus/og/")
+	id = strings.Trim(id, "/")
+	if id == "" || strings.Contains(id, "..") {
+		http.NotFound(w, r)
+		return
+	}
+	p := filepath.Join(vpDir(), id+"_og.jpg")
+	b, err := os.ReadFile(p)
+	if err != nil {
+		// fallback to product photo
+		b, err = os.ReadFile(filepath.Join(vpDir(), id+".jpg"))
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+	}
+	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	_, _ = w.Write(b)
 }
 
 func (n *NodoAlset) handleValesPlusPhoto(w http.ResponseWriter, r *http.Request) {
@@ -376,6 +521,8 @@ func (n *NodoAlset) handleValesPlusAPI(w http.ResponseWriter, r *http.Request) {
 		n.handleValesPlusAnnouncements(w, r)
 	case strings.HasPrefix(path, "card/"):
 		n.handleValesPlusCard(w, r)
+	case strings.HasPrefix(path, "og/"):
+		n.handleValesPlusOG(w, r)
 	case strings.HasPrefix(path, "photo/"):
 		n.handleValesPlusPhoto(w, r)
 	default:
