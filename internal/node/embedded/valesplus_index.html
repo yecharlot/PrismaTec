@@ -130,6 +130,20 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
   background:linear-gradient(135deg,#FFC400,#FF9100);color:#111;font-weight:800;font-size:1.2rem;z-index:1}
 .card-hero.has-photo .fallback{display:none}
 
+
+.notif-bar{margin:0 0 .85rem;border:1px solid rgba(0,229,168,.28);background:rgba(0,229,168,.07);border-radius:14px;overflow:hidden}
+.notif-bar.hidden{display:none}
+.notif-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.65rem .85rem;cursor:pointer;user-select:none}
+.notif-head strong{color:var(--mint);font-size:.88rem}
+.notif-head span{font-size:.75rem;color:var(--muted)}
+.notif-list{display:none;border-top:1px solid rgba(0,229,168,.2);max-height:220px;overflow-y:auto}
+.notif-bar.open .notif-list{display:block}
+.notif-item{padding:.75rem .85rem;border-bottom:1px solid rgba(255,255,255,.06)}
+.notif-item:last-child{border-bottom:none}
+.notif-item h4{font-size:.88rem;margin:0 0 .25rem;color:var(--ink)}
+.notif-item p{font-size:.8rem;color:var(--muted);margin:0 0 .55rem;line-height:1.4}
+.notif-item button{width:auto;padding:.35rem .7rem;font-size:.72rem;border-radius:999px}
+
 </style>
 </head>
 <body>
@@ -147,7 +161,14 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
       <h1>Nuevo <em>vale</em></h1>
       <p class="sub">Prepara offline. Al tener red, publica la tarjeta y mándala por WhatsApp con foto.</p>
       <div class="queue" id="queue-msg" style="display:none"></div>
-      <div id="announce"></div>
+      <div class="notif-bar hidden" id="notifBar">
+        <div class="notif-head" id="notifHead">
+          <strong id="notifTitle">Avisos</strong>
+          <span id="notifCount"></span>
+        </div>
+        <div class="notif-list" id="notifList"></div>
+      </div>
+      <div id="announce" style="display:none"></div>
       <div class="glass">
         <div id="formPanel">
           <div id="form"></div>
@@ -183,7 +204,8 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
             </div>
           </div>
           <div class="result-actions">
-            <button type="button" class="btn btn-ghost" id="btn-edit">Editar datos</button>
+            <button type="button" class="btn btn-gold" id="btn-new">＋ Nuevo vale</button>
+            <button type="button" class="btn btn-ghost" id="btn-edit">Editar este vale</button>
             <button type="button" class="btn btn-mint" id="btn-wa">Enviar por WhatsApp</button>
             <button type="button" class="btn btn-ghost" id="btn-copy">Copiar texto</button>
           </div>
@@ -542,6 +564,9 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
     showForm();
     toast('Puedes corregir y volver a generar');
   };
+  document.getElementById('btn-new').onclick=function(){
+    resetForNewVale();
+  };
 
   async function publish(v){
     if(!online) return null;
@@ -699,17 +724,54 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
   }
 
   // device + announcements
+  function readMap(){ return jget(KA,{}); }
+  function markRead(id){
+    var m=readMap(); m[id]=1; jset(KA,m); renderNotifs();
+  }
+  function renderNotifs(){
+    var items = window.__vpAnnouncements || [];
+    var seen = readMap();
+    var unread = items.filter(function(it){ return it && it.id && !seen[it.id]; });
+    var bar = document.getElementById('notifBar');
+    var list = document.getElementById('notifList');
+    var title = document.getElementById('notifTitle');
+    var count = document.getElementById('notifCount');
+    if(!bar) return;
+    if(!unread.length){
+      bar.classList.add('hidden');
+      bar.classList.remove('open');
+      list.innerHTML='';
+      return;
+    }
+    bar.classList.remove('hidden');
+    title.textContent = unread.length===1 ? '1 aviso nuevo' : (unread.length+' avisos nuevos');
+    count.textContent = bar.classList.contains('open') ? 'ocultar' : 'ver';
+    list.innerHTML = unread.map(function(it){
+      var body = String(it.body||'').replace(/</g,'&lt;');
+      var t = String(it.title||'Aviso').replace(/</g,'&lt;');
+      return '<div class="notif-item"><h4>'+t+'</h4><p>'+body+'</p>'+
+        '<button type="button" class="btn btn-ghost" data-read="'+it.id+'">Marcar como leída</button></div>';
+    }).join('');
+    list.querySelectorAll('[data-read]').forEach(function(b){
+      b.onclick=function(ev){ ev.stopPropagation(); markRead(b.getAttribute('data-read')); toast('Aviso archivado'); };
+    });
+  }
+  var notifHead=document.getElementById('notifHead');
+  if(notifHead){
+    notifHead.onclick=function(){
+      var bar=document.getElementById('notifBar');
+      if(bar.classList.contains('hidden')) return;
+      bar.classList.toggle('open');
+      document.getElementById('notifCount').textContent = bar.classList.contains('open') ? 'ocultar' : 'ver';
+    };
+  }
   async function ping(){
     try{
       await fetch('/api/valesplus/device',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:deviceId()})});
       var a=await fetch('/api/valesplus/announcements').then(function(r){return r.json()});
-      if(a&&a.items&&a.items.length){
-        var seen=jget(KA,{});
-        var latest=a.items[0];
-        if(latest&&!seen[latest.id]){
-          announce.innerHTML='<div class="banner"><strong>'+latest.title+'</strong>'+(latest.body||'')+'</div>';
-          seen[latest.id]=1;jset(KA,seen);
-        }
+      if(a&&a.items){
+        window.__vpAnnouncements = a.items;
+        renderNotifs();
       }
     }catch(e){}
   }
@@ -725,7 +787,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
   if('serviceWorker' in navigator)navigator.serviceWorker.register('/static/apps/valesplus/sw.js').catch(function(){});
 
   renderCfg();renderForm();renderList();ping();flushQueue();
-  setInterval(function(){ if(navigator.onLine) ping(); }, 60000);
+  setInterval(function(){ if(navigator.onLine) ping(); }, 20000);
   // hot features
   function applyFeatures(f){
     if(!f) return;
