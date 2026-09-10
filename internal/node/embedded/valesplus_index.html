@@ -154,7 +154,10 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
           <label>Precio</label>
           <div class="money-row">
             <input id="f_precio" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
-            <select id="f_moneda"></select>
+            <div style="display:flex;align-items:center;gap:.4rem">
+              <img id="monedaFlagImg" alt="" width="24" height="18" style="display:none;border-radius:2px;flex-shrink:0">
+              <select id="f_moneda" style="flex:1"></select>
+            </div>
           </div>
           <input id="customMoneda" type="text" placeholder="Nombre de la moneda personalizada">
           <div class="photo-wrap" id="photoWrap">
@@ -302,56 +305,75 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
   };
 
   var CURRENCIES=[
-    {code:'USD', flag:'🇺🇸', name:'USD — Dólar estadounidense'},
-    {code:'CUP', flag:'🇨🇺', name:'CUP — Peso cubano'},
-    {code:'EUR', flag:'🇪🇺', name:'EUR — Euro'},
-    {code:'ZELLE', flag:'🇺🇸', name:'ZELLE'},
-    {code:'CAD', flag:'🇨🇦', name:'CAD — Dólar canadiense'},
-    {code:'MXN', flag:'🇲🇽', name:'MXN — Peso mexicano'},
-    {code:'COP', flag:'🇨🇴', name:'COP — Peso colombiano'},
-    {code:'ARS', flag:'🇦🇷', name:'ARS — Peso argentino'},
-    {code:'CLP', flag:'🇨🇱', name:'CLP — Peso chileno'},
-    {code:'PEN', flag:'🇵🇪', name:'PEN — Sol peruano'},
-    {code:'BRL', flag:'🇧🇷', name:'BRL — Real brasileño'},
-    {code:'UYU', flag:'🇺🇾', name:'UYU — Peso uruguayo'},
-    {code:'VES', flag:'🇻🇪', name:'VES — Bolívar'},
-    {code:'DOP', flag:'🇩🇴', name:'DOP — Peso dominicano'},
-    {code:'CRC', flag:'🇨🇷', name:'CRC — Colón costarricense'},
-    {code:'GTQ', flag:'🇬🇹', name:'GTQ — Quetzal'},
-    {code:'HNL', flag:'🇭🇳', name:'HNL — Lempira'},
-    {code:'NIO', flag:'🇳🇮', name:'NIO — Córdoba'},
-    {code:'PAB', flag:'🇵🇦', name:'PAB — Balboa'},
-    {code:'BOB', flag:'🇧🇴', name:'BOB — Boliviano'},
-    {code:'PYG', flag:'🇵🇾', name:'PYG — Guaraní'},
-    {code:'GBP', flag:'🇬🇧', name:'GBP — Libra esterlina'},
-    {code:'CHF', flag:'🇨🇭', name:'CHF — Franco suizo'},
-    {code:'JPY', flag:'🇯🇵', name:'JPY — Yen'},
-    {code:'CNY', flag:'🇨🇳', name:'CNY — Yuan'},
-    {code:'RUB', flag:'🇷🇺', name:'RUB — Rublo'},
-    {code:'INR', flag:'🇮🇳', name:'INR — Rupia india'},
-    {code:'OTHER', flag:'💱', name:'Otra moneda…'}
+    {code:'USD', cc:'us', name:'USD — Dólar'},
+    {code:'CUP', cc:'cu', name:'CUP — Peso cubano'},
+    {code:'EUR', cc:'eu', name:'EUR — Euro'},
+    {code:'ZELLE', cc:'us', name:'ZELLE'},
+    {code:'CAD', cc:'ca', name:'CAD — Canadá'},
+    {code:'MXN', cc:'mx', name:'MXN — México'},
+    {code:'COP', cc:'co', name:'COP — Colombia'},
+    {code:'ARS', cc:'ar', name:'ARS — Argentina'},
+    {code:'CLP', cc:'cl', name:'CLP — Chile'},
+    {code:'PEN', cc:'pe', name:'PEN — Perú'},
+    {code:'BRL', cc:'br', name:'BRL — Brasil'},
+    {code:'UYU', cc:'uy', name:'UYU — Uruguay'},
+    {code:'VES', cc:'ve', name:'VES — Venezuela'},
+    {code:'DOP', cc:'do', name:'DOP — Dominicana'},
+    {code:'CRC', cc:'cr', name:'CRC — Costa Rica'},
+    {code:'GTQ', cc:'gt', name:'GTQ — Guatemala'},
+    {code:'HNL', cc:'hn', name:'HNL — Honduras'},
+    {code:'NIO', cc:'ni', name:'NIO — Nicaragua'},
+    {code:'PAB', cc:'pa', name:'PAB — Panamá'},
+    {code:'BOB', cc:'bo', name:'BOB — Bolivia'},
+    {code:'PYG', cc:'py', name:'PYG — Paraguay'},
+    {code:'GBP', cc:'gb', name:'GBP — Libra'},
+    {code:'CHF', cc:'ch', name:'CHF — Suiza'},
+    {code:'JPY', cc:'jp', name:'JPY — Yen'},
+    {code:'CNY', cc:'cn', name:'CNY — Yuan'},
+    {code:'RUB', cc:'ru', name:'RUB — Rublo'},
+    {code:'INR', cc:'in', name:'INR — India'},
+    {code:'OTHER', cc:'', name:'Otra moneda…'}
   ];
+  function flagUrl(cc){
+    if(!cc) return '';
+    return 'https://flagcdn.com/24x18/' + cc + '.png';
+  }
   function fillMonedas(){
     var sel=document.getElementById('f_moneda');
-    if(!sel||sel.options.length) return;
-    sel.innerHTML=CURRENCIES.map(function(c){
-      return '<option value="'+c.code+'" data-flag="'+c.flag+'">'+c.flag+' '+c.name+'</option>';
+    if(!sel) return;
+    sel.innerHTML = CURRENCIES.map(function(c){
+      var label = c.cc ? (c.code + ' — ' + c.name.split('—').pop().trim()) : c.name;
+      // option text uses regional-friendly labels; visual flag via adjacent img
+      return '<option value="'+c.code+'" data-cc="'+c.cc+'">'+label+'</option>';
     }).join('');
     sel.value='USD';
+    updateFlagImg();
     sel.onchange=function(){
       document.getElementById('customMoneda').style.display=sel.value==='OTHER'?'block':'none';
+      updateFlagImg();
     };
+  }
+  function updateFlagImg(){
+    var sel=document.getElementById('f_moneda');
+    var img=document.getElementById('monedaFlagImg');
+    if(!sel||!img) return;
+    var opt=sel.options[sel.selectedIndex];
+    var cc=opt ? opt.getAttribute('data-cc') : '';
+    if(cc){ img.src=flagUrl(cc); img.style.display='inline-block'; img.alt=cc; }
+    else { img.removeAttribute('src'); img.style.display='none'; }
   }
   function selectedMoneda(){
     var sel=document.getElementById('f_moneda');
     var code=sel.value;
-    var flag=sel.options[sel.selectedIndex]?sel.options[sel.selectedIndex].getAttribute('data-flag'):'';
+    var opt=sel.options[sel.selectedIndex];
+    var cc=opt ? opt.getAttribute('data-cc') : '';
     var name=code;
     if(code==='OTHER'){
       name=(document.getElementById('customMoneda').value||'OTRA').trim();
-      flag='💱';
+      cc='';
     }
-    return {code:name, flag:flag};
+    // store text marker for vale; flag shown via cc in UI
+    return {code:name, flag: cc ? '' : '', cc:cc};
   }
 
   function renderForm(){
@@ -435,7 +457,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
     if(v.ci)L.push('CI: '+v.ci);
     L.push('— Pedido —');
     if(v.producto)L.push(v.producto+(v.cantidad?' × '+v.cantidad:''));
-    if(v.precio)L.push('Precio: '+(v.monedaFlag?v.monedaFlag+' ':'')+(v.moneda||'')+' '+v.precio);
+    if(v.precio)L.push('Precio: '+(v.moneda||'')+' '+v.precio);
     if(v.notas)L.push('Notas: '+v.notas);
     (v.extra||[]).forEach(function(e){L.push(e.label+': '+e.value)});
     L.push('— Gestor —','Nombre: '+v.gestor,'Tel: '+fmtPhone(v.telGestor));
@@ -461,7 +483,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
     function sec(t,b){if(!b)return'';return '<div class="card-sec"><h4>'+t+'</h4><p>'+String(b).replace(/</g,'&lt;')+'</p></div>'}
     var cliente=[v.cliente,v.direccion,v.telCliente?fmtPhone(v.telCliente):'',v.ci].filter(Boolean).join('\n');
     var precioLine='';
-    if(v.precio){precioLine=((v.monedaFlag||'')+' '+(v.moneda||'')+' '+v.precio).trim()}
+    if(v.precio){precioLine=((v.moneda||'USD')+' '+v.precio).trim()}
     var pedido=[v.producto+(v.cantidad?' × '+v.cantidad:''),precioLine,v.notas].filter(Boolean).join('\n');
     (v.extra||[]).forEach(function(e){pedido+=(pedido?'\n':'')+e.label+': '+e.value});
     var gestor=[v.gestor,v.telGestor?fmtPhone(v.telGestor):'',v.negocio].filter(Boolean).join('\n');
@@ -606,10 +628,10 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
   document.getElementById('btn-wa').onclick=function(){
     if(!last)return;
     var full = last.text || buildText(last);
-    // Texto completo del vale + enlace de tarjeta (preview con foto)
+    // WhatsApp solo genera preview si el enlace va primero y bien expuesto
     var msg = full;
     if(last.cardUrl){
-      msg = full + '\n\n— Tarjeta con foto —\n' + last.cardUrl;
+      msg = last.cardUrl + '\n\n' + full;
     }
     var phone=(last.wa||jget(KP,{}).wa||'').replace(/\D/g,'');
     var url=phone?'https://wa.me/'+phone+'?text='+encodeURIComponent(msg):'https://wa.me/?text='+encodeURIComponent(msg);

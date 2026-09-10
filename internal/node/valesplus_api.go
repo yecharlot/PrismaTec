@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"html"
 	"image"
 	"image/color"
@@ -327,7 +328,7 @@ func (n *NodoAlset) handleValesPlusVale(w http.ResponseWriter, r *http.Request) 
 	base := vpBaseURL(r)
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
-		"ok": true, "id": id, "cardUrl": base + "/api/valesplus/card/" + id, "hasPhoto": hasPhoto,
+		"ok": true, "id": id, "cardUrl": base + "/v/" + id, "hasPhoto": hasPhoto,
 	})
 }
 
@@ -347,18 +348,18 @@ func (n *NodoAlset) handleValesPlusCard(w http.ResponseWriter, r *http.Request) 
 	base := vpBaseURL(r)
 	title := html.EscapeString(v.Code + " · " + v.Producto)
 	desc := html.EscapeString(strings.TrimSpace(v.Cliente + " · " + v.Producto + " × " + v.Cantidad + " · Gestor: " + v.Gestor))
-	img := base + "/api/valesplus/og/" + id
+	img := base + "/v/" + id + "/og.jpg"
 	// fallback chain
 	if _, err := os.Stat(filepath.Join(vpDir(), id+"_og.jpg")); err != nil {
 		if v.HasPhoto {
-			img = base + "/api/valesplus/photo/" + id
+			img = base + "/v/" + id + "/photo.jpg"
 		} else {
 			img = base + "/static/apps/valesplus/icon-512.png"
 		}
 	}
 	photoBlock := ""
 	if v.HasPhoto {
-		photoBlock = `<div class="hero"><img src="` + base + `/api/valesplus/photo/` + id + `" alt="producto" width="420" height="220"></div>`
+		photoBlock = `<div class="hero"><img src="` + base + `/v/` + id + `/photo.jpg" alt="producto" width="420" height="220"></div>`
 	} else {
 		photoBlock = `<div class="hero default"><span>ValesPlus</span></div>`
 	}
@@ -384,15 +385,23 @@ func (n *NodoAlset) handleValesPlusCard(w http.ResponseWriter, r *http.Request) 
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>` + title + `</title>
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="ValesPlus">
+<meta property="og:locale" content="es_ES">
+<meta property="og:url" content="` + html.EscapeString(base+"/v/"+id) + `">
 <meta property="og:title" content="` + title + `">
 <meta property="og:description" content="` + desc + `">
 <meta property="og:image" content="` + html.EscapeString(img) + `">
+<meta property="og:image:secure_url" content="` + html.EscapeString(img) + `">
+<meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="` + title + `">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="` + title + `">
 <meta name="twitter:description" content="` + desc + `">
 <meta name="twitter:image" content="` + html.EscapeString(img) + `">
+<link rel="image_src" href="` + html.EscapeString(img) + `">
+<meta itemprop="image" content="` + html.EscapeString(img) + `">
 <style>
 body{margin:0;font-family:system-ui,sans-serif;background:#0a0b0f;color:#f5f3ee;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
 .card{width:100%;max-width:420px;border-radius:22px;overflow:hidden;background:#161922;border:1px solid rgba(255,196,0,.22);box-shadow:0 24px 60px rgba(0,0,0,.45);text-align:center}
@@ -436,7 +445,9 @@ func (n *NodoAlset) handleValesPlusOG(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(b)))
 	w.Header().Set("Cache-Control", "public, max-age=86400")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	_, _ = w.Write(b)
 }
 
@@ -455,7 +466,9 @@ func (n *NodoAlset) handleValesPlusPhoto(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(b)))
 	w.Header().Set("Cache-Control", "public, max-age=86400")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	_, _ = w.Write(b)
 }
 
@@ -617,7 +630,7 @@ func (n *NodoAlset) handleValesPlusAttachPhoto(w http.ResponseWriter, r *http.Re
 		"ok": ok, "id": id, "hasPhoto": ok,
 		"photoUrl": base + "/api/valesplus/photo/" + id,
 		"ogUrl":    base + "/api/valesplus/og/" + id,
-		"cardUrl":  base + "/api/valesplus/card/" + id,
+		"cardUrl":  base + "/v/" + id,
 	})
 }
 
@@ -652,7 +665,44 @@ func (n *NodoAlset) handleValesPlusAPI(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+
+func (n *NodoAlset) handleValesPlusPublic(w http.ResponseWriter, r *http.Request) {
+	// /v/{id} | /v/{id}/og.jpg | /v/{id}/photo.jpg
+	path := strings.TrimPrefix(r.URL.Path, "/v/")
+	path = strings.Trim(path, "/")
+	if path == "" {
+		http.NotFound(w, r)
+		return
+	}
+	parts := strings.Split(path, "/")
+	id := parts[0]
+	if id == "" || strings.Contains(id, "..") {
+		http.NotFound(w, r)
+		return
+	}
+	if len(parts) == 1 {
+		// rewrite to card handler path shape
+		r2 := r.Clone(r.Context())
+		r2.URL.Path = "/api/valesplus/card/" + id
+		n.handleValesPlusCard(w, r2)
+		return
+	}
+	switch parts[1] {
+	case "og.jpg", "og":
+		r2 := r.Clone(r.Context())
+		r2.URL.Path = "/api/valesplus/og/" + id
+		n.handleValesPlusOG(w, r2)
+	case "photo.jpg", "photo":
+		r2 := r.Clone(r.Context())
+		r2.URL.Path = "/api/valesplus/photo/" + id
+		n.handleValesPlusPhoto(w, r2)
+	default:
+		http.NotFound(w, r)
+	}
+}
+
 func (n *NodoAlset) registerValesPlusAPI(extra map[string]http.HandlerFunc) {
 	extra["/api/valesplus/"] = n.handleValesPlusAPI
 	extra["/api/valesplus"] = n.handleValesPlusAPI
+	extra["/v/"] = n.handleValesPlusPublic
 }

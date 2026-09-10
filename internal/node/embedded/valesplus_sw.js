@@ -1,4 +1,4 @@
-const CACHE='valesplus-v7';
+const CACHE='valesplus-v8';
 const SHELL=[
   '/w/valesplus.app.ans',
   '/static/apps/valesplus/manifest.webmanifest',
@@ -23,7 +23,7 @@ self.addEventListener('fetch',e=>{
     return;
   }
   // app shell: network first then cache (hot update)
-  if(u.includes('valesplus')||u.includes('fonts.g')||u.includes('qrcode')||u.includes('googleapis')||u.includes('gstatic')){
+  if(u.includes('valesplus')||u.includes('flagcdn.com')||u.includes('fonts.g')||u.includes('qrcode')||u.includes('googleapis')||u.includes('gstatic')){
     e.respondWith(
       fetch(e.request).then(res=>{
         const copy=res.clone();
