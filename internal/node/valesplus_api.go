@@ -20,7 +20,7 @@ import (
 )
 
 const valesplusDataDir = "data/valesplus"
-const valesplusMaxBody = 3 << 20
+const valesplusMaxBody = 10 << 20
 
 type vpVale struct {
 	ID        string              `json:"id"`
@@ -172,33 +172,61 @@ func vpFormatPhone(s string) string {
 	return string(d)
 }
 
-func vpWritePhotoAndOG(id string, dataURL string) bool {
-	if !strings.HasPrefix(dataURL, "data:image/") {
-		// still write default OG without product photo
-		_ = vpRenderOG(id, nil, "ValesPlus", "")
-		return false
+func vpDecodeImageData(s string) ([]byte, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil, os.ErrInvalid
 	}
-	parts := strings.SplitN(dataURL, ",", 2)
-	if len(parts) != 2 {
-		_ = vpRenderOG(id, nil, "ValesPlus", "")
-		return false
+	payload := s
+	if i := strings.Index(s, ","); i >= 0 && strings.HasPrefix(s, "data:") {
+		payload = s[i+1:]
 	}
-	raw, err := base64.StdEncoding.DecodeString(parts[1])
+	payload = strings.ReplaceAll(payload, "\n", "")
+	payload = strings.ReplaceAll(payload, "\r", "")
+	payload = strings.ReplaceAll(payload, " ", "")
+	raw, err := base64.StdEncoding.DecodeString(payload)
 	if err != nil {
-		raw, err = base64.RawStdEncoding.DecodeString(parts[1])
+		raw, err = base64.RawStdEncoding.DecodeString(payload)
 	}
-	if err != nil || len(raw) < 32 || len(raw) > 2<<20 {
+	if err != nil {
+		return nil, err
+	}
+	if len(raw) < 32 || len(raw) > 5<<20 {
+		return nil, os.ErrInvalid
+	}
+	return raw, nil
+}
+
+func vpWritePhotoBytes(id string, raw []byte) bool {
+	if len(raw) < 32 {
 		_ = vpRenderOG(id, nil, "ValesPlus", "")
 		return false
 	}
+	_ = vpEnsureDir()
+	// normalize to jpeg when possible
+	img, format, err := image.Decode(bytes.NewReader(raw))
+	if err == nil {
+		var buf bytes.Buffer
+		if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 82}); err == nil {
+			raw = buf.Bytes()
+		}
+		_ = os.WriteFile(filepath.Join(vpDir(), id+".jpg"), raw, 0o644)
+		_ = vpRenderOG(id, img, "ValesPlus", format)
+		return true
+	}
+	// keep original bytes as jpg name (may still be jpeg)
 	_ = os.WriteFile(filepath.Join(vpDir(), id+".jpg"), raw, 0o644)
-	img, _, err := image.Decode(bytes.NewReader(raw))
+	_ = vpRenderOG(id, nil, "ValesPlus", "")
+	return true
+}
+
+func vpWritePhotoAndOG(id string, dataURL string) bool {
+	raw, err := vpDecodeImageData(dataURL)
 	if err != nil {
 		_ = vpRenderOG(id, nil, "ValesPlus", "")
-		return true // photo file exists even if decode for OG fails
+		return false
 	}
-	_ = vpRenderOG(id, img, "ValesPlus", "")
-	return true
+	return vpWritePhotoBytes(id, raw)
 }
 
 // vpRenderOG builds a 1200x630 JPEG for WhatsApp / Open Graph previews.
@@ -516,6 +544,83 @@ func (n *NodoAlset) handleValesPlusAnnouncements(w http.ResponseWriter, r *http.
 	http.Error(w, "method", 405)
 }
 
+
+func (n *NodoAlset) handleValesPlusAttachPhoto(w http.ResponseWriter, r *http.Request) {
+	vpCORS(w)
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(204)
+		return
+	}
+	if r.Method != http.MethodPost {
+		http.Error(w, "POST only", 405)
+		return
+	}
+	id := strings.TrimPrefix(r.URL.Path, "/api/valesplus/attach/")
+	id = strings.Trim(id, "/")
+	if id == "" || strings.Contains(id, "..") {
+		w.WriteHeader(400)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "id"})
+		return
+	}
+	if _, err := loadVPVale(id); err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, valesplusMaxBody)
+	ct := r.Header.Get("Content-Type")
+	var raw []byte
+	if strings.Contains(ct, "multipart/form-data") {
+		if err := r.ParseMultipartForm(valesplusMaxBody); err != nil {
+			w.WriteHeader(400)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "multipart"})
+			return
+		}
+		f, _, err := r.FormFile("photo")
+		if err != nil {
+			w.WriteHeader(400)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "photo field"})
+			return
+		}
+		defer f.Close()
+		buf := bytes.NewBuffer(nil)
+		_, _ = buf.ReadFrom(f)
+		raw = buf.Bytes()
+	} else {
+		var in struct {
+			Photo string `json:"photo"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+			w.WriteHeader(400)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "json"})
+			return
+		}
+		var err error
+		raw, err = vpDecodeImageData(in.Photo)
+		if err != nil {
+			w.WriteHeader(400)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "decode"})
+			return
+		}
+	}
+	ok := vpWritePhotoBytes(id, raw)
+	if ok {
+		// mark hasPhoto on json
+		if v, err := loadVPVale(id); err == nil {
+			v.HasPhoto = true
+			b, _ := json.MarshalIndent(v, "", "  ")
+			_ = os.WriteFile(filepath.Join(vpDir(), id+".json"), b, 0o644)
+		}
+	}
+	base := vpBaseURL(r)
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"ok": ok, "id": id, "hasPhoto": ok,
+		"photoUrl": base + "/api/valesplus/photo/" + id,
+		"ogUrl":    base + "/api/valesplus/og/" + id,
+		"cardUrl":  base + "/api/valesplus/card/" + id,
+	})
+}
+
 func (n *NodoAlset) handleValesPlusAPI(w http.ResponseWriter, r *http.Request) {
 	path := strings.TrimPrefix(r.URL.Path, "/api/valesplus")
 	path = strings.TrimPrefix(path, "/")
@@ -530,6 +635,8 @@ func (n *NodoAlset) handleValesPlusAPI(w http.ResponseWriter, r *http.Request) {
 		n.handleValesPlusAnnouncements(w, r)
 	case strings.HasPrefix(path, "card/"):
 		n.handleValesPlusCard(w, r)
+	case strings.HasPrefix(path, "attach/"):
+		n.handleValesPlusAttachPhoto(w, r)
 	case strings.HasPrefix(path, "og/"):
 		n.handleValesPlusOG(w, r)
 	case strings.HasPrefix(path, "photo/"):

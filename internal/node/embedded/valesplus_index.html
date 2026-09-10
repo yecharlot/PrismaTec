@@ -375,29 +375,55 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
     if(d.length>8) return '+53 '+d;
     return d;
   }
-  photo.onchange=function(e){
-    var file=e.target.files&&e.target.files[0];
-    var box=document.getElementById('photoBox');
-    if(!file){photo='';window.__vpPhoto='';box.classList.remove('on');photoFake.innerHTML='<strong>＋ Foto del producto</strong>Toca para elegir o tomar (opcional)';return}
-    if(file.size>6e6){toast('Foto muy pesada');e.target.value='';return}
-    var rd=new FileReader();
-    rd.onload=function(){
-      var im=new Image();
-      im.onload=function(){
-        var max=1000,w=im.width,h=im.height;if(w>max||h>max){var r=Math.min(max/w,max/h);w=0|w*r;h=0|h*r}
-        var c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);
-        photo=c.toDataURL('image/jpeg',0.78);
-        window.__vpPhoto=photo;
-        photoPrev.src=photo;
-        box.classList.add('on');
-        photoFake.innerHTML='<strong>✓ Foto lista</strong>Toca para cambiar';
-        toast('Foto cargada');
+  function setLivePhoto(dataUrl){
+    photo = dataUrl || '';
+    window.__vpPhoto = photo;
+    var box = document.getElementById('photoBox');
+    var prev = document.getElementById('photoPrev');
+    if(photo){
+      prev.src = photo;
+      box.classList.add('on');
+      document.getElementById('photoFake').innerHTML = '<strong>✓ Foto lista</strong>Toca para cambiar';
+    } else {
+      prev.removeAttribute('src');
+      box.classList.remove('on');
+      document.getElementById('photoFake').innerHTML = '<strong>＋ Foto del producto</strong>Toca para elegir o tomar (opcional)';
+    }
+  }
+  function compressFile(file){
+    return new Promise(function(resolve, reject){
+      var rd = new FileReader();
+      rd.onerror = function(){ reject(new Error('read')); };
+      rd.onload = function(){
+        var im = new Image();
+        im.onerror = function(){ reject(new Error('img')); };
+        im.onload = function(){
+          var max = 720, w = im.width, h = im.height;
+          if(w > max || h > max){ var r = Math.min(max/w, max/h); w = 0|w*r; h = 0|h*r; }
+          var c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          c.getContext('2d').drawImage(im, 0, 0, w, h);
+          resolve(c.toDataURL('image/jpeg', 0.72));
+        };
+        im.src = rd.result;
       };
-      im.onerror=function(){toast('No se pudo leer la imagen')};
-      im.src=rd.result;
-    };
-    rd.onerror=function(){toast('Error al leer archivo')};
-    rd.readAsDataURL(file);
+      rd.readAsDataURL(file);
+    });
+  }
+  document.getElementById('photo').onchange = function(e){
+    var file = e.target.files && e.target.files[0];
+    if(!file){ setLivePhoto(''); return; }
+    toast('Procesando foto…');
+    compressFile(file).then(function(url){
+      setLivePhoto(url);
+      toast('Foto lista (' + Math.round(url.length/1024) + ' KB)');
+    }).catch(function(){
+      // fallback: raw data URL without compress
+      var rd = new FileReader();
+      rd.onload = function(){ setLivePhoto(rd.result); toast('Foto cargada'); };
+      rd.onerror = function(){ toast('No se pudo leer la foto'); };
+      rd.readAsDataURL(file);
+    });
   };
 
   function nextCode(){var n=+localStorage.getItem(KN)||0;n++;localStorage.setItem(KN,String(n));return 'VP-'+String(n).padStart(4,'0')}
@@ -419,7 +445,15 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
     return L.join('\n');
   }
 
+  function getLivePhoto(){
+    if(photo && photo.indexOf('data:image') === 0) return photo;
+    if(window.__vpPhoto && window.__vpPhoto.indexOf('data:image') === 0) return window.__vpPhoto;
+    var prev = document.getElementById('photoPrev');
+    if(prev && prev.src && prev.src.indexOf('data:image') === 0) return prev.src;
+    return '';
+  }
   function showVale(v){
+
     last=v;
     document.getElementById('formPanel').classList.add('hid');
     document.getElementById('resultPanel').classList.add('on');
@@ -436,7 +470,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
     // PHOTO: always use persistent img#cardPhoto
     var hero=document.getElementById('cardHero');
     var img=document.getElementById('cardPhoto');
-    var photoSrc = v.photo || window.__vpPhoto || '';
+    var photoSrc = v.photo || getLivePhoto() || window.__vpPhoto || '';
     if(!photoSrc && v.serverId) photoSrc = '/api/valesplus/photo/' + v.serverId + '?t=' + Date.now();
     if(photoSrc && String(photoSrc).length > 20){
       hero.classList.add('has-photo');
@@ -478,18 +512,40 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
   };
 
   async function publish(v){
-    if(!online)return null;
+    if(!online) return null;
     try{
-      var res=await fetch('/api/valesplus/vale',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-        code:v.code,text:v.text,cliente:v.cliente,producto:v.producto,cantidad:v.cantidad,gestor:v.gestor,telGestor:v.telGestor,
-        negocio:v.negocio,extra:v.extra,photo:v.photo||'',deviceId:deviceId(),precio:v.precio||'',moneda:v.moneda||'',monedaFlag:v.monedaFlag||''
-      })});
-      var d=await res.json();
-      if(d&&d.ok){v.cardUrl=d.cardUrl;v.serverId=d.id;v.pending=false;v.text=buildText(v);return v}
-    }catch(e){}
-    return null;
+      var body = {
+        code:v.code, text:v.text, cliente:v.cliente, producto:v.producto, cantidad:v.cantidad,
+        gestor:v.gestor, telGestor:v.telGestor, negocio:v.negocio, extra:v.extra||[],
+        photo:'', deviceId:deviceId(), precio:v.precio||'', moneda:v.moneda||'', monedaFlag:v.monedaFlag||''
+      };
+      var res = await fetch('/api/valesplus/vale', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+      });
+      var d = await res.json();
+      if(!(d && d.ok)) return null;
+      v.cardUrl = d.cardUrl; v.serverId = d.id; v.pending = false;
+      var live = v.photo || getLivePhoto();
+      if(live && live.indexOf('data:image') === 0){
+        try{
+          var a = await fetch('/api/valesplus/attach/' + d.id, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({photo: live})
+          });
+          var ad = await a.json();
+          if(ad && ad.ok){
+            v.hasPhoto = true;
+            v.photoUrl = ad.photoUrl;
+          } else {
+            console.warn('attach photo failed', ad);
+          }
+        }catch(e2){ console.warn('attach', e2); }
+      }
+      v.text = buildText(v);
+      return v;
+    }catch(e){ console.warn('publish', e); return null; }
   }
-
   async function flushQueue(){
     var q=jget(KQ,[]);
     if(!q.length||!online)return;
@@ -521,8 +577,9 @@ input:focus,textarea:focus{outline:none;border-color:var(--gold)}
     f.custom.forEach(function(c){if(!c.on)return;var el=document.getElementById('f_'+c.id);var val=el?el.value.trim():'';if(val)v.extra.push({label:c.label,value:val})});
     if(!v.cantidad)v.cantidad='1';
     // keep live photo reference (don't rely only on localStorage)
-    v.photo = photo || window.__vpPhoto || (document.getElementById('photoPrev')&&document.getElementById('photoPrev').src&&document.getElementById('photoPrev').src.indexOf('data:')===0?document.getElementById('photoPrev').src:'') || '';
-    window.__vpPhoto = v.photo || window.__vpPhoto;
+    v.photo = getLivePhoto();
+    window.__vpPhoto = v.photo;
+    photo = v.photo;
     v.text=buildText(v);
     showVale(v); // show card immediately with photo
     var pub=await publish(v);
