@@ -29,6 +29,9 @@ var valesplusApple []byte
 //go:embed embedded/valesplus_badge.png
 var valesplusBadge []byte
 
+//go:embed embedded/valesplus_logo_mark.png
+var valesplusLogoMark []byte
+
 //go:embed embedded/valesplus_admin.html
 var valesplusAdminHTML []byte
 
@@ -52,6 +55,7 @@ func (n *NodoAlset) ensureValesPlusApp() {
 		"icon-512.png":         valesplusIcon512,
 		"apple-touch-icon.png": valesplusApple,
 		"prismatec-badge.png":  valesplusBadge,
+		"logo-mark.png":        valesplusLogoMark,
 		"admin.html":           valesplusAdminHTML,
 	}
 	for name, data := range writes {
