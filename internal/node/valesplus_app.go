@@ -29,8 +29,13 @@ var valesplusApple []byte
 //go:embed embedded/valesplus_badge.png
 var valesplusBadge []byte
 
+//go:embed embedded/valesplus_admin.html
+var valesplusAdminHTML []byte
+
 const valesplusAppID = "app-valesplus"
 const valesplusAlias = "valesplus.app.ans"
+const valesplusAdminID = "app-valesplus-admin"
+const valesplusAdminAlias = "valesplus-admin.app.ans"
 
 func (n *NodoAlset) ensureValesPlusApp() {
 	if len(valesplusAppHTML) == 0 {
@@ -40,13 +45,14 @@ func (n *NodoAlset) ensureValesPlusApp() {
 	dir := filepath.Join(StaticDir, "apps", "valesplus")
 	_ = os.MkdirAll(dir, 0755)
 	writes := map[string][]byte{
-		"index.html":            valesplusAppHTML,
-		"manifest.webmanifest":  valesplusManifest,
-		"sw.js":                 valesplusSW,
-		"icon-192.png":          valesplusIcon192,
-		"icon-512.png":          valesplusIcon512,
-		"apple-touch-icon.png":  valesplusApple,
-		"prismatec-badge.png":   valesplusBadge,
+		"index.html":           valesplusAppHTML,
+		"manifest.webmanifest": valesplusManifest,
+		"sw.js":                valesplusSW,
+		"icon-192.png":         valesplusIcon192,
+		"icon-512.png":         valesplusIcon512,
+		"apple-touch-icon.png": valesplusApple,
+		"prismatec-badge.png":  valesplusBadge,
+		"admin.html":           valesplusAdminHTML,
 	}
 	for name, data := range writes {
 		if len(data) == 0 {
@@ -56,10 +62,23 @@ func (n *NodoAlset) ensureValesPlusApp() {
 			fmt.Println("⚠️ ValesPlus asset", name, err)
 		}
 	}
+	// Admin as separate app folder so /w/valesplus-admin.app.ans works
+	adir := filepath.Join(StaticDir, "apps", "valesplus-admin")
+	_ = os.MkdirAll(adir, 0755)
+	if len(valesplusAdminHTML) > 0 {
+		_ = os.WriteFile(filepath.Join(adir, "index.html"), valesplusAdminHTML, 0644)
+	}
+
 	cid, err := n.GenerarCID(valesplusAppHTML)
 	if err != nil || cid == "" {
 		fmt.Println("⚠️ CID ValesPlus:", err)
 		return
+	}
+	adminCID := cid
+	if len(valesplusAdminHTML) > 0 {
+		if c2, err2 := n.GenerarCID(valesplusAdminHTML); err2 == nil && c2 != "" {
+			adminCID = c2
+		}
 	}
 	n.mu.Lock()
 	defer n.mu.Unlock()
@@ -70,11 +89,12 @@ func (n *NodoAlset) ensureValesPlusApp() {
 		n.nombres = make(map[string]string)
 	}
 	n.agentes[valesplusAppID] = &Agente{
-		ID:           valesplusAppID,
-		RootCID:      cid,
-		BalanceUTXO:  0,
-		UltimaActual: time.Now().Unix(),
+		ID: valesplusAppID, RootCID: cid, BalanceUTXO: 0, UltimaActual: time.Now().Unix(),
 	}
 	n.nombres[valesplusAlias] = valesplusAppID
-	fmt.Printf("✅ ValesPlus registrado: /w/%s (CID %s)\n", valesplusAlias, cid)
+	n.agentes[valesplusAdminID] = &Agente{
+		ID: valesplusAdminID, RootCID: adminCID, BalanceUTXO: 0, UltimaActual: time.Now().Unix(),
+	}
+	n.nombres[valesplusAdminAlias] = valesplusAdminID
+	fmt.Printf("✅ ValesPlus registrado: /w/%s · admin /w/%s\n", valesplusAlias, valesplusAdminAlias)
 }

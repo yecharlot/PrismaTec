@@ -59,6 +59,7 @@ type vpAnnouncement struct {
 type vpMeta struct {
 	Devices       map[string]*vpDevice `json:"devices"`
 	Announcements []vpAnnouncement     `json:"announcements"`
+	Features      map[string]interface{} `json:"features,omitempty"`
 }
 
 var vpMu sync.Mutex
@@ -173,6 +174,21 @@ func vpFormatPhone(s string) string {
 	return string(d)
 }
 
+
+func vpStaticOGDir() string {
+	return filepath.Join(StaticDir, "apps", "valesplus", "og")
+}
+func vpMirrorStatic(id string, jpg []byte, og []byte) {
+	dir := vpStaticOGDir()
+	_ = os.MkdirAll(dir, 0o755)
+	if len(jpg) > 0 {
+		_ = os.WriteFile(filepath.Join(dir, id+"_photo.jpg"), jpg, 0o644)
+	}
+	if len(og) > 0 {
+		_ = os.WriteFile(filepath.Join(dir, id+"_og.jpg"), og, 0o644)
+	}
+}
+
 func vpDecodeImageData(s string) ([]byte, error) {
 	s = strings.TrimSpace(s)
 	if s == "" {
@@ -204,20 +220,22 @@ func vpWritePhotoBytes(id string, raw []byte) bool {
 		return false
 	}
 	_ = vpEnsureDir()
-	// normalize to jpeg when possible
-	img, format, err := image.Decode(bytes.NewReader(raw))
+	img, _, err := image.Decode(bytes.NewReader(raw))
 	if err == nil {
 		var buf bytes.Buffer
 		if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 82}); err == nil {
 			raw = buf.Bytes()
 		}
 		_ = os.WriteFile(filepath.Join(vpDir(), id+".jpg"), raw, 0o644)
-		_ = vpRenderOG(id, img, "ValesPlus", format)
+		_ = vpRenderOG(id, img, "ValesPlus", "")
+		og, _ := os.ReadFile(filepath.Join(vpDir(), id+"_og.jpg"))
+		vpMirrorStatic(id, raw, og)
 		return true
 	}
-	// keep original bytes as jpg name (may still be jpeg)
 	_ = os.WriteFile(filepath.Join(vpDir(), id+".jpg"), raw, 0o644)
 	_ = vpRenderOG(id, nil, "ValesPlus", "")
+	og, _ := os.ReadFile(filepath.Join(vpDir(), id+"_og.jpg"))
+	vpMirrorStatic(id, raw, og)
 	return true
 }
 
@@ -348,7 +366,10 @@ func (n *NodoAlset) handleValesPlusCard(w http.ResponseWriter, r *http.Request) 
 	base := vpBaseURL(r)
 	title := html.EscapeString(v.Code + " · " + v.Producto)
 	desc := html.EscapeString(strings.TrimSpace(v.Cliente + " · " + v.Producto + " × " + v.Cantidad + " · Gestor: " + v.Gestor))
-	img := base + "/v/" + id + "/og.jpg"
+	img := base + "/static/apps/valesplus/og/" + id + "_og.jpg"
+	if _, err := os.Stat(filepath.Join(vpStaticOGDir(), id+"_og.jpg")); err != nil {
+		img = base + "/v/" + id + "/og.jpg"
+	}
 	// fallback chain
 	if _, err := os.Stat(filepath.Join(vpDir(), id+"_og.jpg")); err != nil {
 		if v.HasPhoto {
@@ -510,8 +531,67 @@ func (n *NodoAlset) handleValesPlusStats(w http.ResponseWriter, r *http.Request)
 	vpMu.Lock()
 	defer vpMu.Unlock()
 	m := loadVPMeta()
+	online := 0
+	cutoff := time.Now().UTC().Add(-15 * time.Minute)
+	for _, d := range m.Devices {
+		if d == nil || d.LastSeen == "" {
+			continue
+		}
+		ts, err := time.Parse(time.RFC3339, d.LastSeen)
+		if err == nil && ts.After(cutoff) {
+			online++
+		}
+	}
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "devices": len(m.Devices)})
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"ok": true, "devices": len(m.Devices), "online": online,
+		"announcements": len(m.Announcements),
+		"features": m.Features,
+	})
+}
+
+func (n *NodoAlset) handleValesPlusFeatures(w http.ResponseWriter, r *http.Request) {
+	vpCORS(w)
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(204)
+		return
+	}
+	vpMu.Lock()
+	defer vpMu.Unlock()
+	m := loadVPMeta()
+	if m.Features == nil {
+		m.Features = map[string]interface{}{}
+	}
+	if r.Method == http.MethodGet {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "features": m.Features})
+		return
+	}
+	if r.Method == http.MethodPost {
+		key := os.Getenv("VALESPLUS_ADMIN_KEY")
+		if key == "" {
+			key = "valesplus-admin-local"
+		}
+		if r.Header.Get("X-ValesPlus-Admin") != key {
+			w.WriteHeader(401)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "unauthorized"})
+			return
+		}
+		var in map[string]interface{}
+		if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+			w.WriteHeader(400)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "json"})
+			return
+		}
+		for k, v := range in {
+			m.Features[k] = v
+		}
+		_ = saveVPMeta(m)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": true, "features": m.Features})
+		return
+	}
+	http.Error(w, "method", 405)
 }
 
 func (n *NodoAlset) handleValesPlusAnnouncements(w http.ResponseWriter, r *http.Request) {
@@ -530,7 +610,10 @@ func (n *NodoAlset) handleValesPlusAnnouncements(w http.ResponseWriter, r *http.
 	}
 	if r.Method == http.MethodPost {
 		key := os.Getenv("VALESPLUS_ADMIN_KEY")
-		if key == "" || r.Header.Get("X-ValesPlus-Admin") != key {
+		if key == "" {
+			key = "valesplus-admin-local"
+		}
+		if r.Header.Get("X-ValesPlus-Admin") != key {
 			w.WriteHeader(401)
 			_ = json.NewEncoder(w).Encode(map[string]interface{}{"ok": false, "error": "unauthorized"})
 			return
@@ -646,6 +729,8 @@ func (n *NodoAlset) handleValesPlusAPI(w http.ResponseWriter, r *http.Request) {
 		n.handleValesPlusStats(w, r)
 	case path == "announcements" || path == "announcements/":
 		n.handleValesPlusAnnouncements(w, r)
+	case path == "features" || path == "features/":
+		n.handleValesPlusFeatures(w, r)
 	case strings.HasPrefix(path, "card/"):
 		n.handleValesPlusCard(w, r)
 	case strings.HasPrefix(path, "attach/"):
