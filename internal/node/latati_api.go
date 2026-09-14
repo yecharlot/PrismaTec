@@ -50,7 +50,7 @@ type ltOrder struct {
 	Lines       []ltLine `json:"lines"`
 	Total       float64  `json:"total"`
 	Currency    string   `json:"currency"`
-	Status      string   `json:"status"` // pending | ready | delivered | cancelled
+	Status      string   `json:"status"` // requested | pending | ready | delivered | cancelled
 	Address     string   `json:"address"`
 	GestorName  string   `json:"gestor_name"`
 	GestorPhone string   `json:"gestor_phone"`
@@ -702,18 +702,13 @@ func (n *NodoAlset) ltPlaceOrder(w http.ResponseWriter, r *http.Request) {
 			ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "stock: " + p.Title})
 			return
 		}
+		// No se descuenta stock aún: el gestor confirma con el negocio primero.
 		lines = append(lines, ltLine{
 			ProductID: p.ID, Title: p.Title, Qty: it.Qty,
 			Price: p.Price, Currency: p.Currency, Photo: p.Photo,
 		})
 		total += p.Price * float64(it.Qty)
 		currency = p.Currency
-		p.Stock -= it.Qty
-		if p.Stock <= 0 {
-			p.Stock = 0
-			p.Sold = true
-		}
-		p.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 	}
 
 	st.SeqOrder++
@@ -722,7 +717,7 @@ func (n *NodoAlset) ltPlaceOrder(w http.ResponseWriter, r *http.Request) {
 		Thread: in.Thread, ClientName: strings.TrimSpace(in.ClientName),
 		ClientPhone: strings.TrimSpace(in.ClientPhone),
 		Lines: lines, Total: total, Currency: currency,
-		Status: "pending", Address: st.Profile.Address,
+		Status: "requested", Address: st.Profile.Address,
 		GestorName: st.Profile.Name, GestorPhone: st.Profile.WhatsApp,
 		Note: strings.TrimSpace(in.Note),
 		Ts: time.Now().UTC().Format(time.RFC3339),
@@ -731,17 +726,15 @@ func (n *NodoAlset) ltPlaceOrder(w http.ResponseWriter, r *http.Request) {
 	if len(st.Orders) > 1000 {
 		st.Orders = st.Orders[:1000]
 	}
-	// system chat note
 	st.Messages = append(st.Messages, ltMsg{
 		ID: ltRand(6), Thread: in.Thread, From: "client",
-		Text: fmt.Sprintf("Pedido %s · total %s %.2f · %d ítem(s)", ord.Code, ord.Currency, ord.Total, len(ord.Lines)),
+		Text: fmt.Sprintf("Solicitud %s · total %s %.2f · %d ítem(s) · esperando confirmación", ord.Code, ord.Currency, ord.Total, len(ord.Lines)),
 		Ts:   ord.Ts,
 	})
 	rev := ltBump(st)
 	_ = saveLT(st)
-	n.ltNotify("order", map[string]interface{}{"rev": rev, "order_id": ord.ID, "code": ord.Code, "thread": ord.Thread})
-	n.ltNotify("catalog", map[string]interface{}{"rev": rev, "action": "stock_after_order"})
-	ltJSON(w, 200, map[string]interface{}{"ok": true, "order": ord, "rev": rev})
+	n.ltNotify("order", map[string]interface{}{"rev": rev, "order_id": ord.ID, "code": ord.Code, "thread": ord.Thread, "status": "requested"})
+	ltJSON(w, 200, map[string]interface{}{"ok": true, "order": ord, "rev": rev, "message": "Solicitud enviada. La gestora confirmará disponibilidad."})
 }
 
 func (n *NodoAlset) ltListOrders(w http.ResponseWriter, r *http.Request) {
@@ -788,32 +781,140 @@ func (n *NodoAlset) ltGetOrder(w http.ResponseWriter, r *http.Request, id string
 	ltJSON(w, 404, map[string]interface{}{"ok": false, "error": "not found"})
 }
 
-func (n *NodoAlset) ltOrderStatus(w http.ResponseWriter, r *http.Request, id string) {
-	if !ltAuth(r) {
-		ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
-		return
+func ltApplyStock(st *ltStore, lines []ltLine, dir int) string {
+	// dir +1 consume, -1 restore. Returns error reason or "".
+	for _, l := range lines {
+		p, ok := st.Products[l.ProductID]
+		if !ok || p == nil {
+			if dir > 0 {
+				return "product gone: " + l.Title
+			}
+			continue
+		}
+		if dir > 0 {
+			if p.Sold || p.Stock < l.Qty {
+				return "stock: " + l.Title
+			}
+			p.Stock -= l.Qty
+			if p.Stock <= 0 {
+				p.Stock = 0
+				p.Sold = true
+			}
+		} else {
+			p.Stock += l.Qty
+			if p.Stock > 0 {
+				p.Sold = false
+			}
+		}
+		p.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 	}
+	return ""
+}
+
+func (n *NodoAlset) ltOrderStatus(w http.ResponseWriter, r *http.Request, id string) {
 	var in struct {
 		Status string `json:"status"`
+		Thread string `json:"thread"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&in)
-	in.Status = strings.TrimSpace(in.Status)
+	in.Status = strings.TrimSpace(strings.ToLower(in.Status))
 	if in.Status == "" {
 		ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "status"})
 		return
 	}
+	// Alias amigables
+	if in.Status == "confirm" || in.Status == "aceptar" || in.Status == "confirmed" {
+		in.Status = "pending" // vale confirmado, listo para coordinar recogida
+	}
+	if in.Status == "cancel" || in.Status == "reject" || in.Status == "rechazar" {
+		in.Status = "cancelled"
+	}
+
+	gestor := ltAuth(r)
 	ltMu.Lock()
 	defer ltMu.Unlock()
 	st := loadLT()
 	for i := range st.Orders {
-		if st.Orders[i].ID == id || st.Orders[i].Code == id {
-			st.Orders[i].Status = in.Status
-			rev := ltBump(st)
-			_ = saveLT(st)
-			n.ltNotify("order", map[string]interface{}{"rev": rev, "order_id": st.Orders[i].ID, "code": st.Orders[i].Code, "status": in.Status})
-			ltJSON(w, 200, map[string]interface{}{"ok": true, "order": st.Orders[i], "rev": rev})
+		o := &st.Orders[i]
+		if o.ID != id && o.Code != id {
+			continue
+		}
+		// Cliente solo puede cancelar su propia solicitud (requested)
+		if !gestor {
+			th := strings.TrimSpace(in.Thread)
+			if th == "" || th != o.Thread {
+				ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
+				return
+			}
+			if in.Status != "cancelled" || o.Status != "requested" {
+				ltJSON(w, 403, map[string]interface{}{"ok": false, "error": "solo puedes cancelar solicitudes pendientes"})
+				return
+			}
+		}
+
+		prev := o.Status
+		if prev == in.Status {
+			ltJSON(w, 200, map[string]interface{}{"ok": true, "order": *o})
 			return
 		}
+
+		// Confirmar solicitud → descontar stock y emitir vale (pending)
+		if in.Status == "pending" || in.Status == "ready" {
+			if prev == "requested" {
+				if err := ltApplyStock(st, o.Lines, +1); err != "" {
+					ltJSON(w, 400, map[string]interface{}{"ok": false, "error": err})
+					return
+				}
+				o.Address = st.Profile.Address
+				o.GestorName = st.Profile.Name
+				o.GestorPhone = st.Profile.WhatsApp
+				st.Messages = append(st.Messages, ltMsg{
+					ID: ltRand(6), Thread: o.Thread, From: "gestor",
+					Text: fmt.Sprintf("✅ Pedido %s confirmado. Ya puedes usar tu vale de recogida.", o.Code),
+					Ts:   time.Now().UTC().Format(time.RFC3339),
+				})
+			} else if prev == "cancelled" || prev == "delivered" {
+				ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "estado no permite esta acción"})
+				return
+			}
+			o.Status = in.Status
+		} else if in.Status == "cancelled" {
+			// Si ya se había confirmado (stock descontado), devolver stock
+			if prev == "pending" || prev == "ready" {
+				_ = ltApplyStock(st, o.Lines, -1)
+			}
+			o.Status = "cancelled"
+			who := "client"
+			if gestor {
+				who = "gestor"
+			}
+			st.Messages = append(st.Messages, ltMsg{
+				ID: ltRand(6), Thread: o.Thread, From: who,
+				Text: fmt.Sprintf("Pedido %s cancelado.", o.Code),
+				Ts:   time.Now().UTC().Format(time.RFC3339),
+			})
+		} else if in.Status == "delivered" {
+			if prev != "pending" && prev != "ready" {
+				ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "solo pedidos confirmados"})
+				return
+			}
+			o.Status = "delivered"
+		} else {
+			ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "status inválido"})
+			return
+		}
+
+		rev := ltBump(st)
+		_ = saveLT(st)
+		n.ltNotify("order", map[string]interface{}{"rev": rev, "order_id": o.ID, "code": o.Code, "status": o.Status})
+		if prev == "requested" && (o.Status == "pending" || o.Status == "ready") {
+			n.ltNotify("catalog", map[string]interface{}{"rev": rev, "action": "stock_after_confirm"})
+		}
+		if o.Status == "cancelled" && (prev == "pending" || prev == "ready") {
+			n.ltNotify("catalog", map[string]interface{}{"rev": rev, "action": "stock_after_cancel"})
+		}
+		ltJSON(w, 200, map[string]interface{}{"ok": true, "order": *o, "rev": rev})
+		return
 	}
 	ltJSON(w, 404, map[string]interface{}{"ok": false, "error": "not found"})
 }

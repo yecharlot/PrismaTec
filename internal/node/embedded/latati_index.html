@@ -85,17 +85,18 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
       <label>Tu nombre</label><input id="cName" autocomplete="name">
       <label>Teléfono</label><input id="cPhone" type="tel" autocomplete="tel">
       <label>Nota</label><textarea id="cNote" placeholder="Horario, color…"></textarea>
-      <button type="button" class="btn btn-pink" id="btnPlaceOrder" style="margin-top:.7rem">Confirmar y generar vale</button>
+      <button type="button" class="btn btn-pink" id="btnPlaceOrder" style="margin-top:.7rem">Solicitar pedido</button>
+      <p class="sub" style="margin-top:.45rem">La gestora confirma disponibilidad con el negocio y luego recibes tu vale de recogida.</p>
     </div>
   </section>
   <section id="view-vale" class="hidden">
-    <h2>Tu vale</h2>
-    <p class="sub">Muéstralo al recoger.</p>
+    <h2>Tu solicitud / vale</h2>
+    <p class="sub" id="valeHint">Cuando La Tati confirme, este será tu vale de recogida.</p>
     <div id="valeBox"></div>
     <button type="button" class="btn btn-ghost" id="btnBackVale" style="margin-top:.7rem">Seguir mirando</button>
   </section>
   <section id="view-myorders" class="hidden">
-    <h2>Mis vales</h2>
+    <h2>Mis pedidos</h2>
     <div id="myOrders"></div>
   </section>
   <section id="view-chat" class="hidden">
@@ -199,24 +200,52 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
     localStorage.setItem(CINFO,JSON.stringify({name:name,phone:phone}));
     var d=await(await fetch(API+'/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({thread:sid,client_name:name,client_phone:phone,note:$('cNote').value.trim(),items:ids.map(function(id){return{product_id:id,qty:cart[id]}})})})).json();
     if(!d.ok){toast(d.error||'Error');return}
-    cart={};saveCart();renderVale(d.order);show('vale');toast('Vale '+d.order.code);loadCatalog();
+    cart={};saveCart();renderVale(d.order);show('vale');toast('Solicitud '+d.order.code+' enviada');loadCatalog();
   };
+  function statusLabel(s){
+    s=(s||'').toLowerCase();
+    if(s==='requested') return 'Esperando confirmación';
+    if(s==='pending') return 'Confirmado · vale listo';
+    if(s==='ready') return 'Listo para recoger';
+    if(s==='delivered') return 'Entregado';
+    if(s==='cancelled') return 'Cancelado';
+    return s||'—';
+  }
   function renderVale(o){
+    var st=(o.status||'').toLowerCase();
+    var isVale = st==='pending'||st==='ready'||st==='delivered';
     var lines=(o.lines||[]).map(function(l){
       var img=l.photo?API+'/photo/'+l.product_id:'';
       return '<div class="line">'+(img?'<img src="'+img+'">':'')+'<div><strong>'+esc(l.title)+'</strong><div>×'+l.qty+' · '+(l.currency||'')+' '+Number(l.price).toFixed(2)+'</div></div></div>';
     }).join('');
-    $('valeBox').innerHTML='<div class="vale-card"><h2>'+esc(o.code)+'</h2><span class="badge">'+esc(o.status)+'</span>'+lines+
+    var hint = isVale
+      ? 'Muéstralo al recoger el pedido.'
+      : (st==='requested' ? 'La gestora está validando disponibilidad con el negocio. Te avisamos al confirmar.' : 'Este pedido ya no es válido para recogida.');
+    if($('valeHint')) $('valeHint').textContent = hint;
+    var actions='';
+    if(st==='requested'){
+      actions='<button type="button" class="btn btn-ghost" id="btnCancelReq" style="margin-top:.65rem">Cancelar solicitud</button>';
+    }
+    $('valeBox').innerHTML='<div class="vale-card"><h2>'+esc(o.code)+'</h2><span class="badge">'+esc(statusLabel(st))+'</span>'+
+      (isVale?'<div class="sub" style="margin-top:.35rem;color:var(--mint)">Vale de recogida activo</div>':'')+
+      lines+
       '<div class="price" style="margin-top:.7rem;font-size:1.1rem">Total: '+(o.currency||'')+' '+Number(o.total).toFixed(2)+'</div>'+
       '<div class="sub" style="margin-top:.6rem"><strong>Cliente:</strong> '+esc(o.client_name)+' · '+esc(o.client_phone)+'</div>'+
-      '<div class="sub"><strong>Gestora:</strong> '+esc(o.gestor_name)+' · '+esc(o.gestor_phone)+(o.address?'<br>Recogida: '+esc(o.address):'')+'</div></div>';
+      '<div class="sub"><strong>Gestora:</strong> '+esc(o.gestor_name)+' · '+esc(o.gestor_phone)+(o.address&&isVale?'<br>Recogida: '+esc(o.address):'')+'</div>'+
+      actions+'</div>';
+    var bc=$('btnCancelReq');
+    if(bc){bc.onclick=async function(){
+      var d=await(await fetch(API+'/order/'+encodeURIComponent(o.id||o.code)+'/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'cancelled',thread:sid})})).json();
+      if(!d.ok){toast(d.error||'No se pudo cancelar');return}
+      renderVale(d.order);toast('Solicitud cancelada');loadMyOrders();
+    }}
   }
   $('btnBackVale').onclick=function(){show('catalog')};
   async function loadMyOrders(){
     var d=await(await fetch(API+'/orders?thread='+encodeURIComponent(sid))).json();
     var list=d.items||[],el=$('myOrders');
     if(!list.length){el.innerHTML='<div class="empty">Sin pedidos en este dispositivo</div>';return}
-    el.innerHTML=list.map(function(o){return '<div class="panel"><strong>'+esc(o.code)+'</strong> · '+esc(o.status)+'<div class="price">'+(o.currency||'')+' '+Number(o.total).toFixed(2)+'</div><button type="button" class="btn btn-ghost see" data-id="'+o.id+'" style="margin-top:.4rem">Ver vale</button></div>'}).join('');
+    el.innerHTML=list.map(function(o){return '<div class="panel"><strong>'+esc(o.code)+'</strong> · '+esc(statusLabel(o.status))+'<div class="price">'+(o.currency||'')+' '+Number(o.total).toFixed(2)+'</div><button type="button" class="btn btn-ghost see" data-id="'+o.id+'" style="margin-top:.4rem">Ver detalle</button></div>'}).join('');
     el.querySelectorAll('.see').forEach(function(b){b.onclick=function(){var o=list.find(function(x){return x.id===b.getAttribute('data-id')});renderVale(o);show('vale')}});
   }
   async function loadChat(){

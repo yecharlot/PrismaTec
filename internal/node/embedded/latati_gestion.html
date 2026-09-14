@@ -94,7 +94,7 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
   </section>
 
   <section id="view-orders" class="hidden">
-    <h2 style="margin-bottom:.5rem">Pedidos</h2>
+    <h2 style="margin-bottom:.5rem">Pedidos</h2><p class="sub" style="margin-bottom:.6rem">Las solicitudes nuevas aparecen arriba. Confirma tras validar con el negocio.</p>
     <div id="orders"></div>
   </section>
 
@@ -223,21 +223,52 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
   $('btnSold').onclick=async function(){if(!editId)return;await fetch(API+'/gestor/products/'+editId+'/sold',{method:'POST',headers:H(1),body:'{}'});show('prods');loadProds()};
   $('btnDel').onclick=async function(){if(!editId||!confirm('¿Eliminar?'))return;await fetch(API+'/gestor/products/'+editId+'/delete',{method:'POST',headers:H(1),body:'{}'});show('prods');loadProds()};
 
+  function stLabel(s){
+    s=(s||'').toLowerCase();
+    if(s==='requested') return 'Por confirmar';
+    if(s==='pending') return 'Confirmado';
+    if(s==='ready') return 'Listo';
+    if(s==='delivered') return 'Entregado';
+    if(s==='cancelled') return 'Cancelado';
+    return s||'—';
+  }
   async function loadOrders(){
     var d=await(await fetch(API+'/orders',{headers:H()})).json();
     var list=d.items||[],el=$('orders');
     if(!list.length){el.innerHTML='<div class="sub" style="text-align:center;padding:1rem">Sin pedidos</div>';return}
+    // Priorizar solicitudes pendientes de confirmar
+    list=list.slice().sort(function(a,b){
+      var wa=a.status==='requested'?0:1, wb=b.status==='requested'?0:1;
+      if(wa!==wb) return wa-wb;
+      return (b.ts||'').localeCompare(a.ts||'');
+    });
     el.innerHTML=list.map(function(o){
-      return '<div class="panel"><strong>'+esc(o.code)+'</strong> <span class="badge">'+esc(o.status)+'</span>'+
+      var st=(o.status||'').toLowerCase();
+      var actions='';
+      if(st==='requested'){
+        actions='<div class="btn-row">'+
+          '<button type="button" class="btn btn-gold st" data-id="'+esc(o.code)+'" data-s="confirm">Confirmar</button>'+
+          '<button type="button" class="btn btn-ghost st" data-id="'+esc(o.code)+'" data-s="cancelled" style="color:#ff8a8a">Cancelar</button></div>'+
+          '<p class="sub" style="margin-top:.35rem">Valida con el negocio y confirma para generar el vale del cliente.</p>';
+      } else if(st==='pending'||st==='ready'){
+        actions='<div class="btn-row">'+
+          '<button type="button" class="btn btn-ghost st" data-id="'+esc(o.code)+'" data-s="ready">Listo</button>'+
+          '<button type="button" class="btn btn-ghost st" data-id="'+esc(o.code)+'" data-s="delivered">Entregado</button>'+
+          '<button type="button" class="btn btn-ghost st" data-id="'+esc(o.code)+'" data-s="cancelled" style="color:#ff8a8a">Cancelar</button></div>';
+      }
+      return '<div class="panel"><strong>'+esc(o.code)+'</strong> <span class="badge">'+esc(stLabel(st))+'</span>'+
         '<div class="sub">'+esc(o.client_name)+' · '+esc(o.client_phone)+'</div>'+
         '<div class="price">'+(o.currency||'')+' '+Number(o.total).toFixed(2)+'</div>'+
-        '<div class="sub">'+(o.lines||[]).map(function(l){return l.qty+'× '+l.title}).join(', ')+'</div>'+
-        '<div class="btn-row"><button type="button" class="btn btn-ghost st" data-id="'+o.code+'" data-s="ready">Listo</button>'+
-        '<button type="button" class="btn btn-ghost st" data-id="'+o.code+'" data-s="delivered">Entregado</button></div></div>';
+        '<div class="sub">'+(o.lines||[]).map(function(l){return l.qty+'× '+l.title}).join(', ')+(o.note?' · Nota: '+esc(o.note):'')+'</div>'+
+        actions+'</div>';
     }).join('');
     el.querySelectorAll('.st').forEach(function(b){b.onclick=async function(){
-      await fetch(API+'/order/'+encodeURIComponent(b.getAttribute('data-id'))+'/status',{method:'POST',headers:H(1),body:JSON.stringify({status:b.getAttribute('data-s')})});
+      var s=b.getAttribute('data-s');
+      var d=await(await fetch(API+'/order/'+encodeURIComponent(b.getAttribute('data-id'))+'/status',{method:'POST',headers:H(1),body:JSON.stringify({status:s})})).json();
+      if(!d.ok){toast(d.error||'Error');return}
+      toast(s==='confirm'||s==='pending'?'Pedido confirmado · vale emitido':(s==='cancelled'?'Cancelado':'Actualizado'));
       loadOrders();
+      if(!$('view-prods').classList.contains('hidden')) loadProds();
     }});
   }
 
