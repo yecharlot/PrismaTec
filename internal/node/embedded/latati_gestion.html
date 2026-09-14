@@ -184,7 +184,7 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     editId=p.id||'';editFile=null;
     $('fTitle').value=p.title||'';$('fDesc').value=p.description||'';$('fSource').value=p.source||'';
     $('fPrice').value=p.price||'';$('fCur').value=p.currency||'USD';
-    $('fPending').checked=!!p.price_pending||!(p.price>0);$('fStock').value=p.stock!=null?p.stock:1;
+    $('fPending').checked=!!p.price_pending||!(p.price>0);$('fStock').value=(p.stock!=null&&p.stock!=='')?p.stock:1;
     if(p.photo){$('prev').src=photo(p);$('prev').classList.remove('hidden')}else $('prev').classList.add('hidden');
     show('edit');
   }
@@ -202,15 +202,18 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
   $('btnBackEdit').onclick=function(){show('prods');loadProds()};
   $('photo').onchange=function(e){var f=e.target.files&&e.target.files[0];if(!f)return;editFile=f;$('prev').src=URL.createObjectURL(f);$('prev').classList.remove('hidden')};
   $('btnSave').onclick=async function(){
+    var stockVal=parseInt($('fStock').value,10);
+    if(isNaN(stockVal)||stockVal<0) stockVal=1;
+    if(stockVal===0) stockVal=1; // visible en catálogo cliente de inmediato
     var body={id:editId||'',title:$('fTitle').value.trim(),description:$('fDesc').value.trim(),source:$('fSource').value.trim(),
       price:parseFloat($('fPrice').value)||0,currency:$('fCur').value,price_pending:$('fPending').checked||!(parseFloat($('fPrice').value)>0),
-      stock:parseInt($('fStock').value,10)||0,sold:false};
+      stock:stockVal,sold:false};
     if(!body.title){toast('Título');return}
     var d=await(await fetch(API+'/gestor/products',{method:'POST',headers:H(1),body:JSON.stringify(body)})).json();
-    if(!d.ok){toast('Error');return}
+    if(!d.ok){toast(d.error||'Error');return}
     editId=d.item.id;
     if(editFile){var fd=new FormData();fd.append('photo',editFile);await fetch(API+'/gestor/products/'+editId+'/photo',{method:'POST',headers:token?{'X-LaTati-Token':token}:{},body:fd})}
-    toast('Guardado');show('prods');loadProds();
+    toast('Publicado · visible en tienda');show('prods');loadProds();
   };
   $('btnShare').onclick=async function(){
     if(!editId){toast('Guarda primero');return}
@@ -285,14 +288,34 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     };
   });
 
+  function bindLive(){
+    if(typeof EventSource==='undefined') return;
+    try{
+      var es=new EventSource(API+'/events');
+      es.addEventListener('latati_catalog', function(){ if(token && !$('view-prods').classList.contains('hidden')) loadProds(); });
+      es.addEventListener('latati_order', function(){ if(token && !$('view-orders').classList.contains('hidden')) loadOrders(); });
+      es.addEventListener('latati_chat', function(){
+        if(!token||$('view-chat').classList.contains('hidden')) return;
+        if(!$('threadView').classList.contains('hidden')&&activeTh) openTh(activeTh); else loadThreads();
+      });
+      var es2=new EventSource('/api/pulse');
+      es2.addEventListener('latati_catalog', function(){ if(token && !$('view-prods').classList.contains('hidden')) loadProds(); });
+      es2.addEventListener('latati_order', function(){ if(token && !$('view-orders').classList.contains('hidden')) loadOrders(); });
+      es2.addEventListener('latati_chat', function(){
+        if(!token||$('view-chat').classList.contains('hidden')) return;
+        if(!$('threadView').classList.contains('hidden')&&activeTh) openTh(activeTh); else loadThreads();
+      });
+    }catch(e){}
+  }
   if(token){show('prods');loadProds();loadCfg()} else show('login');
+  bindLive();
   setInterval(function(){
     if(!token) return;
     if(!$('view-prods').classList.contains('hidden')) loadProds();
     if(!$('view-orders').classList.contains('hidden')) loadOrders();
     if(!$('view-chat').classList.contains('hidden') && !$('threadView').classList.contains('hidden') && activeTh) openTh(activeTh);
     else if(!$('view-chat').classList.contains('hidden')) loadThreads();
-  }, 3000);
+  }, 10000);
 })();
 </script>
 </body>

@@ -1,6 +1,7 @@
 package node
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -80,6 +81,7 @@ type ltStore struct {
 	Messages []ltMsg               `json:"messages"`
 	Tokens   map[string]int64      `json:"tokens"`
 	SeqOrder int                   `json:"seq_order"`
+	Rev      int64                 `json:"rev"` // catalog/orders/chat revision for live clients
 }
 
 var (
@@ -147,6 +149,32 @@ func saveLT(st *ltStore) error {
 	}
 	return os.WriteFile(ltStorePath(), b, 0o644)
 }
+
+// ltBump marks store dirty and returns the new revision (caller holds ltMu).
+func ltBump(st *ltStore) int64 {
+	st.Rev++
+	if st.Rev <= 0 {
+		st.Rev = 1
+	}
+	return st.Rev
+}
+
+// ltNotify pushes a La Tati event over the node pulse/gossip SSE bus.
+func (n *NodoAlset) ltNotify(kind string, extra map[string]interface{}) {
+	if n == nil {
+		return
+	}
+	payload := map[string]interface{}{
+		"app":  "latati",
+		"kind": kind,
+		"ts":   time.Now().UTC().Format(time.RFC3339),
+	}
+	for k, v := range extra {
+		payload[k] = v
+	}
+	go n.BroadcastPulse("latati_"+kind, payload)
+}
+
 
 func ltCORS(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -221,6 +249,8 @@ func (n *NodoAlset) handleLaTatiAPI(w http.ResponseWriter, r *http.Request) {
 		n.ltChat(w, r)
 	case parts[0] == "threads" && r.Method == http.MethodGet:
 		n.ltThreads(w, r)
+	case parts[0] == "events":
+		n.ltEventsSSE(w, r)
 	default:
 		http.NotFound(w, r)
 	}
@@ -254,7 +284,9 @@ func (n *NodoAlset) ltCatalog(w http.ResponseWriter) {
 		list = append(list, p)
 	}
 	sort.Slice(list, func(i, j int) bool { return list[i].CreatedAt > list[j].CreatedAt })
-	ltJSON(w, 200, map[string]interface{}{"ok": true, "items": list, "profile": publicProfile(st.Profile)})
+	ltJSON(w, 200, map[string]interface{}{
+		"ok": true, "items": list, "rev": st.Rev, "profile": publicProfile(st.Profile),
+	})
 }
 
 func (n *NodoAlset) ltProfileGet(w http.ResponseWriter) {
@@ -272,7 +304,7 @@ func (n *NodoAlset) ltPhotoGet(w http.ResponseWriter, r *http.Request, id string
 		return
 	}
 	w.Header().Set("Content-Type", "image/jpeg")
-	w.Header().Set("Cache-Control", "public, max-age=86400")
+	w.Header().Set("Cache-Control", "public, max-age=60, must-revalidate")
 	_, _ = w.Write(b)
 }
 
@@ -329,8 +361,10 @@ func (n *NodoAlset) ltProfileSave(w http.ResponseWriter, r *http.Request) {
 	if in.Pin != "" && len(in.Pin) >= 4 {
 		st.Profile.Pin = in.Pin
 	}
+	rev := ltBump(st)
 	_ = saveLT(st)
-	ltJSON(w, 200, map[string]interface{}{"ok": true, "profile": publicProfile(st.Profile)})
+	n.ltNotify("catalog", map[string]interface{}{"rev": rev, "action": "profile"})
+	ltJSON(w, 200, map[string]interface{}{"ok": true, "profile": publicProfile(st.Profile), "rev": rev})
 }
 
 func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []string) {
@@ -378,9 +412,16 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 		} else {
 			in.PricePending = false
 		}
+		// Nueva publicación: si no marcan vendido y stock quedó en 0, abrir con 1 unidad
+		// para que el catálogo cliente la vea al instante (filtra stock<=0).
+		if !in.Sold && in.Stock <= 0 {
+			in.Stock = 1
+		}
 		st.Products[in.ID] = &in
+		rev := ltBump(st)
 		_ = saveLT(st)
-		ltJSON(w, 200, map[string]interface{}{"ok": true, "item": in})
+		n.ltNotify("catalog", map[string]interface{}{"rev": rev, "product_id": in.ID, "action": "upsert"})
+		ltJSON(w, 200, map[string]interface{}{"ok": true, "item": in, "rev": rev})
 		return
 	}
 	if len(rest) >= 2 && rest[1] == "photo" && r.Method == http.MethodPost {
@@ -405,12 +446,15 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 		ltMu.Lock()
 		defer ltMu.Unlock()
 		st := loadLT()
+		rev := int64(0)
 		if p, ok := st.Products[id]; ok && p != nil {
 			p.Photo = true
 			p.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+			rev = ltBump(st)
 			_ = saveLT(st)
 		}
-		ltJSON(w, 200, map[string]interface{}{"ok": true, "photo": "/api/latati/photo/" + id})
+		n.ltNotify("catalog", map[string]interface{}{"rev": rev, "product_id": id, "action": "photo"})
+		ltJSON(w, 200, map[string]interface{}{"ok": true, "photo": "/api/latati/photo/" + id, "rev": rev})
 		return
 	}
 	if len(rest) >= 2 && r.Method == http.MethodPost {
@@ -451,16 +495,20 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 		case "delete":
 			delete(st.Products, id)
 			_ = os.Remove(ltPhotoPath(id))
+			rev := ltBump(st)
 			_ = saveLT(st)
-			ltJSON(w, 200, map[string]interface{}{"ok": true})
+			n.ltNotify("catalog", map[string]interface{}{"rev": rev, "product_id": id, "action": "delete"})
+			ltJSON(w, 200, map[string]interface{}{"ok": true, "rev": rev})
 			return
 		default:
 			ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "action"})
 			return
 		}
 		p.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+		rev := ltBump(st)
 		_ = saveLT(st)
-		ltJSON(w, 200, map[string]interface{}{"ok": true, "item": p})
+		n.ltNotify("catalog", map[string]interface{}{"rev": rev, "product_id": id, "action": action})
+		ltJSON(w, 200, map[string]interface{}{"ok": true, "item": p, "rev": rev})
 		return
 	}
 	http.Error(w, "method", 405)
@@ -550,8 +598,11 @@ func (n *NodoAlset) ltPlaceOrder(w http.ResponseWriter, r *http.Request) {
 		Text: fmt.Sprintf("Pedido %s · total %s %.2f · %d ítem(s)", ord.Code, ord.Currency, ord.Total, len(ord.Lines)),
 		Ts:   ord.Ts,
 	})
+	rev := ltBump(st)
 	_ = saveLT(st)
-	ltJSON(w, 200, map[string]interface{}{"ok": true, "order": ord})
+	n.ltNotify("order", map[string]interface{}{"rev": rev, "order_id": ord.ID, "code": ord.Code, "thread": ord.Thread})
+	n.ltNotify("catalog", map[string]interface{}{"rev": rev, "action": "stock_after_order"})
+	ltJSON(w, 200, map[string]interface{}{"ok": true, "order": ord, "rev": rev})
 }
 
 func (n *NodoAlset) ltListOrders(w http.ResponseWriter, r *http.Request) {
@@ -618,8 +669,10 @@ func (n *NodoAlset) ltOrderStatus(w http.ResponseWriter, r *http.Request, id str
 	for i := range st.Orders {
 		if st.Orders[i].ID == id || st.Orders[i].Code == id {
 			st.Orders[i].Status = in.Status
+			rev := ltBump(st)
 			_ = saveLT(st)
-			ltJSON(w, 200, map[string]interface{}{"ok": true, "order": st.Orders[i]})
+			n.ltNotify("order", map[string]interface{}{"rev": rev, "order_id": st.Orders[i].ID, "code": st.Orders[i].Code, "status": in.Status})
+			ltJSON(w, 200, map[string]interface{}{"ok": true, "order": st.Orders[i], "rev": rev})
 			return
 		}
 	}
@@ -689,8 +742,10 @@ func (n *NodoAlset) ltChat(w http.ResponseWriter, r *http.Request) {
 		if len(st.Messages) > 2000 {
 			st.Messages = st.Messages[len(st.Messages)-2000:]
 		}
+		rev := ltBump(st)
 		_ = saveLT(st)
-		ltJSON(w, 200, map[string]interface{}{"ok": true, "item": msg})
+		n.ltNotify("chat", map[string]interface{}{"rev": rev, "thread": msg.Thread, "from": msg.From})
+		ltJSON(w, 200, map[string]interface{}{"ok": true, "item": msg, "rev": rev})
 		return
 	}
 	http.Error(w, "method", 405)
@@ -735,7 +790,54 @@ func (n *NodoAlset) ltThreads(w http.ResponseWriter, r *http.Request) {
 	ltJSON(w, 200, map[string]interface{}{"ok": true, "items": list})
 }
 
+func (n *NodoAlset) ltEventsSSE(w http.ResponseWriter, r *http.Request) {
+	ltCORS(w)
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "SSE not supported", 500)
+		return
+	}
+	ctx, cancel := context.WithCancel(r.Context())
+	sub := &SSESubscriber{ch: make(chan string, 32), ctx: ctx, cancel: cancel}
+	n.pulseSubscribersMu.Lock()
+	n.pulseSubscribers[sub] = true
+	n.pulseSubscribersMu.Unlock()
+	defer func() {
+		n.pulseSubscribersMu.Lock()
+		delete(n.pulseSubscribers, sub)
+		n.pulseSubscribersMu.Unlock()
+		cancel()
+	}()
+	ltMu.Lock()
+	rev := loadLT().Rev
+	ltMu.Unlock()
+	hello, _ := json.Marshal(map[string]interface{}{"ok": true, "app": "latati", "rev": rev})
+	fmt.Fprintf(w, "event: latati_hello\ndata: %s\n\n", hello)
+	flusher.Flush()
+	ticker := time.NewTicker(20 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case msg := <-sub.ch:
+			// Only forward La Tati pulse events to this stream
+			if strings.Contains(msg, "event: latati_") {
+				fmt.Fprint(w, msg)
+				flusher.Flush()
+			}
+		case <-ticker.C:
+			fmt.Fprintf(w, "event: ping\ndata: {}\n\n")
+			flusher.Flush()
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
 func (n *NodoAlset) registerLaTatiAPI(extra map[string]http.HandlerFunc) {
 	extra["/api/latati/"] = n.handleLaTatiAPI
 	extra["/api/latati"] = n.handleLaTatiAPI
+	extra["/api/latati/events"] = n.ltEventsSSE
 }

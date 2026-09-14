@@ -132,15 +132,7 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
   function hideAll(){['catalog','detail','cart','vale','myorders','chat'].forEach(function(v){$('view-'+v).classList.add('hidden')})}
   function show(v){hideAll();$('view-'+v).classList.remove('hidden');document.querySelectorAll('.nav button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-v')===v)});if(v==='cart'){renderCart();$('cartBar').classList.add('hidden')}else updateBar()}
 
-  async function loadCatalog(){
-    try{
-      var d=await(await fetch(API+'/catalog')).json();
-      if(d.profile){profile=d.profile;$('brandName').textContent=profile.name||'La Tati';$('brandSub').textContent=profile.bio||'Tu pedido · tu vale'}
-      items=d.items||[];renderCatalog();
-      var pid=new URLSearchParams(location.search).get('p');
-      if(pid) openDetail(pid, true);
-    }catch(e){}
-  }
+  /* loadCatalog defined below with live rev */
   function renderCatalog(){
     var g=$('catalogGrid'),empty=$('catalogEmpty');
     if(!items.length){g.innerHTML='';empty.classList.remove('hidden');return}
@@ -242,18 +234,54 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
   document.querySelectorAll('.nav button').forEach(function(b){
     b.onclick=function(){
       var v=b.getAttribute('data-v');
-      if(v==='catalog'){show('catalog');loadCatalog()}
+      if(v==='catalog'){show('catalog');loadCatalog(true)}
       if(v==='cart')show('cart');
       if(v==='myorders'){show('myorders');loadMyOrders()}
       if(v==='chat'){show('chat');loadChat()}
     };
   });
-  loadCatalog();updateBar();
+  var catalogRev = 0;
+  var liveConnected = false;
+  async function loadCatalog(force){
+    try{
+      var d=await(await fetch(API+'/catalog',{cache:'no-store'})).json();
+      if(d.profile){profile=d.profile;$('brandName').textContent=profile.name||'La Tati';$('brandSub').textContent=profile.bio||'Tu pedido · tu vale'}
+      var rev = d.rev||0;
+      if(!force && rev && rev === catalogRev && items.length){return}
+      catalogRev = rev;
+      items=d.items||[];renderCatalog();
+      var pid=new URLSearchParams(location.search).get('p');
+      if(pid) openDetail(pid, true);
+    }catch(e){}
+  }
+  function bindLive(){
+    if(typeof EventSource === 'undefined') return;
+    try{
+      var es = new EventSource(API+'/events');
+      es.addEventListener('latati_hello', function(){ liveConnected = true; loadCatalog(true); });
+      es.addEventListener('latati_catalog', function(){ loadCatalog(true); });
+      es.addEventListener('latati_order', function(){
+        if(!$('view-myorders').classList.contains('hidden')) loadMyOrders();
+        loadCatalog(true);
+      });
+      es.addEventListener('latati_chat', function(){
+        if(!$('view-chat').classList.contains('hidden')) loadChat();
+      });
+      es.onerror = function(){ liveConnected = false; };
+      // also listen via generic pulse bus as fallback
+      var es2 = new EventSource('/api/pulse');
+      es2.addEventListener('latati_catalog', function(){ loadCatalog(true); });
+      es2.addEventListener('latati_order', function(){ loadCatalog(true); if(!$('view-myorders').classList.contains('hidden')) loadMyOrders(); });
+      es2.addEventListener('latati_chat', function(){ if(!$('view-chat').classList.contains('hidden')) loadChat(); });
+    }catch(e){}
+  }
+  loadCatalog(true);updateBar();bindLive();
+  // Fallback suave: solo si no hay SSE o para reconciliar
   setInterval(function(){
-    if(!$('view-catalog').classList.contains('hidden')||!$('view-detail').classList.contains('hidden')) loadCatalog();
+    if(!$('view-catalog').classList.contains('hidden')||!$('view-detail').classList.contains('hidden')) loadCatalog(false);
     if(!$('view-myorders').classList.contains('hidden')) loadMyOrders();
     if(!$('view-chat').classList.contains('hidden')) loadChat();
-  }, 3000);
+  }, liveConnected ? 12000 : 4000);
 })();
 </script>
 </body>
