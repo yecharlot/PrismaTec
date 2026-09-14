@@ -197,6 +197,8 @@ func (n *NodoAlset) handleLaTatiAPI(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case parts[0] == "catalog" && r.Method == http.MethodGet:
 		n.ltCatalog(w)
+	case parts[0] == "product" && len(parts) >= 2 && r.Method == http.MethodGet:
+		n.ltProductGet(w, parts[1])
 	case parts[0] == "profile" && r.Method == http.MethodGet:
 		n.ltProfileGet(w)
 	case parts[0] == "photo" && len(parts) >= 2 && r.Method == http.MethodGet:
@@ -222,6 +224,19 @@ func (n *NodoAlset) handleLaTatiAPI(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.NotFound(w, r)
 	}
+}
+
+
+func (n *NodoAlset) ltProductGet(w http.ResponseWriter, id string) {
+	ltMu.Lock()
+	defer ltMu.Unlock()
+	st := loadLT()
+	p, ok := st.Products[id]
+	if !ok || p == nil {
+		ltJSON(w, 404, map[string]interface{}{"ok": false, "error": "not found"})
+		return
+	}
+	ltJSON(w, 200, map[string]interface{}{"ok": true, "item": p, "profile": publicProfile(st.Profile)})
 }
 
 func (n *NodoAlset) ltCatalog(w http.ResponseWriter) {

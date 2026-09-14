@@ -65,7 +65,7 @@ func (n *NodoAlset) httpHandlers() httpapi.Handlers {
 		if alias == "valesplus" || alias == "valesplus-admin" {
 			n.ensureValesPlusApp()
 		}
-		if alias == "latati" {
+		if alias == "latati" || alias == "gestion-latati" {
 			n.ensureLaTatiApp()
 		}
 		if alias == "vero" {
