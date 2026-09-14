@@ -25,33 +25,44 @@ type ltProduct struct {
 	Stock        int     `json:"stock"`
 	Sold         bool    `json:"sold"`
 	Photo        bool    `json:"photo"`
-	Source       string  `json:"source,omitempty"` // negocio que te lo dio
+	Source       string  `json:"source,omitempty"`
 	CreatedAt    string  `json:"created_at"`
 	UpdatedAt    string  `json:"updated_at"`
 }
 
+type ltLine struct {
+	ProductID string  `json:"product_id"`
+	Title     string  `json:"title"`
+	Qty       int     `json:"qty"`
+	Price     float64 `json:"price"`
+	Currency  string  `json:"currency"`
+	Photo     bool    `json:"photo"`
+}
+
+type ltOrder struct {
+	ID          string   `json:"id"`
+	Code        string   `json:"code"`
+	Thread      string   `json:"thread"`
+	ClientName  string   `json:"client_name"`
+	ClientPhone string   `json:"client_phone"`
+	Lines       []ltLine `json:"lines"`
+	Total       float64  `json:"total"`
+	Currency    string   `json:"currency"`
+	Status      string   `json:"status"` // pending | ready | delivered | cancelled
+	Address     string   `json:"address"`
+	GestorName  string   `json:"gestor_name"`
+	GestorPhone string   `json:"gestor_phone"`
+	Note        string   `json:"note,omitempty"`
+	Ts          string   `json:"ts"`
+}
+
 type ltMsg struct {
 	ID        string `json:"id"`
-	Thread    string `json:"thread"` // client session id
-	From      string `json:"from"`   // gestor | client
+	Thread    string `json:"thread"`
+	From      string `json:"from"`
 	Text      string `json:"text"`
 	ProductID string `json:"product_id,omitempty"`
 	Ts        string `json:"ts"`
-}
-
-type ltVale struct {
-	ID        string  `json:"id"`
-	Code      string  `json:"code"`
-	ProductID string  `json:"product_id"`
-	Title     string  `json:"title"`
-	Price     float64 `json:"price"`
-	Currency  string  `json:"currency"`
-	Qty       int     `json:"qty"`
-	Client    string  `json:"client"`
-	Phone     string  `json:"phone"`
-	Address   string  `json:"address"`
-	Note      string  `json:"note,omitempty"`
-	Ts        string  `json:"ts"`
 }
 
 type ltProfile struct {
@@ -63,34 +74,23 @@ type ltProfile struct {
 }
 
 type ltStore struct {
-	Profile  ltProfile            `json:"profile"`
+	Profile  ltProfile             `json:"profile"`
 	Products map[string]*ltProduct `json:"products"`
-	Messages []ltMsg              `json:"messages"`
-	Vales    []ltVale             `json:"vales"`
-	Tokens   map[string]int64     `json:"tokens"` // token -> expiry unix
-	SeqVale  int                  `json:"seq_vale"`
+	Orders   []ltOrder             `json:"orders"`
+	Messages []ltMsg               `json:"messages"`
+	Tokens   map[string]int64      `json:"tokens"`
+	SeqOrder int                   `json:"seq_order"`
 }
 
 var (
-	ltMu   sync.Mutex
-	ltMem  *ltStore
+	ltMu  sync.Mutex
+	ltMem *ltStore
 )
 
-func ltDir() string {
-	return filepath.Join("alset_data", "latati")
-}
-
-func ltStorePath() string {
-	return filepath.Join(ltDir(), "store.json")
-}
-
-func ltPhotoPath(id string) string {
-	return filepath.Join(ltDir(), "photos", id+".jpg")
-}
-
-func ltEnsure() {
-	_ = os.MkdirAll(filepath.Join(ltDir(), "photos"), 0o755)
-}
+func ltDir() string { return filepath.Join("alset_data", "latati") }
+func ltStorePath() string { return filepath.Join(ltDir(), "store.json") }
+func ltPhotoPath(id string) string { return filepath.Join(ltDir(), "photos", id+".jpg") }
+func ltEnsure() { _ = os.MkdirAll(filepath.Join(ltDir(), "photos"), 0o755) }
 
 func ltRand(n int) string {
 	b := make([]byte, n)
@@ -105,14 +105,15 @@ func loadLT() *ltStore {
 	ltEnsure()
 	st := &ltStore{
 		Profile: ltProfile{
-			Name:     "La Tati",
+			Name:     "Dayanis Perez Soria",
 			WhatsApp: "5351069717",
 			Address:  "",
-			Bio:      "Catálogo del gestor · pedidos por WhatsApp",
+			Bio:      "La Tati · catálogo y pedidos en la app",
 			Pin:      "tati2026",
 		},
 		Products: map[string]*ltProduct{},
 		Tokens:   map[string]int64{},
+		Orders:   []ltOrder{},
 	}
 	b, err := os.ReadFile(ltStorePath())
 	if err == nil {
@@ -123,6 +124,16 @@ func loadLT() *ltStore {
 	}
 	if st.Tokens == nil {
 		st.Tokens = map[string]int64{}
+	}
+	// migrate defaults if empty name
+	if strings.TrimSpace(st.Profile.Name) == "" || st.Profile.Name == "La Tati" {
+		st.Profile.Name = "Dayanis Perez Soria"
+	}
+	if strings.TrimSpace(st.Profile.WhatsApp) == "" || st.Profile.WhatsApp == "5351069717" {
+		st.Profile.WhatsApp = "5351069717"
+	}
+	if st.Profile.Pin == "" {
+		st.Profile.Pin = "tati2026"
 	}
 	ltMem = st
 	return st
@@ -140,7 +151,7 @@ func saveLT(st *ltStore) error {
 func ltCORS(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-LaTati-Token")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-LaTati-Token, X-LaTati-Thread")
 }
 
 func ltJSON(w http.ResponseWriter, code int, v interface{}) {
@@ -158,10 +169,14 @@ func ltAuth(r *http.Request) bool {
 	defer ltMu.Unlock()
 	st := loadLT()
 	exp, ok := st.Tokens[tok]
-	if !ok || time.Now().Unix() > exp {
-		return false
+	return ok && time.Now().Unix() <= exp
+}
+
+func publicProfile(p ltProfile) map[string]string {
+	return map[string]string{
+		"name": p.Name, "whatsapp": p.WhatsApp, "phone": p.WhatsApp,
+		"address": p.Address, "bio": p.Bio,
 	}
-	return true
 }
 
 func (n *NodoAlset) handleLaTatiAPI(w http.ResponseWriter, r *http.Request) {
@@ -170,23 +185,30 @@ func (n *NodoAlset) handleLaTatiAPI(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(204)
 		return
 	}
-	path := strings.TrimPrefix(r.URL.Path, "/api/latati")
-	path = strings.Trim(path, "/")
+	path := strings.Trim(strings.TrimPrefix(r.URL.Path, "/api/latati"), "/")
 	parts := strings.Split(path, "/")
-	if len(parts) == 1 && parts[0] == "" {
+	if path == "" {
 		ltJSON(w, 200, map[string]interface{}{
 			"ok": true, "name": "La Tati",
-			"endpoints": []string{"catalog", "profile", "gestor/login", "gestor/products", "chat", "vale"},
+			"endpoints": []string{"catalog", "profile", "order", "orders", "chat", "gestor/login"},
 		})
 		return
 	}
 	switch {
 	case parts[0] == "catalog" && r.Method == http.MethodGet:
-		n.ltCatalog(w, r)
+		n.ltCatalog(w)
 	case parts[0] == "profile" && r.Method == http.MethodGet:
-		n.ltProfileGet(w, r)
+		n.ltProfileGet(w)
 	case parts[0] == "photo" && len(parts) >= 2 && r.Method == http.MethodGet:
 		n.ltPhotoGet(w, r, parts[1])
+	case parts[0] == "order" && r.Method == http.MethodPost:
+		n.ltPlaceOrder(w, r)
+	case parts[0] == "orders" && r.Method == http.MethodGet:
+		n.ltListOrders(w, r)
+	case parts[0] == "order" && len(parts) >= 2 && r.Method == http.MethodGet:
+		n.ltGetOrder(w, r, parts[1])
+	case parts[0] == "order" && len(parts) >= 3 && parts[2] == "status" && r.Method == http.MethodPost:
+		n.ltOrderStatus(w, r, parts[1])
 	case parts[0] == "gestor" && len(parts) >= 2 && parts[1] == "login":
 		n.ltLogin(w, r)
 	case parts[0] == "gestor" && len(parts) >= 2 && parts[1] == "profile":
@@ -195,8 +217,6 @@ func (n *NodoAlset) handleLaTatiAPI(w http.ResponseWriter, r *http.Request) {
 		n.ltProducts(w, r, parts[2:])
 	case parts[0] == "chat":
 		n.ltChat(w, r)
-	case parts[0] == "vale":
-		n.ltVale(w, r)
 	case parts[0] == "threads" && r.Method == http.MethodGet:
 		n.ltThreads(w, r)
 	default:
@@ -204,19 +224,16 @@ func (n *NodoAlset) handleLaTatiAPI(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (n *NodoAlset) ltCatalog(w http.ResponseWriter, r *http.Request) {
+func (n *NodoAlset) ltCatalog(w http.ResponseWriter) {
 	ltMu.Lock()
 	defer ltMu.Unlock()
 	st := loadLT()
-	list := make([]*ltProduct, 0, len(st.Products))
+	list := make([]*ltProduct, 0)
 	for _, p := range st.Products {
 		if p == nil || p.Sold {
 			continue
 		}
-		if p.Stock <= 0 && !p.PricePending {
-			// allow showing pending-price items even with 0 stock if not marked sold
-		}
-		if p.Stock <= 0 && !p.PricePending {
+		if p.Stock <= 0 {
 			continue
 		}
 		list = append(list, p)
@@ -225,13 +242,7 @@ func (n *NodoAlset) ltCatalog(w http.ResponseWriter, r *http.Request) {
 	ltJSON(w, 200, map[string]interface{}{"ok": true, "items": list, "profile": publicProfile(st.Profile)})
 }
 
-func publicProfile(p ltProfile) map[string]string {
-	return map[string]string{
-		"name": p.Name, "whatsapp": p.WhatsApp, "address": p.Address, "bio": p.Bio,
-	}
-}
-
-func (n *NodoAlset) ltProfileGet(w http.ResponseWriter, r *http.Request) {
+func (n *NodoAlset) ltProfileGet(w http.ResponseWriter) {
 	ltMu.Lock()
 	defer ltMu.Unlock()
 	st := loadLT()
@@ -240,8 +251,7 @@ func (n *NodoAlset) ltProfileGet(w http.ResponseWriter, r *http.Request) {
 
 func (n *NodoAlset) ltPhotoGet(w http.ResponseWriter, r *http.Request, id string) {
 	id = strings.TrimSuffix(id, ".jpg")
-	path := ltPhotoPath(id)
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(ltPhotoPath(id))
 	if err != nil {
 		http.NotFound(w, r)
 		return
@@ -273,9 +283,7 @@ func (n *NodoAlset) ltLogin(w http.ResponseWriter, r *http.Request) {
 	tok := ltRand(16)
 	st.Tokens[tok] = time.Now().Add(30 * 24 * time.Hour).Unix()
 	_ = saveLT(st)
-	ltJSON(w, 200, map[string]interface{}{
-		"ok": true, "token": tok, "profile": publicProfile(st.Profile),
-	})
+	ltJSON(w, 200, map[string]interface{}{"ok": true, "token": tok, "profile": publicProfile(st.Profile)})
 }
 
 func (n *NodoAlset) ltProfileSave(w http.ResponseWriter, r *http.Request) {
@@ -301,9 +309,7 @@ func (n *NodoAlset) ltProfileSave(w http.ResponseWriter, r *http.Request) {
 	if in.WhatsApp != "" {
 		st.Profile.WhatsApp = strings.TrimPrefix(strings.ReplaceAll(in.WhatsApp, " ", ""), "+")
 	}
-	if in.Address != "" {
-		st.Profile.Address = in.Address
-	}
+	st.Profile.Address = in.Address
 	st.Profile.Bio = in.Bio
 	if in.Pin != "" && len(in.Pin) >= 4 {
 		st.Profile.Pin = in.Pin
@@ -317,7 +323,6 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 		ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
 		return
 	}
-	// GET list all
 	if r.Method == http.MethodGet && len(rest) == 0 {
 		ltMu.Lock()
 		defer ltMu.Unlock()
@@ -330,8 +335,7 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 		ltJSON(w, 200, map[string]interface{}{"ok": true, "items": list})
 		return
 	}
-	// POST create/update
-	if r.Method == http.MethodPost && (len(rest) == 0 || rest[0] == "") {
+	if r.Method == http.MethodPost && len(rest) == 0 {
 		var in ltProduct
 		if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 			ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "json"})
@@ -356,13 +360,14 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 		}
 		if in.PricePending || in.Price <= 0 {
 			in.PricePending = true
+		} else {
+			in.PricePending = false
 		}
 		st.Products[in.ID] = &in
 		_ = saveLT(st)
 		ltJSON(w, 200, map[string]interface{}{"ok": true, "item": in})
 		return
 	}
-	// photo upload
 	if len(rest) >= 2 && rest[1] == "photo" && r.Method == http.MethodPost {
 		id := rest[0]
 		if err := r.ParseMultipartForm(8 << 20); err != nil {
@@ -381,10 +386,7 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 			return
 		}
 		ltEnsure()
-		if err := os.WriteFile(ltPhotoPath(id), b, 0o644); err != nil {
-			ltJSON(w, 500, map[string]interface{}{"ok": false, "error": "write"})
-			return
-		}
+		_ = os.WriteFile(ltPhotoPath(id), b, 0o644)
 		ltMu.Lock()
 		defer ltMu.Unlock()
 		st := loadLT()
@@ -396,10 +398,8 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 		ltJSON(w, 200, map[string]interface{}{"ok": true, "photo": "/api/latati/photo/" + id})
 		return
 	}
-	// actions: sold, stock
 	if len(rest) >= 2 && r.Method == http.MethodPost {
-		id := rest[0]
-		action := rest[1]
+		id, action := rest[0], rest[1]
 		ltMu.Lock()
 		defer ltMu.Unlock()
 		st := loadLT()
@@ -430,6 +430,8 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 			}
 			if p.Stock == 0 {
 				p.Sold = true
+			} else {
+				p.Sold = false
 			}
 		case "delete":
 			delete(st.Products, id)
@@ -449,6 +451,166 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 	http.Error(w, "method", 405)
 }
 
+func (n *NodoAlset) ltPlaceOrder(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Thread      string `json:"thread"`
+		ClientName  string `json:"client_name"`
+		ClientPhone string `json:"client_phone"`
+		Note        string `json:"note"`
+		Items       []struct {
+			ProductID string `json:"product_id"`
+			Qty       int    `json:"qty"`
+		} `json:"items"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "json"})
+		return
+	}
+	in.Thread = strings.TrimSpace(in.Thread)
+	if in.Thread == "" || len(in.Items) == 0 {
+		ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "thread/items"})
+		return
+	}
+	if strings.TrimSpace(in.ClientName) == "" {
+		ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "name"})
+		return
+	}
+
+	ltMu.Lock()
+	defer ltMu.Unlock()
+	st := loadLT()
+
+	var lines []ltLine
+	total := 0.0
+	currency := "USD"
+	for _, it := range in.Items {
+		if it.Qty < 1 {
+			it.Qty = 1
+		}
+		p, ok := st.Products[it.ProductID]
+		if !ok || p == nil || p.Sold {
+			ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "product unavailable: " + it.ProductID})
+			return
+		}
+		if p.PricePending || p.Price <= 0 {
+			ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "product without price: " + p.Title})
+			return
+		}
+		if p.Stock < it.Qty {
+			ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "stock: " + p.Title})
+			return
+		}
+		lines = append(lines, ltLine{
+			ProductID: p.ID, Title: p.Title, Qty: it.Qty,
+			Price: p.Price, Currency: p.Currency, Photo: p.Photo,
+		})
+		total += p.Price * float64(it.Qty)
+		currency = p.Currency
+		p.Stock -= it.Qty
+		if p.Stock <= 0 {
+			p.Stock = 0
+			p.Sold = true
+		}
+		p.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+	}
+
+	st.SeqOrder++
+	ord := ltOrder{
+		ID: ltRand(8), Code: fmt.Sprintf("LT-%04d", st.SeqOrder),
+		Thread: in.Thread, ClientName: strings.TrimSpace(in.ClientName),
+		ClientPhone: strings.TrimSpace(in.ClientPhone),
+		Lines: lines, Total: total, Currency: currency,
+		Status: "pending", Address: st.Profile.Address,
+		GestorName: st.Profile.Name, GestorPhone: st.Profile.WhatsApp,
+		Note: strings.TrimSpace(in.Note),
+		Ts: time.Now().UTC().Format(time.RFC3339),
+	}
+	st.Orders = append([]ltOrder{ord}, st.Orders...)
+	if len(st.Orders) > 1000 {
+		st.Orders = st.Orders[:1000]
+	}
+	// system chat note
+	st.Messages = append(st.Messages, ltMsg{
+		ID: ltRand(6), Thread: in.Thread, From: "client",
+		Text: fmt.Sprintf("Pedido %s · total %s %.2f · %d ítem(s)", ord.Code, ord.Currency, ord.Total, len(ord.Lines)),
+		Ts:   ord.Ts,
+	})
+	_ = saveLT(st)
+	ltJSON(w, 200, map[string]interface{}{"ok": true, "order": ord})
+}
+
+func (n *NodoAlset) ltListOrders(w http.ResponseWriter, r *http.Request) {
+	thread := strings.TrimSpace(r.URL.Query().Get("thread"))
+	ltMu.Lock()
+	defer ltMu.Unlock()
+	st := loadLT()
+	if thread != "" {
+		var out []ltOrder
+		for _, o := range st.Orders {
+			if o.Thread == thread {
+				out = append(out, o)
+			}
+		}
+		ltJSON(w, 200, map[string]interface{}{"ok": true, "items": out})
+		return
+	}
+	if !ltAuth(r) {
+		ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
+		return
+	}
+	ltJSON(w, 200, map[string]interface{}{"ok": true, "items": st.Orders})
+}
+
+func (n *NodoAlset) ltGetOrder(w http.ResponseWriter, r *http.Request, id string) {
+	thread := strings.TrimSpace(r.URL.Query().Get("thread"))
+	ltMu.Lock()
+	defer ltMu.Unlock()
+	st := loadLT()
+	for _, o := range st.Orders {
+		if o.ID == id || o.Code == id {
+			// client may only see own; gestor with auth sees all
+			if ltAuth(r) || (thread != "" && o.Thread == thread) {
+				ltJSON(w, 200, map[string]interface{}{"ok": true, "order": o})
+				return
+			}
+			// also allow by id alone for vale display if they have the code link
+			if thread == "" && !ltAuth(r) {
+				ltJSON(w, 200, map[string]interface{}{"ok": true, "order": o})
+				return
+			}
+		}
+	}
+	ltJSON(w, 404, map[string]interface{}{"ok": false, "error": "not found"})
+}
+
+func (n *NodoAlset) ltOrderStatus(w http.ResponseWriter, r *http.Request, id string) {
+	if !ltAuth(r) {
+		ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
+		return
+	}
+	var in struct {
+		Status string `json:"status"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&in)
+	in.Status = strings.TrimSpace(in.Status)
+	if in.Status == "" {
+		ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "status"})
+		return
+	}
+	ltMu.Lock()
+	defer ltMu.Unlock()
+	st := loadLT()
+	for i := range st.Orders {
+		if st.Orders[i].ID == id || st.Orders[i].Code == id {
+			st.Orders[i].Status = in.Status
+			_ = saveLT(st)
+			ltJSON(w, 200, map[string]interface{}{"ok": true, "order": st.Orders[i]})
+			return
+		}
+	}
+	ltJSON(w, 404, map[string]interface{}{"ok": false, "error": "not found"})
+}
+
 func (n *NodoAlset) ltChat(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		thread := r.URL.Query().Get("thread")
@@ -461,7 +623,6 @@ func (n *NodoAlset) ltChat(w http.ResponseWriter, r *http.Request) {
 				out = append(out, m)
 			}
 		}
-		// last 200
 		if len(out) > 200 {
 			out = out[len(out)-200:]
 		}
@@ -474,7 +635,7 @@ func (n *NodoAlset) ltChat(w http.ResponseWriter, r *http.Request) {
 			From      string `json:"from"`
 			Text      string `json:"text"`
 			ProductID string `json:"product_id"`
-			Token     string `json:"token"` // optional gestor token in body
+			Token     string `json:"token"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 			ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "json"})
@@ -487,20 +648,17 @@ func (n *NodoAlset) ltChat(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if in.From == "gestor" {
-			// require auth header or token
-			if !ltAuth(r) && in.Token == "" {
-				ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
-				return
-			}
-			if in.Token != "" {
+			ok := ltAuth(r)
+			if !ok && in.Token != "" {
 				ltMu.Lock()
 				st := loadLT()
-				exp, ok := st.Tokens[in.Token]
+				exp, exists := st.Tokens[in.Token]
 				ltMu.Unlock()
-				if !ok || time.Now().Unix() > exp {
-					ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
-					return
-				}
+				ok = exists && time.Now().Unix() <= exp
+			}
+			if !ok {
+				ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
+				return
 			}
 		} else {
 			in.From = "client"
@@ -536,6 +694,7 @@ func (n *NodoAlset) ltThreads(w http.ResponseWriter, r *http.Request) {
 		Last   string `json:"last"`
 		Ts     string `json:"ts"`
 		Count  int    `json:"count"`
+		Name   string `json:"name,omitempty"`
 	}
 	m := map[string]*th{}
 	for _, msg := range st.Messages {
@@ -548,96 +707,17 @@ func (n *NodoAlset) ltThreads(w http.ResponseWriter, r *http.Request) {
 		t.Last = msg.Text
 		t.Ts = msg.Ts
 	}
+	for _, o := range st.Orders {
+		if t, ok := m[o.Thread]; ok && t.Name == "" {
+			t.Name = o.ClientName
+		}
+	}
 	list := make([]*th, 0, len(m))
 	for _, t := range m {
 		list = append(list, t)
 	}
 	sort.Slice(list, func(i, j int) bool { return list[i].Ts > list[j].Ts })
 	ltJSON(w, 200, map[string]interface{}{"ok": true, "items": list})
-}
-
-func (n *NodoAlset) ltVale(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		id := r.URL.Query().Get("id")
-		ltMu.Lock()
-		defer ltMu.Unlock()
-		st := loadLT()
-		if id != "" {
-			for _, v := range st.Vales {
-				if v.ID == id || v.Code == id {
-					ltJSON(w, 200, map[string]interface{}{"ok": true, "item": v})
-					return
-				}
-			}
-			ltJSON(w, 404, map[string]interface{}{"ok": false})
-			return
-		}
-		if !ltAuth(r) {
-			ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
-			return
-		}
-		ltJSON(w, 200, map[string]interface{}{"ok": true, "items": st.Vales})
-		return
-	}
-	if r.Method != http.MethodPost {
-		http.Error(w, "POST", 405)
-		return
-	}
-	if !ltAuth(r) {
-		ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
-		return
-	}
-	var in ltVale
-	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
-		ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "json"})
-		return
-	}
-	ltMu.Lock()
-	defer ltMu.Unlock()
-	st := loadLT()
-	st.SeqVale++
-	in.ID = ltRand(8)
-	in.Code = fmt.Sprintf("LT-%04d", st.SeqVale)
-	in.Ts = time.Now().UTC().Format(time.RFC3339)
-	if in.Qty < 1 {
-		in.Qty = 1
-	}
-	if in.Address == "" {
-		in.Address = st.Profile.Address
-	}
-	if p, ok := st.Products[in.ProductID]; ok && p != nil {
-		if in.Title == "" {
-			in.Title = p.Title
-		}
-		if in.Price == 0 {
-			in.Price = p.Price
-		}
-		if in.Currency == "" {
-			in.Currency = p.Currency
-		}
-		// reduce stock
-		p.Stock -= in.Qty
-		if p.Stock <= 0 {
-			p.Stock = 0
-			p.Sold = true
-		}
-		p.UpdatedAt = in.Ts
-	}
-	st.Vales = append([]ltVale{in}, st.Vales...)
-	if len(st.Vales) > 500 {
-		st.Vales = st.Vales[:500]
-	}
-	_ = saveLT(st)
-	// text for WhatsApp
-	text := fmt.Sprintf("Vale %s · %s × %d", in.Code, in.Title, in.Qty)
-	if in.Price > 0 {
-		text += fmt.Sprintf(" · %s %.2f", in.Currency, in.Price)
-	}
-	text += fmt.Sprintf("\nCliente: %s %s\nRecogida: %s", in.Client, in.Phone, in.Address)
-	if in.Note != "" {
-		text += "\n" + in.Note
-	}
-	ltJSON(w, 200, map[string]interface{}{"ok": true, "item": in, "text": text})
 }
 
 func (n *NodoAlset) registerLaTatiAPI(extra map[string]http.HandlerFunc) {

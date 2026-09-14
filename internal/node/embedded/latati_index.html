@@ -4,222 +4,200 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1a0a12">
-<title>La Tati · Catálogo del gestor</title>
+<title>La Tati</title>
 <style>
-:root{
-  --bg:#12080e; --card:#1c1018; --line:rgba(255,105,180,.22);
-  --pink:#ff6eb4; --pink2:#ff3d9a; --mint:#5dffc2; --ink:#fff5fa; --muted:#c4a8b8;
-  --gold:#ffc85a;
-}
+:root{--bg:#12080e;--card:#1c1018;--line:rgba(255,105,180,.22);--pink:#ff6eb4;--pink2:#ff3d9a;--mint:#5dffc2;--ink:#fff5fa;--muted:#c4a8b8;--gold:#ffc85a}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,-apple-system,sans-serif;background:radial-gradient(1200px 600px at 10% -10%,#3a1528 0%,var(--bg) 55%);color:var(--ink);min-height:100vh;padding-bottom:72px}
-.top{position:sticky;top:0;z-index:20;backdrop-filter:blur(12px);background:rgba(18,8,14,.88);border-bottom:1px solid var(--line);padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem}
-.brand{display:flex;align-items:center;gap:.55rem;font-weight:800;letter-spacing:-.02em}
-.mark{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--pink),var(--pink2));display:grid;place-items:center;font-weight:900;font-size:.95rem;color:#1a0a12}
-.sub{color:var(--muted);font-size:.82rem;line-height:1.35}
+body{font-family:system-ui,-apple-system,sans-serif;background:radial-gradient(1200px 600px at 10% -10%,#3a1528 0%,var(--bg) 55%);color:var(--ink);min-height:100vh;padding-bottom:78px}
+.top{position:sticky;top:0;z-index:20;backdrop-filter:blur(12px);background:rgba(18,8,14,.9);border-bottom:1px solid var(--line);padding:.7rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.brand{display:flex;align-items:center;gap:.5rem;font-weight:800}
+.mark{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--pink),var(--pink2));display:grid;place-items:center;color:#1a0a12;font-weight:900}
+.sub{color:var(--muted);font-size:.8rem;line-height:1.35}
 .wrap{max-width:560px;margin:0 auto;padding:1rem}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
 @media(max-width:420px){.grid{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
-.card img{width:100%;aspect-ratio:1;object-fit:cover;background:#2a1520;display:block}
-.card .body{padding:.7rem .8rem  .9rem}
-.card h3{font-size:.95rem;margin:0 0 .25rem;line-height:1.25}
-.price{color:var(--gold);font-weight:700;font-size:.92rem}
-.badge{display:inline-block;font-size:.68rem;padding:.15rem .45rem;border-radius:999px;background:rgba(255,110,180,.15);color:var(--pink);margin-top:.35rem}
-.badge.wait{background:rgba(255,200,90,.15);color:var(--gold)}
-.badge.sold{background:rgba(255,80,80,.15);color:#ff8a8a}
-.btn{width:100%;border:none;border-radius:12px;padding:.75rem 1rem;font-weight:700;cursor:pointer;font-size:.92rem}
+.card img,.vale-photo{width:100%;aspect-ratio:1;object-fit:cover;background:#2a1520;display:block}
+.card .body{padding:.65rem .75rem .85rem}
+.card h3{font-size:.92rem;line-height:1.25;margin-bottom:.2rem}
+.price{color:var(--gold);font-weight:700}
+.btn{width:100%;border:none;border-radius:12px;padding:.72rem 1rem;font-weight:700;cursor:pointer;font-size:.9rem}
 .btn-pink{background:linear-gradient(120deg,var(--pink),var(--pink2));color:#1a0a12}
 .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
 .btn-mint{background:linear-gradient(120deg,#25d366,#128c7e);color:#fff}
 .btn-gold{background:linear-gradient(120deg,var(--gold),#ff9f1a);color:#1a0a12}
-.btn-row{display:flex;gap:.5rem;margin-top:.55rem}
+.btn-row{display:flex;gap:.45rem;margin-top:.5rem}
 .btn-row .btn{flex:1}
-label{display:block;font-size:.72rem;color:var(--muted);margin:.55rem 0 .25rem;text-transform:uppercase;letter-spacing:.04em}
-input,textarea,select{width:100%;background:#140a10;border:1px solid var(--line);border-radius:12px;padding:.7rem .8rem;color:var(--ink);font-size:16px}
-textarea{min-height:72px;resize:vertical}
-.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(18,8,14,.94);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:.35rem .25rem calc(.35rem + env(safe-area-inset-bottom));z-index:30}
-.nav button{background:none;border:none;color:var(--muted);font-size:.7rem;padding:.4rem .5rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:.15rem}
+.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(18,8,14,.95);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:.3rem .2rem calc(.3rem + env(safe-area-inset-bottom));z-index:30}
+.nav button{background:none;border:none;color:var(--muted);font-size:.68rem;padding:.35rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:.1rem}
 .nav button.on{color:var(--pink)}
-.nav .ico{font-size:1.15rem}
+.nav .ico{font-size:1.1rem}
 .hidden{display:none!important}
-.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#2a1520;border:1px solid var(--line);padding:.55rem 1rem;border-radius:999px;font-size:.85rem;z-index:50;opacity:0;transition:.25s}
+.toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:#2a1520;border:1px solid var(--line);padding:.5rem 1rem;border-radius:999px;font-size:.84rem;z-index:50;opacity:0;transition:.25s;max-width:90%;text-align:center}
 .toast.show{opacity:1}
-.chat-list .item,.thread-item{padding:.75rem;border-bottom:1px solid var(--line);cursor:pointer}
-.chat-list .item:active,.thread-item:active{background:rgba(255,110,180,.08)}
-.msgs{display:flex;flex-direction:column;gap:.45rem;max-height:48vh;overflow-y:auto;padding:.5rem 0}
-.bubble{max-width:85%;padding:.55rem .75rem;border-radius:14px;font-size:.9rem;line-height:1.35;word-break:break-word}
+label{display:block;font-size:.7rem;color:var(--muted);margin:.5rem 0 .2rem;text-transform:uppercase;letter-spacing:.04em}
+input,textarea,select{width:100%;background:#140a10;border:1px solid var(--line);border-radius:12px;padding:.68rem .75rem;color:var(--ink);font-size:16px}
+textarea{min-height:70px;resize:vertical}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1rem;margin-bottom:.85rem}
+.badge{display:inline-block;font-size:.68rem;padding:.12rem .45rem;border-radius:999px;background:rgba(255,110,180,.15);color:var(--pink)}
+.badge.wait{background:rgba(255,200,90,.15);color:var(--gold)}
+.badge.ok{background:rgba(93,255,194,.12);color:var(--mint)}
+.cart-bar{position:sticky;bottom:72px;z-index:15;margin:0 auto;max-width:560px;padding:0 1rem}
+.cart-bar .inner{background:linear-gradient(120deg,var(--pink),var(--pink2));color:#1a0a12;border-radius:14px;padding:.75rem 1rem;display:flex;justify-content:space-between;align-items:center;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.msgs{display:flex;flex-direction:column;gap:.4rem;max-height:45vh;overflow-y:auto;padding:.4rem 0}
+.bubble{max-width:85%;padding:.5rem .7rem;border-radius:14px;font-size:.88rem;line-height:1.35;word-break:break-word}
 .bubble.me{align-self:flex-end;background:linear-gradient(120deg,var(--pink),var(--pink2));color:#1a0a12}
 .bubble.them{align-self:flex-start;background:#2a1520;border:1px solid var(--line)}
-.composer{display:flex;gap:.45rem;margin-top:.5rem}
+.composer{display:flex;gap:.4rem;margin-top:.45rem}
 .composer input{flex:1}
-.composer button{width:auto;padding:.7rem 1rem}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1rem;margin-bottom:1rem}
-h1{font-size:1.35rem;margin-bottom:.25rem}
-h2{font-size:1.05rem;margin:0 0 .75rem}
-.empty{text-align:center;color:var(--muted);padding:2rem 1rem}
-.photo-btn{display:block;border:1px dashed var(--line);border-radius:12px;padding:1rem;text-align:center;color:var(--muted);cursor:pointer;margin:.5rem 0}
+.composer button{width:auto;padding:.65rem .9rem}
+.line{display:flex;gap:.65rem;padding:.55rem 0;border-bottom:1px solid var(--line);align-items:center}
+.line img{width:56px;height:56px;border-radius:10px;object-fit:cover;background:#2a1520}
+.vale-card{background:linear-gradient(160deg,#241018,#1a0c12);border:1px solid var(--gold);border-radius:18px;padding:1rem;margin-top:.5rem}
+.vale-card h2{color:var(--gold);font-size:1.2rem;margin-bottom:.35rem}
+.qty{display:flex;align-items:center;gap:.35rem}
+.qty button{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:#140a10;color:var(--ink);font-weight:700}
+.empty{text-align:center;color:var(--muted);padding:1.8rem 1rem}
+.photo-btn{display:block;border:1px dashed var(--line);border-radius:12px;padding:.9rem;text-align:center;color:var(--muted);cursor:pointer}
 .photo-btn input{display:none}
-.preview{width:100%;max-height:220px;object-fit:cover;border-radius:12px;margin:.4rem 0}
-.stock-row{display:flex;gap:.5rem;align-items:center}
-.stock-row input{width:80px}
-.pill{font-size:.75rem;color:var(--muted)}
+.preview{width:100%;max-height:200px;object-fit:cover;border-radius:12px;margin:.4rem 0}
 </style>
 </head>
 <body>
 <header class="top">
-  <div class="brand"><div class="mark">LT</div><div><div id="brandName">La Tati</div><div class="sub" id="brandSub">Catálogo · pedidos por WhatsApp</div></div></div>
-  <button type="button" class="btn btn-ghost" style="width:auto;padding:.4rem .7rem;font-size:.78rem" id="btnMode">Gestor</button>
+  <div class="brand"><div class="mark">LT</div><div><div id="brandName">La Tati</div><div class="sub" id="brandSub">Pedidos en la app · vale de recogida</div></div></div>
+  <button type="button" class="btn btn-ghost" style="width:auto;padding:.35rem .65rem;font-size:.75rem" id="btnMode">Gestor</button>
 </header>
 <div class="wrap">
-  <!-- PUBLIC CATALOG -->
   <section id="view-catalog">
-    <h1>Disponible</h1>
-    <p class="sub" id="catalogSub">Elige un producto y te llevo a WhatsApp con el pedido listo.</p>
-    <div id="catalogGrid" class="grid" style="margin-top:1rem"></div>
-    <div class="empty hidden" id="catalogEmpty">Aún no hay productos publicados.</div>
+    <h1 style="font-size:1.25rem;margin-bottom:.2rem">Catálogo</h1>
+    <p class="sub" id="catalogSub">Agrega productos y confirma el pedido. Se genera tu vale de recogida.</p>
+    <div id="catalogGrid" class="grid" style="margin-top:.85rem"></div>
+    <div class="empty hidden" id="catalogEmpty">No hay productos disponibles.</div>
   </section>
 
-  <!-- PRODUCT DETAIL PUBLIC -->
-  <section id="view-detail" class="hidden">
-    <button type="button" class="btn btn-ghost" id="btnBackCat" style="width:auto;margin-bottom:.75rem">← Catálogo</button>
-    <div class="card">
-      <img id="detPhoto" alt="">
-      <div class="body">
-        <h2 id="detTitle"></h2>
-        <div class="price" id="detPrice"></div>
-        <p class="sub" id="detDesc" style="margin-top:.5rem"></p>
-        <p class="pill" id="detStock" style="margin-top:.35rem"></p>
-        <button type="button" class="btn btn-mint" id="btnWA" style="margin-top:.85rem">Pedir por WhatsApp</button>
-        <button type="button" class="btn btn-ghost" id="btnChatProd" style="margin-top:.45rem">Chatear en la app</button>
-      </div>
+  <section id="view-cart" class="hidden">
+    <h2 style="margin-bottom:.5rem">Tu pedido</h2>
+    <div id="cartLines"></div>
+    <div class="panel" style="margin-top:.75rem">
+      <div style="display:flex;justify-content:space-between;font-weight:800"><span>Total</span><span class="price" id="cartTotal">—</span></div>
+      <label>Tu nombre</label>
+      <input id="cName" placeholder="Nombre completo" autocomplete="name">
+      <label>Teléfono</label>
+      <input id="cPhone" type="tel" placeholder="Tu número" autocomplete="tel">
+      <label>Nota (opcional)</label>
+      <textarea id="cNote" placeholder="Horario de recogida, color, etc."></textarea>
+      <button type="button" class="btn btn-pink" id="btnPlaceOrder" style="margin-top:.75rem">Confirmar pedido y generar vale</button>
     </div>
   </section>
 
-  <!-- CLIENT CHAT -->
+  <section id="view-vale" class="hidden">
+    <h2>Tu vale de recogida</h2>
+    <p class="sub">Muéstralo al recoger. Este dispositivo guarda tus pedidos.</p>
+    <div id="valeBox"></div>
+    <button type="button" class="btn btn-ghost" id="btnBackAfterVale" style="margin-top:.75rem">Volver al catálogo</button>
+  </section>
+
+  <section id="view-myorders" class="hidden">
+    <h2>Mis pedidos</h2>
+    <p class="sub">Solo de este dispositivo / sesión.</p>
+    <div id="myOrders"></div>
+  </section>
+
   <section id="view-client-chat" class="hidden">
-    <h2>Chat con La Tati</h2>
-    <p class="sub">Tus mensajes llegan al gestor. También puedes usar WhatsApp.</p>
+    <h2>Chat</h2>
     <div class="msgs" id="clientMsgs"></div>
     <div class="composer">
-      <input id="clientMsgIn" placeholder="Escribe un mensaje…" autocomplete="off">
+      <input id="clientMsgIn" placeholder="Mensaje a La Tati…" autocomplete="off">
       <button type="button" class="btn btn-pink" id="btnClientSend">Enviar</button>
     </div>
   </section>
 
-  <!-- GESTOR LOGIN -->
   <section id="view-login" class="hidden">
     <div class="panel">
-      <h2>Entrar como gestor</h2>
+      <h2>Gestor</h2>
       <label>PIN</label>
-      <input id="pinIn" type="password" placeholder="Tu PIN" autocomplete="current-password">
-      <button type="button" class="btn btn-pink" id="btnLogin" style="margin-top:.75rem">Entrar</button>
-      <p class="sub" style="margin-top:.6rem">Solo tú gestionas publicaciones, stock, chat y vales.</p>
+      <input id="pinIn" type="password" autocomplete="current-password">
+      <button type="button" class="btn btn-pink" id="btnLogin" style="margin-top:.7rem">Entrar</button>
     </div>
   </section>
 
-  <!-- GESTOR PRODUCTS -->
   <section id="view-gestor" class="hidden">
     <div class="btn-row">
-      <button type="button" class="btn btn-pink" id="btnNewProd">＋ Publicar</button>
+      <button type="button" class="btn btn-pink" id="btnNewProd">＋ Producto</button>
+      <button type="button" class="btn btn-ghost" id="btnGestorOrders">Pedidos</button>
+    </div>
+    <div class="btn-row">
       <button type="button" class="btn btn-ghost" id="btnGestorChat">Chat</button>
       <button type="button" class="btn btn-ghost" id="btnGestorCfg">Perfil</button>
     </div>
-    <div id="gestorList" style="margin-top:1rem"></div>
+    <div id="gestorList" style="margin-top:.85rem"></div>
   </section>
 
-  <!-- GESTOR EDIT PRODUCT -->
+  <section id="view-gorders" class="hidden">
+    <button type="button" class="btn btn-ghost" id="btnBackGOrders" style="width:auto;margin-bottom:.5rem">← Productos</button>
+    <h2>Pedidos recibidos</h2>
+    <div id="gOrders"></div>
+  </section>
+
   <section id="view-edit" class="hidden">
-    <button type="button" class="btn btn-ghost" id="btnBackGestor" style="width:auto;margin-bottom:.75rem">← Mis productos</button>
+    <button type="button" class="btn btn-ghost" id="btnBackGestor" style="width:auto;margin-bottom:.5rem">← Productos</button>
     <div class="panel">
-      <h2 id="editTitle">Publicar producto</h2>
-      <label>Foto</label>
-      <label class="photo-btn">Elegir foto<input type="file" id="editPhoto" accept="image/*"></label>
+      <h2 id="editTitle">Producto</h2>
+      <label class="photo-btn">Foto<input type="file" id="editPhoto" accept="image/*"></label>
       <img class="preview hidden" id="editPreview" alt="">
-      <label>Título</label>
-      <input id="fTitle" placeholder="Nombre del producto">
-      <label>Descripción</label>
-      <textarea id="fDesc" placeholder="Detalles, medidas, estado…"></textarea>
-      <label>Negocio / origen (opcional)</label>
-      <input id="fSource" placeholder="Quién te lo dio a gestionar">
+      <label>Título</label><input id="fTitle">
+      <label>Descripción</label><textarea id="fDesc"></textarea>
+      <label>Origen / negocio</label><input id="fSource">
       <label>Precio</label>
-      <div class="stock-row">
-        <input id="fPrice" type="number" step="0.01" min="0" placeholder="0 = sin precio aún">
-        <select id="fCur" style="flex:1"><option>USD</option><option>CUP</option><option>EUR</option><option>ZELLE</option></select>
+      <div style="display:flex;gap:.4rem">
+        <input id="fPrice" type="number" step="0.01" min="0" placeholder="0">
+        <select id="fCur"><option>USD</option><option>CUP</option><option>EUR</option><option>ZELLE</option></select>
       </div>
-      <label><input type="checkbox" id="fPending"> Sin precio todavía (lo publico igual)</label>
-      <label>Stock</label>
-      <input id="fStock" type="number" min="0" value="1">
-      <div class="btn-row" style="margin-top:.9rem">
-        <button type="button" class="btn btn-pink" id="btnSaveProd">Guardar</button>
-      </div>
+      <label><input type="checkbox" id="fPending"> Sin precio aún</label>
+      <label>Stock</label><input id="fStock" type="number" min="0" value="1">
+      <button type="button" class="btn btn-pink" id="btnSaveProd" style="margin-top:.7rem">Guardar</button>
       <div class="btn-row">
-        <button type="button" class="btn btn-gold" id="btnVale">Generar vale recogida</button>
-        <button type="button" class="btn btn-ghost" id="btnSold">Marcar vendido</button>
+        <button type="button" class="btn btn-ghost" id="btnSold">Vendido</button>
+        <button type="button" class="btn btn-ghost" id="btnDelProd" style="color:#ff8a8a">Eliminar</button>
       </div>
-      <button type="button" class="btn btn-ghost" id="btnDelProd" style="margin-top:.45rem;color:#ff8a8a">Eliminar</button>
     </div>
   </section>
 
-  <!-- GESTOR CHAT -->
   <section id="view-gchat" class="hidden">
-    <button type="button" class="btn btn-ghost" id="btnBackGFromChat" style="width:auto;margin-bottom:.5rem">← Productos</button>
-    <h2>Conversaciones</h2>
-    <div id="threadList" class="chat-list panel" style="padding:0"></div>
+    <button type="button" class="btn btn-ghost" id="btnBackGChat" style="width:auto;margin-bottom:.5rem">← Atrás</button>
+    <div id="threadList" class="panel" style="padding:0"></div>
     <div id="threadView" class="hidden">
-      <p class="sub" id="threadLabel" style="margin:.5rem 0"></p>
+      <p class="sub" id="threadLabel"></p>
       <div class="msgs" id="gestorMsgs"></div>
       <div class="composer">
-        <input id="gestorMsgIn" placeholder="Responder…" autocomplete="off">
+        <input id="gestorMsgIn" placeholder="Responder…">
         <button type="button" class="btn btn-pink" id="btnGestorSend">Enviar</button>
       </div>
     </div>
   </section>
 
-  <!-- GESTOR PROFILE -->
   <section id="view-cfg" class="hidden">
-    <button type="button" class="btn btn-ghost" id="btnBackGFromCfg" style="width:auto;margin-bottom:.5rem">← Productos</button>
+    <button type="button" class="btn btn-ghost" id="btnBackCfg" style="width:auto;margin-bottom:.5rem">← Atrás</button>
     <div class="panel">
-      <h2>Mi perfil público</h2>
-      <label>Nombre</label>
-      <input id="cfgName">
-      <label>WhatsApp (solo dígitos con código país)</label>
-      <input id="cfgWA" placeholder="5351069717">
-      <label>Dirección de recogida</label>
-      <input id="cfgAddr">
-      <label>Bio</label>
-      <textarea id="cfgBio"></textarea>
-      <label>Cambiar PIN</label>
-      <input id="cfgPin" type="password" placeholder="Dejar vacío para no cambiar">
-      <button type="button" class="btn btn-pink" id="btnSaveCfg" style="margin-top:.75rem">Guardar perfil</button>
-      <button type="button" class="btn btn-ghost" id="btnLogout" style="margin-top:.45rem">Cerrar sesión gestor</button>
-    </div>
-  </section>
-
-  <!-- VALE FORM -->
-  <section id="view-vale" class="hidden">
-    <button type="button" class="btn btn-ghost" id="btnBackVale" style="width:auto;margin-bottom:.5rem">← Atrás</button>
-    <div class="panel">
-      <h2>Vale de recogida</h2>
-      <label>Cliente</label>
-      <input id="vClient">
-      <label>Teléfono</label>
-      <input id="vPhone" type="tel">
-      <label>Cantidad</label>
-      <input id="vQty" type="number" min="1" value="1">
-      <label>Nota</label>
-      <textarea id="vNote"></textarea>
-      <button type="button" class="btn btn-gold" id="btnCreateVale" style="margin-top:.75rem">Crear vale</button>
-      <div id="valeResult" class="hidden" style="margin-top:1rem">
-        <p class="sub" id="valeText" style="white-space:pre-wrap"></p>
-        <button type="button" class="btn btn-mint" id="btnValeWA" style="margin-top:.5rem">Enviar vale por WhatsApp</button>
-      </div>
+      <h2>Perfil gestora</h2>
+      <label>Nombre</label><input id="cfgName">
+      <label>Teléfono</label><input id="cfgWA">
+      <label>Dirección de recogida</label><input id="cfgAddr">
+      <label>Bio</label><textarea id="cfgBio"></textarea>
+      <label>PIN nuevo</label><input id="cfgPin" type="password" placeholder="Vacío = no cambiar">
+      <button type="button" class="btn btn-pink" id="btnSaveCfg" style="margin-top:.7rem">Guardar</button>
+      <button type="button" class="btn btn-ghost" id="btnLogout" style="margin-top:.4rem">Cerrar sesión</button>
     </div>
   </section>
 </div>
 
+<div class="cart-bar hidden" id="cartBar"><div class="inner" id="cartBarBtn"><span id="cartBarText">0 productos</span><span>Ver pedido →</span></div></div>
+
 <nav class="nav" id="publicNav">
   <button type="button" class="on" data-v="catalog"><span class="ico">▦</span>Catálogo</button>
+  <button type="button" data-v="cart"><span class="ico">🛒</span>Pedido</button>
+  <button type="button" data-v="myorders"><span class="ico">🎫</span>Vales</button>
   <button type="button" data-v="client-chat"><span class="ico">💬</span>Chat</button>
 </nav>
 <div class="toast" id="toast"></div>
@@ -227,359 +205,308 @@ h2{font-size:1.05rem;margin:0 0 .75rem}
 <script>
 (function(){
   var API='/api/latati';
-  var TK='latati_token', SID='latati_sid';
+  var TK='latati_token', SID='latati_sid', CART='latati_cart', CINFO='latati_client';
   var token=localStorage.getItem(TK)||'';
   var sid=localStorage.getItem(SID)||'';
-  if(!sid){ sid='c_'+Math.random().toString(36).slice(2,10); localStorage.setItem(SID,sid); }
-  var profile={name:'La Tati',whatsapp:'5351069717',address:''};
-  var items=[];
-  var current=null;
-  var editId=null;
-  var editFile=null;
-  var activeThread='';
-  var valeProductId='';
-  var lastValeText='';
+  if(!sid){ sid='c_'+Math.random().toString(36).slice(2,12); localStorage.setItem(SID,sid); }
+  var profile={name:'Dayanis Perez Soria',whatsapp:'5351069717',address:''};
+  var items=[], cart=JSON.parse(localStorage.getItem(CART)||'{}');
+  var editId=null, editFile=null, activeThread='', lastOrder=null;
 
-  function $(id){ return document.getElementById(id); }
-  function toast(m){ var t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(function(){t.classList.remove('show')},2200); }
-  function headers(json){
-    var h={};
-    if(json) h['Content-Type']='application/json';
-    if(token) h['X-LaTati-Token']=token;
-    return h;
+  function $(id){return document.getElementById(id)}
+  function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2400)}
+  function headers(json){var h={};if(json)h['Content-Type']='application/json';if(token)h['X-LaTati-Token']=token;return h}
+  function esc(s){return String(s||'').replace(/</g,'&lt;')}
+  function photoUrl(p){if(!p||!(p.photo||p.Photo))return '';var id=p.id||p.product_id;return API+'/photo/'+id+'?t='+(p.updated_at||'')}
+  function priceLabel(p){if(p.price_pending||!(p.price>0))return 'Consultar';return (p.currency||'USD')+' '+Number(p.price).toFixed(2)}
+  function saveCart(){localStorage.setItem(CART,JSON.stringify(cart));updateCartBar()}
+  function cartCount(){var n=0;Object.keys(cart).forEach(function(k){n+=cart[k]});return n}
+  function updateCartBar(){
+    var n=cartCount(), bar=$('cartBar');
+    if(n>0 && !$('view-cart').classList.contains('hidden')===false){}
+    if(n>0){bar.classList.remove('hidden');$('cartBarText').textContent=n+(n===1?' producto':' productos')}
+    else bar.classList.add('hidden');
   }
-  function hideAll(){
-    ['catalog','detail','client-chat','login','gestor','edit','gchat','cfg','vale'].forEach(function(v){
-      var el=$('view-'+v); if(el) el.classList.add('hidden');
-    });
-  }
+
+  function hideAll(){['catalog','cart','vale','myorders','client-chat','login','gestor','edit','gchat','cfg','gorders'].forEach(function(v){var el=$('view-'+v);if(el)el.classList.add('hidden')})}
   function show(v){
     hideAll();
     var el=$('view-'+v); if(el) el.classList.remove('hidden');
-    document.querySelectorAll('.nav button').forEach(function(b){
-      b.classList.toggle('on', b.getAttribute('data-v')===v || (v==='detail'&&b.getAttribute('data-v')==='catalog'));
-    });
-  }
-  function photoUrl(p){
-    if(!p||!p.photo) return '';
-    return API+'/photo/'+p.id+'?t='+(p.updated_at||'');
-  }
-  function priceLabel(p){
-    if(p.price_pending || p.price<=0) return 'Precio a consultar';
-    return (p.currency||'USD')+' '+Number(p.price).toFixed(2);
+    document.querySelectorAll('.nav button').forEach(function(b){b.classList.toggle('on', b.getAttribute('data-v')===v)});
+    if(v==='cart'){ renderCart(); $('cartBar').classList.add('hidden'); }
+    else updateCartBar();
   }
 
   async function loadCatalog(){
     try{
-      var r=await fetch(API+'/catalog');
-      var d=await r.json();
-      if(d.profile){ profile=d.profile; applyProfile(); }
-      items=d.items||[];
-      renderCatalog();
-    }catch(e){ toast('Sin conexión al catálogo'); }
+      var d=await (await fetch(API+'/catalog')).json();
+      if(d.profile){profile=d.profile;applyProfile()}
+      items=d.items||[]; renderCatalog();
+    }catch(e){toast('Sin catálogo')}
   }
   function applyProfile(){
     $('brandName').textContent=profile.name||'La Tati';
-    $('brandSub').textContent=profile.bio||'Catálogo · pedidos por WhatsApp';
-    $('catalogSub').textContent='Elige un producto y escribe a '+(profile.name||'La Tati')+' por WhatsApp.';
+    $('brandSub').textContent=profile.bio||'Pedidos en la app · vale de recogida';
   }
   function renderCatalog(){
     var g=$('catalogGrid'), empty=$('catalogEmpty');
-    if(!items.length){ g.innerHTML=''; empty.classList.remove('hidden'); return; }
+    if(!items.length){g.innerHTML='';empty.classList.remove('hidden');return}
     empty.classList.add('hidden');
     g.innerHTML=items.map(function(p){
       var img=photoUrl(p);
-      return '<article class="card" data-id="'+p.id+'">'+
-        (img?'<img src="'+img+'" alt="">':'<div style="aspect-ratio:1;background:#2a1520;display:grid;place-items:center;color:#c4a8b8">Sin foto</div>')+
+      var can=!(p.price_pending||!(p.price>0));
+      return '<article class="card"><div>'+(img?'<img src="'+img+'" alt="">':'<div style="aspect-ratio:1;background:#2a1520;display:grid;place-items:center;color:#c4a8b8">Sin foto</div>')+
         '<div class="body"><h3>'+esc(p.title)+'</h3><div class="price">'+esc(priceLabel(p))+'</div>'+
-        (p.price_pending?'<span class="badge wait">Sin precio aún</span>':'')+
-        '</div></article>';
+        '<div class="sub">Stock: '+p.stock+'</div>'+
+        (can?'<button type="button" class="btn btn-pink add" data-id="'+p.id+'" style="margin-top:.45rem">Agregar</button>':
+        '<span class="badge wait" style="margin-top:.4rem">Sin precio</span>')+
+        '</div></div></article>';
     }).join('');
-    g.querySelectorAll('.card').forEach(function(c){
-      c.onclick=function(){ openDetail(c.getAttribute('data-id')); };
+    g.querySelectorAll('.add').forEach(function(b){
+      b.onclick=function(){
+        var id=b.getAttribute('data-id');
+        cart[id]=(cart[id]||0)+1; saveCart(); toast('Agregado al pedido');
+      };
     });
   }
-  function esc(s){ return String(s||'').replace(/</g,'&lt;'); }
-  function openDetail(id){
-    var p=items.find(function(x){return x.id===id});
-    if(!p) return;
-    current=p;
-    $('detTitle').textContent=p.title;
-    $('detPrice').textContent=priceLabel(p);
-    $('detDesc').textContent=p.description||'';
-    $('detStock').textContent=p.stock>0?('Disponibles: '+p.stock):'Consultar disponibilidad';
-    var img=photoUrl(p);
-    var ph=$('detPhoto');
-    if(img){ ph.src=img; ph.style.display='block'; } else { ph.removeAttribute('src'); ph.style.display='none'; }
-    show('detail');
-  }
-  function waLink(text){
-    var phone=(profile.whatsapp||'').replace(/\D/g,'');
-    return phone?'https://wa.me/'+phone+'?text='+encodeURIComponent(text):'https://wa.me/?text='+encodeURIComponent(text);
-  }
-  $('btnWA').onclick=function(){
-    if(!current) return;
-    var t='Hola, me interesa:\n• '+current.title;
-    if(!current.price_pending && current.price>0) t+='\n• Precio: '+(current.currency||'USD')+' '+current.price;
-    t+='\n• Ref: '+current.id+'\n¿Sigue disponible?';
-    window.open(waLink(t),'_blank');
-  };
-  $('btnChatProd').onclick=function(){
-    show('client-chat');
-    loadClientChat();
-    if(current){
-      $('clientMsgIn').value='Me interesa: '+current.title+(current.id?' (ref '+current.id+')':'');
-    }
-  };
-  $('btnBackCat').onclick=function(){ show('catalog'); };
 
-  // client chat
+  function renderCart(){
+    var el=$('cartLines'), ids=Object.keys(cart).filter(function(k){return cart[k]>0});
+    if(!ids.length){el.innerHTML='<div class="empty">Tu pedido está vacío.</div>';$('cartTotal').textContent='—';return}
+    var total=0, cur='USD';
+    el.innerHTML=ids.map(function(id){
+      var p=items.find(function(x){return x.id===id})||{id:id,title:'Producto',price:0,currency:'USD'};
+      var q=cart[id]; total+= (p.price||0)*q; cur=p.currency||cur;
+      var img=photoUrl(p);
+      return '<div class="line" data-id="'+id+'">'+(img?'<img src="'+img+'">':'<div style="width:56px;height:56px;background:#2a1520;border-radius:10px"></div>')+
+        '<div style="flex:1"><strong>'+esc(p.title)+'</strong><div class="price">'+esc(priceLabel(p))+'</div>'+
+        '<div class="qty"><button type="button" class="qm">−</button><span>'+q+'</span><button type="button" class="qp">＋</button></div></div></div>';
+    }).join('');
+    $('cartTotal').textContent=cur+' '+total.toFixed(2);
+    el.querySelectorAll('.line').forEach(function(row){
+      var id=row.getAttribute('data-id');
+      row.querySelector('.qm').onclick=function(){cart[id]=(cart[id]||0)-1;if(cart[id]<=0)delete cart[id];saveCart();renderCart()};
+      row.querySelector('.qp').onclick=function(){cart[id]=(cart[id]||0)+1;saveCart();renderCart()};
+    });
+    try{var info=JSON.parse(localStorage.getItem(CINFO)||'{}');if(info.name)$('cName').value=info.name;if(info.phone)$('cPhone').value=info.phone}catch(e){}
+  }
+
+  $('btnPlaceOrder').onclick=async function(){
+    var name=$('cName').value.trim(), phone=$('cPhone').value.trim();
+    if(!name){toast('Escribe tu nombre');return}
+    var ids=Object.keys(cart).filter(function(k){return cart[k]>0});
+    if(!ids.length){toast('Pedido vacío');return}
+    localStorage.setItem(CINFO,JSON.stringify({name:name,phone:phone}));
+    var payload={thread:sid,client_name:name,client_phone:phone,note:$('cNote').value.trim(),
+      items:ids.map(function(id){return{product_id:id,qty:cart[id]}})};
+    try{
+      var r=await fetch(API+'/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      var d=await r.json();
+      if(!d.ok){toast(d.error||'No se pudo crear el pedido');return}
+      lastOrder=d.order; cart={}; saveCart();
+      renderVale(d.order); show('vale'); toast('Vale '+d.order.code+' listo');
+      loadCatalog();
+    }catch(e){toast('Error de red')}
+  };
+
+  function renderVale(o){
+    if(!o){ $('valeBox').innerHTML=''; return; }
+    var lines=(o.lines||[]).map(function(l){
+      var img=l.photo?API+'/photo/'+l.product_id:'';
+      return '<div class="line">'+(img?'<img src="'+img+'" class="vale-photo" style="width:64px;height:64px;aspect-ratio:auto">':'')+
+        '<div style="flex:1"><strong>'+esc(l.title)+'</strong><div>× '+l.qty+' · '+(l.currency||'')+' '+Number(l.price).toFixed(2)+'</div></div></div>';
+    }).join('');
+    $('valeBox').innerHTML='<div class="vale-card">'+
+      '<h2>'+esc(o.code)+'</h2>'+
+      '<div class="badge ok">'+esc(o.status||'pending')+'</div>'+
+      '<p class="sub" style="margin:.5rem 0">Presenta este vale al recoger</p>'+
+      lines+
+      '<div style="margin-top:.75rem;font-weight:800;font-size:1.1rem" class="price">Total: '+(o.currency||'')+' '+Number(o.total).toFixed(2)+'</div>'+
+      '<hr style="border:none;border-top:1px solid var(--line);margin:.75rem 0">'+
+      '<div class="sub"><strong>Cliente:</strong> '+esc(o.client_name)+' · '+esc(o.client_phone)+'</div>'+
+      '<div class="sub" style="margin-top:.35rem"><strong>Gestora:</strong> '+esc(o.gestor_name)+'<br>Tel: '+esc(o.gestor_phone)+
+      (o.address?'<br>Recogida: '+esc(o.address):'')+'</div>'+
+      (o.note?'<div class="sub" style="margin-top:.35rem">Nota: '+esc(o.note)+'</div>':'')+
+      '</div>';
+  }
+  $('btnBackAfterVale').onclick=function(){show('catalog')};
+
+  async function loadMyOrders(){
+    try{
+      var d=await (await fetch(API+'/orders?thread='+encodeURIComponent(sid))).json();
+      var list=d.items||[];
+      var el=$('myOrders');
+      if(!list.length){el.innerHTML='<div class="empty">Aún no tienes pedidos en este dispositivo.</div>';return}
+      el.innerHTML=list.map(function(o){
+        return '<div class="panel" data-oid="'+o.id+'"><strong>'+esc(o.code)+'</strong> · <span class="badge">'+esc(o.status)+'</span>'+
+          '<div class="price" style="margin:.3rem 0">'+(o.currency||'')+' '+Number(o.total).toFixed(2)+'</div>'+
+          '<div class="sub">'+(o.lines||[]).map(function(l){return l.qty+'× '+l.title}).join(', ')+'</div>'+
+          '<button type="button" class="btn btn-ghost see" style="margin-top:.5rem">Ver vale</button></div>';
+      }).join('');
+      el.querySelectorAll('.see').forEach(function(b){
+        b.onclick=function(){
+          var id=b.closest('[data-oid]').getAttribute('data-oid');
+          var o=list.find(function(x){return x.id===id});
+          renderVale(o); show('vale');
+        };
+      });
+    }catch(e){toast('No se cargaron pedidos')}
+  }
+
+  // chat client
   async function loadClientChat(){
     try{
-      var r=await fetch(API+'/chat?thread='+encodeURIComponent(sid));
-      var d=await r.json();
+      var d=await (await fetch(API+'/chat?thread='+encodeURIComponent(sid))).json();
       renderMsgs($('clientMsgs'), d.items||[], 'client');
     }catch(e){}
   }
-  function renderMsgs(el, list, meRole){
+  function renderMsgs(el, list, me){
     el.innerHTML=(list||[]).map(function(m){
-      var me=(m.from===meRole) || (meRole==='gestor'&&m.from==='gestor') || (meRole==='client'&&m.from==='client');
-      return '<div class="bubble '+(me?'me':'them')+'">'+esc(m.text)+'</div>';
+      return '<div class="bubble '+(m.from===me?'me':'them')+'">'+esc(m.text)+'</div>';
     }).join('');
     el.scrollTop=el.scrollHeight;
   }
   $('btnClientSend').onclick=async function(){
-    var text=$('clientMsgIn').value.trim();
-    if(!text) return;
-    try{
-      await fetch(API+'/chat',{method:'POST',headers:headers(true),body:JSON.stringify({thread:sid,from:'client',text:text,product_id:current&&current.id||''})});
-      $('clientMsgIn').value='';
-      loadClientChat();
-    }catch(e){ toast('No se pudo enviar'); }
+    var text=$('clientMsgIn').value.trim(); if(!text) return;
+    await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({thread:sid,from:'client',text:text})});
+    $('clientMsgIn').value=''; loadClientChat();
   };
 
-  // mode gestor
-  $('btnMode').onclick=function(){
-    if(token){ show('gestor'); loadGestorProducts(); }
-    else show('login');
-  };
+  // gestor
+  $('btnMode').onclick=function(){ if(token){show('gestor');loadGestorProducts()} else show('login') };
   $('btnLogin').onclick=async function(){
-    try{
-      var r=await fetch(API+'/gestor/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:$('pinIn').value})});
-      var d=await r.json();
-      if(!d.ok){ toast('PIN incorrecto'); return; }
-      token=d.token; localStorage.setItem(TK,token);
-      if(d.profile) profile=d.profile;
-      toast('Sesión gestor');
-      show('gestor'); loadGestorProducts();
-    }catch(e){ toast('Error de red'); }
+    var d=await (await fetch(API+'/gestor/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:$('pinIn').value})})).json();
+    if(!d.ok){toast('PIN incorrecto');return}
+    token=d.token; localStorage.setItem(TK,token); if(d.profile) profile=d.profile;
+    show('gestor'); loadGestorProducts();
   };
-
   async function loadGestorProducts(){
-    try{
-      var r=await fetch(API+'/gestor/products',{headers:headers()});
-      var d=await r.json();
-      if(!d.ok){ token=''; localStorage.removeItem(TK); show('login'); return; }
-      renderGestor(d.items||[]);
-    }catch(e){ toast('Error cargando productos'); }
+    var d=await (await fetch(API+'/gestor/products',{headers:headers()})).json();
+    if(!d.ok){token='';localStorage.removeItem(TK);show('login');return}
+    renderGestor(d.items||[]);
   }
   function renderGestor(list){
     var el=$('gestorList');
-    if(!list.length){ el.innerHTML='<div class="empty">No tienes productos. Publica el primero.</div>'; return; }
+    if(!list.length){el.innerHTML='<div class="empty">Sin productos</div>';return}
     el.innerHTML=list.map(function(p){
       var img=photoUrl(p);
-      return '<div class="card" style="margin-bottom:.65rem" data-id="'+p.id+'">'+
-        '<div style="display:flex;gap:.65rem;padding:.65rem">'+
-        (img?'<img src="'+img+'" style="width:72px;height:72px;border-radius:10px;object-fit:cover">':'<div style="width:72px;height:72px;border-radius:10px;background:#2a1520"></div>')+
-        '<div style="flex:1;min-width:0"><strong>'+esc(p.title)+'</strong>'+
-        '<div class="price">'+esc(priceLabel(p))+'</div>'+
-        '<div class="pill">Stock: '+p.stock+(p.sold?' · VENDIDO':'')+(p.source?' · '+esc(p.source):'')+'</div>'+
-        '<div class="btn-row"><button type="button" class="btn btn-ghost btn-edit">Editar</button>'+
-        '<button type="button" class="btn btn-ghost btn-stockm">−1</button>'+
-        '<button type="button" class="btn btn-ghost btn-stockp">+1</button></div></div></div></div>';
+      return '<div class="panel" data-id="'+p.id+'" style="padding:.65rem"><div style="display:flex;gap:.55rem">'+
+        (img?'<img src="'+img+'" style="width:64px;height:64px;border-radius:10px;object-fit:cover">':'')+
+        '<div style="flex:1"><strong>'+esc(p.title)+'</strong><div class="price">'+esc(priceLabel(p))+'</div>'+
+        '<div class="sub">Stock '+p.stock+(p.sold?' · VENDIDO':'')+'</div>'+
+        '<div class="btn-row"><button type="button" class="btn btn-ghost be">Editar</button>'+
+        '<button type="button" class="btn btn-ghost bm">−1</button><button type="button" class="btn btn-ghost bp">+1</button></div></div></div></div>';
     }).join('');
-    el.querySelectorAll('.btn-edit').forEach(function(b){
-      b.onclick=function(ev){ ev.stopPropagation(); openEdit(b.closest('[data-id]').getAttribute('data-id'), list); };
-    });
-    el.querySelectorAll('.btn-stockm').forEach(function(b){
-      b.onclick=async function(ev){ ev.stopPropagation(); await stockDelta(b.closest('[data-id]').getAttribute('data-id'),-1); };
-    });
-    el.querySelectorAll('.btn-stockp').forEach(function(b){
-      b.onclick=async function(ev){ ev.stopPropagation(); await stockDelta(b.closest('[data-id]').getAttribute('data-id'),1); };
-    });
-  }
-  async function stockDelta(id, delta){
-    await fetch(API+'/gestor/products/'+id+'/stock',{method:'POST',headers:headers(true),body:JSON.stringify({delta:delta})});
-    loadGestorProducts();
+    el.querySelectorAll('.be').forEach(function(b){b.onclick=function(){openEdit(b.closest('[data-id]').getAttribute('data-id'), list)}});
+    el.querySelectorAll('.bm').forEach(function(b){b.onclick=async function(){await fetch(API+'/gestor/products/'+b.closest('[data-id]').getAttribute('data-id')+'/stock',{method:'POST',headers:headers(true),body:JSON.stringify({delta:-1})});loadGestorProducts()}});
+    el.querySelectorAll('.bp').forEach(function(b){b.onclick=async function(){await fetch(API+'/gestor/products/'+b.closest('[data-id]').getAttribute('data-id')+'/stock',{method:'POST',headers:headers(true),body:JSON.stringify({delta:1})});loadGestorProducts()}});
   }
   function openEdit(id, list){
-    var p=(list||[]).find(function(x){return x.id===id})||{id:'',title:'',description:'',price:0,currency:'USD',stock:1,price_pending:true};
-    editId=p.id||'';
-    editFile=null;
-    $('editTitle').textContent=editId?'Editar producto':'Publicar producto';
-    $('fTitle').value=p.title||'';
-    $('fDesc').value=p.description||'';
-    $('fSource').value=p.source||'';
-    $('fPrice').value=p.price||'';
-    $('fCur').value=p.currency||'USD';
-    $('fPending').checked=!!p.price_pending || !(p.price>0);
-    $('fStock').value=p.stock!=null?p.stock:1;
-    var prev=$('editPreview');
-    if(p.photo){ prev.src=photoUrl(p); prev.classList.remove('hidden'); }
-    else { prev.classList.add('hidden'); prev.removeAttribute('src'); }
+    var p=(list||[]).find(function(x){return x.id===id})||{title:'',price:0,currency:'USD',stock:1,price_pending:true};
+    editId=p.id||''; editFile=null;
+    $('fTitle').value=p.title||''; $('fDesc').value=p.description||''; $('fSource').value=p.source||'';
+    $('fPrice').value=p.price||''; $('fCur').value=p.currency||'USD';
+    $('fPending').checked=!!p.price_pending||!(p.price>0); $('fStock').value=p.stock!=null?p.stock:1;
+    if(p.photo){$('editPreview').src=photoUrl(p);$('editPreview').classList.remove('hidden')}
+    else{$('editPreview').classList.add('hidden')}
     show('edit');
   }
-  $('btnNewProd').onclick=function(){ openEdit('',[]); };
-  $('btnBackGestor').onclick=function(){ show('gestor'); loadGestorProducts(); };
-  $('editPhoto').onchange=function(e){
-    var f=e.target.files&&e.target.files[0];
-    if(!f) return;
-    editFile=f;
-    var url=URL.createObjectURL(f);
-    $('editPreview').src=url; $('editPreview').classList.remove('hidden');
-  };
+  $('btnNewProd').onclick=function(){openEdit('',[])};
+  $('btnBackGestor').onclick=function(){show('gestor');loadGestorProducts()};
+  $('editPhoto').onchange=function(e){var f=e.target.files&&e.target.files[0];if(!f)return;editFile=f;$('editPreview').src=URL.createObjectURL(f);$('editPreview').classList.remove('hidden')};
   $('btnSaveProd').onclick=async function(){
-    var body={
-      id:editId||'',
-      title:$('fTitle').value.trim(),
-      description:$('fDesc').value.trim(),
-      source:$('fSource').value.trim(),
-      price:parseFloat($('fPrice').value)||0,
-      currency:$('fCur').value,
-      price_pending:$('fPending').checked || !(parseFloat($('fPrice').value)>0),
-      stock:parseInt($('fStock').value,10)||0,
-      sold:false
-    };
-    if(!body.title){ toast('Pon un título'); return; }
-    try{
-      var r=await fetch(API+'/gestor/products',{method:'POST',headers:headers(true),body:JSON.stringify(body)});
-      var d=await r.json();
-      if(!d.ok){ toast('No se guardó'); return; }
-      editId=d.item.id;
-      if(editFile){
-        var fd=new FormData(); fd.append('photo', editFile);
-        await fetch(API+'/gestor/products/'+editId+'/photo',{method:'POST',headers:token?{'X-LaTati-Token':token}:{},body:fd});
-      }
-      toast('Guardado');
-      show('gestor'); loadGestorProducts(); loadCatalog();
-    }catch(e){ toast('Error al guardar'); }
+    var body={id:editId||'',title:$('fTitle').value.trim(),description:$('fDesc').value.trim(),source:$('fSource').value.trim(),
+      price:parseFloat($('fPrice').value)||0,currency:$('fCur').value,price_pending:$('fPending').checked||!(parseFloat($('fPrice').value)>0),
+      stock:parseInt($('fStock').value,10)||0,sold:false};
+    if(!body.title){toast('Título requerido');return}
+    var d=await (await fetch(API+'/gestor/products',{method:'POST',headers:headers(true),body:JSON.stringify(body)})).json();
+    if(!d.ok){toast('No guardó');return}
+    editId=d.item.id;
+    if(editFile){var fd=new FormData();fd.append('photo',editFile);await fetch(API+'/gestor/products/'+editId+'/photo',{method:'POST',headers:token?{'X-LaTati-Token':token}:{},body:fd})}
+    toast('Guardado'); show('gestor'); loadGestorProducts(); loadCatalog();
   };
-  $('btnSold').onclick=async function(){
-    if(!editId) return;
-    await fetch(API+'/gestor/products/'+editId+'/sold',{method:'POST',headers:headers(true),body:'{}'});
-    toast('Marcado vendido'); show('gestor'); loadGestorProducts(); loadCatalog();
-  };
-  $('btnDelProd').onclick=async function(){
-    if(!editId) return;
-    if(!confirm('¿Eliminar producto?')) return;
-    await fetch(API+'/gestor/products/'+editId+'/delete',{method:'POST',headers:headers(true),body:'{}'});
-    toast('Eliminado'); show('gestor'); loadGestorProducts(); loadCatalog();
-  };
-  $('btnVale').onclick=function(){
-    if(!editId){ toast('Guarda el producto primero'); return; }
-    valeProductId=editId;
-    $('valeResult').classList.add('hidden');
-    show('vale');
-  };
-  $('btnBackVale').onclick=function(){ show('edit'); };
-  $('btnCreateVale').onclick=async function(){
-    try{
-      var r=await fetch(API+'/vale',{method:'POST',headers:headers(true),body:JSON.stringify({
-        product_id:valeProductId,
-        client:$('vClient').value.trim(),
-        phone:$('vPhone').value.trim(),
-        qty:parseInt($('vQty').value,10)||1,
-        note:$('vNote').value.trim(),
-        address:profile.address||''
-      })});
-      var d=await r.json();
-      if(!d.ok){ toast('No se creó el vale'); return; }
-      lastValeText=d.text||'';
-      $('valeText').textContent=lastValeText;
-      $('valeResult').classList.remove('hidden');
-      toast('Vale '+d.item.code);
-      loadGestorProducts(); loadCatalog();
-    }catch(e){ toast('Error vale'); }
-  };
-  $('btnValeWA').onclick=function(){
-    if(!lastValeText) return;
-    window.open(waLink(lastValeText),'_blank');
-  };
+  $('btnSold').onclick=async function(){if(!editId)return;await fetch(API+'/gestor/products/'+editId+'/sold',{method:'POST',headers:headers(true),body:'{}'});show('gestor');loadGestorProducts();loadCatalog()};
+  $('btnDelProd').onclick=async function(){if(!editId||!confirm('¿Eliminar?'))return;await fetch(API+'/gestor/products/'+editId+'/delete',{method:'POST',headers:headers(true),body:'{}'});show('gestor');loadGestorProducts();loadCatalog()};
 
-  // gestor chat
-  $('btnGestorChat').onclick=function(){ show('gchat'); loadThreads(); };
-  $('btnBackGFromChat').onclick=function(){ show('gestor'); };
+  $('btnGestorOrders').onclick=async function(){
+    show('gorders');
+    var d=await (await fetch(API+'/orders',{headers:headers()})).json();
+    var list=d.items||[];
+    var el=$('gOrders');
+    if(!list.length){el.innerHTML='<div class="empty">Sin pedidos</div>';return}
+    el.innerHTML=list.map(function(o){
+      return '<div class="panel"><strong>'+esc(o.code)+'</strong> · '+esc(o.client_name)+
+        '<div class="sub">'+esc(o.client_phone)+' · sesión '+esc(o.thread)+'</div>'+
+        '<div class="price">'+(o.currency||'')+' '+Number(o.total).toFixed(2)+'</div>'+
+        '<div class="sub">'+(o.lines||[]).map(function(l){return l.qty+'× '+l.title}).join(', ')+'</div>'+
+        '<div class="badge" style="margin-top:.35rem">'+esc(o.status)+'</div>'+
+        '<div class="btn-row"><button type="button" class="btn btn-ghost st" data-s="ready">Listo</button>'+
+        '<button type="button" class="btn btn-ghost st" data-s="delivered">Entregado</button></div></div>';
+    }).join('');
+    el.querySelectorAll('.st').forEach(function(b){
+      b.onclick=async function(){
+        var panel=b.closest('.panel');
+        var code=panel.querySelector('strong').textContent;
+        await fetch(API+'/order/'+encodeURIComponent(code)+'/status',{method:'POST',headers:headers(true),body:JSON.stringify({status:b.getAttribute('data-s')})});
+        $('btnGestorOrders').onclick();
+      };
+    });
+  };
+  $('btnBackGOrders').onclick=function(){show('gestor')};
+
+  $('btnGestorChat').onclick=function(){show('gchat');loadThreads()};
+  $('btnBackGChat').onclick=function(){show('gestor')};
   async function loadThreads(){
-    try{
-      var r=await fetch(API+'/threads',{headers:headers()});
-      var d=await r.json();
-      var el=$('threadList');
-      $('threadView').classList.add('hidden');
-      if(!d.items||!d.items.length){ el.innerHTML='<div class="empty">Sin chats aún</div>'; return; }
-      el.innerHTML=d.items.map(function(t){
-        return '<div class="thread-item" data-th="'+esc(t.thread)+'"><strong>'+esc(t.thread)+'</strong><div class="sub">'+esc(t.last)+'</div></div>';
-      }).join('');
-      el.querySelectorAll('.thread-item').forEach(function(n){
-        n.onclick=function(){ openThread(n.getAttribute('data-th')); };
-      });
-    }catch(e){}
+    var d=await (await fetch(API+'/threads',{headers:headers()})).json();
+    $('threadView').classList.add('hidden'); $('threadList').classList.remove('hidden');
+    var el=$('threadList');
+    if(!d.items||!d.items.length){el.innerHTML='<div class="empty">Sin chats</div>';return}
+    el.innerHTML=d.items.map(function(t){
+      return '<div style="padding:.7rem;border-bottom:1px solid var(--line);cursor:pointer" data-th="'+esc(t.thread)+'">'+
+        '<strong>'+esc(t.name||t.thread)+'</strong><div class="sub">'+esc(t.last)+'</div></div>';
+    }).join('');
+    el.querySelectorAll('[data-th]').forEach(function(n){n.onclick=function(){openThread(n.getAttribute('data-th'))}});
   }
   async function openThread(th){
-    activeThread=th;
-    $('threadList').classList.add('hidden');
-    $('threadView').classList.remove('hidden');
-    $('threadLabel').textContent='Chat · '+th;
-    try{
-      var r=await fetch(API+'/chat?thread='+encodeURIComponent(th),{headers:headers()});
-      var d=await r.json();
-      renderMsgs($('gestorMsgs'), d.items||[], 'gestor');
-    }catch(e){}
+    activeThread=th; $('threadList').classList.add('hidden'); $('threadView').classList.remove('hidden');
+    $('threadLabel').textContent=th;
+    var d=await (await fetch(API+'/chat?thread='+encodeURIComponent(th),{headers:headers()})).json();
+    renderMsgs($('gestorMsgs'), d.items||[], 'gestor');
   }
   $('btnGestorSend').onclick=async function(){
-    var text=$('gestorMsgIn').value.trim();
-    if(!text||!activeThread) return;
+    var text=$('gestorMsgIn').value.trim(); if(!text||!activeThread)return;
     await fetch(API+'/chat',{method:'POST',headers:headers(true),body:JSON.stringify({thread:activeThread,from:'gestor',text:text,token:token})});
-    $('gestorMsgIn').value='';
-    openThread(activeThread);
+    $('gestorMsgIn').value=''; openThread(activeThread);
   };
 
-  // profile
   $('btnGestorCfg').onclick=async function(){
     show('cfg');
-    try{
-      var r=await fetch(API+'/profile');
-      var d=await r.json();
-      if(d.profile){
-        $('cfgName').value=d.profile.name||'';
-        $('cfgWA').value=d.profile.whatsapp||'';
-        $('cfgAddr').value=d.profile.address||'';
-        $('cfgBio').value=d.profile.bio||'';
-      }
-    }catch(e){}
+    var d=await (await fetch(API+'/profile')).json();
+    if(d.profile){$('cfgName').value=d.profile.name||'';$('cfgWA').value=d.profile.whatsapp||d.profile.phone||'';$('cfgAddr').value=d.profile.address||'';$('cfgBio').value=d.profile.bio||''}
   };
-  $('btnBackGFromCfg').onclick=function(){ show('gestor'); };
+  $('btnBackCfg').onclick=function(){show('gestor')};
   $('btnSaveCfg').onclick=async function(){
     var body={name:$('cfgName').value.trim(),whatsapp:$('cfgWA').value.trim(),address:$('cfgAddr').value.trim(),bio:$('cfgBio').value.trim()};
     if($('cfgPin').value.trim()) body.pin=$('cfgPin').value.trim();
-    var r=await fetch(API+'/gestor/profile',{method:'POST',headers:headers(true),body:JSON.stringify(body)});
-    var d=await r.json();
-    if(d.ok){ profile=d.profile; applyProfile(); toast('Perfil guardado'); }
-    else toast('Error perfil');
+    var d=await (await fetch(API+'/gestor/profile',{method:'POST',headers:headers(true),body:JSON.stringify(body)})).json();
+    if(d.ok){profile=d.profile;applyProfile();toast('Perfil guardado')} else toast('Error');
   };
-  $('btnLogout').onclick=function(){ token=''; localStorage.removeItem(TK); show('catalog'); toast('Sesión cerrada'); };
+  $('btnLogout').onclick=function(){token='';localStorage.removeItem(TK);show('catalog');toast('Sesión cerrada')};
 
+  $('cartBarBtn').onclick=function(){show('cart')};
   document.querySelectorAll('.nav button').forEach(function(b){
     b.onclick=function(){
       var v=b.getAttribute('data-v');
-      if(v==='catalog'){ show('catalog'); loadCatalog(); }
-      if(v==='client-chat'){ show('client-chat'); loadClientChat(); }
+      if(v==='catalog'){show('catalog');loadCatalog()}
+      if(v==='cart') show('cart');
+      if(v==='myorders'){show('myorders');loadMyOrders()}
+      if(v==='client-chat'){show('client-chat');loadClientChat()}
     };
   });
 
-  loadCatalog();
+  loadCatalog(); updateCartBar();
   setInterval(function(){
     if(!$('view-client-chat').classList.contains('hidden')) loadClientChat();
-    if(!$('threadView').classList.contains('hidden') && activeThread) openThread(activeThread);
   }, 8000);
 })();
 </script>
