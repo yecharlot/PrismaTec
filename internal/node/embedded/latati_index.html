@@ -86,7 +86,7 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
       <label>Teléfono</label><input id="cPhone" type="tel" autocomplete="tel">
       <label>Nota</label><textarea id="cNote" placeholder="Horario, color…"></textarea>
       <button type="button" class="btn btn-pink" id="btnPlaceOrder" style="margin-top:.7rem">Solicitar pedido</button>
-      <p class="sub" style="margin-top:.45rem">La gestora confirma disponibilidad con el negocio y luego recibes tu vale de recogida.</p>
+      <p class="sub" style="margin-top:.45rem">Cada producto una sola vez por pedido (puedes quitarlo antes de solicitar). La gestora confirma con el negocio y luego recibes el vale.</p>
     </div>
   </section>
   <section id="view-vale" class="hidden">
@@ -142,12 +142,21 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
       var img=photoUrl(p),can=!(p.price_pending||!(p.price>0));
       return '<article class="card" data-id="'+p.id+'">'+(img?'<img src="'+img+'" alt="">':'<div style="aspect-ratio:1;background:#2a1520"></div>')+
         '<div class="body"><h3 style="font-size:.92rem">'+esc(p.title)+'</h3><div class="price">'+esc(priceLabel(p))+'</div>'+
-        (can?'<button type="button" class="btn btn-pink add" data-id="'+p.id+'" style="margin-top:.4rem">Agregar</button>':'')+'</div></article>';
+        (can?(cart[p.id]?'<button type="button" class="btn btn-ghost" style="margin-top:.4rem" disabled>En el carrito</button>':'<button type="button" class="btn btn-pink add" data-id="'+p.id+'" style="margin-top:.4rem">Agregar</button>'):'')+'</div></article>';
     }).join('');
     g.querySelectorAll('.card').forEach(function(c){c.onclick=function(e){if(e.target.classList.contains('add'))return;openDetail(c.getAttribute('data-id'))}});
     g.querySelectorAll('.add').forEach(function(b){b.onclick=function(e){e.stopPropagation();add(b.getAttribute('data-id'))}});
   }
-  function add(id){cart[id]=(cart[id]||0)+1;saveCart();toast('Agregado')}
+  function add(id){
+    if(cart[id] && cart[id]>0){
+      toast('Ya está en el carrito. Para otra unidad, haz un pedido nuevo después.');
+      return;
+    }
+    cart[id]=1;
+    saveCart();
+    updateBar();
+    toast('Agregado al carrito');
+  }
   async function openDetail(id, fromLink){
     var p=items.find(function(x){return x.id===id});
     if(!p){
@@ -175,20 +184,29 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
 
   function renderCart(){
     var el=$('cartLines'),ids=Object.keys(cart).filter(function(k){return cart[k]>0});
-    if(!ids.length){el.innerHTML='<div class="empty">Vacío</div>';$('cartTotal').textContent='—';return}
+    if(!ids.length){el.innerHTML='<div class="empty">Carrito vacío. Cada producto solo una vez por pedido.</div>';$('cartTotal').textContent='—';return}
     var total=0,cur='USD';
     el.innerHTML=ids.map(function(id){
+      cart[id]=1;
       var p=items.find(function(x){return x.id===id})||{id:id,title:'Producto',price:0,currency:'USD'};
-      var q=cart[id];total+=(p.price||0)*q;cur=p.currency||cur;
+      total+=(p.price||0);cur=p.currency||cur;
       var img=photoUrl(p);
-      return '<div class="line" data-id="'+id+'">'+(img?'<img src="'+img+'">':'')+'<div style="flex:1"><strong>'+esc(p.title)+'</strong><div class="price">'+esc(priceLabel(p))+'</div>'+
-        '<div class="qty"><button type="button" class="qm">−</button> '+q+' <button type="button" class="qp">＋</button></div></div></div>';
+      return '<div class="line" data-id="'+id+'">'+(img?'<img src="'+img+'">':'')+
+        '<div style="flex:1"><strong>'+esc(p.title)+'</strong><div class="price">'+esc(priceLabel(p))+'</div>'+
+        '<div class="sub">1 unidad · quítalo si cambias de idea</div></div>'+
+        '<button type="button" class="btn btn-ghost rm" style="width:auto;padding:.45rem .55rem;font-size:.72rem;color:#ff8a8a">Quitar</button></div>';
     }).join('');
+    saveCart();
     $('cartTotal').textContent=cur+' '+total.toFixed(2);
     el.querySelectorAll('.line').forEach(function(row){
       var id=row.getAttribute('data-id');
-      row.querySelector('.qm').onclick=function(){cart[id]--;if(cart[id]<=0)delete cart[id];saveCart();renderCart()};
-      row.querySelector('.qp').onclick=function(){cart[id]++;saveCart();renderCart()};
+      row.querySelector('.rm').onclick=function(){
+        delete cart[id];
+        saveCart();
+        renderCart();
+        updateBar();
+        toast('Producto eliminado del carrito');
+      };
     });
     try{var info=JSON.parse(localStorage.getItem(CINFO)||'{}');if(info.name)$('cName').value=info.name;if(info.phone)$('cPhone').value=info.phone}catch(e){}
   }
@@ -198,7 +216,7 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
     var ids=Object.keys(cart).filter(function(k){return cart[k]>0});
     if(!ids.length){toast('Pedido vacío');return}
     localStorage.setItem(CINFO,JSON.stringify({name:name,phone:phone}));
-    var d=await(await fetch(API+'/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({thread:sid,client_name:name,client_phone:phone,note:$('cNote').value.trim(),items:ids.map(function(id){return{product_id:id,qty:cart[id]}})})})).json();
+    var d=await(await fetch(API+'/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({thread:sid,client_name:name,client_phone:phone,note:$('cNote').value.trim(),items:ids.map(function(id){return{product_id:id,qty:1}})})})).json();
     if(!d.ok){toast(d.error||'Error');return}
     cart={};saveCart();renderVale(d.order);show('vale');toast('Solicitud '+d.order.code+' enviada');loadCatalog();
   };
@@ -223,8 +241,8 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
       : (st==='requested' ? 'La gestora está validando disponibilidad con el negocio. Te avisamos al confirmar.' : 'Este pedido ya no es válido para recogida.');
     if($('valeHint')) $('valeHint').textContent = hint;
     var actions='';
-    if(st==='requested'){
-      actions='<button type="button" class="btn btn-ghost" id="btnCancelReq" style="margin-top:.65rem">Cancelar solicitud</button>';
+    if(st==='requested'||st==='pending'||st==='ready'){
+      actions='<button type="button" class="btn btn-ghost" id="btnCancelReq" style="margin-top:.65rem">'+(st==='requested'?'Cancelar solicitud':'Cancelar pedido')+'</button>';
     }
     $('valeBox').innerHTML='<div class="vale-card"><h2>'+esc(o.code)+'</h2><span class="badge">'+esc(statusLabel(st))+'</span>'+
       (isVale?'<div class="sub" style="margin-top:.35rem;color:var(--mint)">Vale de recogida activo</div>':'')+
@@ -237,7 +255,7 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
     if(bc){bc.onclick=async function(){
       var d=await(await fetch(API+'/order/'+encodeURIComponent(o.id||o.code)+'/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'cancelled',thread:sid})})).json();
       if(!d.ok){toast(d.error||'No se pudo cancelar');return}
-      renderVale(d.order);toast('Solicitud cancelada');loadMyOrders();
+      renderVale(d.order);toast('Pedido cancelado');loadMyOrders();
     }}
   }
   $('btnBackVale').onclick=function(){show('catalog')};

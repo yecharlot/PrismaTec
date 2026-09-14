@@ -689,6 +689,7 @@ func (n *NodoAlset) ltPlaceOrder(w http.ResponseWriter, r *http.Request) {
 		if it.Qty < 1 {
 			it.Qty = 1
 		}
+		it.Qty = 1 // un producto = una unidad por pedido
 		p, ok := st.Products[it.ProductID]
 		if !ok || p == nil || p.Sold {
 			ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "product unavailable: " + it.ProductID})
@@ -701,6 +702,12 @@ func (n *NodoAlset) ltPlaceOrder(w http.ResponseWriter, r *http.Request) {
 		if p.Stock < it.Qty {
 			ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "stock: " + p.Title})
 			return
+		}
+		for _, prev := range lines {
+			if prev.ProductID == it.ProductID {
+				ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "producto ya en el pedido: " + p.Title})
+				return
+			}
 		}
 		// No se descuenta stock aún: el gestor confirma con el negocio primero.
 		lines = append(lines, ltLine{
@@ -846,8 +853,12 @@ func (n *NodoAlset) ltOrderStatus(w http.ResponseWriter, r *http.Request, id str
 				ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
 				return
 			}
-			if in.Status != "cancelled" || o.Status != "requested" {
-				ltJSON(w, 403, map[string]interface{}{"ok": false, "error": "solo puedes cancelar solicitudes pendientes"})
+			if in.Status != "cancelled" {
+				ltJSON(w, 403, map[string]interface{}{"ok": false, "error": "solo puedes cancelar"})
+				return
+			}
+			if o.Status != "requested" && o.Status != "pending" && o.Status != "ready" {
+				ltJSON(w, 403, map[string]interface{}{"ok": false, "error": "este pedido ya no se puede cancelar"})
 				return
 			}
 		}
