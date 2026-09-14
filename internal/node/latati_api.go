@@ -207,6 +207,15 @@ func ltRand(n int) string {
 
 func loadLT() *ltStore {
 	if ltMem != nil {
+		// Memoria vacía tras arranque fallido: reintentar Durable Object
+		if ltCFEnabled() && len(ltMem.Products) == 0 {
+			if cfSt, err := ltLoadFromCF(); err == nil && cfSt != nil && len(cfSt.Products) > 0 {
+				fmt.Printf("📦 La Tati: recarga desde Cloudflare DO (rev=%d, products=%d)\n", cfSt.Rev, len(cfSt.Products))
+				ltMem = cfSt
+				raw, _ := json.MarshalIndent(cfSt, "", "  ")
+				_ = os.WriteFile(ltStorePath(), raw, 0o644)
+			}
+		}
 		return ltMem
 	}
 	ltEnsure()
@@ -228,6 +237,8 @@ func loadLT() *ltStore {
 			st = cfSt
 			loaded = true
 			fmt.Printf("📦 La Tati: store cargado desde Cloudflare DO (rev=%d, products=%d)\n", st.Rev, len(st.Products))
+			raw, _ := json.MarshalIndent(st, "", "  ")
+			_ = os.WriteFile(ltStorePath(), raw, 0o644)
 		} else if err != nil {
 			fmt.Printf("⚠️ La Tati CF load: %v — intentando disco local\n", err)
 		}
@@ -237,7 +248,8 @@ func loadLT() *ltStore {
 		if err == nil {
 			_ = json.Unmarshal(b, st)
 			loaded = true
-			if ltCFEnabled() {
+			// Nunca subir a CF un catálogo vacío (evitar borrar publicaciones)
+			if ltCFEnabled() && len(st.Products) > 0 {
 				go func(copy *ltStore) { _ = ltSaveToCF(copy) }(st)
 			}
 		}
@@ -269,6 +281,12 @@ func saveLT(st *ltStore) error {
 	}
 	diskErr := os.WriteFile(ltStorePath(), b, 0o644)
 	if ltCFEnabled() {
+		if len(st.Products) == 0 {
+			if cfSt, err := ltLoadFromCF(); err == nil && cfSt != nil && len(cfSt.Products) > 0 {
+				fmt.Printf("⚠️ La Tati: no se pisa CF (%d productos) con store vacío\n", len(cfSt.Products))
+				return diskErr
+			}
+		}
 		if err := ltSaveToCF(st); err != nil {
 			fmt.Printf("⚠️ La Tati CF save: %v\n", err)
 			if diskErr != nil {
