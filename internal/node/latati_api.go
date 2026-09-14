@@ -1026,11 +1026,6 @@ func (n *NodoAlset) ltChat(w http.ResponseWriter, r *http.Request) {
 		ltMu.Lock()
 		defer ltMu.Unlock()
 		st := loadLT()
-		// Anclar nombre del cliente al hilo (visible en lista de chats)
-		if in.From == "client" {
-			cname := strings.TrimSpace(r.Header.Get("X-LaTati-Client-Name"))
-			// body fields not in struct - parse from Text prefix if JSON had client_name: extend struct
-		}
 		if in.From == "client" && strings.TrimSpace(in.ClientName) != "" {
 			labeled := false
 			for _, m := range st.Messages {
