@@ -58,6 +58,17 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
   <div><div id="brandName" style="font-weight:800">La Tati</div><div class="sub" id="brandSub">Tu pedido · tu vale · tu recogida</div></div>
 </header>
 <div class="wrap">
+  <section id="view-profile" class="hidden">
+    <h2>Tus datos</h2>
+    <p class="sub" style="margin-bottom:.7rem">Necesarios para pedidos y chat. Así La Tati sabe quién eres.</p>
+    <div class="panel">
+      <label class="sub">Nombre completo</label>
+      <input id="pName" placeholder="Tu nombre" autocomplete="name" style="margin-bottom:.5rem">
+      <label class="sub">Teléfono / WhatsApp</label>
+      <input id="pPhone" placeholder="53…" inputmode="tel" autocomplete="tel" style="margin-bottom:.5rem">
+      <button type="button" class="btn btn-pink" id="btnSaveProfile">Guardar y continuar</button>
+    </div>
+  </section>
   <section id="view-catalog">
     <div class="hero-msg" id="heroMsg">✨ Piezas seleccionadas para ti. Elige, confirma y recoge con tu vale digital.</div>
     <div id="catalogGrid" class="grid"></div>
@@ -114,6 +125,7 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
   <button type="button" data-v="cart"><span>🛒</span>Pedido</button>
   <button type="button" data-v="myorders"><span>🎫</span>Vales</button>
   <button type="button" data-v="chat"><span>💬</span>Chat</button>
+  <button type="button" data-v="profile"><span>👤</span>Yo</button>
 </nav>
 <div class="toast" id="toast"></div>
 <script>
@@ -130,8 +142,8 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
   function saveCart(){localStorage.setItem(CART,JSON.stringify(cart));updateBar()}
   function count(){var n=0;Object.keys(cart).forEach(function(k){n+=cart[k]});return n}
   function updateBar(){var n=count(),bar=$('cartBar');if(n>0&&$('view-cart').classList.contains('hidden')){bar.classList.remove('hidden');$('cartBarText').textContent=n+(n===1?' producto':' productos')}else bar.classList.add('hidden')}
-  function hideAll(){['catalog','detail','cart','vale','myorders','chat'].forEach(function(v){$('view-'+v).classList.add('hidden')})}
-  function show(v){hideAll();$('view-'+v).classList.remove('hidden');document.querySelectorAll('.nav button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-v')===v)});if(v==='cart'){renderCart();$('cartBar').classList.add('hidden')}else updateBar()}
+  function hideAll(){['catalog','detail','cart','vale','myorders','chat','profile'].forEach(function(v){$('view-'+v).classList.add('hidden')})}
+  function show(v){hideAll();$('view-'+v).classList.remove('hidden');document.querySelectorAll('.nav button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-v')===v)});if(v==='cart'){if(!requireClient())return;renderCart();$('cartBar').classList.add('hidden');fillProfileForm()}else if(v==='profile'){fillProfileForm()}else updateBar()}
 
   /* loadCatalog defined below with live rev */
   function renderCatalog(){
@@ -148,6 +160,7 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
     g.querySelectorAll('.add').forEach(function(b){b.onclick=function(e){e.stopPropagation();add(b.getAttribute('data-id'))}});
   }
   function add(id){
+    if(!requireClient()) return;
     if(cart[id] && cart[id]>0){
       toast('Ya está en el carrito. Para otra unidad, haz un pedido nuevo después.');
       return;
@@ -211,14 +224,26 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
     try{var info=JSON.parse(localStorage.getItem(CINFO)||'{}');if(info.name)$('cName').value=info.name;if(info.phone)$('cPhone').value=info.phone}catch(e){}
   }
   $('btnPlaceOrder').onclick=async function(){
-    var name=$('cName').value.trim(),phone=$('cPhone').value.trim();
-    if(!name){toast('Nombre requerido');return}
+    if(!requireClient()) return;
+    var c=clientInfo();
+    var name=($('cName').value.trim()||c.name||'').trim();
+    var phone=($('cPhone').value.trim()||c.phone||'').trim();
+    if(!name||!phone){toast('Nombre y teléfono requeridos');show('profile');return}
+    localStorage.setItem(CINFO,JSON.stringify({name:name,phone:phone}));
     var ids=Object.keys(cart).filter(function(k){return cart[k]>0});
     if(!ids.length){toast('Pedido vacío');return}
-    localStorage.setItem(CINFO,JSON.stringify({name:name,phone:phone}));
-    var d=await(await fetch(API+'/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({thread:sid,client_name:name,client_phone:phone,note:$('cNote').value.trim(),items:ids.map(function(id){return{product_id:id,qty:1}})})})).json();
+    var d=await(await fetch(API+'/order',{method:'POST',headers:{'Content-Type':'application/json','X-LaTati-Thread':sid},body:JSON.stringify({thread:sid,client_name:name,client_phone:phone,note:$('cNote').value.trim(),items:ids.map(function(id){return{product_id:id,qty:1}})})})).json();
     if(!d.ok){toast(d.error||'Error');return}
-    cart={};saveCart();renderVale(d.order);show('vale');toast('Solicitud '+d.order.code+' enviada');loadCatalog();
+    cart={};saveCart();renderVale(d.order);show('vale');toast('Solicitud '+d.order.code+' enviada');loadCatalog();loadMyOrders();
+  };
+  if($('btnSaveProfile')) $('btnSaveProfile').onclick=function(){
+    var name=$('pName').value.trim(), phone=$('pPhone').value.trim();
+    if(!name){toast('Escribe tu nombre');return}
+    if(!phone||phone.length<6){toast('Escribe un teléfono válido');return}
+    localStorage.setItem(CINFO,JSON.stringify({name:name,phone:phone}));
+    fillProfileForm();
+    toast('Datos guardados');
+    show('catalog');
   };
   function statusLabel(s){
     s=(s||'').toLowerCase();
@@ -253,7 +278,7 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
       actions+'</div>';
     var bc=$('btnCancelReq');
     if(bc){bc.onclick=async function(){
-      var d=await(await fetch(API+'/order/'+encodeURIComponent(o.id||o.code)+'/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'cancelled',thread:sid})})).json();
+      var d=await(await fetch(API+'/order/'+encodeURIComponent(o.id||o.code)+'/status',{method:'POST',headers:{'Content-Type':'application/json','X-LaTati-Thread':sid},body:JSON.stringify({status:'cancelled',thread:sid,client_phone:(clientInfo().phone||'')})})).json();
       if(!d.ok){toast(d.error||'No se pudo cancelar');return}
       renderVale(d.order);toast('Pedido cancelado');loadMyOrders();
     }}
@@ -285,6 +310,7 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
       if(v==='cart')show('cart');
       if(v==='myorders'){show('myorders');loadMyOrders()}
       if(v==='chat'){show('chat');loadChat()}
+      if(v==='profile'){show('profile');fillProfileForm()}
     };
   });
   var catalogRev = 0;
@@ -308,8 +334,9 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
       es.addEventListener('latati_hello', function(){ liveConnected = true; loadCatalog(true); });
       es.addEventListener('latati_catalog', function(){ loadCatalog(true); });
       es.addEventListener('latati_order', function(){
-        if(!$('view-myorders').classList.contains('hidden')) loadMyOrders();
+        loadMyOrders();
         loadCatalog(true);
+        if(!$('view-vale').classList.contains('hidden')) loadMyOrders();
       });
       es.addEventListener('latati_chat', function(){
         if(!$('view-chat').classList.contains('hidden')) loadChat();
@@ -322,6 +349,8 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
       es2.addEventListener('latati_chat', function(){ if(!$('view-chat').classList.contains('hidden')) loadChat(); });
     }catch(e){}
   }
+  fillProfileForm();
+  if(!hasClient()){show('profile')}
   loadCatalog(true);updateBar();bindLive();
   // Fallback suave: solo si no hay SSE o para reconciliar
   setInterval(function(){

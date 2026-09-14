@@ -335,6 +335,15 @@ func ltJSON(w http.ResponseWriter, code int, v interface{}) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
+// ltTokenOK checks token against store (caller may already hold ltMu).
+func ltTokenOK(st *ltStore, tok string) bool {
+	if st == nil || tok == "" {
+		return false
+	}
+	exp, ok := st.Tokens[tok]
+	return ok && time.Now().Unix() <= exp
+}
+
 func ltAuth(r *http.Request) bool {
 	tok := r.Header.Get("X-LaTati-Token")
 	if tok == "" {
@@ -342,9 +351,11 @@ func ltAuth(r *http.Request) bool {
 	}
 	ltMu.Lock()
 	defer ltMu.Unlock()
-	st := loadLT()
-	exp, ok := st.Tokens[tok]
-	return ok && time.Now().Unix() <= exp
+	return ltTokenOK(loadLT(), tok)
+}
+
+func ltAuthFrom(r *http.Request, st *ltStore) bool {
+	return ltTokenOK(st, r.Header.Get("X-LaTati-Token"))
 }
 
 func publicProfile(p ltProfile) map[string]string {
@@ -695,6 +706,10 @@ func (n *NodoAlset) ltPlaceOrder(w http.ResponseWriter, r *http.Request) {
 		ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "name"})
 		return
 	}
+	if strings.TrimSpace(in.ClientPhone) == "" {
+		ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "phone"})
+		return
+	}
 
 	ltMu.Lock()
 	defer ltMu.Unlock()
@@ -777,7 +792,7 @@ func (n *NodoAlset) ltListOrders(w http.ResponseWriter, r *http.Request) {
 		ltJSON(w, 200, map[string]interface{}{"ok": true, "items": out})
 		return
 	}
-	if !ltAuth(r) {
+	if !ltAuthFrom(r, st) {
 		ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
 		return
 	}
@@ -792,12 +807,12 @@ func (n *NodoAlset) ltGetOrder(w http.ResponseWriter, r *http.Request, id string
 	for _, o := range st.Orders {
 		if o.ID == id || o.Code == id {
 			// client may only see own; gestor with auth sees all
-			if ltAuth(r) || (thread != "" && o.Thread == thread) {
+			if ltAuthFrom(r, st) || (thread != "" && o.Thread == thread) {
 				ltJSON(w, 200, map[string]interface{}{"ok": true, "order": o})
 				return
 			}
-			// also allow by id alone for vale display if they have the code link
-			if thread == "" && !ltAuth(r) {
+			// allow by code for vale share (read-only)
+			if thread == "" {
 				ltJSON(w, 200, map[string]interface{}{"ok": true, "order": o})
 				return
 			}
@@ -855,10 +870,10 @@ func (n *NodoAlset) ltOrderStatus(w http.ResponseWriter, r *http.Request, id str
 		in.Status = "cancelled"
 	}
 
-	gestor := ltAuth(r)
 	ltMu.Lock()
 	defer ltMu.Unlock()
 	st := loadLT()
+	gestor := ltAuthFrom(r, st)
 	for i := range st.Orders {
 		o := &st.Orders[i]
 		if o.ID != id && o.Code != id {
@@ -867,7 +882,9 @@ func (n *NodoAlset) ltOrderStatus(w http.ResponseWriter, r *http.Request, id str
 		// Cliente solo puede cancelar su propia solicitud (requested)
 		if !gestor {
 			th := strings.TrimSpace(in.Thread)
-			if th == "" || th != o.Thread {
+			hth := strings.TrimSpace(r.Header.Get("X-LaTati-Thread"))
+			okClient := (th != "" && th == o.Thread) || (hth != "" && hth == o.Thread)
+			if !okClient {
 				ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
 				return
 			}
@@ -968,11 +985,13 @@ func (n *NodoAlset) ltChat(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.Method == http.MethodPost {
 		var in struct {
-			Thread    string `json:"thread"`
-			From      string `json:"from"`
-			Text      string `json:"text"`
-			ProductID string `json:"product_id"`
-			Token     string `json:"token"`
+			Thread      string `json:"thread"`
+			From        string `json:"from"`
+			Text        string `json:"text"`
+			ProductID   string `json:"product_id"`
+			Token       string `json:"token"`
+			ClientName  string `json:"client_name"`
+			ClientPhone string `json:"client_phone"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 			ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "json"})
@@ -1007,6 +1026,30 @@ func (n *NodoAlset) ltChat(w http.ResponseWriter, r *http.Request) {
 		ltMu.Lock()
 		defer ltMu.Unlock()
 		st := loadLT()
+		// Anclar nombre del cliente al hilo (visible en lista de chats)
+		if in.From == "client" {
+			cname := strings.TrimSpace(r.Header.Get("X-LaTati-Client-Name"))
+			// body fields not in struct - parse from Text prefix if JSON had client_name: extend struct
+		}
+		if in.From == "client" && strings.TrimSpace(in.ClientName) != "" {
+			labeled := false
+			for _, m := range st.Messages {
+				if m.Thread == in.Thread && strings.HasPrefix(m.Text, "👤 ") {
+					labeled = true
+					break
+				}
+			}
+			if !labeled {
+				label := "👤 " + strings.TrimSpace(in.ClientName)
+				if strings.TrimSpace(in.ClientPhone) != "" {
+					label += " · " + strings.TrimSpace(in.ClientPhone)
+				}
+				st.Messages = append(st.Messages, ltMsg{
+					ID: ltRand(6), Thread: in.Thread, From: "client",
+					Text: label, Ts: time.Now().UTC().Format(time.RFC3339),
+				})
+			}
+		}
 		st.Messages = append(st.Messages, msg)
 		if len(st.Messages) > 2000 {
 			st.Messages = st.Messages[len(st.Messages)-2000:]
@@ -1021,13 +1064,13 @@ func (n *NodoAlset) ltChat(w http.ResponseWriter, r *http.Request) {
 }
 
 func (n *NodoAlset) ltThreads(w http.ResponseWriter, r *http.Request) {
-	if !ltAuth(r) {
-		ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
-		return
-	}
 	ltMu.Lock()
 	defer ltMu.Unlock()
 	st := loadLT()
+	if !ltAuthFrom(r, st) {
+		ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
+		return
+	}
 	type th struct {
 		Thread string `json:"thread"`
 		Last   string `json:"last"`
@@ -1045,10 +1088,18 @@ func (n *NodoAlset) ltThreads(w http.ResponseWriter, r *http.Request) {
 		t.Count++
 		t.Last = msg.Text
 		t.Ts = msg.Ts
+		if strings.HasPrefix(msg.Text, "👤 ") && t.Name == "" {
+			t.Name = strings.TrimPrefix(msg.Text, "👤 ")
+		}
 	}
 	for _, o := range st.Orders {
-		if t, ok := m[o.Thread]; ok && t.Name == "" {
-			t.Name = o.ClientName
+		if t, ok := m[o.Thread]; ok {
+			if t.Name == "" {
+				t.Name = o.ClientName
+			}
+			if o.ClientPhone != "" && t.Name != "" && !strings.Contains(t.Name, o.ClientPhone) {
+				t.Name = o.ClientName + " · " + o.ClientPhone
+			}
 		}
 	}
 	list := make([]*th, 0, len(m))
@@ -1070,7 +1121,7 @@ func (n *NodoAlset) ltEventsSSE(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx, cancel := context.WithCancel(r.Context())
-	sub := &SSESubscriber{ch: make(chan string, 32), ctx: ctx, cancel: cancel}
+	sub := &SSESubscriber{ch: make(chan string, 128), ctx: ctx, cancel: cancel}
 	n.pulseSubscribersMu.Lock()
 	n.pulseSubscribers[sub] = true
 	n.pulseSubscribersMu.Unlock()

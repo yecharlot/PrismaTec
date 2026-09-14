@@ -155,7 +155,7 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     if(!d.ok){toast('PIN incorrecto');return}
     token=d.token;localStorage.setItem(TK,token);
     $('who').textContent=(d.profile&&d.profile.name)||'Gestora';
-    show('prods');loadProds();
+    show('prods');loadProds();loadOrders();
   }
   $('btnLogin').onclick=login;
 
@@ -213,7 +213,7 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     if(!d.ok){toast(d.error||'Error');return}
     editId=d.item.id;
     if(editFile){var fd=new FormData();fd.append('photo',editFile);await fetch(API+'/gestor/products/'+editId+'/photo',{method:'POST',headers:token?{'X-LaTati-Token':token}:{},body:fd})}
-    toast('Publicado · visible en tienda');show('prods');loadProds();
+    toast('Publicado · visible en tienda');show('prods');loadProds();loadOrders();
   };
   $('btnShare').onclick=async function(){
     if(!editId){toast('Guarda primero');return}
@@ -319,22 +319,43 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     };
   });
 
+  function onOrderEvent(ev){
+    if(!token) return;
+    try{
+      var d = ev && ev.data ? JSON.parse(ev.data) : {};
+      var code = d.code || d.order_id || '';
+      toast(code ? ('Pedido '+code) : 'Nuevo movimiento de pedido');
+    }catch(e){ toast('Nuevo movimiento de pedido'); }
+    loadOrders();
+    // refrescar chat por si el pedido dejó mensaje de sistema
+    if(!$('view-chat').classList.contains('hidden')){
+      if(!$('threadView').classList.contains('hidden')&&activeTh) openTh(activeTh); else loadThreads();
+    }
+  }
   function bindLive(){
     if(typeof EventSource==='undefined') return;
     try{
       var es=new EventSource(API+'/events');
-      es.addEventListener('latati_catalog', function(){ if(token && !$('view-prods').classList.contains('hidden')) loadProds(); });
-      es.addEventListener('latati_order', function(){ if(token && !$('view-orders').classList.contains('hidden')) loadOrders(); });
+      es.addEventListener('latati_hello', function(){ if(token){ loadProds(); loadOrders(); }});
+      es.addEventListener('latati_catalog', function(){ if(token) loadProds(); });
+      es.addEventListener('latati_order', onOrderEvent);
       es.addEventListener('latati_chat', function(){
-        if(!token||$('view-chat').classList.contains('hidden')) return;
-        if(!$('threadView').classList.contains('hidden')&&activeTh) openTh(activeTh); else loadThreads();
+        if(!token) return;
+        if(!$('view-chat').classList.contains('hidden')){
+          if(!$('threadView').classList.contains('hidden')&&activeTh) openTh(activeTh); else loadThreads();
+        } else {
+          toast('Nuevo mensaje en chat');
+        }
       });
+      es.onerror=function(){};
       var es2=new EventSource('/api/pulse');
-      es2.addEventListener('latati_catalog', function(){ if(token && !$('view-prods').classList.contains('hidden')) loadProds(); });
-      es2.addEventListener('latati_order', function(){ if(token && !$('view-orders').classList.contains('hidden')) loadOrders(); });
+      es2.addEventListener('latati_catalog', function(){ if(token) loadProds(); });
+      es2.addEventListener('latati_order', onOrderEvent);
       es2.addEventListener('latati_chat', function(){
-        if(!token||$('view-chat').classList.contains('hidden')) return;
-        if(!$('threadView').classList.contains('hidden')&&activeTh) openTh(activeTh); else loadThreads();
+        if(!token) return;
+        if(!$('view-chat').classList.contains('hidden')){
+          if(!$('threadView').classList.contains('hidden')&&activeTh) openTh(activeTh); else loadThreads();
+        }
       });
     }catch(e){}
   }
