@@ -389,14 +389,14 @@ func (n *NodoAlset) handleLaTatiAPI(w http.ResponseWriter, r *http.Request) {
 		n.ltProfileGet(w)
 	case parts[0] == "photo" && len(parts) >= 2 && r.Method == http.MethodGet:
 		n.ltPhotoGet(w, r, parts[1])
-	case parts[0] == "order" && r.Method == http.MethodPost:
+	case parts[0] == "order" && len(parts) >= 3 && parts[2] == "status" && r.Method == http.MethodPost:
+		n.ltOrderStatus(w, r, parts[1])
+	case parts[0] == "order" && len(parts) >= 2 && r.Method == http.MethodGet:
+		n.ltGetOrder(w, r, parts[1])
+	case parts[0] == "order" && r.Method == http.MethodPost && len(parts) <= 1:
 		n.ltPlaceOrder(w, r)
 	case parts[0] == "orders" && r.Method == http.MethodGet:
 		n.ltListOrders(w, r)
-	case parts[0] == "order" && len(parts) >= 2 && r.Method == http.MethodGet:
-		n.ltGetOrder(w, r, parts[1])
-	case parts[0] == "order" && len(parts) >= 3 && parts[2] == "status" && r.Method == http.MethodPost:
-		n.ltOrderStatus(w, r, parts[1])
 	case parts[0] == "gestor" && len(parts) >= 2 && parts[1] == "login":
 		n.ltLogin(w, r)
 	case parts[0] == "gestor" && len(parts) >= 2 && parts[1] == "profile":
@@ -980,7 +980,7 @@ func (n *NodoAlset) ltChat(w http.ResponseWriter, r *http.Request) {
 		if len(out) > 200 {
 			out = out[len(out)-200:]
 		}
-		ltJSON(w, 200, map[string]interface{}{"ok": true, "items": out})
+		ltJSON(w, 200, map[string]interface{}{"ok": true, "items": out, "messages": out})
 		return
 	}
 	if r.Method == http.MethodPost {
