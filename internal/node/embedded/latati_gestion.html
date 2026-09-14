@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a0a12">
+<meta name="robots" content="noindex">
+<title>La Tati · Gestión</title>
+<style>
+:root{--bg:#0e0a12;--card:#1a1220;--line:rgba(255,200,90,.2);--pink:#ff6eb4;--gold:#ffc85a;--ink:#fff8fc;--muted:#b9a8b4;--mint:#5dffc2}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding-bottom:70px}
+.top{position:sticky;top:0;z-index:10;background:rgba(14,10,18,.95);border-bottom:1px solid var(--line);padding:.7rem 1rem;display:flex;justify-content:space-between;align-items:center}
+.wrap{max-width:640px;margin:0 auto;padding:1rem}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:.9rem;margin-bottom:.7rem}
+.btn{width:100%;border:none;border-radius:12px;padding:.7rem;font-weight:700;cursor:pointer}
+.btn-gold{background:linear-gradient(120deg,var(--gold),#ff9f1a);color:#1a0a12}
+.btn-pink{background:linear-gradient(120deg,var(--pink),#ff3d9a);color:#1a0a12}
+.btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn-mint{background:linear-gradient(120deg,#25d366,#128c7e);color:#fff}
+.btn-row{display:flex;gap:.4rem;margin-top:.45rem}
+.btn-row .btn{flex:1;font-size:.8rem;padding:.55rem}
+label{display:block;font-size:.7rem;color:var(--muted);margin:.45rem 0 .2rem;text-transform:uppercase}
+input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line);border-radius:10px;padding:.65rem;color:var(--ink);font-size:16px}
+.nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#120a14;border-top:1px solid var(--line);padding:.3rem;z-index:20}
+.nav button{flex:1;background:none;border:none;color:var(--muted);font-size:.65rem;padding:.4rem;cursor:pointer}
+.nav button.on{color:var(--gold)}
+.hidden{display:none!important}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#2a1830;padding:.5rem 1rem;border-radius:999px;opacity:0;transition:.25s;z-index:40;font-size:.85rem;border:1px solid var(--line)}
+.toast.show{opacity:1}
+.sub{color:var(--muted);font-size:.8rem}
+.price{color:var(--gold);font-weight:700}
+.thumb{width:64px;height:64px;border-radius:10px;object-fit:cover;background:#2a1520}
+.row{display:flex;gap:.6rem;align-items:flex-start}
+.badge{font-size:.68rem;padding:.1rem .4rem;border-radius:999px;background:rgba(255,200,90,.15);color:var(--gold)}
+.msgs{display:flex;flex-direction:column;gap:.35rem;max-height:42vh;overflow-y:auto}
+.bubble{max-width:85%;padding:.5rem .7rem;border-radius:12px;font-size:.88rem;word-break:break-word}
+.bubble.me{align-self:flex-end;background:linear-gradient(120deg,var(--gold),#ff9f1a);color:#1a0a12}
+.bubble.them{align-self:flex-start;background:#241828;border:1px solid var(--line)}
+.composer{display:flex;gap:.4rem;margin-top:.4rem}
+.composer input{flex:1}
+.composer button{width:auto;padding:.6rem .85rem}
+.photo-btn{display:block;border:1px dashed var(--line);border-radius:10px;padding:.8rem;text-align:center;color:var(--muted);cursor:pointer}
+.photo-btn input{display:none}
+.preview{width:100%;max-height:180px;object-fit:cover;border-radius:10px;margin:.35rem 0}
+.live{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;color:var(--mint)}
+.live i{width:7px;height:7px;border-radius:50%;background:var(--mint);display:inline-block;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.35}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div><strong>La Tati · Gestión</strong><div class="sub" id="who">—</div></div>
+  <span class="live"><i></i> en vivo</span>
+</header>
+<div class="wrap">
+  <section id="view-login">
+    <div class="panel">
+      <h2>Entrar</h2>
+      <label>PIN</label>
+      <input id="pin" type="password" autocomplete="current-password">
+      <button type="button" class="btn btn-gold" id="btnLogin" style="margin-top:.7rem">Entrar</button>
+      <p class="sub" style="margin-top:.5rem">Solo tú. Los clientes usan la tienda pública.</p>
+    </div>
+  </section>
+
+  <section id="view-prods" class="hidden">
+    <button type="button" class="btn btn-pink" id="btnNew">＋ Publicar producto</button>
+    <div id="list" style="margin-top:.75rem"></div>
+  </section>
+
+  <section id="view-edit" class="hidden">
+    <button type="button" class="btn btn-ghost" id="btnBackEdit" style="width:auto;margin-bottom:.5rem">← Lista</button>
+    <div class="panel">
+      <h2 id="editH">Producto</h2>
+      <label class="photo-btn">Foto<input type="file" id="photo" accept="image/*"></label>
+      <img class="preview hidden" id="prev" alt="">
+      <label>Título</label><input id="fTitle">
+      <label>Descripción</label><textarea id="fDesc"></textarea>
+      <label>Origen</label><input id="fSource">
+      <label>Precio</label>
+      <div style="display:flex;gap:.4rem"><input id="fPrice" type="number" step="0.01"><select id="fCur"><option>USD</option><option>CUP</option><option>EUR</option><option>ZELLE</option></select></div>
+      <label><input type="checkbox" id="fPending"> Sin precio aún</label>
+      <label>Stock</label><input id="fStock" type="number" value="1" min="0">
+      <button type="button" class="btn btn-gold" id="btnSave" style="margin-top:.6rem">Guardar</button>
+      <div class="btn-row">
+        <button type="button" class="btn btn-mint" id="btnShare">Compartir por WhatsApp</button>
+      </div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-ghost" id="btnSold">Vendido</button>
+        <button type="button" class="btn btn-ghost" id="btnDel" style="color:#ff8a8a">Eliminar</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-orders" class="hidden">
+    <h2 style="margin-bottom:.5rem">Pedidos</h2>
+    <div id="orders"></div>
+  </section>
+
+  <section id="view-chat" class="hidden">
+    <div id="threads"></div>
+    <div id="threadView" class="hidden">
+      <button type="button" class="btn btn-ghost" id="btnBackTh" style="width:auto;margin-bottom:.4rem">← Chats</button>
+      <p class="sub" id="thLabel"></p>
+      <div class="msgs" id="msgs"></div>
+      <div class="composer">
+        <input id="msgIn" placeholder="Responder…">
+        <button type="button" class="btn btn-gold" id="btnSend">Enviar</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-cfg" class="hidden">
+    <div class="panel">
+      <h2>Perfil público</h2>
+      <label>Nombre</label><input id="cfgName">
+      <label>Teléfono</label><input id="cfgWA">
+      <label>Dirección recogida</label><input id="cfgAddr">
+      <label>Bio</label><textarea id="cfgBio"></textarea>
+      <label>PIN nuevo</label><input id="cfgPin" type="password" placeholder="Vacío = no cambiar">
+      <button type="button" class="btn btn-gold" id="btnSaveCfg" style="margin-top:.6rem">Guardar</button>
+      <button type="button" class="btn btn-ghost" id="btnOut" style="margin-top:.4rem">Salir</button>
+      <p class="sub" style="margin-top:.7rem">Tienda clientes:<br><a id="shopLink" style="color:var(--gold)" href="/w/latati.app.ans" target="_blank">/w/latati.app.ans</a></p>
+    </div>
+  </section>
+</div>
+<nav class="nav hidden" id="nav">
+  <button type="button" class="on" data-v="prods">Productos</button>
+  <button type="button" data-v="orders">Pedidos</button>
+  <button type="button" data-v="chat">Chat</button>
+  <button type="button" data-v="cfg">Perfil</button>
+</nav>
+<div class="toast" id="toast"></div>
+<script>
+(function(){
+  var API='/api/latati', TK='latati_token';
+  var token=localStorage.getItem(TK)||'';
+  var editId='', editFile=null, activeTh='', shopBase=location.origin+'/w/latati.app.ans';
+  function $(id){return document.getElementById(id)}
+  function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2200)}
+  function H(j){var h={};if(j)h['Content-Type']='application/json';if(token)h['X-LaTati-Token']=token;return h}
+  function esc(s){return String(s||'').replace(/</g,'&lt;')}
+  function photo(p){return p&&p.photo?(API+'/photo/'+p.id+'?t='+(p.updated_at||'')) : ''}
+  function hide(){['login','prods','edit','orders','chat','cfg'].forEach(function(v){$('view-'+v).classList.add('hidden')})}
+  function show(v){
+    hide();$('view-'+v).classList.remove('hidden');
+    if(v==='login') $('nav').classList.add('hidden'); else $('nav').classList.remove('hidden');
+    document.querySelectorAll('.nav button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-v')===v)});
+  }
+  function authed(){return !!token}
+
+  async function login(){
+    var d=await(await fetch(API+'/gestor/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:$('pin').value})})).json();
+    if(!d.ok){toast('PIN incorrecto');return}
+    token=d.token;localStorage.setItem(TK,token);
+    $('who').textContent=(d.profile&&d.profile.name)||'Gestora';
+    show('prods');loadProds();
+  }
+  $('btnLogin').onclick=login;
+
+  async function loadProds(){
+    var d=await(await fetch(API+'/gestor/products',{headers:H()})).json();
+    if(!d.ok){token='';localStorage.removeItem(TK);show('login');return}
+    var el=$('list'), list=d.items||[];
+    if(!list.length){el.innerHTML='<div class="sub" style="padding:1rem;text-align:center">Sin productos</div>';return}
+    el.innerHTML=list.map(function(p){
+      var img=photo(p);
+      return '<div class="panel" data-id="'+p.id+'"><div class="row">'+(img?'<img class="thumb" src="'+img+'">':'')+
+        '<div style="flex:1"><strong>'+esc(p.title)+'</strong><div class="price">'+(p.price_pending||!(p.price>0)?'Sin precio':(p.currency+' '+Number(p.price).toFixed(2)))+'</div>'+
+        '<div class="sub">Stock '+p.stock+(p.sold?' · VENDIDO':'')+'</div>'+
+        '<div class="btn-row"><button type="button" class="btn btn-ghost be">Editar</button>'+
+        '<button type="button" class="btn btn-mint bs">WhatsApp</button>'+
+        '<button type="button" class="btn btn-ghost bm">−1</button><button type="button" class="btn btn-ghost bp">+1</button></div></div></div></div>';
+    }).join('');
+    el.querySelectorAll('.be').forEach(function(b){b.onclick=function(){openEdit(b.closest('[data-id]').getAttribute('data-id'), list)}});
+    el.querySelectorAll('.bs').forEach(function(b){b.onclick=function(){share(b.closest('[data-id]').getAttribute('data-id'), list)}});
+    el.querySelectorAll('.bm').forEach(function(b){b.onclick=async function(){await fetch(API+'/gestor/products/'+b.closest('[data-id]').getAttribute('data-id')+'/stock',{method:'POST',headers:H(1),body:JSON.stringify({delta:-1})});loadProds()}});
+    el.querySelectorAll('.bp').forEach(function(b){b.onclick=async function(){await fetch(API+'/gestor/products/'+b.closest('[data-id]').getAttribute('data-id')+'/stock',{method:'POST',headers:H(1),body:JSON.stringify({delta:1})});loadProds()}});
+  }
+
+  function openEdit(id, list){
+    var p=(list||[]).find(function(x){return x.id===id})||{};
+    editId=p.id||'';editFile=null;
+    $('fTitle').value=p.title||'';$('fDesc').value=p.description||'';$('fSource').value=p.source||'';
+    $('fPrice').value=p.price||'';$('fCur').value=p.currency||'USD';
+    $('fPending').checked=!!p.price_pending||!(p.price>0);$('fStock').value=(p.stock!=null&&p.stock!=='')?p.stock:1;
+    if(p.photo){$('prev').src=photo(p);$('prev').classList.remove('hidden')}else $('prev').classList.add('hidden');
+    show('edit');
+  }
+  function share(id, list){
+    var p=(list||[]).find(function(x){return x.id===id});
+    if(!p){toast('Guarda primero');return}
+    var url=shopBase+'?p='+encodeURIComponent(p.id);
+    var msg='✨ *¡Mira esto!* ✨\n\n*'+p.title+'*\n';
+    if(!(p.price_pending||!(p.price>0))) msg+='💰 '+(p.currency||'USD')+' '+Number(p.price).toFixed(2)+'\n';
+    if(p.description) msg+=p.description.slice(0,120)+(p.description.length>120?'…':'')+'\n';
+    msg+='\n🔥 Disponible ahora en *La Tati*.\nToca el enlace, mira la foto y pide en la app — tu vale de recogida se genera al confirmar.\n\n👉 '+url;
+    window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+  }
+  $('btnNew').onclick=function(){openEdit('',[])};
+  $('btnBackEdit').onclick=function(){show('prods');loadProds()};
+  $('photo').onchange=function(e){var f=e.target.files&&e.target.files[0];if(!f)return;editFile=f;$('prev').src=URL.createObjectURL(f);$('prev').classList.remove('hidden')};
+  $('btnSave').onclick=async function(){
+    var stockVal=parseInt($('fStock').value,10);
+    if(isNaN(stockVal)||stockVal<0) stockVal=1;
+    if(stockVal===0) stockVal=1; // visible en catálogo cliente de inmediato
+    var body={id:editId||'',title:$('fTitle').value.trim(),description:$('fDesc').value.trim(),source:$('fSource').value.trim(),
+      price:parseFloat($('fPrice').value)||0,currency:$('fCur').value,price_pending:$('fPending').checked||!(parseFloat($('fPrice').value)>0),
+      stock:stockVal,sold:false};
+    if(!body.title){toast('Título');return}
+    var d=await(await fetch(API+'/gestor/products',{method:'POST',headers:H(1),body:JSON.stringify(body)})).json();
+    if(!d.ok){toast(d.error||'Error');return}
+    editId=d.item.id;
+    if(editFile){var fd=new FormData();fd.append('photo',editFile);await fetch(API+'/gestor/products/'+editId+'/photo',{method:'POST',headers:token?{'X-LaTati-Token':token}:{},body:fd})}
+    toast('Publicado · visible en tienda');show('prods');loadProds();
+  };
+  $('btnShare').onclick=async function(){
+    if(!editId){toast('Guarda primero');return}
+    var d=await(await fetch(API+'/gestor/products',{headers:H()})).json();
+    share(editId, d.items||[]);
+  };
+  $('btnSold').onclick=async function(){if(!editId)return;await fetch(API+'/gestor/products/'+editId+'/sold',{method:'POST',headers:H(1),body:'{}'});show('prods');loadProds()};
+  $('btnDel').onclick=async function(){if(!editId||!confirm('¿Eliminar?'))return;await fetch(API+'/gestor/products/'+editId+'/delete',{method:'POST',headers:H(1),body:'{}'});show('prods');loadProds()};
+
+  async function loadOrders(){
+    var d=await(await fetch(API+'/orders',{headers:H()})).json();
+    var list=d.items||[],el=$('orders');
+    if(!list.length){el.innerHTML='<div class="sub" style="text-align:center;padding:1rem">Sin pedidos</div>';return}
+    el.innerHTML=list.map(function(o){
+      return '<div class="panel"><strong>'+esc(o.code)+'</strong> <span class="badge">'+esc(o.status)+'</span>'+
+        '<div class="sub">'+esc(o.client_name)+' · '+esc(o.client_phone)+'</div>'+
+        '<div class="price">'+(o.currency||'')+' '+Number(o.total).toFixed(2)+'</div>'+
+        '<div class="sub">'+(o.lines||[]).map(function(l){return l.qty+'× '+l.title}).join(', ')+'</div>'+
+        '<div class="btn-row"><button type="button" class="btn btn-ghost st" data-id="'+o.code+'" data-s="ready">Listo</button>'+
+        '<button type="button" class="btn btn-ghost st" data-id="'+o.code+'" data-s="delivered">Entregado</button></div></div>';
+    }).join('');
+    el.querySelectorAll('.st').forEach(function(b){b.onclick=async function(){
+      await fetch(API+'/order/'+encodeURIComponent(b.getAttribute('data-id'))+'/status',{method:'POST',headers:H(1),body:JSON.stringify({status:b.getAttribute('data-s')})});
+      loadOrders();
+    }});
+  }
+
+  async function loadThreads(){
+    $('threadView').classList.add('hidden');$('threads').classList.remove('hidden');
+    var d=await(await fetch(API+'/threads',{headers:H()})).json();
+    var el=$('threads');
+    if(!d.items||!d.items.length){el.innerHTML='<div class="sub" style="text-align:center;padding:1rem">Sin chats</div>';return}
+    el.innerHTML=d.items.map(function(t){
+      return '<div class="panel" data-th="'+esc(t.thread)+'" style="cursor:pointer"><strong>'+esc(t.name||t.thread)+'</strong><div class="sub">'+esc(t.last)+'</div></div>';
+    }).join('');
+    el.querySelectorAll('[data-th]').forEach(function(n){n.onclick=function(){openTh(n.getAttribute('data-th'))}});
+  }
+  async function openTh(th){
+    activeTh=th;$('threads').classList.add('hidden');$('threadView').classList.remove('hidden');$('thLabel').textContent=th;
+    var d=await(await fetch(API+'/chat?thread='+encodeURIComponent(th),{headers:H()})).json();
+    var el=$('msgs');
+    el.innerHTML=(d.items||[]).map(function(m){return '<div class="bubble '+(m.from==='gestor'?'me':'them')+'">'+esc(m.text)+'</div>'}).join('');
+    el.scrollTop=el.scrollHeight;
+  }
+  $('btnBackTh').onclick=function(){loadThreads()};
+  $('btnSend').onclick=async function(){
+    var t=$('msgIn').value.trim();if(!t||!activeTh)return;
+    await fetch(API+'/chat',{method:'POST',headers:H(1),body:JSON.stringify({thread:activeTh,from:'gestor',text:t,token:token})});
+    $('msgIn').value='';openTh(activeTh);
+  };
+
+  async function loadCfg(){
+    var d=await(await fetch(API+'/profile')).json();
+    if(d.profile){$('cfgName').value=d.profile.name||'';$('cfgWA').value=d.profile.whatsapp||'';$('cfgAddr').value=d.profile.address||'';$('cfgBio').value=d.profile.bio||'';$('who').textContent=d.profile.name||''}
+    $('shopLink').href=shopBase;$('shopLink').textContent=shopBase;
+  }
+  $('btnSaveCfg').onclick=async function(){
+    var body={name:$('cfgName').value.trim(),whatsapp:$('cfgWA').value.trim(),address:$('cfgAddr').value.trim(),bio:$('cfgBio').value.trim()};
+    if($('cfgPin').value.trim()) body.pin=$('cfgPin').value.trim();
+    var d=await(await fetch(API+'/gestor/profile',{method:'POST',headers:H(1),body:JSON.stringify(body)})).json();
+    toast(d.ok?'Guardado':'Error'); if(d.ok) $('who').textContent=d.profile.name;
+  };
+  $('btnOut').onclick=function(){token='';localStorage.removeItem(TK);show('login')};
+
+  document.querySelectorAll('.nav button').forEach(function(b){
+    b.onclick=function(){
+      var v=b.getAttribute('data-v');
+      if(v==='prods'){show('prods');loadProds()}
+      if(v==='orders'){show('orders');loadOrders()}
+      if(v==='chat'){show('chat');loadThreads()}
+      if(v==='cfg'){show('cfg');loadCfg()}
+    };
+  });
+
+  function bindLive(){
+    if(typeof EventSource==='undefined') return;
+    try{
+      var es=new EventSource(API+'/events');
+      es.addEventListener('latati_catalog', function(){ if(token && !$('view-prods').classList.contains('hidden')) loadProds(); });
+      es.addEventListener('latati_order', function(){ if(token && !$('view-orders').classList.contains('hidden')) loadOrders(); });
+      es.addEventListener('latati_chat', function(){
+        if(!token||$('view-chat').classList.contains('hidden')) return;
+        if(!$('threadView').classList.contains('hidden')&&activeTh) openTh(activeTh); else loadThreads();
+      });
+      var es2=new EventSource('/api/pulse');
+      es2.addEventListener('latati_catalog', function(){ if(token && !$('view-prods').classList.contains('hidden')) loadProds(); });
+      es2.addEventListener('latati_order', function(){ if(token && !$('view-orders').classList.contains('hidden')) loadOrders(); });
+      es2.addEventListener('latati_chat', function(){
+        if(!token||$('view-chat').classList.contains('hidden')) return;
+        if(!$('threadView').classList.contains('hidden')&&activeTh) openTh(activeTh); else loadThreads();
+      });
+    }catch(e){}
+  }
+  if(token){show('prods');loadProds();loadCfg()} else show('login');
+  bindLive();
+  setInterval(function(){
+    if(!token) return;
+    if(!$('view-prods').classList.contains('hidden')) loadProds();
+    if(!$('view-orders').classList.contains('hidden')) loadOrders();
+    if(!$('view-chat').classList.contains('hidden') && !$('threadView').classList.contains('hidden') && activeTh) openTh(activeTh);
+    else if(!$('view-chat').classList.contains('hidden')) loadThreads();
+  }, 10000);
+})();
+</script>
+</body>
+</html>
