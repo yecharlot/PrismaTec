@@ -21,6 +21,7 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 	n.ensurePrismatecApp()
 	n.ensureFinanzasApp()
 	n.ensureValesPlusApp()
+	n.ensureLaTatiApp()
 	n.ensureMindApp()
 	mux := http.NewServeMux()
 	h := n.httpHandlers()
@@ -63,6 +64,9 @@ func (n *NodoAlset) httpHandlers() httpapi.Handlers {
 		}
 		if alias == "valesplus" || alias == "valesplus-admin" {
 			n.ensureValesPlusApp()
+		}
+		if alias == "latati" {
+			n.ensureLaTatiApp()
 		}
 		if alias == "vero" {
 			n.ensureVeroAppFiles()
@@ -340,6 +344,7 @@ func (n *NodoAlset) httpHandlers() httpapi.Handlers {
 	h.Extra["/api/mind/feedback"] = n.handleMindFeedback
 	n.registerFinanzasEngagement(h.Extra)
 	n.registerValesPlusAPI(h.Extra)
+	n.registerLaTatiAPI(h.Extra)
 	n.registerGenHTTP(h.Extra)
 
 	h.Extra["/api/apps/register"] = n.handleAppsRegister
