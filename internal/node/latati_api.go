@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"redalset/internal/persistence"
 )
 
 type ltProduct struct {
@@ -94,6 +95,110 @@ func ltStorePath() string { return filepath.Join(ltDir(), "store.json") }
 func ltPhotoPath(id string) string { return filepath.Join(ltDir(), "photos", id+".jpg") }
 func ltEnsure() { _ = os.MkdirAll(filepath.Join(ltDir(), "photos"), 0o755) }
 
+const ltCFKeyStore = "latati/v1/store"
+const ltCFKeyPhotoPrefix = "latati/v1/photo/"
+
+func ltCFEnabled() bool {
+	u := strings.TrimSpace(os.Getenv("ALSET_CF_STORE_URL"))
+	if u == "" {
+		u = strings.TrimSpace(os.Getenv("ALSET_CLOUDFLARE_NETWORK"))
+	}
+	return u != ""
+}
+
+func ltCFClient() (*persistence.CloudflareStore, error) {
+	u := strings.TrimSpace(os.Getenv("ALSET_CF_STORE_URL"))
+	if u == "" {
+		u = strings.TrimSpace(os.Getenv("ALSET_CLOUDFLARE_NETWORK"))
+	}
+	sec := strings.TrimSpace(os.Getenv("ALSET_CF_STORE_SECRET"))
+	if sec == "" {
+		sec = strings.TrimSpace(os.Getenv("STORE_SECRET"))
+	}
+	return persistence.NewCloudflareStore(u, sec)
+}
+
+func ltLoadFromCF() (*ltStore, error) {
+	cli, err := ltCFClient()
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	raw, err := cli.Load(ctx, ltCFKeyStore)
+	if err != nil {
+		return nil, err
+	}
+	st := &ltStore{Products: map[string]*ltProduct{}, Tokens: map[string]int64{}}
+	if err := json.Unmarshal(raw, st); err != nil {
+		return nil, err
+	}
+	if st.Products == nil {
+		st.Products = map[string]*ltProduct{}
+	}
+	if st.Tokens == nil {
+		st.Tokens = map[string]int64{}
+	}
+	return st, nil
+}
+
+func ltSaveToCF(st *ltStore) error {
+	if !ltCFEnabled() {
+		return nil
+	}
+	cli, err := ltCFClient()
+	if err != nil {
+		return err
+	}
+	raw, err := json.Marshal(st)
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	return cli.Save(ctx, ltCFKeyStore, raw)
+}
+
+func ltSavePhotoCF(id string, data []byte) error {
+	if !ltCFEnabled() || len(data) == 0 {
+		return nil
+	}
+	cli, err := ltCFClient()
+	if err != nil {
+		return err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+	defer cancel()
+	return cli.Save(ctx, ltCFKeyPhotoPrefix+id, data)
+}
+
+func ltLoadPhotoCF(id string) ([]byte, error) {
+	if !ltCFEnabled() {
+		return nil, fmt.Errorf("cf off")
+	}
+	cli, err := ltCFClient()
+	if err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	return cli.Load(ctx, ltCFKeyPhotoPrefix+id)
+}
+
+func ltDeletePhotoCF(id string) {
+	if !ltCFEnabled() {
+		return
+	}
+	cli, err := ltCFClient()
+	if err != nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_ = cli.Delete(ctx, ltCFKeyPhotoPrefix+id)
+}
+
+
 func ltRand(n int) string {
 	b := make([]byte, n)
 	_, _ = rand.Read(b)
@@ -117,9 +222,25 @@ func loadLT() *ltStore {
 		Tokens:   map[string]int64{},
 		Orders:   []ltOrder{},
 	}
-	b, err := os.ReadFile(ltStorePath())
-	if err == nil {
-		_ = json.Unmarshal(b, st)
+	loaded := false
+	if ltCFEnabled() {
+		if cfSt, err := ltLoadFromCF(); err == nil && cfSt != nil {
+			st = cfSt
+			loaded = true
+			fmt.Printf("📦 La Tati: store cargado desde Cloudflare DO (rev=%d, products=%d)\n", st.Rev, len(st.Products))
+		} else if err != nil {
+			fmt.Printf("⚠️ La Tati CF load: %v — intentando disco local\n", err)
+		}
+	}
+	if !loaded {
+		b, err := os.ReadFile(ltStorePath())
+		if err == nil {
+			_ = json.Unmarshal(b, st)
+			loaded = true
+			if ltCFEnabled() {
+				go func(copy *ltStore) { _ = ltSaveToCF(copy) }(st)
+			}
+		}
 	}
 	if st.Products == nil {
 		st.Products = map[string]*ltProduct{}
@@ -127,11 +248,10 @@ func loadLT() *ltStore {
 	if st.Tokens == nil {
 		st.Tokens = map[string]int64{}
 	}
-	// migrate defaults if empty name
 	if strings.TrimSpace(st.Profile.Name) == "" || st.Profile.Name == "La Tati" {
 		st.Profile.Name = "Dayanis Perez Soria"
 	}
-	if strings.TrimSpace(st.Profile.WhatsApp) == "" || st.Profile.WhatsApp == "5351069717" {
+	if strings.TrimSpace(st.Profile.WhatsApp) == "" {
 		st.Profile.WhatsApp = "5351069717"
 	}
 	if st.Profile.Pin == "" {
@@ -147,7 +267,16 @@ func saveLT(st *ltStore) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(ltStorePath(), b, 0o644)
+	diskErr := os.WriteFile(ltStorePath(), b, 0o644)
+	if ltCFEnabled() {
+		if err := ltSaveToCF(st); err != nil {
+			fmt.Printf("⚠️ La Tati CF save: %v\n", err)
+			if diskErr != nil {
+				return err
+			}
+		}
+	}
+	return diskErr
 }
 
 // ltBump marks store dirty and returns the new revision (caller holds ltMu).
@@ -300,8 +429,14 @@ func (n *NodoAlset) ltPhotoGet(w http.ResponseWriter, r *http.Request, id string
 	id = strings.TrimSuffix(id, ".jpg")
 	b, err := os.ReadFile(ltPhotoPath(id))
 	if err != nil {
-		http.NotFound(w, r)
-		return
+		if cf, err2 := ltLoadPhotoCF(id); err2 == nil && len(cf) > 0 {
+			b = cf
+			_ = os.MkdirAll(filepath.Join(ltDir(), "photos"), 0o755)
+			_ = os.WriteFile(ltPhotoPath(id), b, 0o644)
+		} else {
+			http.NotFound(w, r)
+			return
+		}
 	}
 	w.Header().Set("Content-Type", "image/jpeg")
 	w.Header().Set("Cache-Control", "public, max-age=60, must-revalidate")
@@ -443,6 +578,9 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 		}
 		ltEnsure()
 		_ = os.WriteFile(ltPhotoPath(id), b, 0o644)
+		if err := ltSavePhotoCF(id, b); err != nil {
+			fmt.Printf("⚠️ La Tati photo CF: %v\n", err)
+		}
 		ltMu.Lock()
 		defer ltMu.Unlock()
 		st := loadLT()
@@ -495,6 +633,7 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 		case "delete":
 			delete(st.Products, id)
 			_ = os.Remove(ltPhotoPath(id))
+			ltDeletePhotoCF(id)
 			rev := ltBump(st)
 			_ = saveLT(st)
 			n.ltNotify("catalog", map[string]interface{}{"rev": rev, "product_id": id, "action": "delete"})
