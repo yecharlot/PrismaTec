@@ -1,110 +1,95 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1a0a12">
-<meta property="og:title" content="La Tati · Catálogo">
-<meta property="og:description" content="Descubre lo que tengo para ti. Pide en la app y recoge con tu vale.">
-<title>La Tati · Tienda</title>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>La Tati</title>
 <style>
-:root{--bg:#12080e;--card:#1c1018;--line:rgba(255,105,180,.22);--pink:#ff6eb4;--pink2:#ff3d9a;--ink:#fff5fa;--muted:#c4a8b8;--gold:#ffc85a;--mint:#5dffc2}
+:root{--bg:#120810;--card:#1c1018;--line:#3a2434;--ink:#f8eef4;--muted:#b9a0b0;--pink:#ff6eb4;--pink2:#ff3d9a;--gold:#ffc85a;--mint:#5dffc2}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,-apple-system,sans-serif;background:radial-gradient(1100px 500px at 20% -10%,#3a1528,var(--bg) 60%);color:var(--ink);min-height:100vh;padding-bottom:78px}
-.top{position:sticky;top:0;z-index:20;backdrop-filter:blur(12px);background:rgba(18,8,14,.92);border-bottom:1px solid var(--line);padding:.7rem 1rem;display:flex;align-items:center;gap:.55rem}
-.mark{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--pink),var(--pink2));display:grid;place-items:center;font-weight:900;color:#1a0a12}
-.wrap{max-width:560px;margin:0 auto;padding:1rem}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
-@media(max-width:420px){.grid{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
-.card img{width:100%;aspect-ratio:1;object-fit:cover;background:#2a1520}
-.card .body{padding:.65rem .75rem .85rem}
-.price{color:var(--gold);font-weight:700}
-.btn{width:100%;border:none;border-radius:12px;padding:.72rem 1rem;font-weight:700;cursor:pointer;font-size:.9rem}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding-bottom:72px}
+.top{position:sticky;top:0;z-index:20;background:rgba(18,8,14,.95);border-bottom:1px solid var(--line);padding:.75rem 1rem;display:flex;justify-content:space-between;align-items:center}
+.sub{color:var(--muted);font-size:.82rem}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:.9rem;margin:.7rem 1rem}
+.btn{width:100%;border:none;border-radius:12px;padding:.75rem;font-weight:700;cursor:pointer;font-size:.95rem;display:flex;align-items:center;justify-content:center;gap:.4rem}
 .btn-pink{background:linear-gradient(120deg,var(--pink),var(--pink2));color:#1a0a12}
 .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
-.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(18,8,14,.96);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:.3rem .2rem calc(.3rem + env(safe-area-inset-bottom));z-index:30}
-.nav button{background:none;border:none;color:var(--muted);font-size:.68rem;padding:.35rem;cursor:pointer;display:flex;flex-direction:column;align-items:center}
+.btn-gold{background:linear-gradient(120deg,var(--gold),#ff9f43);color:#2a1800}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;padding:0 1rem 1rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.card img{width:100%;aspect-ratio:1;object-fit:cover;background:#2a1520;display:block}
+.card .body{padding:.55rem}
+.price{color:var(--gold);font-weight:700}
+.badge{display:inline-block;font-size:.68rem;padding:.12rem .45rem;border-radius:999px;background:rgba(93,255,194,.12);color:var(--mint)}
+.badge.warn{background:rgba(255,200,90,.15);color:var(--gold)}
+.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(18,8,14,.96);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:.25rem .15rem calc(.25rem + env(safe-area-inset-bottom));z-index:30}
+.nav button{background:none;border:none;color:var(--muted);font-size:.62rem;padding:.3rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:.15rem;min-width:56px}
 .nav button.on{color:var(--pink)}
+.nav svg{display:block}
 .hidden{display:none!important}
-.toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:#2a1520;border:1px solid var(--line);padding:.5rem 1rem;border-radius:999px;font-size:.84rem;z-index:50;opacity:0;transition:.25s}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#2a1830;padding:.5rem 1rem;border-radius:999px;opacity:0;transition:.25s;z-index:40;font-size:.85rem;border:1px solid var(--line);max-width:90%}
 .toast.show{opacity:1}
-label{display:block;font-size:.7rem;color:var(--muted);margin:.5rem 0 .2rem;text-transform:uppercase}
-input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border-radius:12px;padding:.68rem .75rem;color:var(--ink);font-size:16px}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:1rem;margin-bottom:.85rem}
-.sub{color:var(--muted);font-size:.8rem;line-height:1.35}
-.line{display:flex;gap:.65rem;padding:.55rem 0;border-bottom:1px solid var(--line);align-items:center}
+input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border-radius:10px;padding:.65rem;color:var(--ink);font-size:16px;margin:.25rem 0 .5rem}
+.line{display:flex;gap:.6rem;align-items:center;margin:.45rem 0}
 .line img{width:56px;height:56px;border-radius:10px;object-fit:cover;background:#2a1520}
 .vale-card{background:linear-gradient(160deg,#241018,#1a0c12);border:1px solid var(--gold);border-radius:18px;padding:1rem}
-.vale-card h2{color:var(--gold)}
-.badge{display:inline-block;font-size:.68rem;padding:.12rem .45rem;border-radius:999px;background:rgba(93,255,194,.12);color:var(--mint)}
-.cart-bar{position:sticky;bottom:72px;z-index:15;max-width:560px;margin:0 auto;padding:0 1rem}
-.cart-bar .inner{background:linear-gradient(120deg,var(--pink),var(--pink2));color:#1a0a12;border-radius:14px;padding:.75rem 1rem;display:flex;justify-content:space-between;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.35)}
-.qty button{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:#140a10;color:var(--ink);font-weight:700}
-.msgs{display:flex;flex-direction:column;gap:.4rem;max-height:45vh;overflow-y:auto}
 .bubble{max-width:85%;padding:.5rem .7rem;border-radius:14px;font-size:.88rem;line-height:1.35;word-break:break-word}
 .bubble.me{align-self:flex-end;background:linear-gradient(120deg,var(--pink),var(--pink2));color:#1a0a12}
 .bubble.them{align-self:flex-start;background:#2a1520;border:1px solid var(--line)}
-.composer{display:flex;gap:.4rem;margin-top:.45rem}
-.composer input{flex:1}
-.composer button{width:auto;padding:.65rem .9rem}
-.hero-msg{background:rgba(255,110,180,.1);border:1px solid var(--line);border-radius:14px;padding:.85rem;margin-bottom:.85rem;font-size:.92rem;line-height:1.4}
-.empty{text-align:center;color:var(--muted);padding:1.8rem 1rem}
+#chatBox{display:flex;flex-direction:column;gap:.4rem;min-height:40vh;max-height:55vh;overflow:auto;padding:.5rem}
+.cart-bar{position:fixed;left:0;right:0;bottom:62px;padding:0 .75rem;z-index:25}
+.cart-bar .inner{background:linear-gradient(120deg,var(--pink),var(--pink2));color:#1a0a12;border-radius:14px;padding:.75rem 1rem;display:flex;justify-content:space-between;font-weight:800}
+.empty{text-align:center;color:var(--muted);padding:1.5rem}
+h2{margin:0 1rem .5rem;font-size:1.1rem}
 </style>
 </head>
 <body>
-<header class="top">
-  <div class="mark">LT</div>
+<div class="top">
   <div><div id="brandName" style="font-weight:800">La Tati</div><div class="sub" id="brandSub">Tu pedido · tu vale · tu recogida</div></div>
-</header>
-<div class="wrap">
+</div>
+<main>
   <section id="view-profile" class="hidden">
     <h2>Tus datos</h2>
-    <p class="sub" style="margin-bottom:.7rem">Necesarios para pedidos y chat. Así La Tati sabe quién eres.</p>
     <div class="panel">
-      <label class="sub">Nombre completo</label>
-      <input id="pName" placeholder="Tu nombre" autocomplete="name" style="margin-bottom:.5rem">
+      <p class="sub" style="margin-bottom:.6rem">Necesarios para pedidos y chat.</p>
+      <label class="sub">Nombre</label>
+      <input id="pName" placeholder="Tu nombre" autocomplete="name"/>
       <label class="sub">Teléfono / WhatsApp</label>
-      <input id="pPhone" placeholder="53…" inputmode="tel" autocomplete="tel" style="margin-bottom:.5rem">
+      <input id="pPhone" placeholder="53…" inputmode="tel" autocomplete="tel"/>
       <button type="button" class="btn btn-pink" id="btnSaveProfile">Guardar y continuar</button>
     </div>
   </section>
   <section id="view-catalog">
-    <div class="hero-msg" id="heroMsg">✨ Piezas seleccionadas para ti. Elige, confirma y recoge con tu vale digital.</div>
-    <div id="catalogGrid" class="grid"></div>
-    <div class="empty hidden" id="catalogEmpty">Pronto habrá novedades.</div>
+    <div class="panel" style="margin-top:.7rem"><p class="sub" id="heroMsg">Elige, solicita y recoge con tu vale digital.</p></div>
+    <div class="grid" id="grid"></div>
   </section>
   <section id="view-detail" class="hidden">
-    <button type="button" class="btn btn-ghost" id="btnBackCat" style="width:auto;margin-bottom:.6rem">← Catálogo</button>
-    <div class="card">
-      <img id="detPhoto" alt="">
-      <div class="body">
-        <h2 id="detTitle" style="font-size:1.15rem;margin-bottom:.3rem"></h2>
-        <div class="price" id="detPrice"></div>
-        <p class="sub" id="detDesc" style="margin-top:.5rem"></p>
-        <p class="sub" id="detStock"></p>
-        <p class="hero-msg" id="detHook" style="margin-top:.75rem">No dejes que se te escape. Stock limitado — pide ahora y asegura tu vale de recogida.</p>
-        <button type="button" class="btn btn-pink" id="btnAddDet" style="margin-top:.6rem">Agregar al pedido</button>
-      </div>
+    <div class="panel">
+      <button type="button" class="btn btn-ghost" id="btnBackCat" style="margin-bottom:.5rem;width:auto;padding:.4rem .7rem">Volver</button>
+      <img id="detPhoto" style="width:100%;border-radius:12px;max-height:280px;object-fit:cover;display:none" alt=""/>
+      <h2 id="detTitle" style="margin:.5rem 0 0"></h2>
+      <div class="price" id="detPrice"></div>
+      <p class="sub" id="detDesc" style="margin:.4rem 0"></p>
+      <p class="sub" id="detStock"></p>
+      <button type="button" class="btn btn-pink" id="btnAddDet" style="margin-top:.5rem">Agregar al pedido</button>
+      <button type="button" class="btn btn-gold" id="btnInterest" style="margin-top:.4rem;display:none">Me interesa el precio</button>
     </div>
   </section>
   <section id="view-cart" class="hidden">
-    <h2 style="margin-bottom:.5rem">Tu pedido</h2>
-    <div id="cartLines"></div>
-    <div class="panel" style="margin-top:.75rem">
-      <div style="display:flex;justify-content:space-between;font-weight:800"><span>Total</span><span class="price" id="cartTotal">—</span></div>
-      <label>Tu nombre</label><input id="cName" autocomplete="name">
-      <label>Teléfono</label><input id="cPhone" type="tel" autocomplete="tel">
-      <label>Nota</label><textarea id="cNote" placeholder="Horario, color…"></textarea>
-      <button type="button" class="btn btn-pink" id="btnPlaceOrder" style="margin-top:.7rem">Solicitar pedido</button>
-      <p class="sub" style="margin-top:.45rem">Cada producto una sola vez por pedido (puedes quitarlo antes de solicitar). La gestora confirma con el negocio y luego recibes el vale.</p>
+    <h2>Tu pedido</h2>
+    <div id="cartLines" class="panel"></div>
+    <div class="panel">
+      <div id="cartTotal" class="price" style="margin-bottom:.5rem"></div>
+      <label class="sub">Nombre</label><input id="cName"/>
+      <label class="sub">Teléfono</label><input id="cPhone" inputmode="tel"/>
+      <label class="sub">Nota (opcional)</label><textarea id="cNote" rows="2"></textarea>
+      <button type="button" class="btn btn-pink" id="btnPlaceOrder">Solicitar pedido</button>
+      <p class="sub" style="margin-top:.45rem">Cada producto una sola vez por pedido. La gestora confirma disponibilidad y luego recibes el vale.</p>
     </div>
   </section>
   <section id="view-vale" class="hidden">
     <h2>Tu solicitud / vale</h2>
-    <p class="sub" id="valeHint">Cuando La Tati confirme, este será tu vale de recogida.</p>
+    <p class="sub" id="valeHint" style="margin:0 1rem .5rem">Cuando La Tati confirme, este será tu vale de recogida.</p>
     <div id="valeBox"></div>
-    <button type="button" class="btn btn-ghost" id="btnBackVale" style="margin-top:.7rem">Seguir mirando</button>
   </section>
   <section id="view-myorders" class="hidden">
     <h2>Mis pedidos</h2>
@@ -112,119 +97,140 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
   </section>
   <section id="view-chat" class="hidden">
     <h2>Chat</h2>
-    <div class="msgs" id="clientMsgs"></div>
-    <div class="composer">
-      <input id="clientMsgIn" placeholder="Escribe a La Tati…">
-      <button type="button" class="btn btn-pink" id="btnClientSend">Enviar</button>
+    <div class="panel"><div id="chatBox"></div>
+      <div style="display:flex;gap:.4rem;margin-top:.5rem">
+        <input id="chatIn" placeholder="Mensaje…" style="margin:0;flex:1"/>
+        <button type="button" class="btn btn-pink" id="btnSend" style="width:auto;padding:.65rem .9rem">Enviar</button>
+      </div>
     </div>
   </section>
-</div>
-<div class="cart-bar hidden" id="cartBar"><div class="inner" id="cartBarBtn"><span id="cartBarText">0</span><span>Ver pedido →</span></div></div>
+</main>
+<div class="cart-bar hidden" id="cartBar"><div class="inner" id="cartBarInner"><span id="cartBarTxt">0</span><span>Ver pedido</span></div></div>
 <nav class="nav">
-  <button type="button" class="on" data-v="catalog"><span>▦</span>Catálogo</button>
-  <button type="button" data-v="cart"><span>🛒</span>Pedido</button>
-  <button type="button" data-v="myorders"><span>🎫</span>Vales</button>
-  <button type="button" data-v="chat"><span>💬</span>Chat</button>
-  <button type="button" data-v="profile"><span>👤</span>Yo</button>
+  <button type="button" class="on" data-v="catalog"><span id="nCat"></span>Catálogo</button>
+  <button type="button" data-v="cart"><span id="nCart"></span>Pedido</button>
+  <button type="button" data-v="myorders"><span id="nVales"></span>Vales</button>
+  <button type="button" data-v="chat"><span id="nChat"></span>Chat</button>
+  <button type="button" data-v="profile"><span id="nYo"></span>Yo</button>
 </nav>
 <div class="toast" id="toast"></div>
 <script>
-(function(){
-  var API='/api/latati', SID='latati_sid', CART='latati_cart', CINFO='latati_client';
-  var sid=localStorage.getItem(SID)||'';
-  if(!sid){sid='c_'+Math.random().toString(36).slice(2,12);localStorage.setItem(SID,sid)}
-  var profile={}, items=[], cart=JSON.parse(localStorage.getItem(CART)||'{}'), current=null;
-  function $(id){return document.getElementById(id)}
-  function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2200)}
-  function esc(s){return String(s||'').replace(/</g,'&lt;')}
-  function photoUrl(p){if(!p||!p.photo)return '';return API+'/photo/'+(p.id||p.product_id)+'?t='+(p.updated_at||'')}
-  function priceLabel(p){if(p.price_pending||!(p.price>0))return 'Consultar';return (p.currency||'USD')+' '+Number(p.price).toFixed(2)}
-  function saveCart(){localStorage.setItem(CART,JSON.stringify(cart));updateBar()}
-  function count(){var n=0;Object.keys(cart).forEach(function(k){n+=cart[k]});return n}
-  function updateBar(){var n=count(),bar=$('cartBar');if(n>0&&$('view-cart').classList.contains('hidden')){bar.classList.remove('hidden');$('cartBarText').textContent=n+(n===1?' producto':' productos')}else bar.classList.add('hidden')}
-  function hideAll(){['catalog','detail','cart','vale','myorders','chat','profile'].forEach(function(v){$('view-'+v).classList.add('hidden')})}
-  function show(v){hideAll();$('view-'+v).classList.remove('hidden');document.querySelectorAll('.nav button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-v')===v)});if(v==='cart'){if(!requireClient())return;renderCart();$('cartBar').classList.add('hidden');fillProfileForm()}else if(v==='profile'){fillProfileForm()}else updateBar()}
 
-  /* loadCatalog defined below with live rev */
+  function ico(name){
+    var s={
+      grid:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>',
+      cart:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M3 4h2l2.5 11h10l2-7H7"/></svg>',
+      ticket:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8a2 2 0 0 0 0 4v4h16v-4a2 2 0 0 0 0-4V6H4v2z"/></svg>',
+      chat:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>',
+      user:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 6-6 8-6s6.5 2 8 6"/></svg>',
+      bag:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/></svg>',
+      bell:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9a6 6 0 0 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
+      check:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>',
+      x:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+      star:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.5 6.5L21 10l-5 4.2L17.5 21 12 17.5 6.5 21 8 14.2 3 10l6.5-.5z"/></svg>',
+      trash:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>',
+      live:'<svg viewBox="0 0 24 24" width="12" height="12"><circle cx="12" cy="12" r="6" fill="currentColor"/></svg>'
+    };
+    return s[name]||'';
+  }
+
+(function(){
+  var API='/api/latati';
+  var sid=localStorage.getItem('latati_sid'); if(!sid){sid='c-'+Math.random().toString(36).slice(2,10);localStorage.setItem('latati_sid',sid)}
+  var CK='latati_cart', CINFO='latati_client';
+  var cart=JSON.parse(localStorage.getItem(CK)||'{}');
+  var items=[], profile={}, current=null, catalogRev=0, liveConnected=false;
+  function $(id){return document.getElementById(id)}
+  function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2400)}
+  function esc(s){return String(s||'').replace(/</g,'&lt;')}
+  function saveCart(){localStorage.setItem(CK,JSON.stringify(cart))}
+  function clientInfo(){try{return JSON.parse(localStorage.getItem(CINFO)||'{}')}catch(e){return {}}}
+  function hasClient(){var c=clientInfo();return !!(c.name&&String(c.name).trim()&&c.phone&&String(c.phone).trim())}
+  function requireClient(){if(hasClient())return true;toast('Primero guarda tu nombre y teléfono');show('profile');return false}
+  function fillProfileForm(){var c=clientInfo();if($('pName'))$('pName').value=c.name||'';if($('pPhone'))$('pPhone').value=c.phone||'';if($('cName'))$('cName').value=c.name||'';if($('cPhone'))$('cPhone').value=c.phone||''}
+  function count(){var n=0;Object.keys(cart).forEach(function(k){n+=cart[k]>0?1:0});return n}
+  function updateBar(){var n=count();$('cartBarTxt').textContent=n+' en el pedido';$('cartBar').classList.toggle('hidden',n===0||!$('view-catalog')||!$('view-catalog').classList.contains('hidden')===false&&false);var onCat=!$('view-catalog').classList.contains('hidden')||!$('view-detail').classList.contains('hidden');$('cartBar').classList.toggle('hidden',!(n>0&&onCat))}
+  function hideAll(){['catalog','detail','cart','vale','myorders','chat','profile'].forEach(function(v){$('view-'+v).classList.add('hidden')})}
+  function show(v){
+    hideAll();$('view-'+v).classList.remove('hidden');
+    document.querySelectorAll('.nav button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-v')===v)});
+    if(v==='cart'){if(!requireClient())return;renderCart();$('cartBar').classList.add('hidden');fillProfileForm()}
+    else if(v==='profile'){fillProfileForm()}
+    else updateBar();
+  }
+  function photoUrl(p){return p&&p.photo?(API+'/photo/'+p.id+'?t='+(p.updated_at||'')):''}
+  function priceLabel(p){
+    if(p.price_pending||!(p.price>0)) return 'Precio por confirmar';
+    return (p.currency||'')+' '+Number(p.price).toFixed(2);
+  }
+  function canBuy(p){return !!(p&&!p.sold_out&&!p.sold&&!p.price_pending&&p.price>0)}
+
   function renderCatalog(){
-    var g=$('catalogGrid'),empty=$('catalogEmpty');
-    if(!items.length){g.innerHTML='';empty.classList.remove('hidden');return}
-    empty.classList.add('hidden');
+    var g=$('grid');
+    if(!items.length){g.innerHTML='<div class="empty" style="grid-column:1/-1">Sin productos por ahora</div>';return}
     g.innerHTML=items.map(function(p){
-      var img=photoUrl(p),can=!(p.price_pending||!(p.price>0));
-      return '<article class="card" data-id="'+p.id+'">'+(img?'<img src="'+img+'" alt="">':'<div style="aspect-ratio:1;background:#2a1520"></div>')+
-        '<div class="body"><h3 style="font-size:.92rem">'+esc(p.title)+'</h3><div class="price">'+esc(priceLabel(p))+'</div>'+
-        (can?(cart[p.id]?'<button type="button" class="btn btn-ghost" style="margin-top:.4rem" disabled>En el carrito</button>':'<button type="button" class="btn btn-pink add" data-id="'+p.id+'" style="margin-top:.4rem">Agregar</button>'):'')+'</div></article>';
+      var img=photoUrl(p);
+      var buy=canBuy(p);
+      var inC=cart[p.id]>0;
+      var btn=buy?(inC?'<button type="button" class="btn btn-ghost" style="margin-top:.35rem;padding:.45rem;font-size:.75rem" disabled>En el pedido</button>':'<button type="button" class="btn btn-pink add" data-id="'+p.id+'" style="margin-top:.35rem;padding:.45rem;font-size:.75rem">Agregar</button>'):
+        (p.price_pending||!(p.price>0)?'<button type="button" class="btn btn-gold int" data-id="'+p.id+'" style="margin-top:.35rem;padding:.45rem;font-size:.75rem">Me interesa</button>':'');
+      return '<article class="card" data-id="'+p.id+'">'+(img?'<img src="'+img+'" alt="">':'')+'<div class="body"><strong style="font-size:.88rem">'+esc(p.title)+'</strong><div class="price" style="font-size:.85rem">'+esc(priceLabel(p))+'</div>'+btn+'</div></article>';
     }).join('');
-    g.querySelectorAll('.card').forEach(function(c){c.onclick=function(e){if(e.target.classList.contains('add'))return;openDetail(c.getAttribute('data-id'))}});
+    g.querySelectorAll('.card').forEach(function(c){c.onclick=function(e){if(e.target.classList.contains('add')||e.target.classList.contains('int'))return;openDetail(c.getAttribute('data-id'))}});
     g.querySelectorAll('.add').forEach(function(b){b.onclick=function(e){e.stopPropagation();add(b.getAttribute('data-id'))}});
+    g.querySelectorAll('.int').forEach(function(b){b.onclick=function(e){e.stopPropagation();markInterest(b.getAttribute('data-id'))}});
   }
   function add(id){
     if(!requireClient()) return;
-    if(cart[id] && cart[id]>0){
-      toast('Ya está en el carrito. Para otra unidad, haz un pedido nuevo después.');
-      return;
-    }
-    cart[id]=1;
-    saveCart();
-    updateBar();
-    toast('Agregado al carrito');
-  }
-  async function openDetail(id, fromLink){
     var p=items.find(function(x){return x.id===id});
-    if(!p){
-      try{var d=await(await fetch(API+'/product/'+id)).json();if(d.ok)p=d.item;if(d.profile)profile=d.profile}catch(e){}
-    }
+    if(!canBuy(p)){toast('Aún no tiene precio');return}
+    if(cart[id]>0){toast('Ya está en el pedido. Para otra unidad, haz un pedido nuevo.');return}
+    cart[id]=1;saveCart();updateBar();renderCatalog();toast('Agregado al pedido');
+  }
+  async function markInterest(id){
+    if(!requireClient()) return;
+    var c=clientInfo();
+    var d=await(await fetch(API+'/interest',{method:'POST',headers:{'Content-Type':'application/json','X-LaTati-Thread':sid},body:JSON.stringify({product_id:id,thread:sid,client_name:c.name,client_phone:c.phone})})).json();
+    if(!d.ok){toast(d.error||'No se pudo registrar');return}
+    toast(d.duplicate?'Ya habías marcado interés':'Te avisaremos cuando tenga precio');
+  }
+  async function openDetail(id){
+    var p=items.find(function(x){return x.id===id});
+    if(!p){try{var d=await(await fetch(API+'/product/'+id)).json();if(d.ok)p=d.item;if(d.profile)profile=d.profile}catch(e){}}
     if(!p){toast('Producto no disponible');return}
     current=p;
     $('detTitle').textContent=p.title;
     $('detPrice').textContent=priceLabel(p);
     $('detDesc').textContent=p.description||'';
-    $('detStock').textContent=p.stock>0?'Quedan '+p.stock:'Consultar';
-    var img=photoUrl(p);var ph=$('detPhoto');
+    $('detStock').textContent=p.sold_out?'Agotado':(p.unlimited||!p.stock?'Disponible':'');
+    var img=photoUrl(p),ph=$('detPhoto');
     if(img){ph.src=img;ph.style.display='block'}else ph.style.display='none';
-    $('detHook').textContent=fromLink
-      ?('🔥 Te compartieron esta pieza de '+(profile.name||'La Tati')+'. Si te gusta, agrégala y genera tu vale antes de que se agote.')
-      :'No dejes que se te escape. Stock limitado — pide ahora y asegura tu vale.';
-    var can=!(p.price_pending||!(p.price>0)||p.stock<=0);
-    $('btnAddDet').style.display=can?'block':'none';
+    var buy=canBuy(p);
+    $('btnAddDet').style.display=buy?'flex':'none';
+    $('btnInterest').style.display=(!buy&&(p.price_pending||!(p.price>0)))?'flex':'none';
     show('detail');
-    // update OG-ish title
-    document.title=p.title+' · La Tati';
   }
-  $('btnBackCat').onclick=function(){history.replaceState({},'',location.pathname);show('catalog')}
-  $('btnAddDet').onclick=function(){if(current)add(current.id)};
+  $('btnBackCat').onclick=function(){show('catalog')}
+  $('btnAddDet').onclick=function(){if(current)add(current.id)}
+  $('btnInterest').onclick=function(){if(current)markInterest(current.id)}
 
   function renderCart(){
     var el=$('cartLines'),ids=Object.keys(cart).filter(function(k){return cart[k]>0});
-    if(!ids.length){el.innerHTML='<div class="empty">Carrito vacío. Cada producto solo una vez por pedido.</div>';$('cartTotal').textContent='—';return}
-    var total=0,cur='USD';
+    if(!ids.length){el.innerHTML='<div class="empty">Pedido vacío</div>';$('cartTotal').textContent='';return}
+    var total=0,cur='CUP';
     el.innerHTML=ids.map(function(id){
       cart[id]=1;
-      var p=items.find(function(x){return x.id===id})||{id:id,title:'Producto',price:0,currency:'USD'};
+      var p=items.find(function(x){return x.id===id})||{title:'Producto',price:0,currency:'CUP'};
       total+=(p.price||0);cur=p.currency||cur;
       var img=photoUrl(p);
-      return '<div class="line" data-id="'+id+'">'+(img?'<img src="'+img+'">':'')+
-        '<div style="flex:1"><strong>'+esc(p.title)+'</strong><div class="price">'+esc(priceLabel(p))+'</div>'+
-        '<div class="sub">1 unidad · quítalo si cambias de idea</div></div>'+
-        '<button type="button" class="btn btn-ghost rm" style="width:auto;padding:.45rem .55rem;font-size:.72rem;color:#ff8a8a">Quitar</button></div>';
+      return '<div class="line" data-id="'+id+'">'+(img?'<img src="'+img+'">':'')+'<div style="flex:1"><strong>'+esc(p.title)+'</strong><div class="price">'+esc(priceLabel(p))+'</div></div><button type="button" class="btn btn-ghost rm" style="width:auto;padding:.4rem .55rem;font-size:.75rem;color:#ff8a8a">Quitar</button></div>';
     }).join('');
-    saveCart();
-    $('cartTotal').textContent=cur+' '+total.toFixed(2);
-    el.querySelectorAll('.line').forEach(function(row){
-      var id=row.getAttribute('data-id');
-      row.querySelector('.rm').onclick=function(){
-        delete cart[id];
-        saveCart();
-        renderCart();
-        updateBar();
-        toast('Producto eliminado del carrito');
-      };
-    });
-    try{var info=JSON.parse(localStorage.getItem(CINFO)||'{}');if(info.name)$('cName').value=info.name;if(info.phone)$('cPhone').value=info.phone}catch(e){}
+    saveCart();$('cartTotal').textContent='Total: '+cur+' '+total.toFixed(2);
+    el.querySelectorAll('.rm').forEach(function(b){b.onclick=function(){delete cart[b.closest('.line').getAttribute('data-id')];saveCart();renderCart();updateBar();toast('Quitado')}});
+    fillProfileForm();
   }
   $('btnPlaceOrder').onclick=async function(){
-    if(!requireClient()) return;
+    if(!requireClient())return;
     var c=clientInfo();
     var name=($('cName').value.trim()||c.name||'').trim();
     var phone=($('cPhone').value.trim()||c.phone||'').trim();
@@ -234,75 +240,64 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
     if(!ids.length){toast('Pedido vacío');return}
     var d=await(await fetch(API+'/order',{method:'POST',headers:{'Content-Type':'application/json','X-LaTati-Thread':sid},body:JSON.stringify({thread:sid,client_name:name,client_phone:phone,note:$('cNote').value.trim(),items:ids.map(function(id){return{product_id:id,qty:1}})})})).json();
     if(!d.ok){toast(d.error||'Error');return}
-    cart={};saveCart();renderVale(d.order);show('vale');toast('Solicitud '+d.order.code+' enviada');loadCatalog();loadMyOrders();
+    cart={};saveCart();renderVale(d.order);show('vale');toast('Solicitud '+(d.order&&d.order.code||'')+' enviada');loadCatalog(true);
   };
-  if($('btnSaveProfile')) $('btnSaveProfile').onclick=function(){
-    var name=$('pName').value.trim(), phone=$('pPhone').value.trim();
+  $('btnSaveProfile').onclick=function(){
+    var name=$('pName').value.trim(),phone=$('pPhone').value.trim();
     if(!name){toast('Escribe tu nombre');return}
-    if(!phone||phone.length<6){toast('Escribe un teléfono válido');return}
+    if(!phone||phone.length<6){toast('Teléfono inválido');return}
     localStorage.setItem(CINFO,JSON.stringify({name:name,phone:phone}));
-    fillProfileForm();
-    toast('Datos guardados');
-    show('catalog');
+    fillProfileForm();toast('Datos guardados');show('catalog');
   };
+
   function statusLabel(s){
     s=(s||'').toLowerCase();
-    if(s==='requested') return 'Esperando confirmación';
-    if(s==='pending') return 'Confirmado · vale listo';
-    if(s==='ready') return 'Listo para recoger';
-    if(s==='delivered') return 'Entregado';
-    if(s==='cancelled') return 'Cancelado';
-    return s||'—';
+    return ({requested:'Esperando confirmación',pending:'Confirmado · vale listo',ready:'Listo para recoger',delivered:'Entregado',cancelled:'Cancelado'})[s]||s||'—';
   }
   function renderVale(o){
     var st=(o.status||'').toLowerCase();
-    var isVale = st==='pending'||st==='ready'||st==='delivered';
+    var isVale=st==='pending'||st==='ready'||st==='delivered';
     var lines=(o.lines||[]).map(function(l){
       var img=l.photo?API+'/photo/'+l.product_id:'';
       return '<div class="line">'+(img?'<img src="'+img+'">':'')+'<div><strong>'+esc(l.title)+'</strong><div>×'+l.qty+' · '+(l.currency||'')+' '+Number(l.price).toFixed(2)+'</div></div></div>';
     }).join('');
-    var hint = isVale
-      ? 'Muéstralo al recoger el pedido.'
-      : (st==='requested' ? 'La gestora está validando disponibilidad con el negocio. Te avisamos al confirmar.' : 'Este pedido ya no es válido para recogida.');
-    if($('valeHint')) $('valeHint').textContent = hint;
-    var actions='';
-    if(st==='requested'||st==='pending'||st==='ready'){
-      actions='<button type="button" class="btn btn-ghost" id="btnCancelReq" style="margin-top:.65rem">'+(st==='requested'?'Cancelar solicitud':'Cancelar pedido')+'</button>';
-    }
-    $('valeBox').innerHTML='<div class="vale-card"><h2>'+esc(o.code)+'</h2><span class="badge">'+esc(statusLabel(st))+'</span>'+
-      (isVale?'<div class="sub" style="margin-top:.35rem;color:var(--mint)">Vale de recogida activo</div>':'')+
-      lines+
-      '<div class="price" style="margin-top:.7rem;font-size:1.1rem">Total: '+(o.currency||'')+' '+Number(o.total).toFixed(2)+'</div>'+
-      '<div class="sub" style="margin-top:.6rem"><strong>Cliente:</strong> '+esc(o.client_name)+' · '+esc(o.client_phone)+'</div>'+
-      '<div class="sub"><strong>Gestora:</strong> '+esc(o.gestor_name)+' · '+esc(o.gestor_phone)+(o.address&&isVale?'<br>Recogida: '+esc(o.address):'')+'</div>'+
-      actions+'</div>';
+    if($('valeHint'))$('valeHint').textContent=isVale?'Muéstralo al recoger.':(st==='requested'?'La gestora valida disponibilidad con el negocio.':'Pedido no válido para recogida.');
+    var actions=(st==='requested'||st==='pending'||st==='ready')?'<button type="button" class="btn btn-ghost" id="btnCancelReq" style="margin-top:.65rem">'+(st==='requested'?'Cancelar solicitud':'Cancelar pedido')+'</button>':'';
+    $('valeBox').innerHTML='<div class="vale-card panel" style="margin:1rem"><h2 style="margin:0">'+esc(o.code)+'</h2><span class="badge">'+esc(statusLabel(st))+'</span>'+lines+
+      '<div class="price" style="margin-top:.7rem">Total: '+(o.currency||'')+' '+Number(o.total).toFixed(2)+'</div>'+
+      '<div class="sub" style="margin-top:.5rem">'+esc(o.client_name)+' · '+esc(o.client_phone)+'</div>'+
+      (isVale&&o.address?'<div class="sub">Recogida: '+esc(o.address)+'</div>':'')+actions+'</div>';
     var bc=$('btnCancelReq');
-    if(bc){bc.onclick=async function(){
+    if(bc)bc.onclick=async function(){
       var d=await(await fetch(API+'/order/'+encodeURIComponent(o.id||o.code)+'/status',{method:'POST',headers:{'Content-Type':'application/json','X-LaTati-Thread':sid},body:JSON.stringify({status:'cancelled',thread:sid,client_phone:(clientInfo().phone||'')})})).json();
       if(!d.ok){toast(d.error||'No se pudo cancelar');return}
       renderVale(d.order);toast('Pedido cancelado');loadMyOrders();
-    }}
+    };
   }
-  $('btnBackVale').onclick=function(){show('catalog')};
   async function loadMyOrders(){
     var d=await(await fetch(API+'/orders?thread='+encodeURIComponent(sid))).json();
     var list=d.items||[],el=$('myOrders');
-    if(!list.length){el.innerHTML='<div class="empty">Sin pedidos en este dispositivo</div>';return}
+    if(!list.length){el.innerHTML='<div class="empty">Sin pedidos aún</div>';return}
     el.innerHTML=list.map(function(o){return '<div class="panel"><strong>'+esc(o.code)+'</strong> · '+esc(statusLabel(o.status))+'<div class="price">'+(o.currency||'')+' '+Number(o.total).toFixed(2)+'</div><button type="button" class="btn btn-ghost see" data-id="'+o.id+'" style="margin-top:.4rem">Ver detalle</button></div>'}).join('');
-    el.querySelectorAll('.see').forEach(function(b){b.onclick=function(){var o=list.find(function(x){return x.id===b.getAttribute('data-id')});renderVale(o);show('vale')}});
+    el.querySelectorAll('.see').forEach(function(b){b.onclick=async function(){
+      var d=await(await fetch(API+'/order/'+b.getAttribute('data-id')+'?thread='+encodeURIComponent(sid))).json();
+      if(d.ok){renderVale(d.order);show('vale')}
+    }});
   }
   async function loadChat(){
+    if(!requireClient())return;
     var d=await(await fetch(API+'/chat?thread='+encodeURIComponent(sid))).json();
-    var el=$('clientMsgs');
-    el.innerHTML=(d.items||[]).map(function(m){return '<div class="bubble '+(m.from==='client'?'me':'them')+'">'+esc(m.text)+'</div>'}).join('');
-    el.scrollTop=el.scrollHeight;
+    var box=$('chatBox');
+    box.innerHTML=(d.items||d.messages||[]).map(function(m){return '<div class="bubble '+(m.from==='client'?'me':'them')+'">'+esc(m.text)+'</div>'}).join('');
+    box.scrollTop=box.scrollHeight;
   }
-  $('btnClientSend').onclick=async function(){
-    var t=$('clientMsgIn').value.trim();if(!t)return;
-    await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({thread:sid,from:'client',text:t})});
-    $('clientMsgIn').value='';loadChat();
+  $('btnSend').onclick=async function(){
+    if(!requireClient())return;
+    var t=$('chatIn').value.trim();if(!t)return;$('chatIn').value='';
+    var c=clientInfo();
+    await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json','X-LaTati-Thread':sid},body:JSON.stringify({thread:sid,from:'client',text:t,client_name:c.name||'',client_phone:c.phone||''})});
+    loadChat();
   };
-  $('cartBarBtn').onclick=function(){show('cart')};
   document.querySelectorAll('.nav button').forEach(function(b){
     b.onclick=function(){
       var v=b.getAttribute('data-v');
@@ -313,51 +308,43 @@ input,textarea{width:100%;background:#140a10;border:1px solid var(--line);border
       if(v==='profile'){show('profile');fillProfileForm()}
     };
   });
-  var catalogRev = 0;
-  var liveConnected = false;
+  $('cartBarInner').onclick=function(){show('cart')};
+
   async function loadCatalog(force){
     try{
       var d=await(await fetch(API+'/catalog',{cache:'no-store'})).json();
       if(d.profile){profile=d.profile;$('brandName').textContent=profile.name||'La Tati';$('brandSub').textContent=profile.bio||'Tu pedido · tu vale'}
-      var rev = d.rev||0;
-      if(!force && rev && rev === catalogRev && items.length){return}
-      catalogRev = rev;
-      items=d.items||[];renderCatalog();
+      var rev=d.rev||0;
+      if(!force&&rev&&rev===catalogRev&&items.length)return;
+      catalogRev=rev;items=d.items||[];renderCatalog();
       var pid=new URLSearchParams(location.search).get('p');
-      if(pid) openDetail(pid, true);
+      if(pid)openDetail(pid);
     }catch(e){}
   }
   function bindLive(){
-    if(typeof EventSource === 'undefined') return;
+    if(typeof EventSource==='undefined')return;
     try{
-      var es = new EventSource(API+'/events');
-      es.addEventListener('latati_hello', function(){ liveConnected = true; loadCatalog(true); });
-      es.addEventListener('latati_catalog', function(){ loadCatalog(true); });
-      es.addEventListener('latati_order', function(){
-        loadMyOrders();
-        loadCatalog(true);
-        if(!$('view-vale').classList.contains('hidden')) loadMyOrders();
-      });
-      es.addEventListener('latati_chat', function(){
-        if(!$('view-chat').classList.contains('hidden')) loadChat();
-      });
-      es.onerror = function(){ liveConnected = false; };
-      // also listen via generic pulse bus as fallback
-      var es2 = new EventSource('/api/pulse');
-      es2.addEventListener('latati_catalog', function(){ loadCatalog(true); });
-      es2.addEventListener('latati_order', function(){ loadCatalog(true); if(!$('view-myorders').classList.contains('hidden')) loadMyOrders(); });
-      es2.addEventListener('latati_chat', function(){ if(!$('view-chat').classList.contains('hidden')) loadChat(); });
+      var es=new EventSource(API+'/events');
+      es.addEventListener('latati_hello',function(){liveConnected=true;loadCatalog(true)});
+      es.addEventListener('latati_catalog',function(){loadCatalog(true)});
+      es.addEventListener('latati_order',function(){loadMyOrders();loadCatalog(true)});
+      es.addEventListener('latati_chat',function(){if(!$('view-chat').classList.contains('hidden'))loadChat()});
+      es.onerror=function(){liveConnected=false};
+      var es2=new EventSource('/api/pulse');
+      es2.addEventListener('latati_catalog',function(){loadCatalog(true)});
+      es2.addEventListener('latati_order',function(){loadMyOrders();loadCatalog(true)});
+      es2.addEventListener('latati_chat',function(){if(!$('view-chat').classList.contains('hidden'))loadChat()});
     }catch(e){}
   }
+  $('nCat').innerHTML=ico('grid');$('nCart').innerHTML=ico('cart');$('nVales').innerHTML=ico('ticket');$('nChat').innerHTML=ico('chat');$('nYo').innerHTML=ico('user');
   fillProfileForm();
-  if(!hasClient()){show('profile')}
+  if(!hasClient())show('profile');
   loadCatalog(true);updateBar();bindLive();
-  // Fallback suave: solo si no hay SSE o para reconciliar
   setInterval(function(){
-    if(!$('view-catalog').classList.contains('hidden')||!$('view-detail').classList.contains('hidden')) loadCatalog(false);
-    if(!$('view-myorders').classList.contains('hidden')) loadMyOrders();
-    if(!$('view-chat').classList.contains('hidden')) loadChat();
-  }, liveConnected ? 12000 : 4000);
+    if(!$('view-catalog').classList.contains('hidden')||!$('view-detail').classList.contains('hidden'))loadCatalog(false);
+    if(!$('view-myorders').classList.contains('hidden'))loadMyOrders();
+    if(!$('view-chat').classList.contains('hidden'))loadChat();
+  }, liveConnected?12000:4000);
 })();
 </script>
 </body>

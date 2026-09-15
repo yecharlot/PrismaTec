@@ -24,12 +24,26 @@ type ltProduct struct {
 	Price        float64 `json:"price"`
 	PricePending bool    `json:"price_pending"`
 	Currency     string  `json:"currency"`
-	Stock        int     `json:"stock"`
-	Sold         bool    `json:"sold"`
+	Stock        int     `json:"stock"` // solo informativo; no bloquea catálogo
+	Unlimited    bool    `json:"unlimited"` // sin control de cantidad
+	Sold         bool    `json:"sold"` // legado
+	SoldOut      bool    `json:"sold_out"`
+	SoldOutAt    string  `json:"sold_out_at,omitempty"`
 	Photo        bool    `json:"photo"`
 	Source       string  `json:"source,omitempty"`
 	CreatedAt    string  `json:"created_at"`
 	UpdatedAt    string  `json:"updated_at"`
+}
+
+type ltInterest struct {
+	ID          string `json:"id"`
+	ProductID   string `json:"product_id"`
+	Title       string `json:"title"`
+	Thread      string `json:"thread"`
+	ClientName  string `json:"client_name"`
+	ClientPhone string `json:"client_phone"`
+	Ts          string `json:"ts"`
+	Seen        bool   `json:"seen"`
 }
 
 type ltLine struct {
@@ -76,13 +90,15 @@ type ltProfile struct {
 }
 
 type ltStore struct {
-	Profile  ltProfile             `json:"profile"`
-	Products map[string]*ltProduct `json:"products"`
-	Orders   []ltOrder             `json:"orders"`
-	Messages []ltMsg               `json:"messages"`
-	Tokens   map[string]int64      `json:"tokens"`
-	SeqOrder int                   `json:"seq_order"`
-	Rev      int64                 `json:"rev"` // catalog/orders/chat revision for live clients
+	Profile    ltProfile             `json:"profile"`
+	Products   map[string]*ltProduct `json:"products"`
+	Orders     []ltOrder             `json:"orders"`
+	Messages   []ltMsg               `json:"messages"`
+	Interests  []ltInterest          `json:"interests"`
+	Tokens     map[string]int64      `json:"tokens"`
+	SeqOrder   int                   `json:"seq_order"`
+	Rev        int64                 `json:"rev"`
+	OrdersSeen int64                 `json:"orders_seen"` // gestora: último rev de pedidos visto
 }
 
 var (
@@ -138,6 +154,9 @@ func ltLoadFromCF() (*ltStore, error) {
 	}
 	if st.Tokens == nil {
 		st.Tokens = map[string]int64{}
+	}
+	if st.Interests == nil {
+		st.Interests = []ltInterest{}
 	}
 	return st, nil
 }
@@ -306,6 +325,40 @@ func ltBump(st *ltStore) int64 {
 	return st.Rev
 }
 
+// ltPurgeSoldOut removes products marked sold-out for more than 24h.
+func ltPurgeSoldOut(st *ltStore) (removed int) {
+	if st == nil || st.Products == nil {
+		return 0
+	}
+	now := time.Now().UTC()
+	for id, p := range st.Products {
+		if p == nil || !p.SoldOut || p.SoldOutAt == "" {
+			continue
+		}
+		ts, err := time.Parse(time.RFC3339, p.SoldOutAt)
+		if err != nil {
+			continue
+		}
+		if now.Sub(ts) >= 24*time.Hour {
+			delete(st.Products, id)
+			_ = os.Remove(ltPhotoPath(id))
+			ltDeletePhotoCF(id)
+			removed++
+		}
+	}
+	return removed
+}
+
+func ltProductAvailable(p *ltProduct) bool {
+	if p == nil {
+		return false
+	}
+	if p.SoldOut || p.Sold {
+		return false
+	}
+	return true
+}
+
 // ltNotify pushes a La Tati event over the node pulse/gossip SSE bus.
 func (n *NodoAlset) ltNotify(kind string, extra map[string]interface{}) {
 	if n == nil {
@@ -407,6 +460,14 @@ func (n *NodoAlset) handleLaTatiAPI(w http.ResponseWriter, r *http.Request) {
 		n.ltChat(w, r)
 	case parts[0] == "threads" && r.Method == http.MethodGet:
 		n.ltThreads(w, r)
+	case parts[0] == "interest" && r.Method == http.MethodPost:
+		n.ltInterest(w, r)
+	case parts[0] == "gestor" && len(parts) >= 2 && parts[1] == "interests":
+		n.ltInterests(w, r)
+	case parts[0] == "gestor" && len(parts) >= 2 && parts[1] == "orders-seen" && r.Method == http.MethodPost:
+		n.ltOrdersSeen(w, r)
+	case parts[0] == "order" && len(parts) >= 3 && parts[2] == "delete" && r.Method == http.MethodPost:
+		n.ltOrderDelete(w, r, parts[1])
 	case parts[0] == "events":
 		n.ltEventsSSE(w, r)
 	default:
@@ -431,12 +492,13 @@ func (n *NodoAlset) ltCatalog(w http.ResponseWriter) {
 	ltMu.Lock()
 	defer ltMu.Unlock()
 	st := loadLT()
+	if nrem := ltPurgeSoldOut(st); nrem > 0 {
+		ltBump(st)
+		_ = saveLT(st)
+	}
 	list := make([]*ltProduct, 0)
 	for _, p := range st.Products {
-		if p == nil || p.Sold {
-			continue
-		}
-		if p.Stock <= 0 {
+		if !ltProductAvailable(p) {
 			continue
 		}
 		list = append(list, p)
@@ -576,10 +638,17 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 		} else {
 			in.PricePending = false
 		}
-		// Nueva publicación: si no marcan vendido y stock quedó en 0, abrir con 1 unidad
-		// para que el catálogo cliente la vea al instante (filtra stock<=0).
-		if !in.Sold && in.Stock <= 0 {
-			in.Stock = 1
+		// Sin control de cantidad por defecto (el negocio no informa stock).
+		if in.Stock < 0 {
+			in.Stock = 0
+		}
+		in.Unlimited = true
+		if in.SoldOut {
+			if in.SoldOutAt == "" {
+				in.SoldOutAt = now
+			}
+		} else {
+			in.SoldOutAt = ""
 		}
 		st.Products[in.ID] = &in
 		rev := ltBump(st)
@@ -635,11 +704,15 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 			return
 		}
 		switch action {
-		case "sold":
+		case "sold", "soldout", "agotado":
 			p.Sold = true
-			p.Stock = 0
-		case "unsold":
+			p.SoldOut = true
+			p.SoldOutAt = time.Now().UTC().Format(time.RFC3339)
+			p.UpdatedAt = p.SoldOutAt
+		case "unsold", "restore", "disponible":
 			p.Sold = false
+			p.SoldOut = false
+			p.SoldOutAt = ""
 		case "stock":
 			var in struct {
 				Stock int `json:"stock"`
@@ -724,7 +797,7 @@ func (n *NodoAlset) ltPlaceOrder(w http.ResponseWriter, r *http.Request) {
 		}
 		it.Qty = 1 // un producto = una unidad por pedido
 		p, ok := st.Products[it.ProductID]
-		if !ok || p == nil || p.Sold {
+		if !ok || p == nil || !ltProductAvailable(p) {
 			ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "product unavailable: " + it.ProductID})
 			return
 		}
@@ -732,7 +805,8 @@ func (n *NodoAlset) ltPlaceOrder(w http.ResponseWriter, r *http.Request) {
 			ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "product without price: " + p.Title})
 			return
 		}
-		if p.Stock < it.Qty {
+		// Stock solo se valida si el producto no es unlimited y stock>0 explícito de control
+		if !p.Unlimited && p.Stock > 0 && p.Stock < it.Qty {
 			ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "stock: " + p.Title})
 			return
 		}
@@ -796,7 +870,22 @@ func (n *NodoAlset) ltListOrders(w http.ResponseWriter, r *http.Request) {
 		ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
 		return
 	}
-	ltJSON(w, 200, map[string]interface{}{"ok": true, "items": st.Orders})
+	pending := 0
+	for _, o := range st.Orders {
+		if o.Status == "requested" {
+			pending++
+		}
+	}
+	unseenInterests := 0
+	for _, it := range st.Interests {
+		if !it.Seen {
+			unseenInterests++
+		}
+	}
+	ltJSON(w, 200, map[string]interface{}{
+		"ok": true, "items": st.Orders, "rev": st.Rev, "orders_seen": st.OrdersSeen,
+		"pending_count": pending, "interest_count": unseenInterests,
+	})
 }
 
 func (n *NodoAlset) ltGetOrder(w http.ResponseWriter, r *http.Request, id string) {
@@ -831,19 +920,22 @@ func ltApplyStock(st *ltStore, lines []ltLine, dir int) string {
 			}
 			continue
 		}
+		if p.Unlimited {
+			continue
+		}
 		if dir > 0 {
-			if p.Sold || p.Stock < l.Qty {
+			if p.SoldOut || p.Sold {
+				return "agotado: " + l.Title
+			}
+			if p.Stock > 0 && p.Stock < l.Qty {
 				return "stock: " + l.Title
 			}
-			p.Stock -= l.Qty
-			if p.Stock <= 0 {
-				p.Stock = 0
-				p.Sold = true
+			if p.Stock > 0 {
+				p.Stock -= l.Qty
 			}
 		} else {
-			p.Stock += l.Qty
-			if p.Stock > 0 {
-				p.Sold = false
+			if p.Stock >= 0 {
+				p.Stock += l.Qty
 			}
 		}
 		p.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
@@ -1149,6 +1241,140 @@ func (n *NodoAlset) ltEventsSSE(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+}
+
+
+func (n *NodoAlset) ltInterest(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		ProductID   string `json:"product_id"`
+		Thread      string `json:"thread"`
+		ClientName  string `json:"client_name"`
+		ClientPhone string `json:"client_phone"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "json"})
+		return
+	}
+	in.ProductID = strings.TrimSpace(in.ProductID)
+	in.Thread = strings.TrimSpace(in.Thread)
+	in.ClientName = strings.TrimSpace(in.ClientName)
+	in.ClientPhone = strings.TrimSpace(in.ClientPhone)
+	if in.ProductID == "" || in.Thread == "" || in.ClientName == "" || in.ClientPhone == "" {
+		ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "datos incompletos"})
+		return
+	}
+	ltMu.Lock()
+	defer ltMu.Unlock()
+	st := loadLT()
+	p, ok := st.Products[in.ProductID]
+	if !ok || p == nil || !ltProductAvailable(p) {
+		ltJSON(w, 404, map[string]interface{}{"ok": false, "error": "producto no disponible"})
+		return
+	}
+	if !p.PricePending && p.Price > 0 {
+		ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "el producto ya tiene precio"})
+		return
+	}
+	// evitar duplicados del mismo cliente+producto abiertos
+	for i := range st.Interests {
+		it := &st.Interests[i]
+		if it.ProductID == in.ProductID && it.Thread == in.Thread && !it.Seen {
+			ltJSON(w, 200, map[string]interface{}{"ok": true, "item": *it, "duplicate": true})
+			return
+		}
+	}
+	item := ltInterest{
+		ID: ltRand(8), ProductID: in.ProductID, Title: p.Title,
+		Thread: in.Thread, ClientName: in.ClientName, ClientPhone: in.ClientPhone,
+		Ts: time.Now().UTC().Format(time.RFC3339),
+	}
+	st.Interests = append([]ltInterest{item}, st.Interests...)
+	if len(st.Interests) > 500 {
+		st.Interests = st.Interests[:500]
+	}
+	st.Messages = append(st.Messages, ltMsg{
+		ID: ltRand(6), Thread: in.Thread, From: "client",
+		Text: "Interés en precio: " + p.Title,
+		ProductID: p.ID, Ts: item.Ts,
+	})
+	rev := ltBump(st)
+	_ = saveLT(st)
+	n.ltNotify("interest", map[string]interface{}{"rev": rev, "product_id": p.ID, "title": p.Title, "client": in.ClientName})
+	n.ltNotify("chat", map[string]interface{}{"rev": rev, "thread": in.Thread, "from": "client"})
+	ltJSON(w, 200, map[string]interface{}{"ok": true, "item": item, "rev": rev})
+}
+
+func (n *NodoAlset) ltInterests(w http.ResponseWriter, r *http.Request) {
+	ltMu.Lock()
+	defer ltMu.Unlock()
+	st := loadLT()
+	if !ltAuthFrom(r, st) {
+		ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
+		return
+	}
+	if r.Method == http.MethodPost {
+		var in struct {
+			ID   string `json:"id"`
+			Seen bool   `json:"seen"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&in)
+		for i := range st.Interests {
+			if st.Interests[i].ID == in.ID {
+				st.Interests[i].Seen = in.Seen
+				_ = saveLT(st)
+				ltJSON(w, 200, map[string]interface{}{"ok": true, "item": st.Interests[i]})
+				return
+			}
+		}
+		ltJSON(w, 404, map[string]interface{}{"ok": false, "error": "not found"})
+		return
+	}
+	ltJSON(w, 200, map[string]interface{}{"ok": true, "items": st.Interests})
+}
+
+func (n *NodoAlset) ltOrdersSeen(w http.ResponseWriter, r *http.Request) {
+	ltMu.Lock()
+	defer ltMu.Unlock()
+	st := loadLT()
+	if !ltAuthFrom(r, st) {
+		ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
+		return
+	}
+	st.OrdersSeen = st.Rev
+	_ = saveLT(st)
+	ltJSON(w, 200, map[string]interface{}{"ok": true, "orders_seen": st.OrdersSeen, "rev": st.Rev})
+}
+
+func (n *NodoAlset) ltOrderDelete(w http.ResponseWriter, r *http.Request, id string) {
+	ltMu.Lock()
+	defer ltMu.Unlock()
+	st := loadLT()
+	if !ltAuthFrom(r, st) {
+		ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
+		return
+	}
+	out := st.Orders[:0]
+	found := false
+	for _, o := range st.Orders {
+		if o.ID == id || o.Code == id {
+			if o.Status != "cancelled" && o.Status != "delivered" {
+				ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "solo cancelados o entregados"})
+				return
+			}
+			found = true
+			continue
+		}
+		out = append(out, o)
+	}
+	if !found {
+		ltJSON(w, 404, map[string]interface{}{"ok": false, "error": "not found"})
+		return
+	}
+	st.Orders = out
+	rev := ltBump(st)
+	_ = saveLT(st)
+	n.ltNotify("order", map[string]interface{}{"rev": rev, "action": "delete", "order_id": id})
+	ltJSON(w, 200, map[string]interface{}{"ok": true, "rev": rev})
 }
 
 func (n *NodoAlset) registerLaTatiAPI(extra map[string]http.HandlerFunc) {
