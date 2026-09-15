@@ -115,7 +115,10 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
       <label class="sub">Nombre</label><input id="cfgName"/>
       <label class="sub">WhatsApp</label><input id="cfgWa"/>
       <label class="sub">Dirección de recogida</label><input id="cfgAddr"/>
-      <label class="sub">Bio</label><textarea id="cfgBio" rows="2"></textarea>
+      <label class="sub">Bio / eslogan</label><textarea id="cfgBio" rows="2"></textarea>
+      <label class="sub">Eslogan corto (tagline)</label><input id="cfgTagline" placeholder="Tu pedido · tu vale"/>
+      <label class="sub">Color principal</label><input id="cfgAccent" type="color" value="#e8b4c8" style="height:42px;padding:0.2rem"/>
+      <label class="sub">Color secundario</label><input id="cfgAccent2" type="color" value="#c4789a" style="height:42px;padding:0.2rem"/>
       <label class="sub">PIN nuevo (opcional)</label><input id="cfgPin" type="password"/>
       <button type="button" class="btn btn-gold" id="btnCfgSave">Guardar</button>
     </div>
@@ -145,8 +148,32 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
   }
 
 (function(){
-  var API='/api/latati';
-  var TK='latati_gestor_tok';
+  function detectTenant(){
+    var q=new URLSearchParams(location.search).get('t');
+    if(q)return String(q).toLowerCase().replace(/[^a-z0-9-]/g,'').replace(/^gestion-/,'')||'latati';
+    var p=location.pathname||'';
+    var m=p.match(/\/w\/(gestion-)?([a-z0-9-]+)\.app\.ans/i);
+    if(!m)return 'latati';
+    var s=(m[2]||'latati').toLowerCase();
+    if(s==='gestion-latati')return 'latati';
+    return s||'latati';
+  }
+  var TENANT=detectTenant();
+  var API=TENANT==='latati'?'/api/latati':'/api/latati/t/'+TENANT;
+  function applyTheme(prof){
+    if(!prof)return;
+    var r=document.documentElement;
+    if(prof.accent)r.style.setProperty('--accent',prof.accent);
+    if(prof.accent2)r.style.setProperty('--accent2',prof.accent2);
+    if(prof.bg)r.style.setProperty('--bg',prof.bg);
+    if(prof.surface)r.style.setProperty('--surface',prof.surface);
+    if(prof.tagline&&document.getElementById('brandSub'))document.getElementById('brandSub').textContent=prof.tagline;
+    if(prof.name){
+      document.title=prof.name+(document.title.indexOf('Gestión')>=0?' · Gestión':'');
+      if(document.getElementById('brandName'))document.getElementById('brandName').textContent=prof.name;
+    }
+  }
+  var TK='latati_gestor_tok_'+TENANT;
   var token=localStorage.getItem(TK)||'';
   var activeTh='', editingPhoto=null;
   var pendingOrders=0, pendingInt=0;
@@ -168,6 +195,7 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     var d=await(await fetch(API+'/gestor/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:$('pin').value})})).json();
     if(!d.ok){toast('PIN incorrecto');return}
     token=d.token;localStorage.setItem(TK,token);
+    if(d.profile)applyTheme(d.profile);
     $('who').textContent=(d.profile&&d.profile.name)||'Gestora';
     show('prods');loadProds();loadOrders();loadInterests();
   }
@@ -366,9 +394,12 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     var d=await(await fetch(API+'/profile')).json();
     var p=d.profile||{};
     $('cfgName').value=p.name||'';$('cfgWa').value=p.whatsapp||'';$('cfgAddr').value=p.address||'';$('cfgBio').value=p.bio||'';
+    if($('cfgTagline'))$('cfgTagline').value=p.tagline||'';
+    if($('cfgAccent')&&p.accent)$('cfgAccent').value=p.accent;
+    if($('cfgAccent2')&&p.accent2)$('cfgAccent2').value=p.accent2;
   }
   $('btnCfgSave').onclick=async function(){
-    var body={name:$('cfgName').value.trim(),whatsapp:$('cfgWa').value.trim(),address:$('cfgAddr').value.trim(),bio:$('cfgBio').value.trim()};
+    var body={name:$('cfgName').value.trim(),whatsapp:$('cfgWa').value.trim(),address:$('cfgAddr').value.trim(),bio:$('cfgBio').value.trim(),tagline:($('cfgTagline')&&$('cfgTagline').value.trim())||'',accent:($('cfgAccent')&&$('cfgAccent').value)||'',accent2:($('cfgAccent2')&&$('cfgAccent2').value)||''};
     if($('cfgPin').value.trim())body.pin=$('cfgPin').value.trim();
     var d=await(await fetch(API+'/gestor/profile',{method:'POST',headers:H(1),body:JSON.stringify(body)})).json();
     if(!d.ok){toast(d.error||'Error');return}

@@ -58,4 +58,17 @@ func (n *NodoAlset) ensureLaTatiApp() {
 	n.agentes[latatiGestionID] = &Agente{ID: latatiGestionID, RootCID: gCID, BalanceUTXO: 0, UltimaActual: time.Now().Unix()}
 	n.nombres[latatiGestionAlias] = latatiGestionID
 	fmt.Printf("✅ La Tati: /w/%s · gestión /w/%s\n", latatiAlias, latatiGestionAlias)
+	go n.ltBootTenants()
+}
+
+func (n *NodoAlset) ltBootTenants() {
+	ltMu.Lock()
+	reg := n.ltLoadRegistry()
+	ltMu.Unlock()
+	for _, meta := range reg {
+		if meta.Slug == "" || meta.Slug == "latati" || !meta.Active {
+			continue
+		}
+		n.ltRegisterTenantApps(meta.Slug)
+	}
 }

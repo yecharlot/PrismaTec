@@ -219,9 +219,33 @@ function ico(name){
   return s[name]||'';
 }
 (function(){
-  var API='/api/latati';
-  var sid=localStorage.getItem('latati_sid'); if(!sid){sid='c-'+Math.random().toString(36).slice(2,10);localStorage.setItem('latati_sid',sid)}
-  var CK='latati_cart', CINFO='latati_client';
+  function detectTenant(){
+    var q=new URLSearchParams(location.search).get('t');
+    if(q)return String(q).toLowerCase().replace(/[^a-z0-9-]/g,'').replace(/^gestion-/,'')||'latati';
+    var p=location.pathname||'';
+    var m=p.match(/\/w\/(gestion-)?([a-z0-9-]+)\.app\.ans/i);
+    if(!m)return 'latati';
+    var s=(m[2]||'latati').toLowerCase();
+    if(s==='gestion-latati')return 'latati';
+    return s||'latati';
+  }
+  var TENANT=detectTenant();
+  var API=TENANT==='latati'?'/api/latati':'/api/latati/t/'+TENANT;
+  function applyTheme(prof){
+    if(!prof)return;
+    var r=document.documentElement;
+    if(prof.accent)r.style.setProperty('--accent',prof.accent);
+    if(prof.accent2)r.style.setProperty('--accent2',prof.accent2);
+    if(prof.bg)r.style.setProperty('--bg',prof.bg);
+    if(prof.surface)r.style.setProperty('--surface',prof.surface);
+    if(prof.tagline&&document.getElementById('brandSub'))document.getElementById('brandSub').textContent=prof.tagline;
+    if(prof.name){
+      document.title=prof.name+(document.title.indexOf('Gestión')>=0?' · Gestión':'');
+      if(document.getElementById('brandName'))document.getElementById('brandName').textContent=prof.name;
+    }
+  }
+  var sidKey='latati_sid_'+TENANT; var sid=localStorage.getItem(sidKey); if(!sid){sid='c-'+Math.random().toString(36).slice(2,10);localStorage.setItem(sidKey,sid)}
+  var CK='latati_cart_'+TENANT, CINFO='latati_client_'+TENANT;
   var cart=JSON.parse(localStorage.getItem(CK)||'{}');
   var items=[], allCats=[], profile={}, current=null, catalogRev=0, liveConnected=false;
   var activeCat='', sortBy='newest', searchQ='';
@@ -465,7 +489,7 @@ function ico(name){
       if(activeCat)qs+='&category='+encodeURIComponent(activeCat);
       if(searchQ)qs+='&q='+encodeURIComponent(searchQ);
       var d=await(await fetch(API+'/catalog'+qs,{cache:'no-store'})).json();
-      if(d.profile){profile=d.profile;$('brandName').textContent=profile.name||'La Tati';$('brandSub').textContent=profile.bio||'Tienda · pedidos · recogida'}
+      if(d.profile){profile=d.profile;applyTheme(profile);$('brandName').textContent=profile.name||'La Tati';$('brandSub').textContent=profile.tagline||profile.bio||'Tienda · pedidos · recogida'}
       var rev=d.rev||0;
       if(!force&&rev&&rev===catalogRev&&items.length&&!searchQ&&!activeCat)return;
       catalogRev=rev;items=d.items||[];allCats=d.categories||[];
