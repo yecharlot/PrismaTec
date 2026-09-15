@@ -31,6 +31,7 @@ type ltProduct struct {
 	SoldOutAt    string  `json:"sold_out_at,omitempty"`
 	Photo        bool    `json:"photo"`
 	Category     string  `json:"category,omitempty"`
+	DeliveryMode string  `json:"delivery_mode,omitempty"` // pickup | delivery | both
 	Source       string  `json:"source,omitempty"`
 	CreatedAt    string  `json:"created_at"`
 	UpdatedAt    string  `json:"updated_at"`
@@ -65,12 +66,14 @@ type ltOrder struct {
 	Lines       []ltLine `json:"lines"`
 	Total       float64  `json:"total"`
 	Currency    string   `json:"currency"`
-	Status      string   `json:"status"` // requested | pending | ready | delivered | cancelled
-	Address     string   `json:"address"`
-	GestorName  string   `json:"gestor_name"`
-	GestorPhone string   `json:"gestor_phone"`
-	Note        string   `json:"note,omitempty"`
-	Ts          string   `json:"ts"`
+	Status       string   `json:"status"` // requested | pending | ready | delivered | cancelled
+	Address      string   `json:"address"`
+	DeliveryType string   `json:"delivery_type,omitempty"` // pickup | delivery
+	DeliveryAddr string   `json:"delivery_address,omitempty"`
+	GestorName   string   `json:"gestor_name"`
+	GestorPhone  string   `json:"gestor_phone"`
+	Note         string   `json:"note,omitempty"`
+	Ts           string   `json:"ts"`
 }
 
 type ltMsg struct {
@@ -732,6 +735,11 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 		if in.Category == "" {
 			in.Category = "General"
 		}
+		dm := strings.ToLower(strings.TrimSpace(in.DeliveryMode))
+		if dm != "pickup" && dm != "delivery" && dm != "both" {
+			dm = "both"
+		}
+		in.DeliveryMode = dm
 		// registrar categoría en el catálogo de la tienda
 		foundCat := false
 		for _, c := range st.Categories {
@@ -850,10 +858,12 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 
 func (n *NodoAlset) ltPlaceOrder(w http.ResponseWriter, r *http.Request) {
 	var in struct {
-		Thread      string `json:"thread"`
-		ClientName  string `json:"client_name"`
-		ClientPhone string `json:"client_phone"`
-		Note        string `json:"note"`
+		Thread         string `json:"thread"`
+		ClientName     string `json:"client_name"`
+		ClientPhone    string `json:"client_phone"`
+		Note           string `json:"note"`
+		DeliveryType   string `json:"delivery_type"` // pickup | delivery
+		DeliveryAddr   string `json:"delivery_address"`
 		Items       []struct {
 			ProductID string `json:"product_id"`
 			Qty       int    `json:"qty"`
@@ -918,6 +928,36 @@ func (n *NodoAlset) ltPlaceOrder(w http.ResponseWriter, r *http.Request) {
 		currency = p.Currency
 	}
 
+	// Modalidad de entrega
+	dtype := strings.ToLower(strings.TrimSpace(in.DeliveryType))
+	if dtype != "delivery" {
+		dtype = "pickup"
+	}
+	daddr := strings.TrimSpace(in.DeliveryAddr)
+	// Restricciones por producto
+	for _, l := range lines {
+		p := st.Products[l.ProductID]
+		if p == nil {
+			continue
+		}
+		mode := strings.ToLower(strings.TrimSpace(p.DeliveryMode))
+		if mode == "" {
+			mode = "both"
+		}
+		if mode == "delivery" && dtype != "delivery" {
+			ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "«" + p.Title + "» solo se entrega a domicilio"})
+			return
+		}
+		if mode == "pickup" && dtype == "delivery" {
+			ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "«" + p.Title + "» solo es para recogida"})
+			return
+		}
+	}
+	if dtype == "delivery" && daddr == "" {
+		ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "indica la dirección de entrega"})
+		return
+	}
+
 	st.SeqOrder++
 	ord := ltOrder{
 		ID: ltRand(8), Code: fmt.Sprintf("LT-%04d", st.SeqOrder),
@@ -925,6 +965,7 @@ func (n *NodoAlset) ltPlaceOrder(w http.ResponseWriter, r *http.Request) {
 		ClientPhone: strings.TrimSpace(in.ClientPhone),
 		Lines: lines, Total: total, Currency: currency,
 		Status: "requested", Address: st.Profile.Address,
+		DeliveryType: dtype, DeliveryAddr: daddr,
 		GestorName: st.Profile.Name, GestorPhone: st.Profile.WhatsApp,
 		Note: strings.TrimSpace(in.Note),
 		Ts: time.Now().UTC().Format(time.RFC3339),
@@ -935,7 +976,12 @@ func (n *NodoAlset) ltPlaceOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	st.Messages = append(st.Messages, ltMsg{
 		ID: ltRand(6), Thread: in.Thread, From: "client",
-		Text: fmt.Sprintf("Solicitud %s · total %s %.2f · %d ítem(s) · esperando confirmación", ord.Code, ord.Currency, ord.Total, len(ord.Lines)),
+		Text: fmt.Sprintf("Solicitud %s · %s · total %s %.2f · %d ítem(s) · esperando confirmación", ord.Code, func() string {
+			if ord.DeliveryType == "delivery" {
+				return "domicilio"
+			}
+			return "recogida"
+		}(), ord.Currency, ord.Total, len(ord.Lines)),
 		Ts:   ord.Ts,
 	})
 	rev := ltBump(st)
@@ -1407,10 +1453,43 @@ func (n *NodoAlset) ltInterests(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.Method == http.MethodPost {
 		var in struct {
-			ID   string `json:"id"`
-			Seen bool   `json:"seen"`
+			ID     string `json:"id"`
+			Seen   bool   `json:"seen"`
+			Delete bool   `json:"delete"`
+			Clear  bool   `json:"clear_read"` // borrar todos los leídos
 		}
 		_ = json.NewDecoder(r.Body).Decode(&in)
+		if in.Clear {
+			out := st.Interests[:0]
+			for _, it := range st.Interests {
+				if !it.Seen {
+					out = append(out, it)
+				}
+			}
+			st.Interests = out
+			_ = saveLT(st)
+			ltJSON(w, 200, map[string]interface{}{"ok": true, "items": st.Interests})
+			return
+		}
+		if in.Delete && in.ID != "" {
+			out := st.Interests[:0]
+			found := false
+			for _, it := range st.Interests {
+				if it.ID == in.ID {
+					found = true
+					continue
+				}
+				out = append(out, it)
+			}
+			if !found {
+				ltJSON(w, 404, map[string]interface{}{"ok": false, "error": "not found"})
+				return
+			}
+			st.Interests = out
+			_ = saveLT(st)
+			ltJSON(w, 200, map[string]interface{}{"ok": true, "deleted": in.ID})
+			return
+		}
 		for i := range st.Interests {
 			if st.Interests[i].ID == in.ID {
 				st.Interests[i].Seen = in.Seen

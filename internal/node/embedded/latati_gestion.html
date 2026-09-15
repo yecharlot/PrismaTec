@@ -58,8 +58,22 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
       <input type="hidden" id="fId"/>
       <label class="sub">Título</label><input id="fTitle"/>
       <label class="sub">Categoría</label>
-      <input id="fCat" list="catList" placeholder="Ej. Ropa, Calzado, Accesorios"/>
-      <datalist id="catList"><option value="Ropa"/><option value="Calzado"/><option value="Accesorios"/><option value="Belleza"/><option value="Hogar"/><option value="General"/></datalist>
+      <select id="fCat">
+        <option value="General">General</option>
+        <option value="Ropa">Ropa</option>
+        <option value="Calzado">Calzado</option>
+        <option value="Accesorios">Accesorios</option>
+        <option value="Belleza">Belleza</option>
+        <option value="Hogar">Hogar</option>
+        <option value="__new__">Otra (escribir…)</option>
+      </select>
+      <input id="fCatNew" class="hidden" placeholder="Nueva categoría"/>
+      <label class="sub">Entrega</label>
+      <select id="fDelivery">
+        <option value="both">Recogida o domicilio</option>
+        <option value="pickup">Solo recogida</option>
+        <option value="delivery">Solo domicilio</option>
+      </select>
       <label class="sub">Descripción</label><textarea id="fDesc" rows="2"></textarea>
       <label class="sub">Precio (vacío = por confirmar)</label><input id="fPrice" type="number" step="0.01" inputmode="decimal"/>
       <label class="sub">Moneda</label>
@@ -195,7 +209,12 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
 
   function openEdit(id, list){
     var p=(list||[]).find(function(x){return x.id===id})||{};
-    $('fId').value=p.id||'';$('fTitle').value=p.title||'';$('fCat').value=p.category||'General';$('fDesc').value=p.description||'';
+    $('fId').value=p.id||'';$('fTitle').value=p.title||'';$('fDesc').value=p.description||'';
+    var cat=p.category||'General';
+    var known=['General','Ropa','Calzado','Accesorios','Belleza','Hogar'];
+    if(known.indexOf(cat)>=0){$('fCat').value=cat;$('fCatNew').classList.add('hidden');$('fCatNew').value=''}
+    else{$('fCat').value='__new__';$('fCatNew').classList.remove('hidden');$('fCatNew').value=cat}
+    $('fDelivery').value=(p.delivery_mode==='pickup'||p.delivery_mode==='delivery')?p.delivery_mode:'both';
     $('fPrice').value=(p.price_pending||!(p.price>0))?'':p.price;
     $('fCur').value=p.currency||'CUP';$('fStock').value='';
     editingPhoto=null;$('fPreview').classList.add('hidden');
@@ -204,6 +223,10 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     show('edit');
   }
   $('btnNew').onclick=function(){openEdit('',[])};
+  if($('fCat'))$('fCat').onchange=function(){
+    if($('fCat').value==='__new__')$('fCatNew').classList.remove('hidden');
+    else{$('fCatNew').classList.add('hidden');$('fCatNew').value=''}
+  };
   $('btnCancelEdit').onclick=function(){show('prods');loadProds()};
   $('fPhoto').onchange=function(e){
     var f=e.target.files&&e.target.files[0];if(!f)return;
@@ -211,7 +234,9 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
   };
   $('btnSave').onclick=async function(){
     var priceVal=$('fPrice').value.trim();
-    var body={id:$('fId').value||undefined,title:$('fTitle').value.trim(),category:($('fCat').value.trim()||'General'),description:$('fDesc').value.trim(),
+    var catVal=$('fCat').value;
+    if(catVal==='__new__'){catVal=($('fCatNew').value.trim()||'General')}
+    var body={id:$('fId').value||undefined,title:$('fTitle').value.trim(),category:catVal,delivery_mode:$('fDelivery').value,description:$('fDesc').value.trim(),
       currency:$('fCur').value,price:priceVal===''?0:Number(priceVal),price_pending:priceVal===''};
     if(!body.title){toast('Título requerido');return}
     var d=await(await fetch(API+'/gestor/products',{method:'POST',headers:H(1),body:JSON.stringify(body)})).json();
@@ -259,6 +284,7 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
       }
       return '<div class="panel"><strong>'+esc(o.code)+'</strong> <span class="badge">'+esc(stLabel(st))+'</span>'+
         '<div class="sub">'+esc(o.client_name)+' · '+esc(o.client_phone)+'</div>'+
+        '<div class="sub">'+(o.delivery_type==='delivery'?('Domicilio: '+esc(o.delivery_address||'—')):('Recogida'+(o.address?' · '+esc(o.address):'')))+'</div>'+
         '<div class="price">'+(o.currency||'')+' '+Number(o.total).toFixed(2)+'</div>'+
         '<div class="sub">'+(o.lines||[]).map(function(l){return l.qty+'× '+l.title}).join(', ')+'</div>'+actions+'</div>';
     }).join('');
@@ -284,16 +310,27 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     setBadge($('badgeInt'), pendingInt);
     var el=$('interests');
     if(!list.length){el.innerHTML='<div class="sub" style="text-align:center;padding:1rem">Sin intereses aún</div>';return}
-    el.innerHTML=list.map(function(it){
+    var hasRead=list.some(function(x){return x.seen});
+    el.innerHTML=(hasRead?'<button type="button" class="btn btn-ghost" id="btnClearRead" style="margin-bottom:.6rem">Eliminar intereses leídos</button>':'')+list.map(function(it){
       return '<div class="panel"><strong>'+esc(it.title||it.product_id)+'</strong>'+(it.seen?'':' <span class="badge">nuevo</span>')+
         '<div class="sub">'+esc(it.client_name)+' · '+esc(it.client_phone)+'</div>'+
         '<div class="sub">'+esc(it.ts||'')+'</div>'+
         '<div class="btn-row">'+(it.seen?'':'<button type="button" class="btn btn-ghost mk" data-id="'+it.id+'">Marcar visto</button>')+
+        (it.seen?'<button type="button" class="btn btn-ghost deli" data-id="'+it.id+'">Eliminar</button>':'')+
         '<button type="button" class="btn btn-gold go" data-pid="'+it.product_id+'">Ir al producto</button></div></div>';
     }).join('');
+    var clr=$('btnClearRead');
+    if(clr)clr.onclick=async function(){
+      await fetch(API+'/gestor/interests',{method:'POST',headers:H(1),body:JSON.stringify({clear_read:true})});
+      toast('Intereses leídos eliminados');loadInterests();
+    };
     el.querySelectorAll('.mk').forEach(function(b){b.onclick=async function(){
       await fetch(API+'/gestor/interests',{method:'POST',headers:H(1),body:JSON.stringify({id:b.getAttribute('data-id'),seen:true})});
       loadInterests();
+    }});
+    el.querySelectorAll('.deli').forEach(function(b){b.onclick=async function(){
+      await fetch(API+'/gestor/interests',{method:'POST',headers:H(1),body:JSON.stringify({id:b.getAttribute('data-id'),delete:true})});
+      toast('Eliminado');loadInterests();
     }});
     el.querySelectorAll('.go').forEach(function(b){b.onclick=function(){show('prods');loadProds()}});
   }
