@@ -538,9 +538,9 @@ func (n *NodoAlset) handleLaTatiAPI(w http.ResponseWriter, r *http.Request) {
 	case parts[0] == "catalog" && r.Method == http.MethodGet:
 		n.ltCatalog(w, r)
 	case parts[0] == "product" && len(parts) >= 2 && r.Method == http.MethodGet:
-		n.ltProductGet(w, parts[1])
+		n.ltProductGet(w, r, parts[1])
 	case parts[0] == "profile" && r.Method == http.MethodGet:
-		n.ltProfileGet(w)
+		n.ltProfileGet(w, r)
 	case parts[0] == "photo" && len(parts) >= 2 && r.Method == http.MethodGet:
 		n.ltPhotoGet(w, r, parts[1])
 	case parts[0] == "order" && len(parts) >= 3 && parts[2] == "status" && r.Method == http.MethodPost:
@@ -577,7 +577,7 @@ func (n *NodoAlset) handleLaTatiAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 
-func (n *NodoAlset) ltProductGet(w http.ResponseWriter, id string) {
+func (n *NodoAlset) ltProductGet(w http.ResponseWriter, r *http.Request, id string) {
 	ltMu.Lock()
 	defer ltMu.Unlock()
 	st := loadLT(ltTen(r))
@@ -686,7 +686,7 @@ func (n *NodoAlset) ltCatalog(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (n *NodoAlset) ltProfileGet(w http.ResponseWriter) {
+func (n *NodoAlset) ltProfileGet(w http.ResponseWriter, r *http.Request) {
 	ltMu.Lock()
 	defer ltMu.Unlock()
 	st := loadLT(ltTen(r))
@@ -699,7 +699,7 @@ func (n *NodoAlset) ltPhotoGet(w http.ResponseWriter, r *http.Request, id string
 	if err != nil {
 		if cf, err2 := ltLoadPhotoCF(ltTen(r), id); err2 == nil && len(cf) > 0 {
 			b = cf
-			_ = os.MkdirAll(filepath.Join(ltDir(), "photos"), 0o755)
+			_ = os.MkdirAll(filepath.Join(ltDir(ltTen(r)), "photos"), 0o755)
 			_ = os.WriteFile(ltPhotoPath(ltTen(r), id), b, 0o644)
 		} else {
 			http.NotFound(w, r)
