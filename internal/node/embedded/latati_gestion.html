@@ -57,6 +57,9 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
       <h2 id="editTitle">Producto</h2>
       <input type="hidden" id="fId"/>
       <label class="sub">Título</label><input id="fTitle"/>
+      <label class="sub">Categoría</label>
+      <input id="fCat" list="catList" placeholder="Ej. Ropa, Calzado, Accesorios"/>
+      <datalist id="catList"><option value="Ropa"/><option value="Calzado"/><option value="Accesorios"/><option value="Belleza"/><option value="Hogar"/><option value="General"/></datalist>
       <label class="sub">Descripción</label><textarea id="fDesc" rows="2"></textarea>
       <label class="sub">Precio (vacío = por confirmar)</label><input id="fPrice" type="number" step="0.01" inputmode="decimal"/>
       <label class="sub">Moneda</label>
@@ -165,7 +168,7 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
       var img=photo(p);
       var st=p.sold_out?'AGOTADO':((p.price_pending||!(p.price>0))?'Sin precio':(p.currency+' '+Number(p.price).toFixed(2)));
       return '<div class="panel" data-id="'+p.id+'"><div class="row">'+(img?'<img class="thumb" src="'+img+'" alt="">':'')+
-        '<div style="flex:1"><strong>'+esc(p.title)+'</strong><div class="price">'+esc(st)+'</div>'+
+        '<div style="flex:1"><strong>'+esc(p.title)+'</strong><div class="sub">'+esc(p.category||'General')+'</div><div class="price">'+esc(st)+'</div>'+
         '<div class="sub">'+(p.sold_out?'Fuera del catálogo cliente':'Sin control de stock')+'</div>'+
         '<div class="btn-row"><button type="button" class="btn btn-ghost be">Editar</button>'+
         (p.sold_out?'<button type="button" class="btn btn-mint br">Reactivar</button>':'<button type="button" class="btn btn-ghost ba">Agotado</button>')+
@@ -192,7 +195,7 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
 
   function openEdit(id, list){
     var p=(list||[]).find(function(x){return x.id===id})||{};
-    $('fId').value=p.id||'';$('fTitle').value=p.title||'';$('fDesc').value=p.description||'';
+    $('fId').value=p.id||'';$('fTitle').value=p.title||'';$('fCat').value=p.category||'General';$('fDesc').value=p.description||'';
     $('fPrice').value=(p.price_pending||!(p.price>0))?'':p.price;
     $('fCur').value=p.currency||'CUP';$('fStock').value='';
     editingPhoto=null;$('fPreview').classList.add('hidden');
@@ -208,7 +211,7 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
   };
   $('btnSave').onclick=async function(){
     var priceVal=$('fPrice').value.trim();
-    var body={id:$('fId').value||undefined,title:$('fTitle').value.trim(),description:$('fDesc').value.trim(),
+    var body={id:$('fId').value||undefined,title:$('fTitle').value.trim(),category:($('fCat').value.trim()||'General'),description:$('fDesc').value.trim(),
       currency:$('fCur').value,price:priceVal===''?0:Number(priceVal),price_pending:priceVal===''};
     if(!body.title){toast('Título requerido');return}
     var d=await(await fetch(API+'/gestor/products',{method:'POST',headers:H(1),body:JSON.stringify(body)})).json();

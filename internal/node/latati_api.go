@@ -30,6 +30,7 @@ type ltProduct struct {
 	SoldOut      bool    `json:"sold_out"`
 	SoldOutAt    string  `json:"sold_out_at,omitempty"`
 	Photo        bool    `json:"photo"`
+	Category     string  `json:"category,omitempty"`
 	Source       string  `json:"source,omitempty"`
 	CreatedAt    string  `json:"created_at"`
 	UpdatedAt    string  `json:"updated_at"`
@@ -98,7 +99,8 @@ type ltStore struct {
 	Tokens     map[string]int64      `json:"tokens"`
 	SeqOrder   int                   `json:"seq_order"`
 	Rev        int64                 `json:"rev"`
-	OrdersSeen int64                 `json:"orders_seen"` // gestora: último rev de pedidos visto
+	OrdersSeen int64                 `json:"orders_seen"`
+	Categories []string              `json:"categories,omitempty"`
 }
 
 var (
@@ -435,7 +437,7 @@ func (n *NodoAlset) handleLaTatiAPI(w http.ResponseWriter, r *http.Request) {
 	}
 	switch {
 	case parts[0] == "catalog" && r.Method == http.MethodGet:
-		n.ltCatalog(w)
+		n.ltCatalog(w, r)
 	case parts[0] == "product" && len(parts) >= 2 && r.Method == http.MethodGet:
 		n.ltProductGet(w, parts[1])
 	case parts[0] == "profile" && r.Method == http.MethodGet:
@@ -488,7 +490,7 @@ func (n *NodoAlset) ltProductGet(w http.ResponseWriter, id string) {
 	ltJSON(w, 200, map[string]interface{}{"ok": true, "item": p, "profile": publicProfile(st.Profile)})
 }
 
-func (n *NodoAlset) ltCatalog(w http.ResponseWriter) {
+func (n *NodoAlset) ltCatalog(w http.ResponseWriter, r *http.Request) {
 	ltMu.Lock()
 	defer ltMu.Unlock()
 	st := loadLT()
@@ -496,16 +498,92 @@ func (n *NodoAlset) ltCatalog(w http.ResponseWriter) {
 		ltBump(st)
 		_ = saveLT(st)
 	}
+	q := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
+	cat := strings.TrimSpace(r.URL.Query().Get("category"))
+	sortBy := strings.TrimSpace(r.URL.Query().Get("sort")) // newest | oldest | price_asc | price_desc
+	if sortBy == "" {
+		sortBy = "newest"
+	}
 	list := make([]*ltProduct, 0)
+	catsMap := map[string]int{}
 	for _, p := range st.Products {
 		if !ltProductAvailable(p) {
 			continue
 		}
+		c := strings.TrimSpace(p.Category)
+		if c == "" {
+			c = "General"
+		}
+		catsMap[c]++
+		if cat != "" && !strings.EqualFold(c, cat) {
+			continue
+		}
+		if q != "" {
+			blob := strings.ToLower(p.Title + " " + p.Description + " " + c)
+			if !strings.Contains(blob, q) {
+				continue
+			}
+		}
 		list = append(list, p)
 	}
-	sort.Slice(list, func(i, j int) bool { return list[i].CreatedAt > list[j].CreatedAt })
+	sort.Slice(list, func(i, j int) bool {
+		a, b := list[i], list[j]
+		switch sortBy {
+		case "oldest":
+			return a.CreatedAt < b.CreatedAt
+		case "price_asc":
+			pa, pb := a.Price, b.Price
+			if a.PricePending {
+				pa = 1e18
+			}
+			if b.PricePending {
+				pb = 1e18
+			}
+			if pa == pb {
+				return a.CreatedAt > b.CreatedAt
+			}
+			return pa < pb
+		case "price_desc":
+			pa, pb := a.Price, b.Price
+			if a.PricePending {
+				pa = -1
+			}
+			if b.PricePending {
+				pb = -1
+			}
+			if pa == pb {
+				return a.CreatedAt > b.CreatedAt
+			}
+			return pa > pb
+		default: // newest
+			return a.CreatedAt > b.CreatedAt
+		}
+	})
+	cats := make([]string, 0, len(catsMap))
+	for c := range catsMap {
+		cats = append(cats, c)
+	}
+	sort.Strings(cats)
+	// merge configured categories
+	for _, c := range st.Categories {
+		c = strings.TrimSpace(c)
+		if c == "" {
+			continue
+		}
+		found := false
+		for _, x := range cats {
+			if strings.EqualFold(x, c) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			cats = append(cats, c)
+		}
+	}
 	ltJSON(w, 200, map[string]interface{}{
 		"ok": true, "items": list, "rev": st.Rev, "profile": publicProfile(st.Profile),
+		"categories": cats, "sort": sortBy, "q": q, "category": cat,
 	})
 }
 
@@ -649,6 +727,21 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 			}
 		} else {
 			in.SoldOutAt = ""
+		}
+		in.Category = strings.TrimSpace(in.Category)
+		if in.Category == "" {
+			in.Category = "General"
+		}
+		// registrar categoría en el catálogo de la tienda
+		foundCat := false
+		for _, c := range st.Categories {
+			if strings.EqualFold(c, in.Category) {
+				foundCat = true
+				break
+			}
+		}
+		if !foundCat {
+			st.Categories = append(st.Categories, in.Category)
 		}
 		st.Products[in.ID] = &in
 		rev := ltBump(st)
