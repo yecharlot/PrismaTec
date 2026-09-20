@@ -23,6 +23,7 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 	n.ensureValesPlusApp()
 	n.ensureLaTatiApp()
 	n.ensureMindApp()
+	n.ensureAbacoPhyApp()
 	mux := http.NewServeMux()
 	h := n.httpHandlers()
 	// Core API also registered via Backend adapter (crear-agente, listados, …)
@@ -70,6 +71,9 @@ func (n *NodoAlset) httpHandlers() httpapi.Handlers {
 		}
 		if alias == "vero" {
 			n.ensureVeroAppFiles()
+		}
+		if alias == "abacophy" {
+			n.ensureAbacoPhyApp()
 		}
 		appPath := filepath.Join(StaticDir, "apps", alias, "index.html")
 		if _, err := os.Stat(appPath); err == nil {
