@@ -1,7 +1,6 @@
 package node
 
 import (
-	"redalset/internal/httpapi"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"redalset/internal/httpapi"
 	"strings"
 	"time"
 )
@@ -23,6 +23,7 @@ func (n *NodoAlset) buildHTTPHandler() http.Handler {
 	n.ensureValesPlusApp()
 	n.ensureLaTatiApp()
 	n.ensureMindApp()
+	n.ensureTutorApp()
 	n.ensureAbacoPhyApp()
 	mux := http.NewServeMux()
 	h := n.httpHandlers()
@@ -56,6 +57,7 @@ func (n *NodoAlset) httpHandlers() httpapi.Handlers {
 		// Always refresh first-party UIs from embed (avoid stale static on persistent volumes)
 		if alias == "mind" {
 			n.ensureMindApp()
+			n.ensureTutorApp()
 		}
 		if alias == "prismatec" {
 			n.ensurePrismatecApp()
@@ -74,6 +76,9 @@ func (n *NodoAlset) httpHandlers() httpapi.Handlers {
 		}
 		if alias == "abacophy" {
 			n.ensureAbacoPhyApp()
+		}
+		if alias == "tutor" {
+			n.ensureTutorApp()
 		}
 		appPath := filepath.Join(StaticDir, "apps", alias, "index.html")
 		if _, err := os.Stat(appPath); err == nil {
@@ -324,8 +329,6 @@ func (n *NodoAlset) httpHandlers() httpapi.Handlers {
 			"blocks":     blocksCount,
 		})
 	}
-
-
 
 	h.Extra["/api/audit/log"] = n.handleAuditLog
 

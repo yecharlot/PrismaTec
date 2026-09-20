@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Alset Tutor Academia · tutor.app.ans</title>
+<meta name="description" content="Academia guiada del ecosistema Alset: Mind, agentes, apps, HTTP, CRUD y nichos."/>
+<style>
+:root{
+  --bg:#07070c;--card:#101018;--line:rgba(244,180,0,.2);--gold:#f4b400;
+  --text:#e8e8ef;--muted:#8b8b9a;--ok:#4caf50;--warn:#ff9800;--bad:#ff5252;
+  --panel:#0c0c14;--accent:#7c9cff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  min-height:100vh;font-family:Inter,system-ui,sans-serif;color:var(--text);
+  background:radial-gradient(ellipse at 20% 10%,#1a1528,var(--bg));
+  padding:1rem;
+}
+.shell{width:min(980px,100%);margin:0 auto 2rem}
+header{
+  display:flex;flex-wrap:wrap;justify-content:space-between;gap:1rem;
+  align-items:flex-start;margin-bottom:1rem;
+}
+h1{font-size:1.25rem;font-weight:700}
+h1 span{color:var(--gold)}
+.tag{font-size:.7rem;color:var(--muted);margin-top:.25rem;max-width:36rem;line-height:1.4}
+.badges{display:flex;flex-wrap:wrap;gap:.35rem}
+.badge{
+  font-size:.62rem;padding:.25rem .55rem;border-radius:999px;
+  border:1px solid var(--line);color:var(--gold);
+}
+.layout{display:grid;grid-template-columns:220px 1fr;gap:.75rem}
+@media(max-width:800px){.layout{grid-template-columns:1fr}}
+.nav,.panel{
+  background:rgba(16,16,24,.95);border:1px solid var(--line);border-radius:16px;padding:.85rem;
+}
+.nav h2,.panel h2{
+  font-size:.65rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+  margin-bottom:.5rem;font-weight:600;
+}
+.level-btn{
+  display:block;width:100%;text-align:left;background:transparent;border:1px solid transparent;
+  color:var(--text);padding:.45rem .5rem;border-radius:10px;font-size:.78rem;cursor:pointer;margin-bottom:.25rem;
+}
+.level-btn:hover{border-color:var(--line);background:#0c0c14}
+.level-btn.active{border-color:var(--gold);color:var(--gold)}
+.level-btn.done::before{content:"✓ ";color:var(--ok)}
+.progress{
+  height:6px;background:#0a0a10;border-radius:99px;overflow:hidden;margin:.5rem 0 .75rem;
+}
+.progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#ffe082);width:0%;transition:width .3s}
+.content h3{font-size:1.05rem;margin-bottom:.35rem}
+.content .lead{color:var(--muted);font-size:.85rem;line-height:1.45;margin-bottom:.85rem}
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:.75rem;margin-bottom:.65rem;
+  font-size:.85rem;line-height:1.45;
+}
+.card strong{color:var(--gold);font-weight:600}
+.steps{list-style:none}
+.steps li{
+  padding:.4rem 0 .4rem 1.2rem;position:relative;border-bottom:1px solid rgba(255,255,255,.04);
+  font-size:.82rem;color:var(--muted);
+}
+.steps li::before{content:counter(s);counter-increment:s;position:absolute;left:0;color:var(--gold);font-size:.7rem}
+.steps{counter-reset:s}
+.row{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.65rem}
+button.act,a.act{
+  appearance:none;border:1px solid var(--line);background:#12121c;color:var(--gold);
+  border-radius:999px;padding:.55rem 1rem;font-size:.8rem;cursor:pointer;text-decoration:none;
+  display:inline-flex;align-items:center;gap:.35rem;
+}
+button.act.primary{background:rgba(244,180,0,.12);border-color:var(--gold)}
+button.act:disabled{opacity:.45;cursor:not-allowed}
+#log{
+  height:200px;overflow:auto;background:#0a0a10;border:1px solid var(--line);
+  border-radius:12px;padding:.65rem;font-size:.8rem;margin:.5rem 0;line-height:1.4;
+}
+.msg-u{color:#cfd0ff;margin-bottom:.5rem}
+.msg-m{color:var(--text);margin-bottom:.5rem}
+.msg-m .meta{font-size:.62rem;color:var(--gold);margin-top:.2rem}
+input,select,textarea{
+  width:100%;border-radius:10px;border:1px solid var(--line);background:#0a0a10;
+  color:var(--text);padding:.55rem .7rem;font-size:.82rem;margin:.25rem 0;
+}
+textarea{min-height:70px;font-family:ui-monospace,monospace}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+@media(max-width:600px){.grid2{grid-template-columns:1fr}}
+.http-out{
+  font-family:ui-monospace,monospace;font-size:.72rem;white-space:pre-wrap;word-break:break-word;
+  background:#0a0a10;border:1px solid var(--line);border-radius:10px;padding:.6rem;max-height:180px;overflow:auto;
+  color:var(--muted);
+}
+.footnote{font-size:.68rem;color:var(--muted);margin-top:1rem;line-height:1.4}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+td,th{border-bottom:1px solid rgba(255,255,255,.06);padding:.35rem .25rem;text-align:left}
+th{color:var(--muted);font-weight:600}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div>
+      <h1>Alset <span>Tutor Academia</span></h1>
+      <p class="tag">Tour guiado del ecosistema Alset · de menos a más · nodo demo · <code>tutor.app.ans</code>. Aprende a pensar 0/1/2, agentes, apps, HTTP y CRUD sin ver código fuente propietario.</p>
+    </div>
+    <div class="badges">
+      <span class="badge">tutor.app.ans</span>
+      <span class="badge">academia</span>
+      <span class="badge" id="badgeProg">0%</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="nav">
+      <h2>Niveles</h2>
+      <div class="progress"><i id="progBar"></i></div>
+      <div id="levelNav"></div>
+      <div class="row" style="margin-top:.75rem">
+        <button type="button" class="act" id="btnReset">Reiniciar progreso</button>
+      </div>
+    </nav>
+
+    <main class="panel content" id="main">
+      <!-- filled by JS -->
+    </main>
+  </div>
+  <p class="footnote">Alset Tutor Academia no sustituye el nodo de producción con datos reales. Usa sesión de aprendizaje y hechos sintéticos. Motor: latido ternario + memoria CID + ethics — no es un LLM.</p>
+</div>
+<script>
+const LEVELS = [
+  {
+    id:0, title:"0 · Orientación",
+    lead:"Qué es Alset en una frase: un organismo digital de decisión 0/1/2, no un chatbot de probabilidades.",
+    body:`<div class="card"><strong>Ideas clave</strong><ul class="steps">
+      <li><b>0</b> seguir · <b>1</b> matizar · <b>2</b> sumidero/alarma (absorbente).</li>
+      <li><b>Mind</b> percibe el mensaje, juzga con órganos, recuerda en CID.</li>
+      <li><b>Ethics</b> puede frenar acciones peligrosas (p. ej. borrado masivo).</li>
+      <li>No entrenamos “pesos neuronales”: curamos corpus, memoria y umbrales.</li>
+    </ul></div>
+    <div class="card"><strong>Ejercicio</strong><p>Abre el laboratorio Mind y saluda. Observa la etiqueta de órganos en la respuesta.</p>
+    <div class="row">
+      <a class="act primary" href="/w/mind.app.ans" target="_blank" rel="noopener">Abrir Mind Lab</a>
+      <button type="button" class="act" data-done>Marcar nivel completado</button>
+    </div></div>`
+  },
+  {
+    id:1, title:"1 · Operar con Mind",
+    lead:"Habla en natural. Mind traduce a latido, memoria y herramientas del nodo.",
+    body:`<div class="card"><strong>Prueba estos mensajes</strong>
+    <p style="color:var(--muted);margin:.4rem 0">Sesión de academia (aislada):</p>
+    <div id="log"></div>
+    <div class="row">
+      <input id="chatIn" placeholder="Escribe a Mind…" />
+      <button type="button" class="act primary" id="btnSend">Enviar</button>
+    </div>
+    <div class="row">
+      <button type="button" class="act" data-preset="quién eres">quién eres</button>
+      <button type="button" class="act" data-preset="mira el nodo">mira el nodo</button>
+      <button type="button" class="act" data-preset="cómo uso las sondas">cómo uso las sondas</button>
+      <button type="button" class="act" data-preset="qué puedo hacer con el nodo">ayuda nodo</button>
+    </div>
+    </div>
+    <div class="card"><button type="button" class="act" data-done>Marcar nivel completado</button></div>`
+  },
+  {
+    id:2, title:"2 · Agentes",
+    lead:"Un agente es una identidad en el nodo (id, root CID, rol). No es un ‘agente GPT’.",
+    body:`<div class="card"><strong>Para qué sirven</strong>
+    <ul class="steps">
+      <li>Registrar capacidades y apps del nodo.</li>
+      <li>Mind es un agente residente (mind-alset).</li>
+      <li>Pueden evolucionar de rol: app, servicio API, sonda de dominio.</li>
+    </ul></div>
+    <div class="card"><strong>Práctica</strong>
+    <p style="color:var(--muted)">Pide a Mind el estado del nodo y cuenta cuántos agentes aparecen. Anota el número.</p>
+    <div class="row">
+      <button type="button" class="act primary" data-preset-go="mira el nodo">Consultar agentes vía Mind</button>
+      <button type="button" class="act" id="btnListAgents">GET lista (si existe API)</button>
+    </div>
+    <pre class="http-out" id="agentsOut">—</pre>
+    <button type="button" class="act" data-done>Marcar nivel completado</button>
+    </div>`
+  },
+  {
+    id:3, title:"3 · Apps en el ecosistema",
+    lead:"Una app Alset se publica en el nodo y se alcanza como /w/nombre.app.ans",
+    body:`<div class="card"><strong>Esta academia</strong>
+    <p>Tú estás en <code>/w/tutor.app.ans</code>. Otras apps típicas: mind, valesplus, prismatec, latati…</p>
+    <table><tr><th>Alias</th><th>Uso</th></tr>
+    <tr><td>mind.app.ans</td><td>Laboratorio Mind</td></tr>
+    <tr><td>tutor.app.ans</td><td>Esta academia</td></tr>
+    <tr><td>*.app.ans</td><td>Apps de dominio</td></tr>
+    </table></div>
+    <div class="card"><strong>Qué implica “crear una app”</strong>
+    <ul class="steps">
+      <li>UI (HTML/JS) servida por el nodo.</li>
+      <li>Registro de nombre <code>alias.app.ans</code> → agente / RootCID.</li>
+      <li>Opcional: APIs bajo <code>/api/…</code>.</li>
+    </ul>
+    <button type="button" class="act" data-done>Marcar nivel completado</button>
+    </div>`
+  },
+  {
+    id:4, title:"4 · Alojar en el nodo",
+    lead:"Alojar aquí = el proceso del nodo sirve estáticos y resuelve /w/… No es ‘subir a una nube mágica’ el día 1.",
+    body:`<div class="card"><ul class="steps">
+      <li>Archivos en <code>static/apps/&lt;alias&gt;/</code> (o embed en el binario).</li>
+      <li>Al arrancar, el nodo asegura la app y el alias DNS interno.</li>
+      <li>URL pública = host del nodo + <code>/w/tutor.app.ans</code>.</li>
+      <li>Persistencia de datos de app: cuidado con discos efímeros en PaaS.</li>
+    </ul>
+    <button type="button" class="act" data-done>Marcar nivel completado</button>
+    </div>`
+  },
+  {
+    id:5, title:"5 · HTTP y verbos",
+    lead:"Oficio de equipo: GET lee, POST crea, PUT/PATCH actualiza, DELETE borra.",
+    body:`<div class="card">
+    <div class="grid2">
+      <div>
+        <label>Método</label>
+        <select id="httpMethod">
+          <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option>
+        </select>
+      </div>
+      <div>
+        <label>Ruta</label>
+        <input id="httpPath" value="/api/mind/self" />
+      </div>
+    </div>
+    <label>Body JSON (POST/PUT/PATCH)</label>
+    <textarea id="httpBody">{"text":"hola","session":"tutor-academia"}</textarea>
+    <div class="row"><button type="button" class="act primary" id="btnHttp">Ejecutar request</button></div>
+    <pre class="http-out" id="httpOut">—</pre>
+    </div>
+    <div class="card"><button type="button" class="act" data-done>Marcar nivel completado</button></div>`
+  },
+  {
+    id:6, title:"6 · Endpoints",
+    lead:"Un endpoint es una ruta del nodo con contrato: entrada, salida, errores.",
+    body:`<div class="card"><strong>Ejemplos del ecosistema</strong>
+    <ul class="steps">
+      <li><code>POST /api/mind/tick</code> — latido de Mind</li>
+      <li><code>GET /api/mind/self</code> — estado Mind (si está expuesto)</li>
+      <li><code>/w/&lt;app&gt;.app.ans</code> — UI de aplicación</li>
+      <li><code>/api/…</code> — APIs de dominio (vales, latati, gen…)</li>
+    </ul>
+    <p style="color:var(--muted)">Buen endpoint: documenta método, JSON, códigos 200/400/404/405.</p>
+    <button type="button" class="act" data-done>Marcar nivel completado</button>
+    </div>`
+  },
+  {
+    id:7, title:"7 · CRUD completo",
+    lead:"Alta, lista, editar, borrar sobre un recurso de práctica (solo en este navegador).",
+    body:`<div class="card">
+    <p style="color:var(--muted);margin-bottom:.5rem">Recurso demo <b>notas-academia</b> (localStorage). En producción el CRUD viviría en API del nodo.</p>
+    <input id="noteTitle" placeholder="Título de la nota" />
+    <textarea id="noteBody" placeholder="Contenido…"></textarea>
+    <div class="row">
+      <button type="button" class="act primary" id="noteCreate">POST crear</button>
+      <button type="button" class="act" id="noteList">GET listar</button>
+    </div>
+    <pre class="http-out" id="noteOut">—</pre>
+    <button type="button" class="act" data-done>Marcar nivel completado</button>
+    </div>`
+  },
+  {
+    id:8, title:"8 · Integrar app + Mind",
+    lead:"Patrón: la app gestiona datos; Mind explica estado, ethics y memoria.",
+    body:`<div class="card"><ul class="steps">
+      <li>UI lista productos / notas / contratos demo.</li>
+      <li>Botón “preguntar a Mind” con el resumen del estado.</li>
+      <li>No pidas a Mind que reemplace toda la lógica de negocio.</li>
+    </ul>
+    <div class="row">
+      <button type="button" class="act primary" id="btnIntegrate">Pedir a Mind un resumen de mi progreso</button>
+    </div>
+    <pre class="http-out" id="intOut">—</pre>
+    <button type="button" class="act" data-done>Marcar nivel completado</button>
+    </div>`
+  },
+  {
+    id:9, title:"9 · Nichos y corpus",
+    lead:"Adaptar Mind a un vertical = paquete de corpus + memoria + calibración, no reescribir el motor.",
+    body:`<div class="card"><strong>Estructura mental</strong>
+    <ul class="steps">
+      <li><b>Corpus</b>: type, keys[], text</li>
+      <li><b>Memoria</b>: episodios / hechos anclables + CID</li>
+      <li><b>Calibración</b>: batería de entradas → score</li>
+      <li><b>Nicho</b>: ventas, contratos, soporte… activable por paquete</li>
+    </ul>
+    <p style="color:var(--muted)">Feedback 👍/👎 del equipo → candidatos a corpus del nicho (proceso de curación).</p>
+    <button type="button" class="act" data-done>Marcar nivel completado</button>
+    </div>`
+  }
+];
+
+const KEY = "alset-tutor-progress-v1";
+const SESSION = "tutor-academia-" + (localStorage.getItem("alset-tutor-sid") || (localStorage.setItem("alset-tutor-sid", String(Date.now())), localStorage.getItem("alset-tutor-sid")));
+let done = new Set(JSON.parse(localStorage.getItem(KEY) || "[]"));
+let current = 0;
+
+function save(){ localStorage.setItem(KEY, JSON.stringify([...done])); renderNav(); }
+function renderNav(){
+  const nav = document.getElementById("levelNav");
+  nav.innerHTML = LEVELS.map(l => {
+    const cls = ["level-btn", current===l.id?"active":"", done.has(l.id)?"done":""].filter(Boolean).join(" ");
+    return `<button type="button" class="${cls}" data-level="${l.id}">${l.title}</button>`;
+  }).join("");
+  const pct = Math.round(100 * done.size / LEVELS.length);
+  document.getElementById("progBar").style.width = pct + "%";
+  document.getElementById("badgeProg").textContent = pct + "%";
+  nav.querySelectorAll("[data-level]").forEach(b => b.onclick = () => { current = +b.dataset.level; renderMain(); renderNav(); });
+}
+
+function renderMain(){
+  const L = LEVELS[current];
+  const main = document.getElementById("main");
+  main.innerHTML = `<h3>${L.title}</h3><p class="lead">${L.lead}</p>${L.body}`;
+  main.querySelectorAll("[data-done]").forEach(b => b.onclick = () => { done.add(L.id); save(); });
+  wireLevelExtras(L.id);
+}
+
+async function mindTick(text){
+  const r = await fetch("/api/mind/tick", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ text, session: SESSION })
+  });
+  if(!r.ok) throw new Error("HTTP " + r.status);
+  return r.json();
+}
+
+function appendLog(role, text, meta){
+  const log = document.getElementById("log");
+  if(!log) return;
+  const div = document.createElement("div");
+  div.className = role === "user" ? "msg-u" : "msg-m";
+  div.innerHTML = role === "user"
+    ? `<div>Tú</div>${escapeHtml(text)}`
+    : `<div>Mind</div>${escapeHtml(text)}${meta?`<div class="meta">${escapeHtml(meta)}</div>`:""}`;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+}
+
+function wireLevelExtras(id){
+  if(id === 1){
+    const send = async (t) => {
+      t = (t || document.getElementById("chatIn").value || "").trim();
+      if(!t) return;
+      document.getElementById("chatIn").value = "";
+      appendLog("user", t);
+      try{
+        const j = await mindTick(t);
+        appendLog("mind", j.voice || JSON.stringify(j), j.note || "");
+      }catch(e){
+        appendLog("mind", "No pude contactar Mind: " + e.message);
+      }
+    };
+    document.getElementById("btnSend").onclick = () => send();
+    document.getElementById("chatIn").onkeydown = e => { if(e.key==="Enter") send(); };
+    document.querySelectorAll("[data-preset]").forEach(b => b.onclick = () => send(b.getAttribute("data-preset")));
+  }
+  if(id === 2){
+    const go = document.querySelector("[data-preset-go]");
+    if(go) go.onclick = async () => {
+      const out = document.getElementById("agentsOut");
+      out.textContent = "Consultando…";
+      try{
+        const j = await mindTick("mira el nodo");
+        out.textContent = j.voice || JSON.stringify(j,null,2);
+      }catch(e){ out.textContent = String(e); }
+    };
+    const btn = document.getElementById("btnListAgents");
+    if(btn) btn.onclick = async () => {
+      const out = document.getElementById("agentsOut");
+      out.textContent = "…";
+      for (const path of ["/api/apps/list","/api/listados","/api/agentes"]) {
+        try{
+          const r = await fetch(path);
+          const t = await r.text();
+          out.textContent = path + " → " + r.status + "\n" + t.slice(0,2000);
+          if(r.ok) return;
+        }catch(e){ out.textContent = path + " " + e; }
+      }
+    };
+  }
+  if(id === 5){
+    document.getElementById("btnHttp").onclick = async () => {
+      const method = document.getElementById("httpMethod").value;
+      const path = document.getElementById("httpPath").value.trim() || "/";
+      const body = document.getElementById("httpBody").value;
+      const out = document.getElementById("httpOut");
+      out.textContent = "…";
+      try{
+        const opts = { method, headers:{} };
+        if(method !== "GET" && method !== "DELETE"){
+          opts.headers["Content-Type"] = "application/json";
+          opts.body = body;
+        }
+        const r = await fetch(path, opts);
+        const t = await r.text();
+        out.textContent = method + " " + path + " → " + r.status + "\n" + t.slice(0,4000);
+      }catch(e){ out.textContent = String(e); }
+    };
+  }
+  if(id === 7){
+    const storeKey = "alset-tutor-notes";
+    const read = () => JSON.parse(localStorage.getItem(storeKey) || "[]");
+    const write = (arr) => localStorage.setItem(storeKey, JSON.stringify(arr));
+    document.getElementById("noteCreate").onclick = () => {
+      const title = document.getElementById("noteTitle").value.trim();
+      const body = document.getElementById("noteBody").value.trim();
+      if(!title) return;
+      const arr = read();
+      const note = { id: "n"+Date.now(), title, body, at: new Date().toISOString() };
+      arr.unshift(note);
+      write(arr);
+      document.getElementById("noteOut").textContent = "POST → 201\n" + JSON.stringify(note,null,2);
+    };
+    document.getElementById("noteList").onclick = () => {
+      document.getElementById("noteOut").textContent = "GET → 200\n" + JSON.stringify(read(),null,2);
+    };
+  }
+  if(id === 8){
+    document.getElementById("btnIntegrate").onclick = async () => {
+      const out = document.getElementById("intOut");
+      const pct = Math.round(100 * done.size / LEVELS.length);
+      const text = `Soy alumno de Alset Tutor Academia. Llevo ${done.size} de ${LEVELS.length} niveles (${pct}%). Resume qué debo practicar y recuérdame la diferencia entre corpus y memoria CID.`;
+      out.textContent = "…";
+      try{
+        const j = await mindTick(text);
+        out.textContent = j.voice || JSON.stringify(j,null,2);
+      }catch(e){ out.textContent = String(e); }
+    };
+  }
+}
+
+document.getElementById("btnReset").onclick = () => {
+  if(confirm("¿Reiniciar progreso local?")){ done = new Set(); save(); renderMain(); }
+};
+
+renderNav();
+renderMain();
+</script>
+</body>
+</html>
