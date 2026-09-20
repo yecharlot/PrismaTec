@@ -431,12 +431,29 @@ function wireLevelExtras(id){
     document.getElementById("btnIntegrate").onclick = async () => {
       const out = document.getElementById("intOut");
       const pct = Math.round(100 * done.size / LEVELS.length);
-      const text = `Soy alumno de Alset Tutor Academia. Llevo ${done.size} de ${LEVELS.length} niveles (${pct}%). Resume qué debo practicar y recuérdame la diferencia entre corpus y memoria CID.`;
-      out.textContent = "…";
+      const completed = LEVELS.filter(l => done.has(l.id)).map(l => l.title).join(" · ") || "(ninguno aún)";
+      const pending = LEVELS.filter(l => !done.has(l.id)).map(l => l.title);
+      const next = pending[0] || "Tour completo: repasa HTTP y un nicho de prueba.";
+      // Resumen local (fuente de verdad del progreso). Mind solo orienta el siguiente paso.
+      const local = [
+        "Progreso Academia (local): " + done.size + "/" + LEVELS.length + " (" + pct + "%).",
+        "Completados: " + completed + ".",
+        "Siguiente recomendado: " + next + ".",
+        "Corpus = conocimiento estable del nicho (type/keys/text). Memoria = hechos de esta sesión que se pueden anclar.",
+        "Pidiendo a Mind solo una orientación breve del siguiente paso…"
+      ].join("\n");
+      out.textContent = local;
+      const text = "Modo tutor academia: el alumno ya completó " + done.size + " de " + LEVELS.length +
+        " niveles. El siguiente pendiente es: " + next +
+        ". Responde en 2 o 3 frases: qué practicar ahora y un consejo de operador de nodo. No expliques definiciones técnicas largas.";
       try{
         const j = await mindTick(text);
-        out.textContent = j.voice || JSON.stringify(j,null,2);
-      }catch(e){ out.textContent = String(e); }
+        const tip = (j.voice || "").trim();
+        out.textContent = local.replace("Pidiendo a Mind solo una orientación breve del siguiente paso…",
+          "Orientación Mind:\n" + (tip || "(sin voz)"));
+      }catch(e){
+        out.textContent = local + "\n(Mind no respondió: " + e.message + ")";
+      }
     };
   }
 }
