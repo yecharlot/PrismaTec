@@ -1304,7 +1304,7 @@ func (n *NodoAlset) ltOrderStatus(w http.ResponseWriter, r *http.Request, id str
 
 		rev := ltBump(st)
 		_ = saveLT(ltTen(r), st)
-		n.ltNotify("order", map[string]interface{}{"rev": rev, "order_id": o.ID, "code": o.Code, "status": o.Status, "tenant": ltTen(r)})
+		n.ltNotify("order", map[string]interface{}{"rev": rev, "order_id": o.ID, "code": o.Code, "status": o.Status, "thread": o.Thread, "tenant": ltTen(r)})
 		if prev == "requested" && (o.Status == "pending" || o.Status == "ready") {
 			n.ltNotify("catalog", map[string]interface{}{"rev": rev, "action": "stock_after_confirm", "tenant": ltTen(r)})
 		}

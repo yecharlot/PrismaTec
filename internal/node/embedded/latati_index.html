@@ -247,7 +247,7 @@ function ico(name){
   var sidKey='latati_sid_'+TENANT; var sid=localStorage.getItem(sidKey); if(!sid){sid='c-'+Math.random().toString(36).slice(2,10);localStorage.setItem(sidKey,sid)}
   var CK='latati_cart_'+TENANT, CINFO='latati_client_'+TENANT;
   var cart=JSON.parse(localStorage.getItem(CK)||'{}');
-  var items=[], allCats=[], profile={}, current=null, catalogRev=0, liveConnected=false;
+  var items=[], allCats=[], profile={}, current=null, currentOrder=null, catalogRev=0, liveConnected=false;
   var activeCat='', sortBy='newest', searchQ='';
   function $(id){return document.getElementById(id)}
   function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2400)}
@@ -416,6 +416,7 @@ function ico(name){
 
   function statusLabel(s){return ({requested:'Esperando confirmación',pending:'Confirmado · vale listo',ready:'Listo para recoger',delivered:'Entregado',cancelled:'Cancelado'})[(s||'').toLowerCase()]||s||'—'}
   function renderVale(o){
+    currentOrder=o||null;
     var st=(o.status||'').toLowerCase();
     var isVale=st==='pending'||st==='ready'||st==='delivered';
     var lines=(o.lines||[]).map(function(l){
@@ -436,6 +437,25 @@ function ico(name){
       if(!d.ok){toast(d.error||'No se pudo cancelar');return}
       renderVale(d.order);toast('Cancelado');loadMyOrders();
     };
+  }
+  async function refreshCurrentVale(forceToast){
+    if(!currentOrder)return;
+    if($('view-vale').classList.contains('hidden')&&!forceToast)return;
+    try{
+      var id=currentOrder.id||currentOrder.code;
+      if(!id)return;
+      var d=await(await fetch(API+'/order/'+encodeURIComponent(id)+'?thread='+encodeURIComponent(sid),{cache:'no-store'})).json();
+      if(!d.ok||!d.order)return;
+      var prev=(currentOrder.status||'').toLowerCase();
+      var st=(d.order.status||'').toLowerCase();
+      renderVale(d.order);
+      if(st&&st!==prev){
+        if(st==='pending'||st==='ready')toast('¡Pedido confirmado! Vale listo');
+        else if(st==='cancelled')toast('Pedido cancelado');
+        else if(st==='delivered')toast('Pedido entregado');
+        else toast(statusLabel(st));
+      }
+    }catch(e){}
   }
   async function loadMyOrders(){
     var d=await(await fetch(API+'/orders?thread='+encodeURIComponent(sid))).json();
@@ -509,7 +529,28 @@ function ico(name){
     if(typeof EventSource==='undefined')return;
     try{
       function onCat(ev){if(!sameTenant(ev))return;loadCatalog(true)}
-      function onOrd(ev){if(!sameTenant(ev))return;loadMyOrders();loadCatalog(true)}
+      function onOrd(ev){
+        if(!sameTenant(ev))return;
+        loadMyOrders();
+        loadCatalog(true);
+        try{
+          var d=ev&&ev.data?JSON.parse(ev.data):{};
+          var oid=d.order_id||d.code||'';
+          var thr=d.thread||'';
+          // Actualizar vale si estamos viendo ese pedido (o cualquier cambio de nuestro hilo)
+          var watching=!$('view-vale').classList.contains('hidden')&&currentOrder;
+          var match=!oid||!currentOrder||oid===currentOrder.id||oid===currentOrder.code;
+          var myThread=!thr||thr===sid;
+          if(watching&&match&&myThread){
+            refreshCurrentVale(true);
+          } else if(myThread&&(d.status||oid)){
+            // pedido nuestro aunque no estemos en vale: toast sutil al confirmar
+            if((d.status||'').toLowerCase()==='pending'||(d.status||'').toLowerCase()==='ready'){
+              toast('¡Pedido confirmado! Revisa Vales');
+            }
+          }
+        }catch(e){refreshCurrentVale(true)}
+      }
       function onChat(ev){if(!sameTenant(ev))return;if(!$('view-chat').classList.contains('hidden'))loadChat()}
       var es=new EventSource(API+'/events');
       es.addEventListener('latati_hello',function(){liveConnected=true;loadCatalog(true)});
@@ -532,7 +573,12 @@ function ico(name){
     if(!$('view-catalog').classList.contains('hidden')||!$('view-detail').classList.contains('hidden'))loadCatalog(false);
     if(!$('view-myorders').classList.contains('hidden'))loadMyOrders();
     if(!$('view-chat').classList.contains('hidden'))loadChat();
-  }, liveConnected?14000:5000);
+    // Mientras espera confirmación, refrescar el vale (fallback si SSE falla)
+    if(!$('view-vale').classList.contains('hidden')&&currentOrder){
+      var st=(currentOrder.status||'').toLowerCase();
+      if(st==='requested'||st==='pending'||st==='ready')refreshCurrentVale(false);
+    }
+  }, liveConnected?8000:4000);
 })();
 </script>
 </body>
