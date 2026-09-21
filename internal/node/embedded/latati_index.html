@@ -69,6 +69,9 @@ main{width:100%;max-width:100%;overflow-x:hidden}
 .nav button{background:none;border:none;color:var(--muted);font-size:.6rem;font-weight:600;padding:.35rem .15rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.15rem;flex:1 1 0;min-width:0;max-width:20%;font-family:inherit;line-height:1.1}
 .nav button span{display:flex;align-items:center;justify-content:center}
 .nav button.on{color:var(--accent)}
+.nav button{position:relative}
+.badge-n{position:absolute;top:0;right:18%;min-width:16px;height:16px;border-radius:999px;background:#e85d7a;color:#fff;font-size:.65rem;font-weight:800;display:none;align-items:center;justify-content:center;padding:0 4px}
+.badge-n.show{display:flex}
 .hidden{display:none!important}
 .toast{position:fixed;bottom:calc(72px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--surface2);padding:.55rem 1.1rem;border-radius:999px;opacity:0;transition:.25s;z-index:50;font-size:.85rem;border:1px solid var(--line);max-width:min(90vw,360px);box-shadow:var(--shadow);pointer-events:none;text-align:center}
 body.has-cartbar .toast{bottom:calc(132px + env(safe-area-inset-bottom))}
@@ -203,7 +206,7 @@ h2.section{font-family:"Instrument Serif",Georgia,serif;font-size:1.35rem;font-w
   <button type="button" class="on" data-v="catalog"><span id="nCat"></span>Tienda</button>
   <button type="button" data-v="cart"><span id="nCart"></span>Carrito</button>
   <button type="button" data-v="myorders"><span id="nVales"></span>Vales</button>
-  <button type="button" data-v="chat"><span id="nChat"></span>Chat</button>
+  <button type="button" data-v="chat"><span id="nChat"></span>Chat<span class="badge-n" id="badgeChat">0</span></button>
   <button type="button" data-v="profile"><span id="nYo"></span>Yo</button>
 </nav>
 <div class="toast" id="toast"></div>
@@ -247,7 +250,7 @@ function ico(name){
   var sidKey='latati_sid_'+TENANT; var sid=localStorage.getItem(sidKey); if(!sid){sid='c-'+Math.random().toString(36).slice(2,10);localStorage.setItem(sidKey,sid)}
   var CK='latati_cart_'+TENANT, CINFO='latati_client_'+TENANT;
   var cart=JSON.parse(localStorage.getItem(CK)||'{}');
-  var items=[], allCats=[], profile={}, current=null, currentOrder=null, catalogRev=0, liveConnected=false;
+  var items=[], allCats=[], profile={}, current=null, currentOrder=null, catalogRev=0, liveConnected=false, pendingChat=0;
   var activeCat='', sortBy='newest', searchQ='';
   function $(id){return document.getElementById(id)}
   function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2400)}
@@ -489,7 +492,7 @@ function ico(name){
       if(v==='catalog'){show('catalog');loadCatalog(true)}
       if(v==='cart')show('cart');
       if(v==='myorders'){show('myorders');loadMyOrders()}
-      if(v==='chat'){show('chat');loadChat()}
+      if(v==='chat'){show('chat');pendingChat=0;var bc=$('badgeChat');if(bc){bc.textContent='0';bc.classList.remove('show')}loadChat()}
       if(v==='profile'){show('profile');fillProfileForm()}
     };
   });
@@ -551,7 +554,24 @@ function ico(name){
           }
         }catch(e){refreshCurrentVale(true)}
       }
-      function onChat(ev){if(!sameTenant(ev))return;if(!$('view-chat').classList.contains('hidden'))loadChat()}
+      function onChat(ev){
+        if(!sameTenant(ev))return;
+        try{
+          var d=ev&&ev.data?JSON.parse(ev.data):{};
+          var thr=d.thread||'';
+          // Solo mensajes de nuestro hilo
+          if(thr&&thr!==sid)return;
+          // Si ya estamos en chat: refrescar
+          if(!$('view-chat').classList.contains('hidden')){loadChat();return}
+          // Fuera del chat: avisar
+          pendingChat=(pendingChat||0)+1;
+          var b=$('badgeChat');if(b){b.textContent=String(pendingChat);b.classList.add('show')}
+          toast('Nuevo mensaje de la tienda');
+        }catch(e){
+          if(!$('view-chat').classList.contains('hidden'))loadChat();
+          else toast('Nuevo mensaje de la tienda');
+        }
+      }
       var es=new EventSource(API+'/events');
       es.addEventListener('latati_hello',function(){liveConnected=true;loadCatalog(true)});
       es.addEventListener('latati_catalog',onCat);

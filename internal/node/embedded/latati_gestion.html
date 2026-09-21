@@ -128,7 +128,7 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
   <button type="button" data-v="prods"><span id="iProds"></span>Productos</button>
   <button type="button" data-v="orders"><span id="iOrders"></span>Pedidos<span class="badge-n" id="badgeOrders">0</span></button>
   <button type="button" data-v="interest"><span id="iInt"></span>Interés<span class="badge-n" id="badgeInt">0</span></button>
-  <button type="button" data-v="chat"><span id="iChat"></span>Chat</button>
+  <button type="button" data-v="chat"><span id="iChat"></span>Chat<span class="badge-n" id="badgeChat">0</span></button>
   <button type="button" data-v="cfg"><span id="iCfg"></span>Perfil</button>
 </nav>
 <div class="toast" id="toast"></div>
@@ -176,7 +176,7 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
   var TK='latati_gestor_tok_'+TENANT;
   var token=localStorage.getItem(TK)||'';
   var activeTh='', editingPhoto=null;
-  var pendingOrders=0, pendingInt=0;
+  var pendingOrders=0, pendingInt=0, pendingChat=0;
   function $(id){return document.getElementById(id)}
   function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2600)}
   function H(j){var h={};if(j)h['Content-Type']='application/json';if(token)h['X-LaTati-Token']=token;return h}
@@ -364,7 +364,16 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
   }
 
   var activeTh='';
+  function inChatView(){return !$('view-chat').classList.contains('hidden')}
+  function inThreadView(){return inChatView()&&!!$('threadView')&&!$('threadView').classList.contains('hidden')&&!!activeTh}
+  function notifyChat(msg){
+    pendingChat=(pendingChat||0)+1;
+    setBadge($('badgeChat'), pendingChat);
+    if(msg)toast(msg);
+  }
   async function loadThreads(){
+    // Lista de conversaciones: nunca forzar un hilo abierto
+    activeTh='';
     $('threadView').classList.add('hidden');$('threads').classList.remove('hidden');
     var d=await(await fetch(API+'/threads',{headers:H()})).json();
     var el=$('threads');
@@ -372,10 +381,19 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     el.innerHTML=d.items.map(function(t){
       return '<div class="panel" data-th="'+esc(t.thread)+'" style="cursor:pointer"><strong>'+esc(t.name||t.thread)+'</strong><div class="sub">'+esc(t.last)+'</div></div>';
     }).join('');
-    el.querySelectorAll('.panel').forEach(function(p){p.onclick=function(){openTh(p.getAttribute('data-th'))}});
+    el.querySelectorAll('.panel').forEach(function(p){p.onclick=function(){
+      // Entrada explícita a un chat concreto
+      openTh(p.getAttribute('data-th'));
+    }});
   }
   async function openTh(th){
-    activeTh=th;$('threads').classList.add('hidden');$('threadView').classList.remove('hidden');$('thLabel').textContent=th;
+    if(!th)return;
+    activeTh=th;
+    $('threads').classList.add('hidden');
+    $('threadView').classList.remove('hidden');
+    $('thLabel').textContent=th;
+    // Al entrar a un hilo, limpia badge de chat
+    pendingChat=0;setBadge($('badgeChat'),0);
     var d=await(await fetch(API+'/chat?thread='+encodeURIComponent(th),{headers:H()})).json();
     var box=$('thMsgs');
     box.innerHTML=(d.items||d.messages||[]).map(function(m){
@@ -383,7 +401,11 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     }).join('');
     box.scrollTop=box.scrollHeight;
   }
-  $('btnBackTh').onclick=function(){loadThreads()};
+  // Volver a la lista: queda en la lista (no reabre el último chat)
+  $('btnBackTh').onclick=function(){
+    activeTh='';
+    loadThreads();
+  };
   $('btnThSend').onclick=async function(){
     var t=$('thIn').value.trim();if(!t||!activeTh)return;$('thIn').value='';
     await fetch(API+'/chat',{method:'POST',headers:H(1),body:JSON.stringify({thread:activeTh,from:'gestor',text:t})});
@@ -413,7 +435,7 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
       if(v==='prods')loadProds();
       if(v==='orders')loadOrders();
       if(v==='interest')loadInterests();
-      if(v==='chat')loadThreads();
+      if(v==='chat'){activeTh='';loadThreads();}
       if(v==='cfg')loadCfg();
     };
   });
@@ -430,7 +452,7 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     if(!sameTenant(ev))return;
     try{var d=ev&&ev.data?JSON.parse(ev.data):{};toast(d.code?('Pedido '+d.code):'Nuevo movimiento de pedido')}catch(e){toast('Nuevo movimiento de pedido')}
     loadOrders();
-    if(!$('view-chat').classList.contains('hidden')){if(activeTh)openTh(activeTh);else loadThreads()}
+    // No tocar la vista de chat: el usuario decide dónde está
   }
   function onInterestEvent(ev){
     if(!token)return;
@@ -442,25 +464,35 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     if(typeof EventSource==='undefined')return;
     try{
       function onCat(ev){if(!token||!sameTenant(ev))return;loadProds()}
-      function onChat(ev){
+      function handleChatEvent(ev){
         if(!token||!sameTenant(ev))return;
-        if(!$('view-chat').classList.contains('hidden')){if(activeTh)openTh(activeTh);else loadThreads()}
-        else toast('Nuevo mensaje en chat');
+        var thr='';
+        try{var d=ev&&ev.data?JSON.parse(ev.data):{};thr=d.thread||''}catch(e){}
+        // Solo refrescar mensajes si YA estamos dentro de ESE hilo
+        if(inThreadView()&&activeTh&&(!thr||thr===activeTh)){
+          openTh(activeTh);
+          return;
+        }
+        // En lista de chats: actualizar lista, no abrir ningún hilo
+        if(inChatView()&&!inThreadView()){
+          loadThreads();
+          notifyChat('Nuevo mensaje en chat');
+          return;
+        }
+        // En otra vista: solo avisar (badge + toast)
+        notifyChat('Nuevo mensaje en chat');
       }
       var es=new EventSource(API+'/events');
       es.addEventListener('latati_hello',function(){if(token){loadProds();loadOrders();loadInterests()}});
       es.addEventListener('latati_catalog',onCat);
       es.addEventListener('latati_order',onOrderEvent);
       es.addEventListener('latati_interest',onInterestEvent);
-      es.addEventListener('latati_chat',onChat);
+      es.addEventListener('latati_chat',handleChatEvent);
       var es2=new EventSource('/api/pulse');
       es2.addEventListener('latati_order',onOrderEvent);
       es2.addEventListener('latati_interest',onInterestEvent);
       es2.addEventListener('latati_catalog',onCat);
-      es2.addEventListener('latati_chat',function(ev){
-        if(!token||!sameTenant(ev))return;
-        if(!$('view-chat').classList.contains('hidden')){if(activeTh)openTh(activeTh);else loadThreads()}
-      });
+      es2.addEventListener('latati_chat',handleChatEvent);
     }catch(e){}
   }
   $('liveIco').innerHTML=ico('live');
@@ -473,7 +505,10 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     if(!$('view-prods').classList.contains('hidden'))loadProds();
     loadOrders();
     loadInterests();
-    if(!$('view-chat').classList.contains('hidden')){if(activeTh)openTh(activeTh);else loadThreads()}
+    // Chat: solo refrescar el hilo si el usuario está DENTRO de él.
+    // Si está en la lista, solo actualizar la lista (sin reabrir chats).
+    if(inThreadView())openTh(activeTh);
+    else if(inChatView())loadThreads();
   },5000);
 })();
 </script>
