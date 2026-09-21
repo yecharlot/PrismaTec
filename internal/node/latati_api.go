@@ -449,6 +449,8 @@ func ltProductAvailable(p *ltProduct) bool {
 }
 
 // ltNotify pushes a La Tati event over the node pulse/gossip SSE bus.
+// Always includes tenant so multi-tenant clients can filter; uses broadcastPulse
+// (unexported bus) via the exported BroadcastPulse alias for compile safety.
 func (n *NodoAlset) ltNotify(kind string, extra map[string]interface{}) {
 	if n == nil {
 		return
@@ -461,7 +463,10 @@ func (n *NodoAlset) ltNotify(kind string, extra map[string]interface{}) {
 	for k, v := range extra {
 		payload[k] = v
 	}
-	go n.BroadcastPulse("latati_"+kind, payload)
+	if _, ok := payload["tenant"]; !ok {
+		payload["tenant"] = "latati"
+	}
+	go n.broadcastPulse("latati_"+kind, payload)
 }
 
 
@@ -865,7 +870,7 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 		st.Products[in.ID] = &in
 		rev := ltBump(st)
 		_ = saveLT(ltTen(r), st)
-		n.ltNotify("catalog", map[string]interface{}{"rev": rev, "product_id": in.ID, "action": "upsert"})
+		n.ltNotify("catalog", map[string]interface{}{"rev": rev, "product_id": in.ID, "action": "upsert", "tenant": ltTen(r)})
 		ltJSON(w, 200, map[string]interface{}{"ok": true, "item": in, "rev": rev})
 		return
 	}
@@ -901,7 +906,7 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 			rev = ltBump(st)
 			_ = saveLT(ltTen(r), st)
 		}
-		n.ltNotify("catalog", map[string]interface{}{"rev": rev, "product_id": id, "action": "photo"})
+		n.ltNotify("catalog", map[string]interface{}{"rev": rev, "product_id": id, "action": "photo", "tenant": ltTen(r)})
 		ten := ltTen(r)
 		photoURL := "/api/latati/photo/" + id
 		if ten != "latati" {
@@ -955,7 +960,7 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 			ltDeletePhotoCF(ltTen(r), id)
 			rev := ltBump(st)
 			_ = saveLT(ltTen(r), st)
-			n.ltNotify("catalog", map[string]interface{}{"rev": rev, "product_id": id, "action": "delete"})
+			n.ltNotify("catalog", map[string]interface{}{"rev": rev, "product_id": id, "action": "delete", "tenant": ltTen(r)})
 			ltJSON(w, 200, map[string]interface{}{"ok": true, "rev": rev})
 			return
 		default:
@@ -965,7 +970,7 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 		p.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 		rev := ltBump(st)
 		_ = saveLT(ltTen(r), st)
-		n.ltNotify("catalog", map[string]interface{}{"rev": rev, "product_id": id, "action": action})
+		n.ltNotify("catalog", map[string]interface{}{"rev": rev, "product_id": id, "action": action, "tenant": ltTen(r)})
 		ltJSON(w, 200, map[string]interface{}{"ok": true, "item": p, "rev": rev})
 		return
 	}
@@ -1102,7 +1107,7 @@ func (n *NodoAlset) ltPlaceOrder(w http.ResponseWriter, r *http.Request) {
 	})
 	rev := ltBump(st)
 	_ = saveLT(ltTen(r), st)
-	n.ltNotify("order", map[string]interface{}{"rev": rev, "order_id": ord.ID, "code": ord.Code, "thread": ord.Thread, "status": "requested"})
+	n.ltNotify("order", map[string]interface{}{"rev": rev, "order_id": ord.ID, "code": ord.Code, "thread": ord.Thread, "status": "requested", "tenant": ltTen(r)})
 	ltJSON(w, 200, map[string]interface{}{"ok": true, "order": ord, "rev": rev, "message": "Solicitud enviada. La gestora confirmará disponibilidad."})
 }
 
@@ -1299,12 +1304,12 @@ func (n *NodoAlset) ltOrderStatus(w http.ResponseWriter, r *http.Request, id str
 
 		rev := ltBump(st)
 		_ = saveLT(ltTen(r), st)
-		n.ltNotify("order", map[string]interface{}{"rev": rev, "order_id": o.ID, "code": o.Code, "status": o.Status})
+		n.ltNotify("order", map[string]interface{}{"rev": rev, "order_id": o.ID, "code": o.Code, "status": o.Status, "tenant": ltTen(r)})
 		if prev == "requested" && (o.Status == "pending" || o.Status == "ready") {
-			n.ltNotify("catalog", map[string]interface{}{"rev": rev, "action": "stock_after_confirm"})
+			n.ltNotify("catalog", map[string]interface{}{"rev": rev, "action": "stock_after_confirm", "tenant": ltTen(r)})
 		}
 		if o.Status == "cancelled" && (prev == "pending" || prev == "ready") {
-			n.ltNotify("catalog", map[string]interface{}{"rev": rev, "action": "stock_after_cancel"})
+			n.ltNotify("catalog", map[string]interface{}{"rev": rev, "action": "stock_after_cancel", "tenant": ltTen(r)})
 		}
 		ltJSON(w, 200, map[string]interface{}{"ok": true, "order": *o, "rev": rev})
 		return
@@ -1398,7 +1403,7 @@ func (n *NodoAlset) ltChat(w http.ResponseWriter, r *http.Request) {
 		}
 		rev := ltBump(st)
 		_ = saveLT(ltTen(r), st)
-		n.ltNotify("chat", map[string]interface{}{"rev": rev, "thread": msg.Thread, "from": msg.From})
+		n.ltNotify("chat", map[string]interface{}{"rev": rev, "thread": msg.Thread, "from": msg.From, "tenant": ltTen(r)})
 		ltJSON(w, 200, map[string]interface{}{"ok": true, "item": msg, "rev": rev})
 		return
 	}
@@ -1473,10 +1478,11 @@ func (n *NodoAlset) ltEventsSSE(w http.ResponseWriter, r *http.Request) {
 		n.pulseSubscribersMu.Unlock()
 		cancel()
 	}()
+	tenant := ltTen(r)
 	ltMu.Lock()
-	rev := loadLT(ltTen(r)).Rev
+	rev := loadLT(tenant).Rev
 	ltMu.Unlock()
-	hello, _ := json.Marshal(map[string]interface{}{"ok": true, "app": "latati", "rev": rev})
+	hello, _ := json.Marshal(map[string]interface{}{"ok": true, "app": "latati", "rev": rev, "tenant": tenant})
 	fmt.Fprintf(w, "event: latati_hello\ndata: %s\n\n", hello)
 	flusher.Flush()
 	ticker := time.NewTicker(20 * time.Second)
@@ -1554,8 +1560,8 @@ func (n *NodoAlset) ltInterest(w http.ResponseWriter, r *http.Request) {
 	})
 	rev := ltBump(st)
 	_ = saveLT(ltTen(r), st)
-	n.ltNotify("interest", map[string]interface{}{"rev": rev, "product_id": p.ID, "title": p.Title, "client": in.ClientName})
-	n.ltNotify("chat", map[string]interface{}{"rev": rev, "thread": in.Thread, "from": "client"})
+	n.ltNotify("interest", map[string]interface{}{"rev": rev, "product_id": p.ID, "title": p.Title, "client": in.ClientName, "tenant": ltTen(r)})
+	n.ltNotify("chat", map[string]interface{}{"rev": rev, "thread": in.Thread, "from": "client", "tenant": ltTen(r)})
 	ltJSON(w, 200, map[string]interface{}{"ok": true, "item": item, "rev": rev})
 }
 
@@ -1661,7 +1667,7 @@ func (n *NodoAlset) ltOrderDelete(w http.ResponseWriter, r *http.Request, id str
 	st.Orders = out
 	rev := ltBump(st)
 	_ = saveLT(ltTen(r), st)
-	n.ltNotify("order", map[string]interface{}{"rev": rev, "action": "delete", "order_id": id})
+	n.ltNotify("order", map[string]interface{}{"rev": rev, "action": "delete", "order_id": id, "tenant": ltTen(r)})
 	ltJSON(w, 200, map[string]interface{}{"ok": true, "rev": rev})
 }
 

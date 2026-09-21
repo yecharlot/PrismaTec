@@ -418,35 +418,49 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     };
   });
 
+  function sameTenant(ev){
+    try{
+      var d=ev&&ev.data?JSON.parse(ev.data):{};
+      if(!d||d.tenant==null||d.tenant==='')return true;
+      return String(d.tenant)===String(TENANT);
+    }catch(e){return true}
+  }
   function onOrderEvent(ev){
     if(!token)return;
+    if(!sameTenant(ev))return;
     try{var d=ev&&ev.data?JSON.parse(ev.data):{};toast(d.code?('Pedido '+d.code):'Nuevo movimiento de pedido')}catch(e){toast('Nuevo movimiento de pedido')}
     loadOrders();
     if(!$('view-chat').classList.contains('hidden')){if(activeTh)openTh(activeTh);else loadThreads()}
   }
-  function onInterestEvent(){
+  function onInterestEvent(ev){
     if(!token)return;
+    if(ev&&!sameTenant(ev))return;
     toast('Nuevo interés de precio');
     loadInterests();
   }
   function bindLive(){
     if(typeof EventSource==='undefined')return;
     try{
-      var es=new EventSource(API+'/events');
-      es.addEventListener('latati_hello',function(){if(token){loadProds();loadOrders();loadInterests()}});
-      es.addEventListener('latati_catalog',function(){if(token)loadProds()});
-      es.addEventListener('latati_order',onOrderEvent);
-      es.addEventListener('latati_interest',onInterestEvent);
-      es.addEventListener('latati_chat',function(){
-        if(!token)return;
+      function onCat(ev){if(!token||!sameTenant(ev))return;loadProds()}
+      function onChat(ev){
+        if(!token||!sameTenant(ev))return;
         if(!$('view-chat').classList.contains('hidden')){if(activeTh)openTh(activeTh);else loadThreads()}
         else toast('Nuevo mensaje en chat');
-      });
+      }
+      var es=new EventSource(API+'/events');
+      es.addEventListener('latati_hello',function(){if(token){loadProds();loadOrders();loadInterests()}});
+      es.addEventListener('latati_catalog',onCat);
+      es.addEventListener('latati_order',onOrderEvent);
+      es.addEventListener('latati_interest',onInterestEvent);
+      es.addEventListener('latati_chat',onChat);
       var es2=new EventSource('/api/pulse');
       es2.addEventListener('latati_order',onOrderEvent);
       es2.addEventListener('latati_interest',onInterestEvent);
-      es2.addEventListener('latati_catalog',function(){if(token)loadProds()});
-      es2.addEventListener('latati_chat',function(){if(token&&!$('view-chat').classList.contains('hidden')){if(activeTh)openTh(activeTh);else loadThreads()}});
+      es2.addEventListener('latati_catalog',onCat);
+      es2.addEventListener('latati_chat',function(ev){
+        if(!token||!sameTenant(ev))return;
+        if(!$('view-chat').classList.contains('hidden')){if(activeTh)openTh(activeTh);else loadThreads()}
+      });
     }catch(e){}
   }
   $('liveIco').innerHTML=ico('live');

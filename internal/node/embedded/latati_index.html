@@ -498,18 +498,30 @@ function ico(name){
       if(pid)openDetail(pid);
     }catch(e){}
   }
+  function sameTenant(ev){
+    try{
+      var d=ev&&ev.data?JSON.parse(ev.data):{};
+      if(!d||d.tenant==null||d.tenant==='')return true;
+      return String(d.tenant)===String(TENANT);
+    }catch(e){return true}
+  }
   function bindLive(){
     if(typeof EventSource==='undefined')return;
     try{
+      function onCat(ev){if(!sameTenant(ev))return;loadCatalog(true)}
+      function onOrd(ev){if(!sameTenant(ev))return;loadMyOrders();loadCatalog(true)}
+      function onChat(ev){if(!sameTenant(ev))return;if(!$('view-chat').classList.contains('hidden'))loadChat()}
       var es=new EventSource(API+'/events');
       es.addEventListener('latati_hello',function(){liveConnected=true;loadCatalog(true)});
-      es.addEventListener('latati_catalog',function(){loadCatalog(true)});
-      es.addEventListener('latati_order',function(){loadMyOrders();loadCatalog(true)});
-      es.addEventListener('latati_chat',function(){if(!$('view-chat').classList.contains('hidden'))loadChat()});
+      es.addEventListener('latati_catalog',onCat);
+      es.addEventListener('latati_order',onOrd);
+      es.addEventListener('latati_chat',onChat);
       es.onerror=function(){liveConnected=false};
+      es.onopen=function(){liveConnected=true};
       var es2=new EventSource('/api/pulse');
-      es2.addEventListener('latati_catalog',function(){loadCatalog(true)});
-      es2.addEventListener('latati_order',function(){loadMyOrders();loadCatalog(true)});
+      es2.addEventListener('latati_catalog',onCat);
+      es2.addEventListener('latati_order',onOrd);
+      es2.addEventListener('latati_chat',onChat);
     }catch(e){}
   }
   $('nCat').innerHTML=ico('grid');$('nCart').innerHTML=ico('cart');$('nVales').innerHTML=ico('ticket');$('nChat').innerHTML=ico('chat');$('nYo').innerHTML=ico('user');
