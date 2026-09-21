@@ -1234,9 +1234,3 @@ func (n *NodoAlset) broadcastPulse(eventType string, data interface{}) {
 		}
 	}
 }
-
-// BroadcastPulse is the exported alias for apps (La Tati and others).
-// Keeps existing call sites compiling while the bus stays unexported.
-func (n *NodoAlset) BroadcastPulse(eventType string, data interface{}) {
-	n.broadcastPulse(eventType, data)
-}

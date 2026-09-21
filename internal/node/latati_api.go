@@ -449,8 +449,8 @@ func ltProductAvailable(p *ltProduct) bool {
 }
 
 // ltNotify pushes a La Tati event over the node pulse/gossip SSE bus.
-// Always includes tenant so multi-tenant clients can filter; uses broadcastPulse
-// (unexported bus) via the exported BroadcastPulse alias for compile safety.
+// Always includes tenant so multi-tenant clients can filter.
+// Uses BroadcastPulse (host_adapter) so gens still resonate on the same event.
 func (n *NodoAlset) ltNotify(kind string, extra map[string]interface{}) {
 	if n == nil {
 		return
@@ -466,7 +466,7 @@ func (n *NodoAlset) ltNotify(kind string, extra map[string]interface{}) {
 	if _, ok := payload["tenant"]; !ok {
 		payload["tenant"] = "latati"
 	}
-	go n.broadcastPulse("latati_"+kind, payload)
+	go n.BroadcastPulse("latati_"+kind, payload)
 }
 
 
