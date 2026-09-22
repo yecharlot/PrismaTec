@@ -14,6 +14,15 @@ var latatiAppHTML []byte
 //go:embed embedded/latati_gestion.html
 var latatiGestionHTML []byte
 
+//go:embed embedded/latati_icon_192.png
+var latatiIcon192 []byte
+
+//go:embed embedded/latati_icon_512.png
+var latatiIcon512 []byte
+
+//go:embed embedded/latati_icon.svg
+var latatiIconSVG []byte
+
 const latatiAppID = "app-latati"
 const latatiAlias = "latati.app.ans"
 const latatiGestionID = "app-latati-gestion"

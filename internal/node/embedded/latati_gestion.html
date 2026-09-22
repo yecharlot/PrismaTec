@@ -33,6 +33,11 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
 .wrap{padding:1rem}
 .photo-btn{display:block;border:1px dashed var(--line);border-radius:10px;padding:.8rem;text-align:center;color:var(--muted);cursor:pointer}
 .preview{width:100%;max-height:180px;object-fit:cover;border-radius:10px;margin:.35rem 0}
+
+.pwa-install{position:fixed;right:12px;bottom:72px;z-index:50;border:none;border-radius:999px;padding:.65rem 1rem;font-weight:700;font-size:.8rem;font-family:inherit;cursor:pointer;background:linear-gradient(120deg,#e8b4c8,#c4789a);color:#1a1014;box-shadow:0 8px 24px rgba(0,0,0,.35);display:none;align-items:center;gap:.4rem}
+.pwa-install.show{display:inline-flex}
+.pwa-install.hidden-forced{display:none!important}
+
 </style>
 </head>
 <body>
@@ -144,6 +149,7 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
   <button type="button" data-v="chat"><span id="iChat"></span>Chat<span class="badge-n" id="badgeChat">0</span></button>
   <button type="button" data-v="cfg"><span id="iCfg"></span>Perfil</button>
 </nav>
+<button type="button" class="pwa-install" id="btnPwaInstall" aria-label="Instalar app">⬇ Instala App</button>
 <div class="toast" id="toast"></div>
 <script>
 
@@ -232,19 +238,26 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     el.querySelectorAll('.be').forEach(function(b){b.onclick=function(){openEdit(b.closest('.panel').getAttribute('data-id'), list)}});
     el.querySelectorAll('.ba').forEach(function(b){b.onclick=async function(){
       var id=b.closest('.panel').getAttribute('data-id');
-      await fetch(API+'/gestor/products/'+id+'/soldout',{method:'POST',headers:H(1),body:'{}'});
+      var d=await(await fetch(API+'/gestor/products/'+id+'/soldout',{method:'POST',headers:H(1),body:'{}'})).json().catch(function(){return{}});
+      if(d&&d.ok===false){toast(d.error||'No se pudo marcar agotado');return}
       toast('Marcado agotado · se elimina del catálogo a las 24 h');loadProds();
     }});
     el.querySelectorAll('.br').forEach(function(b){b.onclick=async function(){
       var id=b.closest('.panel').getAttribute('data-id');
-      await fetch(API+'/gestor/products/'+id+'/restore',{method:'POST',headers:H(1),body:'{}'});
+      var d=await(await fetch(API+'/gestor/products/'+id+'/restore',{method:'POST',headers:H(1),body:'{}'})).json().catch(function(){return{}});
+      if(d&&d.ok===false){toast(d.error||'No se pudo reactivar');return}
       toast('Producto reactivado');loadProds();
     }});
     el.querySelectorAll('.bd').forEach(function(b){b.onclick=async function(){
-      if(!confirm('¿Eliminar producto?'))return;
+      if(!confirm('¿Eliminar este producto de forma permanente?'))return;
       var id=b.closest('.panel').getAttribute('data-id');
-      await fetch(API+'/gestor/products/'+id+'/delete',{method:'POST',headers:H(1),body:'{}'});
-      loadProds();
+      try{
+        var res=await fetch(API+'/gestor/products/'+id+'/delete',{method:'POST',headers:H(1),body:'{}'});
+        var d=await res.json().catch(function(){return{}});
+        if(!res.ok||d.ok===false){toast((d&&d.error)||('Error '+res.status));return}
+        toast('Producto eliminado');
+        loadProds();
+      }catch(e){toast('Error de red al eliminar')}
     }});
   }
 
@@ -562,6 +575,63 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
   $('liveIco').innerHTML=ico('live');
   $('iProds').innerHTML=ico('bag');$('iOrders').innerHTML=ico('list');$('iInt').innerHTML=ico('star');$('iChat').innerHTML=ico('chat');$('iCfg').innerHTML=ico('gear');
   bindLive();
+
+  (function setupPWA(){
+    var isGestion=!!document.getElementById('view-prods')||location.pathname.indexOf('gestion')>=0;
+    var base=typeof API!=='undefined'?API:'/api/latati';
+    var manifestURL=base+'/manifest.webmanifest'+(isGestion?'?gestion=1':'');
+    var link=document.querySelector('link[rel="manifest"]');
+    if(!link){link=document.createElement('link');link.rel='manifest';document.head.appendChild(link)}
+    link.href=manifestURL;
+    var icon=document.querySelector('link[rel="apple-touch-icon"]');
+    if(!icon){icon=document.createElement('link');icon.rel='apple-touch-icon';document.head.appendChild(icon)}
+    icon.href=base+'/icon-192.png';
+    var metaTheme=document.querySelector('meta[name="theme-color"]');
+    if(!metaTheme){metaTheme=document.createElement('meta');metaTheme.name='theme-color';document.head.appendChild(metaTheme)}
+    metaTheme.content='#e8b4c8';
+    var metaApple=document.querySelector('meta[name="apple-mobile-web-app-capable"]');
+    if(!metaApple){metaApple=document.createElement('meta');metaApple.name='apple-mobile-web-app-capable';metaApple.content='yes';document.head.appendChild(metaApple)}
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register(base+'/sw.js',{scope:'/'}).catch(function(){});
+    }
+    var btn=$('btnPwaInstall');
+    if(!btn)return;
+    var dismissed=localStorage.getItem('latati_pwa_dismiss')==='1';
+    var standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+    if(standalone){btn.classList.add('hidden-forced');return}
+    var deferred=null;
+    window.addEventListener('beforeinstallprompt',function(e){
+      e.preventDefault();
+      deferred=e;
+      if(!dismissed)btn.classList.add('show');
+    });
+    // iOS / browsers without beforeinstallprompt: show button with instructions
+    var isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+    var isSafari=/safari/i.test(navigator.userAgent)&&!/chrome|crios|fxios/i.test(navigator.userAgent);
+    if(!deferred && (isIOS||isSafari) && !dismissed){
+      setTimeout(function(){if(!deferred)btn.classList.add('show')},1200);
+    }
+    // Android Chrome sometimes fires late
+    setTimeout(function(){if(!standalone&&!dismissed&&(deferred||isIOS))btn.classList.add('show')},2500);
+    btn.onclick=async function(){
+      if(deferred){
+        deferred.prompt();
+        try{var ch=await deferred.userChoice;if(ch&&ch.outcome==='accepted'){btn.classList.add('hidden-forced');localStorage.setItem('latati_pwa_dismiss','1')}}catch(e){}
+        deferred=null;
+        return;
+      }
+      if(isIOS){
+        toast('En iPhone: toca Compartir → “Añadir a pantalla de inicio”');
+      }else{
+        toast('Usa el menú del navegador → “Instalar app” o “Añadir a pantalla de inicio”');
+      }
+    };
+    // long-press hide
+    var t=0;
+    btn.addEventListener('pointerdown',function(){t=Date.now()});
+    btn.addEventListener('pointerup',function(){if(Date.now()-t>700){localStorage.setItem('latati_pwa_dismiss','1');btn.classList.add('hidden-forced');toast('Botón oculto')}});
+  })();
+
   if(token){show('prods');loadProds();loadOrders();loadInterests()}
   else show('login');
   setInterval(function(){

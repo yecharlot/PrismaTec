@@ -95,6 +95,11 @@ h2.section{font-family:"Instrument Serif",Georgia,serif;font-size:1.35rem;font-w
 .detail-hero{max-width:100%;height:auto}
 .detail-body h2{font-family:"Instrument Serif",Georgia,serif;font-size:1.6rem;font-weight:400;margin:.2rem 0 .4rem}
 .pill{display:inline-block;font-size:.68rem;padding:.2rem .55rem;border-radius:999px;background:rgba(232,180,200,.12);color:var(--accent);font-weight:600}
+
+.pwa-install{position:fixed;right:12px;bottom:72px;z-index:50;border:none;border-radius:999px;padding:.65rem 1rem;font-weight:700;font-size:.8rem;font-family:inherit;cursor:pointer;background:linear-gradient(120deg,#e8b4c8,#c4789a);color:#1a1014;box-shadow:0 8px 24px rgba(0,0,0,.35);display:none;align-items:center;gap:.4rem}
+.pwa-install.show{display:inline-flex}
+.pwa-install.hidden-forced{display:none!important}
+
 </style>
 </head>
 <body>
@@ -211,6 +216,7 @@ h2.section{font-family:"Instrument Serif",Georgia,serif;font-size:1.35rem;font-w
   <button type="button" data-v="chat"><span id="nChat"></span>Chat<span class="badge-n" id="badgeChat">0</span></button>
   <button type="button" data-v="profile"><span id="nYo"></span>Yo</button>
 </nav>
+<button type="button" class="pwa-install" id="btnPwaInstall" aria-label="Instalar app">⬇ Instala App</button>
 <div class="toast" id="toast"></div>
 <script>
 function ico(name){
@@ -637,6 +643,63 @@ function ico(name){
   fillProfileForm();
   if(!hasClient())show('profile');
   loadCatalog(true);updateBar();bindLive();
+
+  (function setupPWA(){
+    var isGestion=!!document.getElementById('view-prods')||location.pathname.indexOf('gestion')>=0;
+    var base=typeof API!=='undefined'?API:'/api/latati';
+    var manifestURL=base+'/manifest.webmanifest'+(isGestion?'?gestion=1':'');
+    var link=document.querySelector('link[rel="manifest"]');
+    if(!link){link=document.createElement('link');link.rel='manifest';document.head.appendChild(link)}
+    link.href=manifestURL;
+    var icon=document.querySelector('link[rel="apple-touch-icon"]');
+    if(!icon){icon=document.createElement('link');icon.rel='apple-touch-icon';document.head.appendChild(icon)}
+    icon.href=base+'/icon-192.png';
+    var metaTheme=document.querySelector('meta[name="theme-color"]');
+    if(!metaTheme){metaTheme=document.createElement('meta');metaTheme.name='theme-color';document.head.appendChild(metaTheme)}
+    metaTheme.content='#e8b4c8';
+    var metaApple=document.querySelector('meta[name="apple-mobile-web-app-capable"]');
+    if(!metaApple){metaApple=document.createElement('meta');metaApple.name='apple-mobile-web-app-capable';metaApple.content='yes';document.head.appendChild(metaApple)}
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register(base+'/sw.js',{scope:'/'}).catch(function(){});
+    }
+    var btn=$('btnPwaInstall');
+    if(!btn)return;
+    var dismissed=localStorage.getItem('latati_pwa_dismiss')==='1';
+    var standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+    if(standalone){btn.classList.add('hidden-forced');return}
+    var deferred=null;
+    window.addEventListener('beforeinstallprompt',function(e){
+      e.preventDefault();
+      deferred=e;
+      if(!dismissed)btn.classList.add('show');
+    });
+    // iOS / browsers without beforeinstallprompt: show button with instructions
+    var isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+    var isSafari=/safari/i.test(navigator.userAgent)&&!/chrome|crios|fxios/i.test(navigator.userAgent);
+    if(!deferred && (isIOS||isSafari) && !dismissed){
+      setTimeout(function(){if(!deferred)btn.classList.add('show')},1200);
+    }
+    // Android Chrome sometimes fires late
+    setTimeout(function(){if(!standalone&&!dismissed&&(deferred||isIOS))btn.classList.add('show')},2500);
+    btn.onclick=async function(){
+      if(deferred){
+        deferred.prompt();
+        try{var ch=await deferred.userChoice;if(ch&&ch.outcome==='accepted'){btn.classList.add('hidden-forced');localStorage.setItem('latati_pwa_dismiss','1')}}catch(e){}
+        deferred=null;
+        return;
+      }
+      if(isIOS){
+        toast('En iPhone: toca Compartir → “Añadir a pantalla de inicio”');
+      }else{
+        toast('Usa el menú del navegador → “Instalar app” o “Añadir a pantalla de inicio”');
+      }
+    };
+    // long-press hide
+    var t=0;
+    btn.addEventListener('pointerdown',function(){t=Date.now()});
+    btn.addEventListener('pointerup',function(){if(Date.now()-t>700){localStorage.setItem('latati_pwa_dismiss','1');btn.classList.add('hidden-forced');toast('Botón oculto')}});
+  })();
+
   setInterval(function(){
     if(!$('view-catalog').classList.contains('hidden')||!$('view-detail').classList.contains('hidden'))loadCatalog(false);
     if(!$('view-myorders').classList.contains('hidden'))loadMyOrders();

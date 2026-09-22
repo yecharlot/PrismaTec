@@ -312,13 +312,17 @@ func ltRand(n int) string {
 func loadLT(tenant string) *ltStore {
 	tenant = ltNormTenant(tenant)
 	if st, ok := ltMemMap[tenant]; ok && st != nil {
+		// Solo resucitar catálogo desde CF si el CF es estrictamente más nuevo.
+		// Si el gestor borró el último producto, st.Rev > cf.Rev y debe quedar vacío.
 		if ltCFEnabled() && len(st.Products) == 0 {
 			if cfSt, err := ltLoadFromCF(tenant); err == nil && cfSt != nil && len(cfSt.Products) > 0 {
-				fmt.Printf("📦 La Tati[%s]: recarga CF (rev=%d, products=%d)\n", tenant, cfSt.Rev, len(cfSt.Products))
-				ltMemMap[tenant] = cfSt
-				raw, _ := json.MarshalIndent(cfSt, "", "  ")
-				_ = os.WriteFile(ltStorePath(tenant), raw, 0o644)
-				return cfSt
+				if cfSt.Rev > st.Rev {
+					fmt.Printf("📦 La Tati[%s]: recarga CF más nueva (rev=%d, products=%d)\n", tenant, cfSt.Rev, len(cfSt.Products))
+					ltMemMap[tenant] = cfSt
+					raw, _ := json.MarshalIndent(cfSt, "", "  ")
+					_ = os.WriteFile(ltStorePath(tenant), raw, 0o644)
+					return cfSt
+				}
 			}
 		}
 		return st
@@ -395,10 +399,15 @@ func saveLT(tenant string, st *ltStore) error {
 	}
 	diskErr := os.WriteFile(ltStorePath(tenant), b, 0o644)
 	if ltCFEnabled() {
+		// No pisar CF solo si el store en memoria es un esqueleto viejo (rev baja)
+		// y CF tiene catálogo. Si el usuario borró productos a propósito, st.Rev
+		// es mayor y SÍ se debe persistir el vacío.
 		if len(st.Products) == 0 {
 			if cfSt, err := ltLoadFromCF(tenant); err == nil && cfSt != nil && len(cfSt.Products) > 0 {
-				fmt.Printf("⚠️ La Tati[%s]: no se pisa CF (%d productos) con store vacío\n", tenant, len(cfSt.Products))
-				return diskErr
+				if st.Rev <= cfSt.Rev {
+					fmt.Printf("⚠️ La Tati[%s]: no se pisa CF (%d productos, rev local=%d cf=%d)\n", tenant, len(cfSt.Products), st.Rev, cfSt.Rev)
+					return diskErr
+				}
 			}
 		}
 		if err := ltSaveToCF(tenant, st); err != nil {
@@ -535,6 +544,33 @@ func (n *NodoAlset) handleLaTatiAPI(w http.ResponseWriter, r *http.Request) {
 		path = strings.Join(parts, "/")
 	}
 	r = r.WithContext(context.WithValue(r.Context(), ltTenKey{}, tenant))
+	// PWA assets (icon / manifest / service worker)
+	if path == "icon.png" || path == "icon-192.png" {
+		w.Header().Set("Content-Type", "image/png")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		w.Write(latatiIcon192)
+		return
+	}
+	if path == "icon-512.png" {
+		w.Header().Set("Content-Type", "image/png")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		w.Write(latatiIcon512)
+		return
+	}
+	if path == "icon.svg" {
+		w.Header().Set("Content-Type", "image/svg+xml")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		w.Write(latatiIconSVG)
+		return
+	}
+	if path == "manifest.webmanifest" || path == "manifest.json" {
+		n.ltManifest(w, r, tenant)
+		return
+	}
+	if path == "sw.js" {
+		n.ltServiceWorker(w, r)
+		return
+	}
 	if path == "" {
 		ltJSON(w, 200, map[string]interface{}{
 			"ok": true, "name": "La Tati core", "tenant": tenant,
@@ -2017,6 +2053,64 @@ func (n *NodoAlset) ltTenants(w http.ResponseWriter, r *http.Request) {
 		"api": "/api/latati/t/" + slug,
 		"pin": pin,
 	})
+}
+
+func (n *NodoAlset) ltManifest(w http.ResponseWriter, r *http.Request, tenant string) {
+	ltMu.Lock()
+	st := loadLT(tenant)
+	name := strings.TrimSpace(st.Profile.Name)
+	ltMu.Unlock()
+	if name == "" {
+		name = "La Tati"
+	}
+	base := "/api/latati"
+	startURL := "/w/latati.app.ans"
+	if tenant != "latati" {
+		base = "/api/latati/t/" + tenant
+		startURL = "/w/" + tenant + ".app.ans"
+	}
+	if r.URL.Query().Get("gestion") == "1" {
+		if tenant == "latati" {
+			startURL = "/w/gestion-latati.app.ans"
+		} else {
+			startURL = "/w/gestion-" + tenant + ".app.ans"
+		}
+	}
+	icon192 := base + "/icon-192.png"
+	icon512 := base + "/icon-512.png"
+	m := map[string]interface{}{
+		"name":             name,
+		"short_name":       name,
+		"description":      "Catálogo, pedidos y chat",
+		"start_url":        startURL,
+		"scope":            "/",
+		"display":          "standalone",
+		"orientation":      "portrait-primary",
+		"background_color": "#0c0a0f",
+		"theme_color":      "#e8b4c8",
+		"icons": []map[string]interface{}{
+			{"src": icon192, "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+			{"src": icon512, "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+		},
+	}
+	w.Header().Set("Content-Type", "application/manifest+json")
+	w.Header().Set("Cache-Control", "no-cache")
+	_ = json.NewEncoder(w).Encode(m)
+}
+
+func (n *NodoAlset) ltServiceWorker(w http.ResponseWriter, r *http.Request) {
+	js := "self.addEventListener('install',function(e){self.skipWaiting();});\n" +
+		"self.addEventListener('activate',function(e){e.waitUntil(self.clients.claim());});\n" +
+		"self.addEventListener('fetch',function(e){\n" +
+		"  var u=new URL(e.request.url);\n" +
+		"  if(u.pathname.indexOf('.app.ans')>=0||u.pathname.indexOf('manifest.webmanifest')>=0||u.pathname.indexOf('/icon-')>=0){\n" +
+		"    e.respondWith(fetch(e.request).catch(function(){return caches.match(e.request);}));\n" +
+		"  }\n" +
+		"});\n"
+	w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+	w.Header().Set("Service-Worker-Allowed", "/")
+	w.Header().Set("Cache-Control", "no-cache")
+	_, _ = w.Write([]byte(js))
 }
 
 func (n *NodoAlset) registerLaTatiAPI(extra map[string]http.HandlerFunc) {
