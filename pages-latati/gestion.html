@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script src="./config.js"></script>
+<base href="./"/>
+<meta name="latati-twin" content="github-pages+cloudflare-edge"/>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>La Tati · Gestión</title>
+<style>
+:root{--bg:#0e0a12;--card:#1a1220;--line:#3a2a44;--ink:#f4eef8;--muted:#a894b4;--gold:#ffc85a;--mint:#5dffc2;--pink:#ff6eb4}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding-bottom:70px}
+.top{position:sticky;top:0;z-index:10;background:rgba(14,10,18,.95);border-bottom:1px solid var(--line);padding:.7rem 1rem;display:flex;justify-content:space-between;align-items:center;gap:.5rem}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:.9rem;margin-bottom:.7rem}
+.btn{width:100%;border:none;border-radius:12px;padding:.7rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:.35rem}
+.btn-gold{background:linear-gradient(120deg,var(--gold),#ff9f43);color:#2a1800}
+.btn-mint{background:var(--mint);color:#0a2018}
+.btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn-row{display:flex;gap:.4rem;margin-top:.45rem;flex-wrap:wrap}
+.btn-row .btn{width:auto;flex:1;min-width:90px;padding:.55rem;font-size:.8rem}
+input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line);border-radius:10px;padding:.65rem;color:var(--ink);font-size:16px;margin:.25rem 0 .45rem}
+.nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#120a14;border-top:1px solid var(--line);padding:.25rem;z-index:20}
+.nav button{flex:1;background:none;border:none;color:var(--muted);font-size:.6rem;padding:.35rem .1rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:.12rem;position:relative}
+.nav button.on{color:var(--gold)}
+.badge-n{position:absolute;top:0;right:12%;min-width:16px;height:16px;border-radius:999px;background:var(--pink);color:#fff;font-size:.65rem;font-weight:800;display:none;align-items:center;justify-content:center;padding:0 4px}
+.badge-n.show{display:flex}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#2a1830;padding:.5rem 1rem;border-radius:999px;opacity:0;transition:.25s;z-index:40;font-size:.85rem;border:1px solid var(--line);max-width:90%;text-align:center}
+.toast.show{opacity:1}
+.hidden{display:none!important}
+.sub{color:var(--muted);font-size:.8rem}
+.thumb{width:64px;height:64px;border-radius:10px;object-fit:cover;background:#2a1520}
+.row{display:flex;gap:.6rem;align-items:flex-start}
+.badge{font-size:.68rem;padding:.1rem .4rem;border-radius:999px;background:rgba(255,200,90,.15);color:var(--gold)}
+.price{color:var(--gold);font-weight:700}
+.live{display:flex;align-items:center;gap:.35rem;color:var(--mint);font-size:.75rem}
+.wrap{padding:1rem}
+.photo-btn{display:block;border:1px dashed var(--line);border-radius:10px;padding:.8rem;text-align:center;color:var(--muted);cursor:pointer}
+.preview{width:100%;max-height:180px;object-fit:cover;border-radius:10px;margin:.35rem 0}
+
+.pwa-install{position:fixed;right:12px;bottom:72px;z-index:50;border:none;border-radius:999px;padding:.65rem 1rem;font-weight:700;font-size:.8rem;font-family:inherit;cursor:pointer;background:linear-gradient(120deg,#e8b4c8,#c4789a);color:#1a1014;box-shadow:0 8px 24px rgba(0,0,0,.35);display:none;align-items:center;gap:.4rem}
+.pwa-install.show{display:inline-flex}
+.pwa-install.hidden-forced{display:none!important}
+
+
+.wake-overlay{position:fixed;inset:0;z-index:100;background:rgba(12,10,15,.88);display:none;align-items:center;justify-content:center;padding:1.5rem;text-align:center}
+.wake-overlay.show{display:flex}
+.wake-box{max-width:320px;background:#1a1520;border:1px solid rgba(232,180,200,.35);border-radius:16px;padding:1.25rem 1.1rem;color:#f5eef2}
+.wake-box strong{display:block;margin-bottom:.45rem;font-size:1.05rem}
+.wake-box p{font-size:.85rem;color:#b8a8b0;line-height:1.45;margin:0}
+.wake-spin{width:28px;height:28px;border:3px solid rgba(232,180,200,.25);border-top-color:#e8b4c8;border-radius:50%;margin:0 auto .85rem;animation:wakeSpin .8s linear infinite}
+@keyframes wakeSpin{to{transform:rotate(360deg)}}
+
+</style>
+</head>
+<body>
+<div id="twinBanner" style="position:fixed;top:0;left:0;right:0;z-index:60;background:#1a3a2a;color:#9eecc0;font-size:.72rem;text-align:center;padding:.25rem .5rem">Gemelo Edge · Cloudflare + GitHub Pages (Render no se toca)</div>
+<div class="top">
+  <div><strong id="who">Gestión</strong><div class="sub">La Tati</div></div>
+  <div class="live" id="livePill"><span id="liveIco"></span> <span>en vivo</span></div>
+</div>
+<div class="wrap">
+  <section id="view-login">
+    <div class="panel">
+      <h2 style="margin-bottom:.5rem">Acceso gestora</h2>
+      <input id="pin" type="password" placeholder="PIN" autocomplete="current-password"/>
+      <button type="button" class="btn btn-gold" id="btnLogin">Entrar</button>
+    </div>
+  </section>
+  <section id="view-prods" class="hidden">
+    <button type="button" class="btn btn-gold" id="btnNew" style="margin-bottom:.7rem">Nuevo producto</button>
+    <div id="list"></div>
+  </section>
+  <section id="view-edit" class="hidden">
+    <div class="panel">
+      <h2 id="editTitle">Producto</h2>
+      <input type="hidden" id="fId"/>
+      <label class="sub">Título</label><input id="fTitle"/>
+      <label class="sub">Categoría</label>
+      <select id="fCat">
+        <option value="General">General</option>
+        <option value="Ropa">Ropa</option>
+        <option value="Calzado">Calzado</option>
+        <option value="Accesorios">Accesorios</option>
+        <option value="Belleza">Belleza</option>
+        <option value="Hogar">Hogar</option>
+        <option value="__new__">Otra (escribir…)</option>
+      </select>
+      <input id="fCatNew" class="hidden" placeholder="Nueva categoría"/>
+      <label class="sub">Entrega</label>
+      <select id="fDelivery">
+        <option value="both">Recogida o domicilio</option>
+        <option value="pickup">Solo recogida</option>
+        <option value="delivery">Solo domicilio</option>
+      </select>
+      <label class="sub">Dirección de recogida (opcional, si difiere del perfil)</label><input id="fPickup" placeholder="Calle, municipio…"/>
+      <label class="sub">Nombre del dueño/a del negocio (opcional)</label><input id="fOwner" placeholder="Ej. Dayanis Pérez Soria"/>
+      <label class="sub">Descripción</label><textarea id="fDesc" rows="2"></textarea>
+      <label class="sub">Precio (vacío = por confirmar)</label><input id="fPrice" type="number" step="0.01" inputmode="decimal"/>
+      <label class="sub">Moneda</label>
+      <select id="fCur"><option>CUP</option><option>USD</option><option>EUR</option><option>Zelle</option></select>
+      <label class="sub">Cantidad (opcional, el negocio casi nunca la informa)</label><input id="fStock" type="number" placeholder="Dejar vacío = sin control de stock"/>
+      <label class="photo-btn" id="photoLabel">Elegir foto<input type="file" id="fPhoto" accept="image/*" hidden/></label>
+      <img id="fPreview" class="preview hidden" alt=""/>
+      <div class="btn-row">
+        <button type="button" class="btn btn-gold" id="btnSave">Guardar</button>
+        <button type="button" class="btn btn-ghost" id="btnCancelEdit">Volver</button>
+      </div>
+    </div>
+  </section>
+  <section id="view-orders" class="hidden">
+    <h2 style="margin-bottom:.35rem">Pedidos</h2>
+    <p class="sub" style="margin-bottom:.6rem">Confirma tras validar con el negocio. Puedes borrar cancelados.</p>
+    <div id="orders"></div>
+  </section>
+  <section id="view-interest" class="hidden">
+    <h2 style="margin-bottom:.35rem">Intereses de precio</h2>
+    <p class="sub" style="margin-bottom:.6rem">Clientes que quieren saber el precio de un producto.</p>
+    <div id="interests"></div>
+  </section>
+  <section id="view-chat" class="hidden">
+    <div id="chatListBar" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.55rem">
+      <button type="button" class="btn btn-ghost" id="btnClearAllChat" style="width:auto;padding:.45rem .7rem;font-size:.78rem">Borrar todo el chat</button>
+    </div>
+    <div id="threads"></div>
+    <div id="threadView" class="hidden">
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.5rem;align-items:center">
+        <button type="button" class="btn btn-ghost" id="btnBackTh" style="width:auto">Volver</button>
+        <button type="button" class="btn btn-ghost" id="btnClearTh" style="width:auto;padding:.45rem .7rem;font-size:.78rem">Borrar este chat</button>
+      </div>
+      <div class="sub" id="thLabel" style="margin-bottom:.4rem"></div>
+      <div id="thMsgs" class="panel" style="max-height:45vh;overflow:auto;display:flex;flex-direction:column;gap:.35rem"></div>
+      <div style="display:flex;gap:.4rem;margin-top:.5rem">
+        <input id="thIn" placeholder="Responder…" style="margin:0;flex:1"/>
+        <button type="button" class="btn btn-gold" id="btnThSend" style="width:auto;padding:.65rem .9rem">Enviar</button>
+      </div>
+    </div>
+  </section>
+  <section id="view-cfg" class="hidden">
+    <div class="panel">
+      <h2>Perfil público</h2>
+      <label class="sub">Nombre</label><input id="cfgName"/>
+      <label class="sub">WhatsApp</label><input id="cfgWa"/>
+      <label class="sub">Dirección de recogida</label><input id="cfgAddr"/>
+      <label class="sub">Bio / eslogan</label><textarea id="cfgBio" rows="2"></textarea>
+      <label class="sub">Eslogan corto (tagline)</label><input id="cfgTagline" placeholder="Tu pedido · tu vale"/>
+      <label class="sub">Color principal</label><input id="cfgAccent" type="color" value="#e8b4c8" style="height:42px;padding:0.2rem"/>
+      <label class="sub">Color secundario</label><input id="cfgAccent2" type="color" value="#c4789a" style="height:42px;padding:0.2rem"/>
+      <label class="sub">PIN nuevo (opcional)</label><input id="cfgPin" type="password"/>
+      <button type="button" class="btn btn-gold" id="btnCfgSave">Guardar</button>
+    </div>
+    <div class="panel" style="border-color:rgba(232,93,122,.35)">
+      <h2 style="color:var(--pink,#e85d7a)">Zona peligrosa</h2>
+      <p class="sub" style="margin:.35rem 0 .7rem">Borra pedidos, chats e intereses y reinicia el contador. El próximo pedido será <strong>LT-0001</strong>. Se conservan perfil y catálogo de productos.</p>
+      <button type="button" class="btn btn-ghost" id="btnResetStore" style="border-color:rgba(232,93,122,.5);color:#ffb4c0">Reiniciar datos de la tienda</button>
+    </div>
+  </section>
+</div>
+<nav class="nav hidden" id="nav">
+  <button type="button" data-v="prods"><span id="iProds"></span>Productos</button>
+  <button type="button" data-v="orders"><span id="iOrders"></span>Pedidos<span class="badge-n" id="badgeOrders">0</span></button>
+  <button type="button" data-v="interest"><span id="iInt"></span>Interés<span class="badge-n" id="badgeInt">0</span></button>
+  <button type="button" data-v="chat"><span id="iChat"></span>Chat<span class="badge-n" id="badgeChat">0</span></button>
+  <button type="button" data-v="cfg"><span id="iCfg"></span>Perfil</button>
+</nav>
+<button type="button" class="pwa-install" id="btnPwaInstall" aria-label="Instalar app">⬇ Instala App</button>
+<div class="wake-overlay" id="wakeOverlay" aria-live="polite"><div class="wake-box"><div class="wake-spin"></div><strong>Despertando el servidor…</strong><p>El plan gratuito de Render duerme tras 15 min sin uso. En unos segundos vuelve. No cierres la app.</p></div></div>
+<div class="toast" id="toast"></div>
+<script>
+
+  function ico(name){
+    var s={
+      bag:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/></svg>',
+      list:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
+      chat:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>',
+      gear:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+      star:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.5 6.5L21 10l-5 4.2L17.5 21 12 17.5 6.5 21 8 14.2 3 10l6.5-.5z"/></svg>',
+      live:'<svg viewBox="0 0 24 24" width="10" height="10"><circle cx="12" cy="12" r="6" fill="currentColor"/></svg>',
+      trash:'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"/></svg>'
+    };
+    return s[name]||'';
+  }
+
+(function(){
+
+  // TWIN: GitHub Pages + Cloudflare Edge (Render intacto)
+  window.LATATI_EDGE_API = window.LATATI_EDGE_API || "https://latati-edge.lhmolam-877.workers.dev/api/latati";
+  var API = window.LATATI_EDGE_API;
+
+
+  // —— Resiliencia Render Free (cold start ~60s) ——
+  (function(){
+    var wakeEl=null;
+    function showWake(on){
+      if(!wakeEl)wakeEl=document.getElementById('wakeOverlay');
+      if(!wakeEl)return;
+      wakeEl.classList.toggle('show',!!on);
+    }
+    var origFetch=window.fetch.bind(window);
+    window.fetch=async function(input, init){
+      init=init||{};
+      var attempts=0, max=4, lastErr=null;
+      while(attempts<max){
+        attempts++;
+        var ctrl=typeof AbortController!=='undefined'?new AbortController():null;
+        var timer=null;
+        try{
+          if(ctrl){
+            init={...init, signal:ctrl.signal};
+            // cold start can take ~60s on free plan
+            timer=setTimeout(function(){try{ctrl.abort()}catch(e){}}, attempts===1?25000:70000);
+          }
+          if(attempts>1)showWake(true);
+          var res=await origFetch(input, init);
+          if(timer)clearTimeout(timer);
+          // Render sometimes returns 502/503/504 while spinning up
+          if(res && (res.status===502||res.status===503||res.status===504||res.status===408) && attempts<max){
+            showWake(true);
+            await new Promise(function(r){setTimeout(r, 1500*attempts)});
+            continue;
+          }
+          showWake(false);
+          return res;
+        }catch(e){
+          if(timer)clearTimeout(timer);
+          lastErr=e;
+          var name=(e&&e.name)||'';
+          var msg=String((e&&e.message)||e||'');
+          var retryable=name==='AbortError'||/failed|network|fetch|load|timeout/i.test(msg);
+          if(retryable && attempts<max){
+            showWake(true);
+            await new Promise(function(r){setTimeout(r, 2000*attempts)});
+            continue;
+          }
+          showWake(false);
+          throw e;
+        }
+      }
+      showWake(false);
+      throw lastErr||new Error('servidor no responde');
+    };
+    // Ping ligero al abrir (ayuda a despertar sin quemar horas continuamente)
+    try{
+      var base=typeof API!=='undefined'?API:'/api/latati';
+      origFetch(base.replace(/\/$/,'')+'/',{method:'GET',cache:'no-store'}).catch(function(){});
+    }catch(e){}
+  })();
+
+  function detectTenant(){
+    var q=new URLSearchParams(location.search).get('t');
+    if(q)return String(q).toLowerCase().replace(/[^a-z0-9-]/g,'').replace(/^gestion-/,'')||'latati';
+    var p=location.pathname||'';
+    var m=p.match(/\/w\/(gestion-)?([a-z0-9-]+)\.app\.ans/i);
+    if(!m)return 'latati';
+    var s=(m[2]||'latati').toLowerCase();
+    if(s==='gestion-latati')return 'latati';
+    return s||'latati';
+  }
+  var TENANT=detectTenant();
+  function applyTheme(prof){
+    if(!prof)return;
+    var r=document.documentElement;
+    if(prof.accent)r.style.setProperty('--accent',prof.accent);
+    if(prof.accent2)r.style.setProperty('--accent2',prof.accent2);
+    if(prof.bg)r.style.setProperty('--bg',prof.bg);
+    if(prof.surface)r.style.setProperty('--surface',prof.surface);
+    if(prof.tagline&&document.getElementById('brandSub'))document.getElementById('brandSub').textContent=prof.tagline;
+    if(prof.name){
+      document.title=prof.name+(document.title.indexOf('Gestión')>=0?' · Gestión':'');
+      if(document.getElementById('brandName'))document.getElementById('brandName').textContent=prof.name;
+    }
+  }
+  var TK='latati_gestor_tok_'+TENANT;
+  var token=localStorage.getItem(TK)||'';
+  var activeTh='', editingPhoto=null;
+  var pendingOrders=0, pendingInt=0, pendingChat=0;
+  function $(id){return document.getElementById(id)}
+  function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2600)}
+  function H(j){var h={};if(j)h['Content-Type']='application/json';if(token)h['X-LaTati-Token']=token;return h}
+  function esc(s){return String(s||'').replace(/</g,'&lt;')}
+  function hide(){['login','prods','edit','orders','interest','chat','cfg'].forEach(function(v){$('view-'+v).classList.add('hidden')})}
+  function show(v){
+    hide();$('view-'+v).classList.remove('hidden');
+    if(v==='login') $('nav').classList.add('hidden'); else $('nav').classList.remove('hidden');
+    document.querySelectorAll('.nav button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-v')===v)});
+  }
+  function authed(){return !!token}
+  function setBadge(el,n){if(!el)return;el.textContent=String(n);el.classList.toggle('show',n>0)}
+  function photo(p){return p&&p.photo?(API+'/photo/'+p.id+'?t='+(p.updated_at||'')):''}
+
+  async function login(){
+    var d=await(await fetch(API+'/gestor/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:$('pin').value})})).json();
+    if(!d.ok){toast('PIN incorrecto');return}
+    token=d.token;localStorage.setItem(TK,token);
+    if(d.profile)applyTheme(d.profile);
+    $('who').textContent=(d.profile&&d.profile.name)||'Gestora';
+    show('prods');loadProds();loadOrders();loadInterests();
+  }
+  $('btnLogin').onclick=login;
+
+  async function loadProds(){
+    var d=await(await fetch(API+'/gestor/products',{headers:H()})).json();
+    if(!d.ok){token='';localStorage.removeItem(TK);show('login');return}
+    var el=$('list'), list=d.items||[];
+    if(!list.length){el.innerHTML='<div class="sub" style="padding:1rem;text-align:center">Sin productos</div>';return}
+    el.innerHTML=list.map(function(p){
+      var img=photo(p);
+      var st=p.sold_out?'AGOTADO':((p.price_pending||!(p.price>0))?'Sin precio':(p.currency+' '+Number(p.price).toFixed(2)));
+      return '<div class="panel" data-id="'+p.id+'"><div class="row">'+(img?'<img class="thumb" src="'+img+'" alt="">':'')+
+        '<div style="flex:1"><strong>'+esc(p.title)+'</strong><div class="sub">'+esc(p.category||'General')+'</div><div class="price">'+esc(st)+'</div>'+
+        '<div class="sub">'+(p.sold_out?'Fuera del catálogo cliente':'Sin control de stock')+'</div>'+
+        '<div class="btn-row"><button type="button" class="btn btn-ghost be">Editar</button>'+
+        (p.sold_out?'<button type="button" class="btn btn-mint br">Reactivar</button>':'<button type="button" class="btn btn-ghost ba">Agotado</button>')+
+        '<button type="button" class="btn btn-ghost bd">Borrar</button></div></div></div></div>';
+    }).join('');
+    el.querySelectorAll('.be').forEach(function(b){b.onclick=function(){openEdit(b.closest('.panel').getAttribute('data-id'), list)}});
+    el.querySelectorAll('.ba').forEach(function(b){b.onclick=async function(){
+      var id=b.closest('.panel').getAttribute('data-id');
+      var d=await(await fetch(API+'/gestor/products/'+id+'/soldout',{method:'POST',headers:H(1),body:'{}'})).json().catch(function(){return{}});
+      if(d&&d.ok===false){toast(d.error||'No se pudo marcar agotado');return}
+      toast('Marcado agotado · se elimina del catálogo a las 24 h');loadProds();
+    }});
+    el.querySelectorAll('.br').forEach(function(b){b.onclick=async function(){
+      var id=b.closest('.panel').getAttribute('data-id');
+      var d=await(await fetch(API+'/gestor/products/'+id+'/restore',{method:'POST',headers:H(1),body:'{}'})).json().catch(function(){return{}});
+      if(d&&d.ok===false){toast(d.error||'No se pudo reactivar');return}
+      toast('Producto reactivado');loadProds();
+    }});
+    el.querySelectorAll('.bd').forEach(function(b){b.onclick=async function(){
+      if(!confirm('¿Eliminar este producto de forma permanente?'))return;
+      var id=b.closest('.panel').getAttribute('data-id');
+      try{
+        var res=await fetch(API+'/gestor/products/'+id+'/delete',{method:'POST',headers:H(1),body:'{}'});
+        var d=await res.json().catch(function(){return{}});
+        if(!res.ok||d.ok===false){toast((d&&d.error)||('Error '+res.status));return}
+        toast('Producto eliminado');
+        loadProds();
+      }catch(e){toast('Error de red al eliminar')}
+    }});
+  }
+
+  function openEdit(id, list){
+    var p=(list||[]).find(function(x){return x.id===id})||{};
+    $('fId').value=p.id||'';$('fTitle').value=p.title||'';$('fDesc').value=p.description||'';
+    var cat=p.category||'General';
+    var known=['General','Ropa','Calzado','Accesorios','Belleza','Hogar'];
+    if(known.indexOf(cat)>=0){$('fCat').value=cat;$('fCatNew').classList.add('hidden');$('fCatNew').value=''}
+    else{$('fCat').value='__new__';$('fCatNew').classList.remove('hidden');$('fCatNew').value=cat}
+    $('fDelivery').value=(p.delivery_mode==='pickup'||p.delivery_mode==='delivery')?p.delivery_mode:'both';
+    if($('fPickup'))$('fPickup').value=p.pickup_address||'';
+    if($('fOwner'))$('fOwner').value=p.owner_name||'';
+    $('fPrice').value=(p.price_pending||!(p.price>0))?'':p.price;
+    $('fCur').value=p.currency||'CUP';$('fStock').value='';
+    editingPhoto=null;$('fPreview').classList.add('hidden');
+    if(p.photo){$('fPreview').src=photo(p);$('fPreview').classList.remove('hidden')}
+    $('editTitle').textContent=p.id?'Editar':'Nuevo producto';
+    show('edit');
+  }
+  $('btnNew').onclick=function(){openEdit('',[])};
+  if($('fCat'))$('fCat').onchange=function(){
+    if($('fCat').value==='__new__')$('fCatNew').classList.remove('hidden');
+    else{$('fCatNew').classList.add('hidden');$('fCatNew').value=''}
+  };
+  $('btnCancelEdit').onclick=function(){show('prods');loadProds()};
+  $('fPhoto').onchange=function(e){
+    var f=e.target.files&&e.target.files[0];if(!f)return;
+    editingPhoto=f;var r=new FileReader();r.onload=function(){$('fPreview').src=r.result;$('fPreview').classList.remove('hidden')};r.readAsDataURL(f);
+  };
+  $('btnSave').onclick=async function(){
+    var priceVal=$('fPrice').value.trim();
+    var catVal=$('fCat').value;
+    if(catVal==='__new__'){catVal=($('fCatNew').value.trim()||'General')}
+    var body={id:$('fId').value||undefined,title:$('fTitle').value.trim(),category:catVal,delivery_mode:$('fDelivery').value,description:$('fDesc').value.trim(),
+      currency:$('fCur').value,price:priceVal===''?0:Number(priceVal),price_pending:priceVal==='',pickup_address:($('fPickup')&&$('fPickup').value.trim())||'',owner_name:($('fOwner')&&$('fOwner').value.trim())||''};
+    if(!body.title){toast('Título requerido');return}
+    var d=await(await fetch(API+'/gestor/products',{method:'POST',headers:H(1),body:JSON.stringify(body)})).json();
+    if(!d.ok){toast(d.error||'Error');return}
+    var id=d.item&&d.item.id;
+    if(editingPhoto&&id){
+      var fd=new FormData();fd.append('photo',editingPhoto);
+      await fetch(API+'/gestor/products/'+id+'/photo',{method:'POST',headers:{'X-LaTati-Token':token},body:fd});
+    }
+    toast('Guardado');show('prods');loadProds();
+  };
+
+  function stLabel(s){
+    return ({requested:'Por confirmar',pending:'Confirmado · preparando',ready:'Listo para entrega/recogida',delivered:'Entregado',cancelled:'Cancelado'})[s]||s||'—';
+  }
+  async function loadOrders(){
+    var d=await(await fetch(API+'/orders',{headers:H()})).json();
+    if(!d.ok)return;
+    pendingOrders=d.pending_count||0;
+    setBadge($('badgeOrders'), pendingOrders);
+    if(typeof d.interest_count==='number'){pendingInt=d.interest_count;setBadge($('badgeInt'),pendingInt)}
+    var list=d.items||[],el=$('orders');
+    if(!$('view-orders').classList.contains('hidden')){
+      // marcar visto al estar en la vista
+      fetch(API+'/gestor/orders-seen',{method:'POST',headers:H(1),body:'{}'}).catch(function(){});
+      setBadge($('badgeOrders'),0);pendingOrders=0;
+    }
+    if(!list.length){el.innerHTML='<div class="sub" style="text-align:center;padding:1rem">Sin pedidos</div>';return}
+    list=list.slice().sort(function(a,b){
+      var wa=a.status==='requested'?0:1,wb=b.status==='requested'?0:1;
+      if(wa!==wb)return wa-wb;return (b.ts||'').localeCompare(a.ts||'');
+    });
+    el.innerHTML=list.map(function(o){
+      var st=(o.status||'').toLowerCase(),actions='';
+      if(st==='requested'){
+        actions='<div class="btn-row"><button type="button" class="btn btn-gold st" data-id="'+esc(o.code)+'" data-s="confirm">Confirmar</button>'+
+          '<button type="button" class="btn btn-ghost st" data-id="'+esc(o.code)+'" data-s="cancelled">Cancelar</button></div>'+
+          '<p class="sub" style="margin-top:.35rem">Valida con el negocio antes de confirmar.</p>';
+      } else if(st==='pending'||st==='ready'){
+        actions='<div class="btn-row"><button type="button" class="btn btn-ghost st" data-id="'+esc(o.code)+'" data-s="ready">Listo</button>'+
+          '<button type="button" class="btn btn-ghost st" data-id="'+esc(o.code)+'" data-s="delivered">Entregado</button>'+
+          '<button type="button" class="btn btn-ghost st" data-id="'+esc(o.code)+'" data-s="cancelled">Cancelar</button></div>';
+      } else if(st==='cancelled'||st==='delivered'){
+        actions='<div class="btn-row"><button type="button" class="btn btn-ghost del" data-id="'+esc(o.id||o.code)+'">Eliminar de la lista</button></div>';
+      }
+      return '<div class="panel"><strong>'+esc(o.code)+'</strong> <span class="badge">'+esc(stLabel(st))+'</span>'+
+        '<div class="sub">'+esc(o.client_name)+' · '+esc(o.client_phone)+'</div>'+
+        '<div class="sub">'+(o.delivery_type==='delivery'?('Domicilio: '+esc(o.delivery_address||'—')):('Recogida'+(o.address?' · '+esc(o.address):'')))+'</div>'+
+        '<div class="price">'+(o.currency||'')+' '+Number(o.total).toFixed(2)+'</div>'+
+        '<div class="sub">'+(o.lines||[]).map(function(l){return l.qty+'× '+l.title}).join(', ')+'</div>'+actions+'</div>';
+    }).join('');
+        el.querySelectorAll('.st').forEach(function(b){b.onclick=async function(){
+      var s=b.getAttribute('data-s');
+      var payload={status:s};
+      if(s==='cancelled'){
+        var reason=prompt('Motivo breve de la cancelación (se notificará al cliente):','');
+        if(reason===null)return;
+        reason=String(reason).trim();
+        if(!reason){toast('Indica un motivo breve');return}
+        payload.reason=reason;
+      }
+      var d=await(await fetch(API+'/order/'+encodeURIComponent(b.getAttribute('data-id'))+'/status',{method:'POST',headers:H(1),body:JSON.stringify(payload)})).json();
+      if(!d.ok){toast(d.error||'Error');return}
+      toast(s==='confirm'||s==='pending'?'Confirmado · preparando entrega':(s==='ready'?'Marcado listo':(s==='cancelled'?'Cancelado · cliente notificado':'Actualizado')));
+      loadOrders();loadProds();
+    }});
+    el.querySelectorAll('.del').forEach(function(b){b.onclick=async function(){
+      var d=await(await fetch(API+'/order/'+encodeURIComponent(b.getAttribute('data-id'))+'/delete',{method:'POST',headers:H(1),body:'{}'})).json();
+      if(!d.ok){toast(d.error||'Error');return}
+      toast('Eliminado');loadOrders();
+    }});
+  }
+
+  async function loadInterests(){
+    var d=await(await fetch(API+'/gestor/interests',{headers:H()})).json();
+    if(!d.ok)return;
+    var list=d.items||[];
+    pendingInt=list.filter(function(x){return !x.seen}).length;
+    setBadge($('badgeInt'), pendingInt);
+    var el=$('interests');
+    if(!list.length){el.innerHTML='<div class="sub" style="text-align:center;padding:1rem">Sin intereses aún</div>';return}
+    var hasRead=list.some(function(x){return x.seen});
+    el.innerHTML=(hasRead?'<button type="button" class="btn btn-ghost" id="btnClearRead" style="margin-bottom:.6rem">Eliminar intereses leídos</button>':'')+list.map(function(it){
+      return '<div class="panel"><strong>'+esc(it.title||it.product_id)+'</strong>'+(it.seen?'':' <span class="badge">nuevo</span>')+
+        '<div class="sub">'+esc(it.client_name)+' · '+esc(it.client_phone)+'</div>'+
+        '<div class="sub">'+esc(it.ts||'')+'</div>'+
+        '<div class="btn-row">'+(it.seen?'':'<button type="button" class="btn btn-ghost mk" data-id="'+it.id+'">Marcar visto</button>')+
+        (it.seen?'<button type="button" class="btn btn-ghost deli" data-id="'+it.id+'">Eliminar</button>':'')+
+        '<button type="button" class="btn btn-gold go" data-pid="'+it.product_id+'">Ir al producto</button></div></div>';
+    }).join('');
+    var clr=$('btnClearRead');
+    if(clr)clr.onclick=async function(){
+      await fetch(API+'/gestor/interests',{method:'POST',headers:H(1),body:JSON.stringify({clear_read:true})});
+      toast('Intereses leídos eliminados');loadInterests();
+    };
+    el.querySelectorAll('.mk').forEach(function(b){b.onclick=async function(){
+      await fetch(API+'/gestor/interests',{method:'POST',headers:H(1),body:JSON.stringify({id:b.getAttribute('data-id'),seen:true})});
+      loadInterests();
+    }});
+    el.querySelectorAll('.deli').forEach(function(b){b.onclick=async function(){
+      await fetch(API+'/gestor/interests',{method:'POST',headers:H(1),body:JSON.stringify({id:b.getAttribute('data-id'),delete:true})});
+      toast('Eliminado');loadInterests();
+    }});
+    el.querySelectorAll('.go').forEach(function(b){b.onclick=function(){show('prods');loadProds()}});
+  }
+
+  var activeTh='';
+  function inChatView(){return !$('view-chat').classList.contains('hidden')}
+  function inThreadView(){return inChatView()&&!!$('threadView')&&!$('threadView').classList.contains('hidden')&&!!activeTh}
+  function notifyChat(msg){
+    pendingChat=(pendingChat||0)+1;
+    setBadge($('badgeChat'), pendingChat);
+    if(msg)toast(msg);
+  }
+  async function loadThreads(){
+    // Lista de conversaciones: nunca forzar un hilo abierto
+    activeTh='';
+    $('threadView').classList.add('hidden');$('threads').classList.remove('hidden');
+    if($('chatListBar'))$('chatListBar').classList.remove('hidden');
+    var d=await(await fetch(API+'/threads',{headers:H()})).json();
+    var el=$('threads');
+    if(!d.items||!d.items.length){el.innerHTML='<div class="sub" style="text-align:center;padding:1rem">Sin chats</div>';return}
+    el.innerHTML=d.items.map(function(t){
+      return '<div class="panel" style="cursor:pointer"><div data-th="'+esc(t.thread)+'" class="open-th"><strong>'+esc(t.name||t.thread)+'</strong><div class="sub">'+esc(t.last)+'</div></div>'+
+        '<button type="button" class="btn btn-ghost del-th" data-th="'+esc(t.thread)+'" style="width:auto;margin-top:.45rem;padding:.35rem .55rem;font-size:.72rem">Borrar chat</button></div>';
+    }).join('');
+    el.querySelectorAll('.open-th').forEach(function(p){p.onclick=function(){openTh(p.getAttribute('data-th'))}});
+    el.querySelectorAll('.del-th').forEach(function(b){b.onclick=async function(ev){
+      ev.stopPropagation();
+      var th=b.getAttribute('data-th');
+      if(!confirm('¿Borrar el historial de este chat?'))return;
+      var d=await(await fetch(API+'/gestor/chat-clear',{method:'POST',headers:H(1),body:JSON.stringify({thread:th})})).json();
+      if(!d.ok){toast(d.error||'Error');return}
+      toast('Chat borrado');
+      if(activeTh===th){activeTh='';}
+      loadThreads();
+    }});
+  }
+  async function openTh(th){
+    if(!th)return;
+    activeTh=th;
+    $('threads').classList.add('hidden');
+    if($('chatListBar'))$('chatListBar').classList.add('hidden');
+    $('threadView').classList.remove('hidden');
+    $('thLabel').textContent=th;
+    // Al entrar a un hilo, limpia badge de chat
+    pendingChat=0;setBadge($('badgeChat'),0);
+    var d=await(await fetch(API+'/chat?thread='+encodeURIComponent(th),{headers:H()})).json();
+    var box=$('thMsgs');
+    box.innerHTML=(d.items||d.messages||[]).map(function(m){
+      return '<div style="align-self:'+(m.from==='gestor'?'flex-end':'flex-start')+';background:'+(m.from==='gestor'?'#3a2a20':'#241828')+';padding:.45rem .65rem;border-radius:12px;max-width:85%">'+esc(m.text)+'</div>';
+    }).join('');
+    box.scrollTop=box.scrollHeight;
+  }
+  // Volver a la lista: queda en la lista (no reabre el último chat)
+  $('btnBackTh').onclick=function(){
+    activeTh='';
+    loadThreads();
+  };
+  $('btnThSend').onclick=async function(){
+    var t=$('thIn').value.trim();if(!t||!activeTh)return;$('thIn').value='';
+    await fetch(API+'/chat',{method:'POST',headers:H(1),body:JSON.stringify({thread:activeTh,from:'gestor',text:t})});
+    openTh(activeTh);
+  };
+  if($('btnClearTh'))$('btnClearTh').onclick=async function(){
+    if(!activeTh)return;
+    if(!confirm('¿Borrar el historial de este chat con el cliente?'))return;
+    var d=await(await fetch(API+'/gestor/chat-clear',{method:'POST',headers:H(1),body:JSON.stringify({thread:activeTh})})).json();
+    if(!d.ok){toast(d.error||'Error');return}
+    toast('Chat borrado');
+    activeTh='';
+    loadThreads();
+  };
+  if($('btnClearAllChat'))$('btnClearAllChat').onclick=async function(){
+    if(!confirm('¿Borrar TODO el historial de chat de todos los clientes?'))return;
+    if(!confirm('Confirma: se eliminarán todos los mensajes.'))return;
+    var d=await(await fetch(API+'/gestor/chat-clear',{method:'POST',headers:H(1),body:JSON.stringify({all:true})})).json();
+    if(!d.ok){toast(d.error||'Error');return}
+    toast('Todo el chat borrado');
+    activeTh='';
+    loadThreads();
+  };
+  if($('btnResetStore'))$('btnResetStore').onclick=async function(){
+    if(!confirm('¿Reiniciar datos de la tienda?\nSe borran pedidos, chats e intereses. El próximo pedido será LT-0001.\nSe conservan productos y perfil.'))return;
+    var conf=prompt('Escribe RESET para confirmar:','');
+    if(conf===null)return;
+    if(String(conf).trim().toUpperCase()!=='RESET'){toast('Cancelado: debes escribir RESET');return}
+    var d=await(await fetch(API+'/gestor/reset',{method:'POST',headers:H(1),body:JSON.stringify({confirm:'RESET'})})).json();
+    if(!d.ok){toast(d.error||'Error');return}
+    toast(d.message||'Tienda reiniciada');
+    activeTh='';
+    pendingOrders=0;pendingInt=0;pendingChat=0;
+    setBadge($('badgeOrders'),0);setBadge($('badgeInt'),0);setBadge($('badgeChat'),0);
+    loadOrders();loadInterests();loadThreads();loadProds();
+  };
+
+  async function loadCfg(){
+    var d=await(await fetch(API+'/profile')).json();
+    var p=d.profile||{};
+    $('cfgName').value=p.name||'';$('cfgWa').value=p.whatsapp||'';$('cfgAddr').value=p.address||'';$('cfgBio').value=p.bio||'';
+    if($('cfgTagline'))$('cfgTagline').value=p.tagline||'';
+    if($('cfgAccent')&&p.accent)$('cfgAccent').value=p.accent;
+    if($('cfgAccent2')&&p.accent2)$('cfgAccent2').value=p.accent2;
+  }
+  $('btnCfgSave').onclick=async function(){
+    var body={name:$('cfgName').value.trim(),whatsapp:$('cfgWa').value.trim(),address:$('cfgAddr').value.trim(),bio:$('cfgBio').value.trim(),tagline:($('cfgTagline')&&$('cfgTagline').value.trim())||'',accent:($('cfgAccent')&&$('cfgAccent').value)||'',accent2:($('cfgAccent2')&&$('cfgAccent2').value)||''};
+    if($('cfgPin').value.trim())body.pin=$('cfgPin').value.trim();
+    var d=await(await fetch(API+'/gestor/profile',{method:'POST',headers:H(1),body:JSON.stringify(body)})).json();
+    if(!d.ok){toast(d.error||'Error');return}
+    toast('Perfil guardado');$('who').textContent=body.name||'Gestora';
+  };
+
+  document.querySelectorAll('.nav button').forEach(function(b){
+    b.onclick=function(){
+      if(!authed()){show('login');return}
+      var v=b.getAttribute('data-v');show(v);
+      if(v==='prods')loadProds();
+      if(v==='orders')loadOrders();
+      if(v==='interest')loadInterests();
+      if(v==='chat'){activeTh='';loadThreads();}
+      if(v==='cfg')loadCfg();
+    };
+  });
+
+  function sameTenant(ev){
+    try{
+      var d=ev&&ev.data?JSON.parse(ev.data):{};
+      if(!d||d.tenant==null||d.tenant==='')return true;
+      return String(d.tenant)===String(TENANT);
+    }catch(e){return true}
+  }
+  function onOrderEvent(ev){
+    if(!token)return;
+    if(!sameTenant(ev))return;
+    try{var d=ev&&ev.data?JSON.parse(ev.data):{};toast(d.code?('Pedido '+d.code):'Nuevo movimiento de pedido')}catch(e){toast('Nuevo movimiento de pedido')}
+    loadOrders();
+    // No tocar la vista de chat: el usuario decide dónde está
+  }
+  function onInterestEvent(ev){
+    if(!token)return;
+    if(ev&&!sameTenant(ev))return;
+    toast('Nuevo interés de precio');
+    loadInterests();
+  }
+  function bindLive(){
+    if(typeof EventSource==='undefined')return;
+    try{
+      function onCat(ev){if(!token||!sameTenant(ev))return;loadProds()}
+      function handleChatEvent(ev){
+        if(!token||!sameTenant(ev))return;
+        var thr='';
+        try{var d=ev&&ev.data?JSON.parse(ev.data):{};thr=d.thread||''}catch(e){}
+        // Solo refrescar mensajes si YA estamos dentro de ESE hilo
+        if(inThreadView()&&activeTh&&(!thr||thr===activeTh)){
+          openTh(activeTh);
+          return;
+        }
+        // En lista de chats: actualizar lista, no abrir ningún hilo
+        if(inChatView()&&!inThreadView()){
+          loadThreads();
+          notifyChat('Nuevo mensaje en chat');
+          return;
+        }
+        // En otra vista: solo avisar (badge + toast)
+        notifyChat('Nuevo mensaje en chat');
+      }
+      var es=new EventSource(API+'/events');
+      es.addEventListener('latati_hello',function(){if(token){loadProds();loadOrders();loadInterests()}});
+      es.addEventListener('latati_catalog',onCat);
+      es.addEventListener('latati_order',onOrderEvent);
+      es.addEventListener('latati_interest',onInterestEvent);
+      es.addEventListener('latati_chat',handleChatEvent);
+      var es2=new EventSource('/api/pulse');
+      es2.addEventListener('latati_order',onOrderEvent);
+      es2.addEventListener('latati_interest',onInterestEvent);
+      es2.addEventListener('latati_catalog',onCat);
+      es2.addEventListener('latati_chat',handleChatEvent);
+    }catch(e){}
+  }
+  $('liveIco').innerHTML=ico('live');
+  $('iProds').innerHTML=ico('bag');$('iOrders').innerHTML=ico('list');$('iInt').innerHTML=ico('star');$('iChat').innerHTML=ico('chat');$('iCfg').innerHTML=ico('gear');
+  bindLive();
+
+  (function setupPWA(){
+    var isGestion=!!document.getElementById('view-prods')||location.pathname.indexOf('gestion')>=0;
+    var base=typeof API!=='undefined'?API:'/api/latati';
+    var manifestURL=base+'/manifest.webmanifest'+(isGestion?'?gestion=1':'');
+    var link=document.querySelector('link[rel="manifest"]');
+    if(!link){link=document.createElement('link');link.rel='manifest';document.head.appendChild(link)}
+    link.href=manifestURL;
+    var icon=document.querySelector('link[rel="apple-touch-icon"]');
+    if(!icon){icon=document.createElement('link');icon.rel='apple-touch-icon';document.head.appendChild(icon)}
+    icon.href=base+'/icon-192.png';
+    var metaTheme=document.querySelector('meta[name="theme-color"]');
+    if(!metaTheme){metaTheme=document.createElement('meta');metaTheme.name='theme-color';document.head.appendChild(metaTheme)}
+    metaTheme.content='#e8b4c8';
+    var metaApple=document.querySelector('meta[name="apple-mobile-web-app-capable"]');
+    if(!metaApple){metaApple=document.createElement('meta');metaApple.name='apple-mobile-web-app-capable';metaApple.content='yes';document.head.appendChild(metaApple)}
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register(base+'/sw.js',{scope:'/'}).catch(function(){});
+    }
+    var btn=$('btnPwaInstall');
+    if(!btn)return;
+    var dismissed=localStorage.getItem('latati_pwa_dismiss')==='1';
+    var standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+    if(standalone){btn.classList.add('hidden-forced');return}
+    var deferred=null;
+    window.addEventListener('beforeinstallprompt',function(e){
+      e.preventDefault();
+      deferred=e;
+      if(!dismissed)btn.classList.add('show');
+    });
+    // iOS / browsers without beforeinstallprompt: show button with instructions
+    var isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+    var isSafari=/safari/i.test(navigator.userAgent)&&!/chrome|crios|fxios/i.test(navigator.userAgent);
+    if(!deferred && (isIOS||isSafari) && !dismissed){
+      setTimeout(function(){if(!deferred)btn.classList.add('show')},1200);
+    }
+    // Android Chrome sometimes fires late
+    setTimeout(function(){if(!standalone&&!dismissed&&(deferred||isIOS))btn.classList.add('show')},2500);
+    btn.onclick=async function(){
+      if(deferred){
+        deferred.prompt();
+        try{var ch=await deferred.userChoice;if(ch&&ch.outcome==='accepted'){btn.classList.add('hidden-forced');localStorage.setItem('latati_pwa_dismiss','1')}}catch(e){}
+        deferred=null;
+        return;
+      }
+      if(isIOS){
+        toast('En iPhone: toca Compartir → “Añadir a pantalla de inicio”');
+      }else{
+        toast('Usa el menú del navegador → “Instalar app” o “Añadir a pantalla de inicio”');
+      }
+    };
+    // long-press hide
+    var t=0;
+    btn.addEventListener('pointerdown',function(){t=Date.now()});
+    btn.addEventListener('pointerup',function(){if(Date.now()-t>700){localStorage.setItem('latati_pwa_dismiss','1');btn.classList.add('hidden-forced');toast('Botón oculto')}});
+  })();
+
+  if(token){show('prods');loadProds();loadOrders();loadInterests()}
+  else show('login');
+  setInterval(function(){
+    if(!token)return;
+    if(!$('view-prods').classList.contains('hidden'))loadProds();
+    loadOrders();
+    loadInterests();
+    // Chat: solo refrescar el hilo si el usuario está DENTRO de él.
+    // Si está en la lista, solo actualizar la lista (sin reabrir chats).
+    if(inThreadView())openTh(activeTh);
+    else if(inChatView())loadThreads();
+  },5000);
+})();
+</script>
+</body>
+</html>

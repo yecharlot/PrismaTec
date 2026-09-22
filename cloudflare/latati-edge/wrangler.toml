@@ -1,0 +1,9 @@
+name = "latati-edge"
+main = "src/index.js"
+compatibility_date = "2026-09-20"
+workers_dev = true
+account_id = "877ca6ef38275b318cd4ada835b2bae2"
+
+[[kv_namespaces]]
+binding = "LATATI_KV"
+id = "f2ddc6d80f074b6b8381d903da323a3a"
