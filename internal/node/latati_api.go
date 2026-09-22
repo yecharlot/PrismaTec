@@ -578,6 +578,10 @@ func (n *NodoAlset) handleLaTatiAPI(w http.ResponseWriter, r *http.Request) {
 		n.ltInterests(w, r)
 	case parts[0] == "gestor" && len(parts) >= 2 && parts[1] == "orders-seen" && r.Method == http.MethodPost:
 		n.ltOrdersSeen(w, r)
+	case parts[0] == "gestor" && len(parts) >= 2 && parts[1] == "chat-clear" && r.Method == http.MethodPost:
+		n.ltChatClear(w, r)
+	case parts[0] == "gestor" && len(parts) >= 2 && parts[1] == "reset" && r.Method == http.MethodPost:
+		n.ltStoreReset(w, r)
 	case parts[0] == "order" && len(parts) >= 3 && parts[2] == "delete" && r.Method == http.MethodPost:
 		n.ltOrderDelete(w, r, parts[1])
 	case parts[0] == "events":
@@ -1742,6 +1746,77 @@ func (n *NodoAlset) ltOrderDelete(w http.ResponseWriter, r *http.Request, id str
 	_ = saveLT(ltTen(r), st)
 	n.ltNotify("order", map[string]interface{}{"rev": rev, "action": "delete", "order_id": id, "tenant": ltTen(r)})
 	ltJSON(w, 200, map[string]interface{}{"ok": true, "rev": rev})
+}
+
+// ltChatClear elimina mensajes de un hilo o de todo el historial (solo gestora).
+func (n *NodoAlset) ltChatClear(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Thread string `json:"thread"`
+		All    bool   `json:"all"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&in)
+	in.Thread = strings.TrimSpace(in.Thread)
+
+	ltMu.Lock()
+	defer ltMu.Unlock()
+	st := loadLT(ltTen(r))
+	if !ltAuthFrom(r, st) {
+		ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
+		return
+	}
+	if in.All {
+		st.Messages = nil
+	} else if in.Thread != "" {
+		out := st.Messages[:0]
+		for _, m := range st.Messages {
+			if m.Thread != in.Thread {
+				out = append(out, m)
+			}
+		}
+		st.Messages = out
+	} else {
+		ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "indica thread o all"})
+		return
+	}
+	rev := ltBump(st)
+	_ = saveLT(ltTen(r), st)
+	n.ltNotify("chat", map[string]interface{}{"rev": rev, "action": "clear", "thread": in.Thread, "all": in.All, "tenant": ltTen(r)})
+	ltJSON(w, 200, map[string]interface{}{"ok": true, "rev": rev, "all": in.All, "thread": in.Thread})
+}
+
+// ltStoreReset borra datos operativos y reinicia el contador de pedidos a 0
+// (siguiente pedido será LT-0001). Conserva perfil, productos y categorías.
+func (n *NodoAlset) ltStoreReset(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Confirm string `json:"confirm"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&in)
+	if strings.TrimSpace(strings.ToUpper(in.Confirm)) != "RESET" {
+		ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "escribe confirm: RESET"})
+		return
+	}
+	ltMu.Lock()
+	defer ltMu.Unlock()
+	st := loadLT(ltTen(r))
+	if !ltAuthFrom(r, st) {
+		ltJSON(w, 401, map[string]interface{}{"ok": false, "error": "auth"})
+		return
+	}
+	st.Orders = nil
+	st.Messages = nil
+	st.Interests = nil
+	st.Tokens = map[string]int64{}
+	st.SeqOrder = 0
+	st.OrdersSeen = 0
+	rev := ltBump(st)
+	_ = saveLT(ltTen(r), st)
+	n.ltNotify("order", map[string]interface{}{"rev": rev, "action": "reset", "tenant": ltTen(r)})
+	n.ltNotify("catalog", map[string]interface{}{"rev": rev, "action": "reset", "tenant": ltTen(r)})
+	n.ltNotify("chat", map[string]interface{}{"rev": rev, "action": "reset", "tenant": ltTen(r)})
+	ltJSON(w, 200, map[string]interface{}{
+		"ok": true, "rev": rev,
+		"message": "Datos operativos borrados. El próximo pedido será LT-0001. Perfil y catálogo conservados.",
+	})
 }
 
 

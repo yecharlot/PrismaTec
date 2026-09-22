@@ -100,9 +100,15 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     <div id="interests"></div>
   </section>
   <section id="view-chat" class="hidden">
+    <div id="chatListBar" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.55rem">
+      <button type="button" class="btn btn-ghost" id="btnClearAllChat" style="width:auto;padding:.45rem .7rem;font-size:.78rem">Borrar todo el chat</button>
+    </div>
     <div id="threads"></div>
     <div id="threadView" class="hidden">
-      <button type="button" class="btn btn-ghost" id="btnBackTh" style="width:auto;margin-bottom:.5rem">Volver</button>
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.5rem;align-items:center">
+        <button type="button" class="btn btn-ghost" id="btnBackTh" style="width:auto">Volver</button>
+        <button type="button" class="btn btn-ghost" id="btnClearTh" style="width:auto;padding:.45rem .7rem;font-size:.78rem">Borrar este chat</button>
+      </div>
       <div class="sub" id="thLabel" style="margin-bottom:.4rem"></div>
       <div id="thMsgs" class="panel" style="max-height:45vh;overflow:auto;display:flex;flex-direction:column;gap:.35rem"></div>
       <div style="display:flex;gap:.4rem;margin-top:.5rem">
@@ -123,6 +129,11 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
       <label class="sub">Color secundario</label><input id="cfgAccent2" type="color" value="#c4789a" style="height:42px;padding:0.2rem"/>
       <label class="sub">PIN nuevo (opcional)</label><input id="cfgPin" type="password"/>
       <button type="button" class="btn btn-gold" id="btnCfgSave">Guardar</button>
+    </div>
+    <div class="panel" style="border-color:rgba(232,93,122,.35)">
+      <h2 style="color:var(--pink,#e85d7a)">Zona peligrosa</h2>
+      <p class="sub" style="margin:.35rem 0 .7rem">Borra pedidos, chats e intereses y reinicia el contador. El próximo pedido será <strong>LT-0001</strong>. Se conservan perfil y catálogo de productos.</p>
+      <button type="button" class="btn btn-ghost" id="btnResetStore" style="border-color:rgba(232,93,122,.5);color:#ffb4c0">Reiniciar datos de la tienda</button>
     </div>
   </section>
 </div>
@@ -387,21 +398,31 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     // Lista de conversaciones: nunca forzar un hilo abierto
     activeTh='';
     $('threadView').classList.add('hidden');$('threads').classList.remove('hidden');
+    if($('chatListBar'))$('chatListBar').classList.remove('hidden');
     var d=await(await fetch(API+'/threads',{headers:H()})).json();
     var el=$('threads');
     if(!d.items||!d.items.length){el.innerHTML='<div class="sub" style="text-align:center;padding:1rem">Sin chats</div>';return}
     el.innerHTML=d.items.map(function(t){
-      return '<div class="panel" data-th="'+esc(t.thread)+'" style="cursor:pointer"><strong>'+esc(t.name||t.thread)+'</strong><div class="sub">'+esc(t.last)+'</div></div>';
+      return '<div class="panel" style="cursor:pointer"><div data-th="'+esc(t.thread)+'" class="open-th"><strong>'+esc(t.name||t.thread)+'</strong><div class="sub">'+esc(t.last)+'</div></div>'+
+        '<button type="button" class="btn btn-ghost del-th" data-th="'+esc(t.thread)+'" style="width:auto;margin-top:.45rem;padding:.35rem .55rem;font-size:.72rem">Borrar chat</button></div>';
     }).join('');
-    el.querySelectorAll('.panel').forEach(function(p){p.onclick=function(){
-      // Entrada explícita a un chat concreto
-      openTh(p.getAttribute('data-th'));
+    el.querySelectorAll('.open-th').forEach(function(p){p.onclick=function(){openTh(p.getAttribute('data-th'))}});
+    el.querySelectorAll('.del-th').forEach(function(b){b.onclick=async function(ev){
+      ev.stopPropagation();
+      var th=b.getAttribute('data-th');
+      if(!confirm('¿Borrar el historial de este chat?'))return;
+      var d=await(await fetch(API+'/gestor/chat-clear',{method:'POST',headers:H(1),body:JSON.stringify({thread:th})})).json();
+      if(!d.ok){toast(d.error||'Error');return}
+      toast('Chat borrado');
+      if(activeTh===th){activeTh='';}
+      loadThreads();
     }});
   }
   async function openTh(th){
     if(!th)return;
     activeTh=th;
     $('threads').classList.add('hidden');
+    if($('chatListBar'))$('chatListBar').classList.add('hidden');
     $('threadView').classList.remove('hidden');
     $('thLabel').textContent=th;
     // Al entrar a un hilo, limpia badge de chat
@@ -422,6 +443,37 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     var t=$('thIn').value.trim();if(!t||!activeTh)return;$('thIn').value='';
     await fetch(API+'/chat',{method:'POST',headers:H(1),body:JSON.stringify({thread:activeTh,from:'gestor',text:t})});
     openTh(activeTh);
+  };
+  if($('btnClearTh'))$('btnClearTh').onclick=async function(){
+    if(!activeTh)return;
+    if(!confirm('¿Borrar el historial de este chat con el cliente?'))return;
+    var d=await(await fetch(API+'/gestor/chat-clear',{method:'POST',headers:H(1),body:JSON.stringify({thread:activeTh})})).json();
+    if(!d.ok){toast(d.error||'Error');return}
+    toast('Chat borrado');
+    activeTh='';
+    loadThreads();
+  };
+  if($('btnClearAllChat'))$('btnClearAllChat').onclick=async function(){
+    if(!confirm('¿Borrar TODO el historial de chat de todos los clientes?'))return;
+    if(!confirm('Confirma: se eliminarán todos los mensajes.'))return;
+    var d=await(await fetch(API+'/gestor/chat-clear',{method:'POST',headers:H(1),body:JSON.stringify({all:true})})).json();
+    if(!d.ok){toast(d.error||'Error');return}
+    toast('Todo el chat borrado');
+    activeTh='';
+    loadThreads();
+  };
+  if($('btnResetStore'))$('btnResetStore').onclick=async function(){
+    if(!confirm('¿Reiniciar datos de la tienda?\nSe borran pedidos, chats e intereses. El próximo pedido será LT-0001.\nSe conservan productos y perfil.'))return;
+    var conf=prompt('Escribe RESET para confirmar:','');
+    if(conf===null)return;
+    if(String(conf).trim().toUpperCase()!=='RESET'){toast('Cancelado: debes escribir RESET');return}
+    var d=await(await fetch(API+'/gestor/reset',{method:'POST',headers:H(1),body:JSON.stringify({confirm:'RESET'})})).json();
+    if(!d.ok){toast(d.error||'Error');return}
+    toast(d.message||'Tienda reiniciada');
+    activeTh='';
+    pendingOrders=0;pendingInt=0;pendingChat=0;
+    setBadge($('badgeOrders'),0);setBadge($('badgeInt'),0);setBadge($('badgeChat'),0);
+    loadOrders();loadInterests();loadThreads();loadProds();
   };
 
   async function loadCfg(){
