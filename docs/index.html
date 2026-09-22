@@ -1,280 +1,793 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Alset — Red peer-to-peer, LispAI y Zyrion</title>
-  <meta name="description" content="Alset (P.TEC-AN v4.0): nodos libp2p, agentes, apps por CID, Lisp embebido, lógica ternaria Zyrion, API v2 y persistencia Supabase." />
-  <meta property="og:title" content="Alset — Red peer-to-peer en Go" />
-  <meta property="og:description" content="Nodos locales y relay, LispAI, Zyrion, modelos ligeros, auth y API v2. Código abierto." />
-  <meta property="og:url" content="https://yecharlot.github.io/PrismaTec/" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bg:#0b0c10; --bg2:#12141c; --card:#161822; --border:rgba(255,255,255,.08);
-      --text:#e8eaef; --muted:#9aa3b5; --accent:#f4b400; --accent2:#5b8def; --ok:#3dd68c; --radius:14px; --max:1080px;
-    }
-    *{box-sizing:border-box;margin:0;padding:0}
-    html{scroll-behavior:smooth}
-    body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh;overflow-x:hidden}
-    body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% -10%,rgba(244,180,0,.12),transparent 50%),radial-gradient(ellipse 60% 40% at 90% 10%,rgba(91,141,239,.1),transparent 45%),radial-gradient(ellipse 50% 30% at 50% 100%,rgba(61,214,140,.06),transparent 40%);pointer-events:none;z-index:0;animation:ambient 18s ease-in-out infinite alternate}
-    @keyframes ambient{to{opacity:.85;filter:hue-rotate(12deg)}}
-    .wrap{position:relative;z-index:1;max-width:var(--max);margin:0 auto;padding:0 1.5rem}
-    .reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
-    .reveal.visible{opacity:1;transform:none}
-    .reveal-d1{transition-delay:.08s}.reveal-d2{transition-delay:.16s}.reveal-d3{transition-delay:.24s}
-    nav{display:flex;align-items:center;justify-content:space-between;padding:1.2rem 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:.5rem;animation:fadeDown .6s ease both}
-    @keyframes fadeDown{from{opacity:0;transform:translateY(-10px)}}
-    .logo{display:flex;align-items:center;gap:.6rem;font-weight:700;text-decoration:none;color:var(--text)}
-    .logo-mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),#e89a00);display:grid;place-items:center;color:#111;font-weight:700;position:relative;animation:logoPulse 2.8s ease-in-out infinite}
-    .logo-mark::after{content:"";position:absolute;inset:-4px;border-radius:12px;border:1px solid rgba(244,180,0,.45);animation:ringOut 2.8s ease-out infinite}
-    @keyframes logoPulse{50%{box-shadow:0 0 16px 2px rgba(244,180,0,.25)}}
-    @keyframes ringOut{to{transform:scale(1.45);opacity:0}}
-    .nav-links{display:flex;gap:.35rem;align-items:center;flex-wrap:wrap}
-    .nav-links a{color:var(--muted);text-decoration:none;font-size:.85rem;font-weight:500;padding:.35rem .65rem;border-radius:8px}
-    .nav-links a:hover{color:var(--text);background:rgba(255,255,255,.04)}
-    .btn{display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1.1rem;border-radius:10px;font-weight:600;font-size:.9rem;text-decoration:none;border:none;cursor:pointer;transition:transform .15s,box-shadow .15s}
-    .btn:hover{transform:translateY(-1px)}
-    .btn-primary{background:var(--accent);color:#111;box-shadow:0 4px 20px rgba(244,180,0,.25)}
-    .btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
-    .hero{padding:3rem 0 2rem;text-align:center}
-    .mesh-wrap{max-width:640px;height:200px;margin:0 auto 1.25rem}
-    #mesh{width:100%;height:100%;display:block}
-    .badge{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .75rem;border-radius:999px;background:rgba(244,180,0,.1);border:1px solid rgba(244,180,0,.25);color:var(--accent);font-size:.8rem;font-weight:600;margin-bottom:1rem}
-    .badge .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);animation:liveDot 1.8s ease-out infinite}
-    @keyframes liveDot{70%{box-shadow:0 0 0 8px transparent}}
-    .hero h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:700;letter-spacing:-.03em;line-height:1.15;margin-bottom:1rem;max-width:18ch;margin-left:auto;margin-right:auto}
-    .hero h1 span{background:linear-gradient(120deg,var(--accent),#ffe08a 40%,var(--accent2));background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 5s linear infinite}
-    @keyframes shimmer{to{background-position:200% center}}
-    .hero p{color:var(--muted);font-size:1.1rem;max-width:40rem;margin:0 auto 1.75rem}
-    .hero-actions{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.5rem}
-    .code-bar{display:inline-flex;align-items:center;gap:.75rem;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:.75rem 1rem;font-family:"JetBrains Mono",monospace;font-size:.8rem;color:var(--muted);max-width:100%;overflow-x:auto}
-    .code-bar code{color:var(--text);white-space:nowrap}
-    .copy-btn{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:.25rem .5rem;font-size:.75rem;cursor:pointer;font-family:inherit;flex-shrink:0}
-    section{padding:2.75rem 0}
-    .section-title{font-size:1.45rem;font-weight:700;letter-spacing:-.02em;margin-bottom:.5rem}
-    .section-lead{color:var(--muted);margin-bottom:1.5rem;max-width:40rem}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.35rem;transition:border-color .25s,transform .25s}
-    .card:hover{border-color:rgba(244,180,0,.3);transform:translateY(-3px)}
-    .card-icon{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-size:1.1rem;margin-bottom:.8rem;background:rgba(244,180,0,.1)}
-    .card h3{font-size:1.02rem;font-weight:600;margin-bottom:.35rem}
-    .card p{color:var(--muted);font-size:.9rem}
-    .modes{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-    @media(max-width:640px){.modes{grid-template-columns:1fr}.nav-links .hide-sm{display:none}.mesh-wrap{height:150px}}
-    .mode-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.35rem}
-    .mode-card h3{display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem;font-size:1.05rem}
-    .pill{font-size:.7rem;font-weight:600;padding:.15rem .45rem;border-radius:6px;text-transform:uppercase}
-    .pill-local{background:rgba(61,214,140,.15);color:var(--ok)}
-    .pill-relay{background:rgba(91,141,239,.15);color:var(--accent2)}
-    .mode-card ul{margin-top:.6rem;padding-left:1.1rem;color:var(--muted);font-size:.9rem}
-    .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--card)}
-    table{width:100%;border-collapse:collapse;font-size:.88rem}
-    th,td{padding:.65rem 1rem;text-align:left;border-bottom:1px solid var(--border)}
-    th{color:var(--muted);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
-    td code{font-family:"JetBrains Mono",monospace;font-size:.8rem;color:var(--accent)}
-    tr:last-child td{border-bottom:none}
-    .stack{display:flex;flex-wrap:wrap;gap:.5rem}
-    .tag{font-family:"JetBrains Mono",monospace;font-size:.75rem;padding:.35rem .65rem;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--muted)}
-    .cta{margin:2rem 0 3rem;padding:2.25rem 1.75rem;border-radius:18px;background:linear-gradient(135deg,rgba(244,180,0,.12),rgba(91,141,239,.08));border:1px solid rgba(244,180,0,.2);text-align:center;position:relative;overflow:hidden}
-    .cta h2{font-size:1.4rem;margin-bottom:.5rem}
-    .cta p{color:var(--muted);margin-bottom:1.25rem}
-    .cta-actions{display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap}
-    footer{border-top:1px solid var(--border);padding:2rem 0;color:var(--muted);font-size:.85rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:1rem}
-    footer a{color:var(--muted);text-decoration:none}
-    footer a:hover{color:var(--accent)}
-    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.reveal{opacity:1;transform:none}}
-  </style>
+<script src="./config.js"></script>
+<base href="./"/>
+<meta name="latati-twin" content="github-pages+cloudflare-edge"/>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#0c0a0f"/>
+<title>La Tati</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0c0a0f;--surface:#16131c;--surface2:#1e1a26;--line:rgba(255,255,255,.08);
+  --ink:#f7f4fa;--muted:#9b92a8;--accent:#e8b4c8;--accent2:#c4789a;
+  --gold:#e8c99a;--ok:#7dcea0;--danger:#e89b9b;--radius:16px;
+  --shadow:0 12px 40px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{overflow-x:hidden}
+body{font-family:"DM Sans",system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding-bottom:calc(88px + env(safe-area-inset-bottom));-webkit-font-smoothing:antialiased;overflow-x:hidden;max-width:100vw}
+body.has-cartbar{padding-bottom:calc(148px + env(safe-area-inset-bottom))}
+main{width:100%;max-width:100%;overflow-x:hidden}
+.top{position:sticky;top:0;z-index:30;backdrop-filter:blur(16px);background:rgba(12,10,15,.92);border-bottom:1px solid var(--line);padding:.7rem 1rem}
+.brand{font-family:"Instrument Serif",Georgia,serif;font-size:clamp(1.25rem,4.5vw,1.55rem);letter-spacing:.02em}
+.brand-sub{color:var(--muted);font-size:.75rem;margin-top:.15rem}
+.hero{padding:1rem 1rem 0.35rem}
+.hero h1{font-family:"Instrument Serif",Georgia,serif;font-size:clamp(1.35rem,5vw,1.75rem);font-weight:400;line-height:1.2;margin-bottom:.35rem;word-wrap:break-word}
+.hero p{color:var(--muted);font-size:.88rem;line-height:1.45;max-width:40ch}
+.search-wrap{padding:.55rem 1rem;position:sticky;top:52px;z-index:25;background:rgba(12,10,15,.92);backdrop-filter:blur(10px);display:flex;justify-content:flex-start}
+.search{display:flex;align-items:center;gap:.5rem;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:.5rem .85rem;width:min(100%,280px);max-width:100%}
+.search input{flex:1;min-width:0;background:transparent;border:none;outline:none;color:var(--ink);font-size:15px;font-family:inherit}
+.search svg{flex-shrink:0;opacity:.55}
+.chips{display:flex;gap:.4rem;overflow-x:auto;padding:.2rem 1rem .7rem;scrollbar-width:none;-webkit-overflow-scrolling:touch;max-width:100%}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:.4rem .75rem;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:.15s}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.toolbar{display:flex;justify-content:space-between;align-items:center;padding:0 1rem .65rem;gap:.5rem;flex-wrap:wrap}
+.toolbar .count{color:var(--muted);font-size:.78rem}
+.toolbar select{background:var(--surface);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:.4rem .5rem;font-size:.78rem;font-family:inherit;max-width:55%;min-width:0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem;padding:0 1rem 1.25rem;width:100%}
+@media(max-width:360px){
+  .grid{gap:.5rem;padding:0 .7rem 1rem}
+  .card .title{font-size:.8rem}
+  .card .price{font-size:.8rem}
+  .nav button{font-size:.55rem}
+  .hero h1{font-size:1.25rem}
+}
+@media(min-width:720px){.grid{grid-template-columns:repeat(3,1fr);max-width:960px;margin:0 auto}}
+@media(min-width:1100px){.grid{grid-template-columns:repeat(4,1fr);max-width:1100px}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s}
+.card:active{transform:scale(.98)}
+.card .ph{position:relative;aspect-ratio:4/5;background:var(--surface2);overflow:hidden}
+.card .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.card .ph .tag{position:absolute;top:.55rem;left:.55rem;background:rgba(12,10,15,.72);backdrop-filter:blur(8px);color:var(--accent);font-size:.65rem;font-weight:700;padding:.25rem .5rem;border-radius:999px;text-transform:uppercase;letter-spacing:.04em}
+.card .body{padding:.7rem .75rem .85rem}
+.card .title{font-size:.9rem;font-weight:600;line-height:1.25;margin-bottom:.3rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card .meta{display:flex;justify-content:space-between;align-items:center;gap:.3rem}
+.card .price{color:var(--gold);font-weight:700;font-size:.9rem}
+.card .cat{color:var(--muted);font-size:.68rem}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;margin:0 1rem .85rem;max-width:100%}
+.line{min-width:0}
+.line > div{min-width:0;flex:1;overflow:hidden}
+.line strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn{width:100%;border:none;border-radius:12px;padding:.85rem 1rem;font-weight:700;cursor:pointer;font-size:.92rem;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:.45rem}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#1a0a12}
+.btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn-soft{background:var(--surface2);color:var(--ink);border:1px solid var(--line)}
+.delopt.on{border-color:var(--accent);color:var(--accent);background:rgba(232,180,200,.1)}
+.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(12,10,15,.96);backdrop-filter:blur(16px);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:stretch;padding:.3rem 0 calc(.3rem + env(safe-area-inset-bottom));z-index:40;height:auto;min-height:56px}
+.nav button{background:none;border:none;color:var(--muted);font-size:.6rem;font-weight:600;padding:.35rem .15rem;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.15rem;flex:1 1 0;min-width:0;max-width:20%;font-family:inherit;line-height:1.1}
+.nav button span{display:flex;align-items:center;justify-content:center}
+.nav button.on{color:var(--accent)}
+.nav button{position:relative}
+.badge-n{position:absolute;top:0;right:18%;min-width:16px;height:16px;border-radius:999px;background:#e85d7a;color:#fff;font-size:.65rem;font-weight:800;display:none;align-items:center;justify-content:center;padding:0 4px}
+.badge-n.show{display:flex}
+.hidden{display:none!important}
+.toast{position:fixed;bottom:calc(72px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--surface2);padding:.55rem 1.1rem;border-radius:999px;opacity:0;transition:.25s;z-index:50;font-size:.85rem;border:1px solid var(--line);max-width:min(90vw,360px);box-shadow:var(--shadow);pointer-events:none;text-align:center}
+body.has-cartbar .toast{bottom:calc(132px + env(safe-area-inset-bottom))}
+.toast.show{opacity:1}
+input,textarea,select{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:.7rem .85rem;color:var(--ink);font-size:16px;font-family:inherit;margin:.3rem 0 .55rem}
+label.sub, .sub{color:var(--muted);font-size:.8rem}
+.line{display:flex;gap:.7rem;align-items:center;margin:.5rem 0}
+.line img{width:64px;height:64px;border-radius:12px;object-fit:cover;background:var(--surface2)}
+.vale-card{border:1px solid rgba(232,201,154,.35);background:linear-gradient(165deg,#1a1520,#121018);border-radius:20px;padding:1.15rem}
+.bubble{max-width:82%;padding:.55rem .75rem;border-radius:16px;font-size:.88rem;line-height:1.4;word-break:break-word}
+.bubble.me{align-self:flex-end;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#1a0a12}
+.bubble.them{align-self:flex-start;background:var(--surface2);border:1px solid var(--line)}
+#chatBox{display:flex;flex-direction:column;gap:.45rem;min-height:42vh;max-height:55vh;overflow:auto;padding:.25rem}
+.cart-bar{position:fixed;left:0;right:0;bottom:calc(60px + env(safe-area-inset-bottom));padding:0 .85rem;z-index:35;pointer-events:none}
+.cart-bar .inner{pointer-events:auto;background:var(--ink);color:var(--bg);border-radius:14px;padding:.75rem 1rem;display:flex;justify-content:space-between;align-items:center;font-weight:700;box-shadow:var(--shadow);cursor:pointer;font-size:.9rem;gap:.5rem}
+.empty{text-align:center;color:var(--muted);padding:2.5rem 1rem}
+.empty strong{display:block;color:var(--ink);font-size:1.05rem;margin-bottom:.35rem}
+h2.section{font-family:"Instrument Serif",Georgia,serif;font-size:1.35rem;font-weight:400;margin:0 1.1rem .65rem}
+.detail-hero{width:100%;aspect-ratio:1;object-fit:cover;background:var(--surface2);display:block}
+.detail-body{padding:1rem 1rem 1.5rem;max-width:100%}
+.detail-hero{max-width:100%;height:auto}
+.detail-body h2{font-family:"Instrument Serif",Georgia,serif;font-size:1.6rem;font-weight:400;margin:.2rem 0 .4rem}
+.pill{display:inline-block;font-size:.68rem;padding:.2rem .55rem;border-radius:999px;background:rgba(232,180,200,.12);color:var(--accent);font-weight:600}
+
+.pwa-install{position:fixed;right:12px;bottom:72px;z-index:50;border:none;border-radius:999px;padding:.65rem 1rem;font-weight:700;font-size:.8rem;font-family:inherit;cursor:pointer;background:linear-gradient(120deg,#e8b4c8,#c4789a);color:#1a1014;box-shadow:0 8px 24px rgba(0,0,0,.35);display:none;align-items:center;gap:.4rem}
+.pwa-install.show{display:inline-flex}
+.pwa-install.hidden-forced{display:none!important}
+
+
+.wake-overlay{position:fixed;inset:0;z-index:100;background:rgba(12,10,15,.88);display:none;align-items:center;justify-content:center;padding:1.5rem;text-align:center}
+.wake-overlay.show{display:flex}
+.wake-box{max-width:320px;background:#1a1520;border:1px solid rgba(232,180,200,.35);border-radius:16px;padding:1.25rem 1.1rem;color:#f5eef2}
+.wake-box strong{display:block;margin-bottom:.45rem;font-size:1.05rem}
+.wake-box p{font-size:.85rem;color:#b8a8b0;line-height:1.45;margin:0}
+.wake-spin{width:28px;height:28px;border:3px solid rgba(232,180,200,.25);border-top-color:#e8b4c8;border-radius:50%;margin:0 auto .85rem;animation:wakeSpin .8s linear infinite}
+@keyframes wakeSpin{to{transform:rotate(360deg)}}
+
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <nav>
-      <a class="logo" href="#"><span class="logo-mark">A</span> Alset</a>
-      <div class="nav-links">
-        <a class="hide-sm" href="#capacidades">Capacidades</a>
-        <a class="hide-sm" href="#lispai">LispAI</a>
-        <a class="hide-sm" href="#api">API</a>
-        <a class="hide-sm" href="#empezar">Empezar</a>
-        <a class="hide-sm" href="https://github.com/yecharlot/PrismaTec/blob/main/docs/GUIA.md">Guía</a>
-        <a class="btn btn-primary" href="https://github.com/yecharlot/PrismaTec">GitHub</a>
-      </div>
-    </nav>
+<div id="twinBanner" style="position:fixed;top:0;left:0;right:0;z-index:60;background:#1a3a2a;color:#9eecc0;font-size:.72rem;text-align:center;padding:.25rem .5rem">Gemelo Edge · Cloudflare + GitHub Pages (Render no se toca)</div>
+<header class="top">
+  <div>
+    <div class="brand" id="brandName">La Tati</div>
+    <div class="brand-sub" id="brandSub">Tienda · pedidos · recogida</div>
+  </div>
+</header>
 
-    <header class="hero">
-      <div class="mesh-wrap" aria-hidden="true"><canvas id="mesh" width="640" height="200"></canvas></div>
-      <div class="badge"><span class="dot"></span> P.TEC-AN v4.0 · código abierto</div>
-      <h1>Red peer-to-peer <span>programable en el borde</span></h1>
-      <p>
-        Nodos libp2p con agentes, apps por CID, intérprete Lisp, lógica ternaria Zyrion,
-        modelos ligeros, tokens y API v2. El mismo binario sirve en local o como relay.
-      </p>
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="https://github.com/yecharlot/PrismaTec">Repositorio</a>
-        <a class="btn btn-ghost" href="https://prismatec.onrender.com">Relay en vivo</a>
-        <a class="btn btn-ghost" href="https://github.com/yecharlot/PrismaTec/blob/main/docs/GUIA.md">Guía completa</a>
-      </div>
-      <div class="code-bar">
-        <code id="clone-cmd">git clone https://github.com/yecharlot/PrismaTec.git && cd PrismaTec && go run ./cmd/prisma-tec</code>
-        <button class="copy-btn" type="button" onclick="copyClone()">Copiar</button>
-      </div>
-    </header>
+<main>
+  <section id="view-profile" class="hidden">
+    <h2 class="section" style="margin-top:1rem">Tu perfil</h2>
+    <div class="panel">
+      <p class="sub" style="margin-bottom:.7rem">Datos para identificar tus pedidos y el chat.</p>
+      <label class="sub">Nombre</label>
+      <input id="pName" placeholder="Tu nombre" autocomplete="name"/>
+      <label class="sub">Teléfono / WhatsApp</label>
+      <input id="pPhone" placeholder="53…" inputmode="tel" autocomplete="tel"/>
+      <button type="button" class="btn btn-primary" id="btnSaveProfile">Guardar y continuar</button>
+    </div>
+  </section>
 
-    <section id="modos">
-      <h2 class="section-title reveal">Dos modos, un binario</h2>
-      <p class="section-lead reveal reveal-d1">El comportamiento lo decide la variable de entorno <code style="color:var(--accent)">RENDER</code>.</p>
-      <div class="modes">
-        <div class="mode-card reveal reveal-d1">
-          <h3><span class="pill pill-local">Local</span> Nodo completo</h3>
-          <ul>
-            <li>API HTTP y panel de administración</li>
-            <li>Cliente y servidor de pulsos SSE</li>
-            <li>Malla libp2p + persistencia disco/Supabase</li>
-            <li>LispAI, Zyrion y modelos</li>
-          </ul>
-        </div>
-        <div class="mode-card reveal reveal-d2">
-          <h3><span class="pill pill-relay">Relay</span> Punto de sincronización</h3>
-          <ul>
-            <li>Servidor de pulsos (sin cliente, evita bucles)</li>
-            <li>Misma API pública</li>
-            <li>Ideal en Render u otros hosts</li>
-            <li>Enlace de nodos detrás de NAT</li>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <section id="capacidades">
-      <h2 class="section-title reveal">Capacidades</h2>
-      <p class="section-lead reveal reveal-d1">Todo opera dentro del mismo nodo.</p>
-      <div class="grid">
-        <article class="card reveal reveal-d1"><div class="card-icon">🔗</div><h3>Red libp2p</h3><p>DHT, GossipSub, streams y bloques por CID entre peers.</p></article>
-        <article class="card reveal reveal-d2"><div class="card-icon">👤</div><h3>Agentes</h3><p>Identidad, saldo UTXO, RootCID y nombres <code>*.app.ans</code>.</p></article>
-        <article class="card reveal reveal-d3"><div class="card-icon">📦</div><h3>Apps en la malla</h3><p>Registro multipart y apertura en <code>/w/nombre.app.ans</code>.</p></article>
-        <article class="card reveal reveal-d1"><div class="card-icon">λ</div><h3>LispAI</h3><p>Intérprete embebido por <code>POST /api/lispai</code> para automatizar el nodo.</p></article>
-        <article class="card reveal reveal-d2"><div class="card-icon">⬡</div><h3>Zyrion 0·1·2</h3><p>Lógica ternaria y <code>evaluar-zyrion</code> con <code>:entradas</code> / <code>:salidas</code>.</p></article>
-        <article class="card reveal reveal-d3"><div class="card-icon">◈</div><h3>Modelos ligeros</h3><p>Embedding, capas, inferencia y entrenamiento exploratorio en agentes.</p></article>
-        <article class="card reveal reveal-d1"><div class="card-icon">🔑</div><h3>Auth y módulos</h3><p>Tokens, roles, módulos y entidades para organizar permisos y piezas.</p></article>
-        <article class="card reveal reveal-d2"><div class="card-icon">🛠</div><h3>API v2</h3><p>Crear agentes, transferir saldo, publicar e instalar apps de forma explícita.</p></article>
-        <article class="card reveal reveal-d3"><div class="card-icon">🗄️</div><h3>Persistencia</h3><p>Disco local o Supabase; CIDs en blockstore del nodo.</p></article>
-      </div>
-    </section>
-
-    <section id="lispai">
-      <h2 class="section-title reveal">LispAI y Zyrion</h2>
-      <p class="section-lead reveal reveal-d1">Decisiones y automatización sin recompilar el nodo.</p>
-      <div class="grid">
-        <article class="card reveal reveal-d1">
-          <h3>Ejemplo en vivo</h3>
-          <p style="margin-bottom:.75rem">Estado 0 → BLOQUEO cuando las entradas son bajas:</p>
-          <div class="code-bar" style="display:block;text-align:left;font-size:.75rem">
-            <code>(evaluar-zyrion (quote (N :entradas (X Y) :salidas ((0 BLOQUEO) (1 OK) (2 RARO)))) (quote (X 0.1 Y 0.1)))</code>
-          </div>
-        </article>
-        <article class="card reveal reveal-d2">
-          <h3>También incluye</h3>
-          <p>Agentes, DNS, CID, <code>embedding</code>, <code>crear-capa-lineal</code>, <code>inferir</code>, <code>entrenar-hebbiano</code>, <code>host-id</code>, <code>net-peers</code>, transferencias vía API v2.</p>
-        </article>
-      </div>
-      <p class="section-lead reveal" style="margin-top:1.25rem">Referencia de formas: <a href="https://github.com/yecharlot/PrismaTec/blob/main/docs/LISPAI.md" style="color:var(--accent)">docs/LISPAI.md</a></p>
-    </section>
-
-    <section id="api">
-      <h2 class="section-title reveal">Mapa de la API</h2>
-      <p class="section-lead reveal reveal-d1">Relay de referencia: <a href="https://prismatec.onrender.com" style="color:var(--accent2)">prismatec.onrender.com</a></p>
-      <div class="table-wrap reveal">
-        <table>
-          <thead><tr><th>Área</th><th>Rutas principales</th></tr></thead>
-          <tbody>
-            <tr><td>Agentes</td><td><code>/api/crear-agente</code> · <code>/api/agentes/</code> · eliminar / modificar</td></tr>
-            <tr><td>Lisp</td><td><code>POST /api/lispai</code></td></tr>
-            <tr><td>Contenido</td><td><code>/api/ipfs/*</code></td></tr>
-            <tr><td>DNS / apps</td><td><code>/api/dns/*</code> · <code>/api/apps/*</code> · <code>/w/*.app.ans</code></td></tr>
-            <tr><td>Red / sync</td><td><code>/api/network/peers</code> · <code>/api/sync/*</code> · <code>/api/pulse</code></td></tr>
-            <tr><td>IA HTTP</td><td><code>/api/ia/*</code></td></tr>
-            <tr><td>Auth / módulos</td><td><code>/api/auth/*</code> · <code>/api/roles</code> · <code>/api/modulos</code> · entidades</td></tr>
-            <tr><td>API v2</td><td><code>/api/v2/info</code> · agente · transferir · app publicar/instalar/ejecutar</td></tr>
-            <tr><td>Prism / PoH</td><td><code>/api/prism/*</code> · <code>/api/poh/*</code></td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p class="section-lead reveal" style="margin-top:1rem">Detalle: <a href="https://github.com/yecharlot/PrismaTec/blob/main/docs/GUIA.md" style="color:var(--accent)">docs/GUIA.md</a> · <a href="https://github.com/yecharlot/PrismaTec/blob/main/docs/API_AUTH_MODULES_V2.md" style="color:var(--accent)">auth y v2</a></p>
-    </section>
-
-    <section id="empezar">
-      <h2 class="section-title reveal">Empezar en 3 pasos</h2>
-      <div class="grid">
-        <article class="card reveal reveal-d1"><h3>1. Clonar y arrancar</h3><p><code>go run ./cmd/prisma-tec</code> — API en el puerto 8080.</p></article>
-        <article class="card reveal reveal-d2"><h3>2. Probar Lisp</h3><p><code>POST /api/lispai</code> con <code>{"cmd":"(+ 1 2)"}</code> o un <code>evaluar-zyrion</code>.</p></article>
-        <article class="card reveal reveal-d3"><h3>3. Publicar una app</h3><p><code>POST /api/apps/register</code> y abrir <code>/w/nombre.app.ans</code>.</p></article>
-      </div>
-    </section>
-
-    <section>
-      <h2 class="section-title reveal">Stack</h2>
-      <div class="stack reveal reveal-d1">
-        <span class="tag">Go 1.26</span><span class="tag">libp2p</span><span class="tag">GossipSub</span>
-        <span class="tag">CID</span><span class="tag">Lisp</span><span class="tag">Zyrion</span>
-        <span class="tag">SSE</span><span class="tag">Supabase</span><span class="tag">Render</span><span class="tag">Docker</span>
-      </div>
-    </section>
-
-    <section>
-      <h2 class="section-title reveal">Para qué sirve (y para qué no)</h2>
-      <div class="grid">
-        <article class="card reveal reveal-d1">
-          <h3>Sí</h3>
-          <p>Mallas P2P propias, apps ancladas a CID, automatización con Lisp, políticas ternarias, prototipos de contrato lógico, demos de IA en el borde, relays públicos.</p>
-        </article>
-        <article class="card reveal reveal-d2">
-          <h3>No (aún)</h3>
-          <p>Sustituir blockchains públicas, custodia legal de valor entre desconocidos, ni un LLM de producción.</p>
-        </article>
-      </div>
-    </section>
-
-    <div class="cta reveal">
-      <h2>Documentación y código</h2>
-      <p>La guía completa cubre instalación, todas las rutas, Lisp, Zyrion, auth y API v2.</p>
-      <div class="cta-actions">
-        <a class="btn btn-primary" href="https://github.com/yecharlot/PrismaTec/blob/main/docs/GUIA.md">Abrir guía</a>
-        <a class="btn btn-ghost" href="https://github.com/yecharlot/PrismaTec">GitHub</a>
-        <a class="btn btn-ghost" href="https://prismatec.onrender.com/api/v2/info">API v2 info</a>
+  <section id="view-catalog">
+    <div class="hero">
+      <h1 id="heroTitle">Novedades para ti</h1>
+      <p id="heroMsg">Explora por categoría o busca lo que necesitas. Solicita y recoge con tu vale digital.</p>
+    </div>
+    <div class="search-wrap">
+      <div class="search">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+        <input id="qSearch" type="search" placeholder="Buscar productos…" enterkeyhint="search"/>
       </div>
     </div>
+    <div class="chips" id="chips"></div>
+    <div class="toolbar">
+      <span class="count" id="resultCount">—</span>
+      <select id="sortBy">
+        <option value="newest">Más recientes</option>
+        <option value="oldest">Más antiguos</option>
+        <option value="price_asc">Precio: menor</option>
+        <option value="price_desc">Precio: mayor</option>
+      </select>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
 
-    <footer>
-      <span>Alset · PrismaTec · P.TEC-AN v4.0</span>
-      <span>
-        <a href="https://github.com/yecharlot/PrismaTec">GitHub</a> ·
-        <a href="https://prismatec.onrender.com">Relay</a> ·
-        <a href="https://github.com/yecharlot/PrismaTec/blob/main/docs/GUIA.md">Guía</a>
-      </span>
-    </footer>
-  </div>
-  <script>
-    function copyClone(){navigator.clipboard.writeText(document.getElementById("clone-cmd").textContent).then(()=>{const b=document.querySelector(".copy-btn"),p=b.textContent;b.textContent="Copiado";setTimeout(()=>b.textContent=p,1500)})}
-    (function(){const els=document.querySelectorAll(".reveal");if(!("IntersectionObserver"in window)){els.forEach(e=>e.classList.add("visible"));return}
-      const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("visible");io.unobserve(e.target)}}),{threshold:.12,rootMargin:"0px 0px -40px 0px"});
-      els.forEach(e=>io.observe(e))})();
-    (function(){
-      const canvas=document.getElementById("mesh");if(!canvas)return;const ctx=canvas.getContext("2d");
-      const reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      function size(){const r=canvas.parentElement.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);canvas.width=r.width*d;canvas.height=r.height*d;canvas.style.width=r.width+"px";canvas.style.height=r.height+"px";ctx.setTransform(d,0,0,d,0,0);return{w:r.width,h:r.height}}
-      let{w,h}=size();const nodes=[],links=[],pulses=[];const N=9;
-      function place(){nodes.length=0;links.length=0;const cx=w/2,cy=h/2;nodes.push({x:cx,y:cy,r:7,kind:"relay",phase:0});
-        for(let i=0;i<N-1;i++){const a=(i/(N-1))*Math.PI*2-Math.PI/2,rad=Math.min(w,h)*.38;nodes.push({x:cx+Math.cos(a)*rad*(.85+(i%3)*.08),y:cy+Math.sin(a)*rad*.75,r:4.5,kind:"local",phase:i*.7});links.push([0,i+1])}
-        links.push([2,4],[3,6],[5,7],[1,3])}
-      place();window.addEventListener("resize",()=>{const s=size();w=s.w;h=s.h;place()});
-      let last=0;function spawn(){if(pulses.length>12)return;const L=links[Math.floor(Math.random()*links.length)];const from=Math.random()>.5?L[0]:L[1];pulses.push({from,to:from===L[0]?L[1]:L[0],t:0,speed:.008+Math.random()*.01})}
-      function draw(ts){ctx.clearRect(0,0,w,h);links.forEach(([a,b])=>{ctx.beginPath();ctx.moveTo(nodes[a].x,nodes[a].y);ctx.lineTo(nodes[b].x,nodes[b].y);ctx.strokeStyle="rgba(255,255,255,.08)";ctx.stroke()});
-        if(!reduce){if(ts-last>400){spawn();last=ts}for(let i=pulses.length-1;i>=0;i--){const p=pulses[i];p.t+=p.speed;if(p.t>=1){pulses.splice(i,1);continue}const A=nodes[p.from],B=nodes[p.to],x=A.x+(B.x-A.x)*p.t,y=A.y+(B.y-A.y)*p.t;const g=ctx.createRadialGradient(x,y,0,x,y,8);g.addColorStop(0,"rgba(244,180,0,.95)");g.addColorStop(1,"rgba(244,180,0,0)");ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fillStyle=g;ctx.fill()}}
-        nodes.forEach((n,idx)=>{const breath=reduce?1:1+Math.sin(ts*.002+n.phase)*.12,r=n.r*breath;if(n.kind==="relay"){ctx.beginPath();ctx.arc(n.x,n.y,r+10,0,Math.PI*2);ctx.strokeStyle="rgba(91,141,239,.25)";ctx.stroke();if(!reduce){const ring=((ts*.0004+n.phase)%1);ctx.beginPath();ctx.arc(n.x,n.y,r+6+ring*14,0,Math.PI*2);ctx.strokeStyle="rgba(91,141,239,"+(0.45*(1-ring))+")";ctx.stroke()}}
-          ctx.beginPath();ctx.arc(n.x,n.y,r,0,Math.PI*2);ctx.fillStyle=n.kind==="relay"?"#5b8def":(idx%2===0?"#f4b400":"#3dd68c");ctx.fill()});
-        requestAnimationFrame(draw)}
-      requestAnimationFrame(draw)})();
-  </script>
+  <section id="view-detail" class="hidden">
+    <img id="detPhoto" class="detail-hero" alt="" style="display:none"/>
+    <div class="detail-body">
+      <button type="button" class="btn btn-ghost" id="btnBackCat" style="width:auto;padding:.45rem .8rem;margin-bottom:.75rem;font-size:.8rem">Volver al catálogo</button>
+      <span class="pill" id="detCat"></span>
+      <h2 id="detTitle"></h2>
+      <div class="price" id="detPrice" style="color:var(--gold);font-size:1.25rem;font-weight:700;margin:.35rem 0"></div>
+      <p class="sub" id="detDesc" style="line-height:1.5;margin:.5rem 0 1rem"></p>
+      <p class="sub" id="detStock" style="margin-bottom:.85rem"></p>
+      <button type="button" class="btn btn-primary" id="btnAddDet">Agregar al carrito</button>
+      <button type="button" class="btn btn-soft" id="btnInterest" style="margin-top:.45rem;display:none">Me interesa el precio</button>
+    </div>
+  </section>
+
+  <section id="view-cart" class="hidden">
+    <h2 class="section" style="margin-top:1rem">Tu carrito</h2>
+    <div id="cartLines" class="panel"></div>
+    <div class="panel">
+      <div id="cartTotal" style="color:var(--gold);font-weight:700;font-size:1.1rem;margin-bottom:.65rem"></div>
+      <label class="sub">Cómo quieres recibirlo</label>
+      <div id="deliveryOpts" style="display:flex;gap:.5rem;margin:.4rem 0 .7rem;flex-wrap:wrap">
+        <button type="button" class="btn btn-soft delopt on" data-d="pickup" id="optPickup" style="flex:1;min-width:120px;padding:.65rem">Recoger</button>
+        <button type="button" class="btn btn-soft delopt" data-d="delivery" id="optDelivery" style="flex:1;min-width:120px;padding:.65rem">Domicilio</button>
+      </div>
+      <p class="sub" id="deliveryHint" style="margin-bottom:.5rem"></p>
+      <div id="deliveryAddrWrap" class="hidden">
+        <label class="sub">Dirección de entrega</label>
+        <textarea id="cDeliveryAddr" rows="2" placeholder="Calle, número, municipio, referencias…"></textarea>
+        <label class="sub">Detalles de entrega (hora aproximada, etc.)</label>
+        <textarea id="cDeliveryNote" rows="2" placeholder="Ej. entre 4 y 6 pm, llamar al llegar…"></textarea>
+      </div>
+      <label class="sub">Nombre</label><input id="cName"/>
+      <label class="sub">Teléfono</label><input id="cPhone" inputmode="tel"/>
+      <label class="sub">Nota (opcional)</label><textarea id="cNote" rows="2"></textarea>
+      <button type="button" class="btn btn-primary" id="btnPlaceOrder">Solicitar pedido</button>
+          </div>
+  </section>
+
+  <section id="view-vale" class="hidden">
+    <h2 class="section" style="margin-top:1rem">Solicitud / vale</h2>
+    <p class="sub" id="valeHint" style="margin:0 1.1rem .6rem"></p>
+    <div id="valeBox"></div>
+  </section>
+
+  <section id="view-myorders" class="hidden">
+    <h2 class="section" style="margin-top:1rem">Mis pedidos</h2>
+    <div id="myOrders"></div>
+  </section>
+
+  <section id="view-chat" class="hidden">
+    <h2 class="section" style="margin-top:1rem">Chat</h2>
+    <div class="panel">
+      <div id="chatBox"></div>
+      <div style="display:flex;gap:.45rem;margin-top:.65rem">
+        <input id="chatIn" placeholder="Escribe un mensaje…" style="margin:0;flex:1"/>
+        <button type="button" class="btn btn-primary" id="btnSend" style="width:auto;padding:.7rem 1rem">Enviar</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="cart-bar hidden" id="cartBar"><div class="inner" id="cartBarInner"><span id="cartBarTxt">0</span><span>Ver carrito →</span></div></div>
+<nav class="nav">
+  <button type="button" class="on" data-v="catalog"><span id="nCat"></span>Tienda</button>
+  <button type="button" data-v="cart"><span id="nCart"></span>Carrito</button>
+  <button type="button" data-v="myorders"><span id="nVales"></span>Vales</button>
+  <button type="button" data-v="chat"><span id="nChat"></span>Chat<span class="badge-n" id="badgeChat">0</span></button>
+  <button type="button" data-v="profile"><span id="nYo"></span>Yo</button>
+</nav>
+<button type="button" class="pwa-install" id="btnPwaInstall" aria-label="Instalar app">⬇ Instala App</button>
+<div class="wake-overlay" id="wakeOverlay" aria-live="polite"><div class="wake-box"><div class="wake-spin"></div><strong>Despertando el servidor…</strong><p>El plan gratuito de Render duerme tras 15 min sin uso. En unos segundos vuelve. No cierres la app.</p></div></div>
+<div class="toast" id="toast"></div>
+<script>
+function ico(name){
+  var s={
+    grid:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',
+    cart:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M3 4h2l2.4 11h10.2l2-7H7"/></svg>',
+    ticket:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8a2 2 0 0 0 0 4v4h16v-4a2 2 0 0 0 0-4V6H4v2z"/></svg>',
+    chat:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>',
+    user:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 6-6 8-6s6.5 2 8 6"/></svg>'
+  };
+  return s[name]||'';
+}
+(function(){
+
+  // TWIN: GitHub Pages + Cloudflare Edge (Render intacto)
+  window.LATATI_EDGE_API = window.LATATI_EDGE_API || "https://latati-edge.lhmolam-877.workers.dev/api/latati";
+  var API = window.LATATI_EDGE_API;
+
+
+  // —— Resiliencia Render Free (cold start ~60s) ——
+  (function(){
+    var wakeEl=null;
+    function showWake(on){
+      if(!wakeEl)wakeEl=document.getElementById('wakeOverlay');
+      if(!wakeEl)return;
+      wakeEl.classList.toggle('show',!!on);
+    }
+    var origFetch=window.fetch.bind(window);
+    window.fetch=async function(input, init){
+      init=init||{};
+      var attempts=0, max=4, lastErr=null;
+      while(attempts<max){
+        attempts++;
+        var ctrl=typeof AbortController!=='undefined'?new AbortController():null;
+        var timer=null;
+        try{
+          if(ctrl){
+            init={...init, signal:ctrl.signal};
+            // cold start can take ~60s on free plan
+            timer=setTimeout(function(){try{ctrl.abort()}catch(e){}}, attempts===1?25000:70000);
+          }
+          if(attempts>1)showWake(true);
+          var res=await origFetch(input, init);
+          if(timer)clearTimeout(timer);
+          // Render sometimes returns 502/503/504 while spinning up
+          if(res && (res.status===502||res.status===503||res.status===504||res.status===408) && attempts<max){
+            showWake(true);
+            await new Promise(function(r){setTimeout(r, 1500*attempts)});
+            continue;
+          }
+          showWake(false);
+          return res;
+        }catch(e){
+          if(timer)clearTimeout(timer);
+          lastErr=e;
+          var name=(e&&e.name)||'';
+          var msg=String((e&&e.message)||e||'');
+          var retryable=name==='AbortError'||/failed|network|fetch|load|timeout/i.test(msg);
+          if(retryable && attempts<max){
+            showWake(true);
+            await new Promise(function(r){setTimeout(r, 2000*attempts)});
+            continue;
+          }
+          showWake(false);
+          throw e;
+        }
+      }
+      showWake(false);
+      throw lastErr||new Error('servidor no responde');
+    };
+    // Ping ligero al abrir (ayuda a despertar sin quemar horas continuamente)
+    try{
+      var base=typeof API!=='undefined'?API:'/api/latati';
+      origFetch(base.replace(/\/$/,'')+'/',{method:'GET',cache:'no-store'}).catch(function(){});
+    }catch(e){}
+  })();
+
+  function detectTenant(){
+    var q=new URLSearchParams(location.search).get('t');
+    if(q)return String(q).toLowerCase().replace(/[^a-z0-9-]/g,'').replace(/^gestion-/,'')||'latati';
+    var p=location.pathname||'';
+    var m=p.match(/\/w\/(gestion-)?([a-z0-9-]+)\.app\.ans/i);
+    if(!m)return 'latati';
+    var s=(m[2]||'latati').toLowerCase();
+    if(s==='gestion-latati')return 'latati';
+    return s||'latati';
+  }
+  var TENANT=detectTenant();
+  function applyTheme(prof){
+    if(!prof)return;
+    var r=document.documentElement;
+    if(prof.accent)r.style.setProperty('--accent',prof.accent);
+    if(prof.accent2)r.style.setProperty('--accent2',prof.accent2);
+    if(prof.bg)r.style.setProperty('--bg',prof.bg);
+    if(prof.surface)r.style.setProperty('--surface',prof.surface);
+    if(prof.tagline&&document.getElementById('brandSub'))document.getElementById('brandSub').textContent=prof.tagline;
+    if(prof.name){
+      document.title=prof.name+(document.title.indexOf('Gestión')>=0?' · Gestión':'');
+      if(document.getElementById('brandName'))document.getElementById('brandName').textContent=prof.name;
+    }
+  }
+  var sidKey='latati_sid_'+TENANT; var sid=localStorage.getItem(sidKey); if(!sid){sid='c-'+Math.random().toString(36).slice(2,10);localStorage.setItem(sidKey,sid)}
+  var CK='latati_cart_'+TENANT, CINFO='latati_client_'+TENANT;
+  var cart=JSON.parse(localStorage.getItem(CK)||'{}');
+  var items=[], allCats=[], profile={}, current=null, currentOrder=null, catalogRev=0, liveConnected=false, pendingChat=0;
+  var activeCat='', sortBy='newest', searchQ='';
+  function $(id){return document.getElementById(id)}
+  function toast(m){var t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2400)}
+  function esc(s){return String(s||'').replace(/</g,'&lt;')}
+  function saveCart(){localStorage.setItem(CK,JSON.stringify(cart))}
+  function clientInfo(){try{return JSON.parse(localStorage.getItem(CINFO)||'{}')}catch(e){return {}}}
+  function hasClient(){var c=clientInfo();return !!(c.name&&String(c.name).trim()&&c.phone&&String(c.phone).trim())}
+  function requireClient(){if(hasClient())return true;toast('Primero guarda tu nombre y teléfono');show('profile');return false}
+  function fillProfileForm(){var c=clientInfo();if($('pName'))$('pName').value=c.name||'';if($('pPhone'))$('pPhone').value=c.phone||'';if($('cName'))$('cName').value=c.name||'';if($('cPhone'))$('cPhone').value=c.phone||''}
+  function count(){var n=0;Object.keys(cart).forEach(function(k){if(cart[k]>0)n++});return n}
+  
+  var deliveryType='pickup';
+  function productDeliveryMode(p){return (p&&p.delivery_mode)||'both'}
+  function cartProducts(){
+    return Object.keys(cart).filter(function(k){return cart[k]>0}).map(function(id){
+      return items.find(function(x){return x.id===id})||current||{id:id,delivery_mode:'both',title:id};
+    });
+  }
+  function syncDeliveryOpts(){
+    var prods=cartProducts();
+    var onlyDel=prods.length&&prods.every(function(p){return productDeliveryMode(p)==='delivery'});
+    var onlyPick=prods.length&&prods.every(function(p){return productDeliveryMode(p)==='pickup'});
+    var hasDelOnly=prods.some(function(p){return productDeliveryMode(p)==='delivery'});
+    var hasPickOnly=prods.some(function(p){return productDeliveryMode(p)==='pickup'});
+    var optP=$('optPickup'),optD=$('optDelivery'),hint=$('deliveryHint'),wrap=$('deliveryAddrWrap');
+    if(!optP)return;
+    optP.disabled=onlyDel||hasDelOnly;
+    optD.disabled=onlyPick||hasPickOnly;
+    if(onlyDel||hasDelOnly){deliveryType='delivery'}
+    else if(onlyPick||hasPickOnly){deliveryType='pickup'}
+    optP.classList.toggle('on',deliveryType==='pickup');
+    optD.classList.toggle('on',deliveryType==='delivery');
+    if(wrap)wrap.classList.toggle('hidden',deliveryType!=='delivery');
+    var msg='';
+    if(hasDelOnly&&hasPickOnly)msg='Hay productos incompatibles (solo recogida y solo domicilio). Sepáralos en dos pedidos.';
+    else if(onlyDel)msg='Estos productos solo se entregan a domicilio.';
+    else if(onlyPick)msg='Estos productos son solo para recogida.';
+    else if(deliveryType==='delivery')msg='Indica dónde quieres recibir el pedido.';
+    else msg='Recogerás en el punto indicado por la gestora al confirmar.';
+    if(hint)hint.textContent=msg;
+  }
+
+  function updateBar(){
+    var n=count();$('cartBarTxt').textContent=n+(n===1?' artículo':' artículos');
+    var onCat=!$('view-catalog').classList.contains('hidden')||!$('view-detail').classList.contains('hidden');
+    var show=n>0&&onCat;
+    $('cartBar').classList.toggle('hidden',!show);
+    document.body.classList.toggle('has-cartbar',show);
+  }
+  function hideAll(){['catalog','detail','cart','vale','myorders','chat','profile'].forEach(function(v){$('view-'+v).classList.add('hidden')})}
+  function show(v){
+    hideAll();$('view-'+v).classList.remove('hidden');
+    document.querySelectorAll('.nav button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-v')===v)});
+    if(v==='cart'){if(!requireClient())return;renderCart();$('cartBar').classList.add('hidden');fillProfileForm()}
+    else if(v==='profile')fillProfileForm();
+    else updateBar();
+  }
+  function photoUrl(p){return p&&p.photo?(API+'/photo/'+p.id+'?t='+(p.updated_at||'')):''}
+  function priceLabel(p){if(p.price_pending||!(p.price>0))return 'Precio a confirmar';return (p.currency||'')+' '+Number(p.price).toFixed(2)}
+  function canBuy(p){return !!(p&&!p.sold_out&&!p.sold&&!p.price_pending&&p.price>0)}
+  function catOf(p){return (p&&p.category&&String(p.category).trim())||'General'}
+
+  function renderChips(){
+    var el=$('chips');
+    var cats=[''].concat(allCats);
+    el.innerHTML=cats.map(function(c){
+      var label=c===''?'Todos':c;
+      var on=(c===''&&!activeCat)||(c&&c===activeCat);
+      return '<button type="button" class="chip'+(on?' on':'')+'" data-c="'+esc(c)+'">'+esc(label)+'</button>';
+    }).join('');
+    el.querySelectorAll('.chip').forEach(function(b){b.onclick=function(){activeCat=b.getAttribute('data-c')||'';loadCatalog(true)}});
+  }
+
+  function renderCatalog(){
+    var g=$('grid');
+    $('resultCount').textContent=items.length+(items.length===1?' producto':' productos');
+    if(!items.length){
+      g.innerHTML='<div class="empty" style="grid-column:1/-1"><strong>No hay resultados</strong>Prueba otra categoría o búsqueda</div>';
+      return;
+    }
+    g.innerHTML=items.map(function(p){
+      var img=photoUrl(p);
+      var dm=p.delivery_mode||'both';
+      var dtag=dm==='delivery'?'Domicilio':(dm==='pickup'?'Recogida':'');
+      return '<article class="card" data-id="'+p.id+'"><div class="ph">'+(img?'<img src="'+img+'" alt="" loading="lazy"/>':'')+
+        '<span class="tag">'+esc(catOf(p))+(dtag?' · '+dtag:'')+'</span></div><div class="body"><div class="title">'+esc(p.title)+'</div>'+
+        '<div class="meta"><span class="price">'+esc(priceLabel(p))+'</span></div></div></article>';
+    }).join('');
+    g.querySelectorAll('.card').forEach(function(c){c.onclick=function(){openDetail(c.getAttribute('data-id'))}});
+  }
+
+  function add(id){
+    if(!requireClient())return;
+    var p=items.find(function(x){return x.id===id})||current;
+    if(!canBuy(p)){toast('Aún no tiene precio');return}
+    if(cart[id]>0){toast('Ya está en el carrito');return}
+    cart[id]=1;saveCart();updateBar();toast('Agregado al carrito');
+  }
+  async function markInterest(id){
+    if(!requireClient())return;
+    var c=clientInfo();
+    var d=await(await fetch(API+'/interest',{method:'POST',headers:{'Content-Type':'application/json','X-LaTati-Thread':sid},body:JSON.stringify({product_id:id,thread:sid,client_name:c.name,client_phone:c.phone})})).json();
+    if(!d.ok){toast(d.error||'No se pudo registrar');return}
+    toast(d.duplicate?'Ya habías marcado interés':'Te avisamos cuando tenga precio');
+  }
+  async function openDetail(id){
+    var p=items.find(function(x){return x.id===id});
+    if(!p){try{var d=await(await fetch(API+'/product/'+id)).json();if(d.ok)p=d.item}catch(e){}}
+    if(!p){toast('No disponible');return}
+    current=p;
+    $('detTitle').textContent=p.title;
+    $('detPrice').textContent=priceLabel(p);
+    $('detDesc').textContent=p.description||'';
+    $('detCat').textContent=catOf(p);
+    var dm=p.delivery_mode||'both';
+    var dtxt=dm==='delivery'?'Solo domicilio':(dm==='pickup'?'Solo recogida':'Recogida o domicilio');
+    $('detStock').textContent=(p.sold_out?'Agotado':'Disponible')+' · '+dtxt;
+    var img=photoUrl(p),ph=$('detPhoto');
+    if(img){ph.src=img;ph.style.display='block'}else ph.style.display='none';
+    var buy=canBuy(p);
+    $('btnAddDet').style.display=buy?'flex':'none';
+    $('btnInterest').style.display=(!buy&&(p.price_pending||!(p.price>0)))?'flex':'none';
+    show('detail');
+  }
+  $('btnBackCat').onclick=function(){show('catalog')};
+  $('btnAddDet').onclick=function(){if(current)add(current.id)};
+  $('btnInterest').onclick=function(){if(current)markInterest(current.id)};
+
+  function renderCart(){
+    var el=$('cartLines'),ids=Object.keys(cart).filter(function(k){return cart[k]>0});
+    if(!ids.length){el.innerHTML='<div class="empty">Tu carrito está vacío</div>';$('cartTotal').textContent='';return}
+    var total=0,cur='CUP';
+    el.innerHTML=ids.map(function(id){
+      cart[id]=1;
+      var p=items.find(function(x){return x.id===id})||{title:'Producto',price:0,currency:'CUP'};
+      total+=(p.price||0);cur=p.currency||cur;
+      var img=photoUrl(p);
+      return '<div class="line" data-id="'+id+'">'+(img?'<img src="'+img+'" alt="">':'')+'<div style="flex:1"><strong>'+esc(p.title)+'</strong><div class="sub">'+esc(priceLabel(p))+'</div></div><button type="button" class="btn btn-ghost rm" style="width:auto;padding:.4rem .6rem;font-size:.75rem">Quitar</button></div>';
+    }).join('');
+    saveCart();$('cartTotal').textContent='Total · '+cur+' '+total.toFixed(2);
+    el.querySelectorAll('.rm').forEach(function(b){b.onclick=function(){delete cart[b.closest('.line').getAttribute('data-id')];saveCart();renderCart();updateBar()}});
+    fillProfileForm();syncDeliveryOpts();
+  }
+  $('btnPlaceOrder').onclick=async function(){
+    if(!requireClient())return;
+    var c=clientInfo();
+    var name=($('cName').value.trim()||c.name||'').trim();
+    var phone=($('cPhone').value.trim()||c.phone||'').trim();
+    if(!name||!phone){toast('Nombre y teléfono requeridos');show('profile');return}
+    localStorage.setItem(CINFO,JSON.stringify({name:name,phone:phone}));
+    var ids=Object.keys(cart).filter(function(k){return cart[k]>0});
+    if(!ids.length){toast('Carrito vacío');return}
+    syncDeliveryOpts();
+    if(deliveryType==='delivery'&&!($('cDeliveryAddr').value||'').trim()){toast('Indica la dirección de entrega');return}
+    var d=await(await fetch(API+'/order',{method:'POST',headers:{'Content-Type':'application/json','X-LaTati-Thread':sid},body:JSON.stringify({thread:sid,client_name:name,client_phone:phone,note:$('cNote').value.trim(),delivery_type:deliveryType,delivery_address:($('cDeliveryAddr').value||'').trim(),delivery_note:($('cDeliveryNote')&&$('cDeliveryNote').value||'').trim(),items:ids.map(function(id){return{product_id:id,qty:1}})})})).json();
+    if(!d.ok){toast(d.error||'Error');return}
+    cart={};saveCart();renderVale(d.order);show('vale');toast('Solicitud enviada');loadCatalog(true);
+  };
+  $('btnSaveProfile').onclick=function(){
+    var name=$('pName').value.trim(),phone=$('pPhone').value.trim();
+    if(!name){toast('Escribe tu nombre');return}
+    if(!phone||phone.length<6){toast('Teléfono inválido');return}
+    localStorage.setItem(CINFO,JSON.stringify({name:name,phone:phone}));
+    fillProfileForm();toast('Datos guardados');show('catalog');
+  };
+
+  function statusLabel(s,o){
+    s=(s||'').toLowerCase();
+    if(s==='requested')return 'Esperando confirmación';
+    if(s==='pending')return 'Pedido confirmado · Preparando entrega';
+    if(s==='ready'){
+      if(o&&(o.delivery_type||'')==='delivery')return 'Entrega lista · Muestre su vale al domicilio';
+      return 'Entrega lista · Muestre su vale para recoger';
+    }
+    if(s==='delivered')return 'Entregado';
+    if(s==='cancelled')return 'Cancelado';
+    return s||'—';
+  }
+  function renderVale(o){
+    currentOrder=o||null;
+    if(!o){if($('valeBox'))$('valeBox').innerHTML='';return}
+    var st=(o.status||'').toLowerCase();
+    // Pedido cancelado: no mostrar vale; volver al flujo normal
+    if(st==='cancelled'){
+      currentOrder=null;
+      var reason=o.cancel_reason||'';
+      if($('valeBox'))$('valeBox').innerHTML='';
+      toast(reason?('Pedido cancelado: '+reason):'Pedido cancelado');
+      show('catalog');
+      loadMyOrders();
+      return;
+    }
+    var isVale=st==='pending'||st==='ready'||st==='delivered';
+    var lines=(o.lines||[]).map(function(l){
+      var img=l.photo?API+'/photo/'+l.product_id:'';
+      return '<div class="line">'+(img?'<img src="'+img+'" alt="">':'')+'<div><strong>'+esc(l.title)+'</strong><div class="sub">×'+l.qty+' · '+(l.currency||'')+' '+Number(l.price).toFixed(2)+'</div></div></div>';
+    }).join('');
+    var hint='';
+    if(st==='requested')hint='La gestora confirma disponibilidad.';
+    else if(st==='pending')hint='Pedido confirmado. Preparando entrega.';
+    else if(st==='ready'&&(o.delivery_type||'')==='delivery')hint='Entrega lista. Muestre este vale al domicilio.';
+    else if(st==='ready')hint='Entrega lista. Muestre este vale para recoger.';
+    else if(st==='delivered')hint='Pedido entregado.';
+    if($('valeHint'))$('valeHint').textContent=hint;
+    var actions=(st==='requested'||st==='pending'||st==='ready')?'<button type="button" class="btn btn-ghost" id="btnCancelReq" style="margin-top:.75rem">'+(st==='requested'?'Cancelar solicitud':'Cancelar pedido')+'</button>':'';
+    var gestorBlock='';
+    var gName=o.gestor_name||o.owner_name||'';
+    var gPhone=o.gestor_phone||'';
+    if(gName||gPhone){
+      gestorBlock='<div class="sub" style="margin-top:.65rem;padding-top:.55rem;border-top:1px solid var(--line)"><strong>Gestora / negocio</strong><br>'+esc(gName)+(gPhone?(' · '+esc(gPhone)):'')+'</div>';
+    }
+    var placeBlock='';
+    if((o.delivery_type||'')==='delivery'){
+      placeBlock='<div class="sub" style="margin-top:.4rem"><strong>Domicilio:</strong> '+esc(o.delivery_address||'—')+'</div>';
+      if(o.delivery_note)placeBlock+='<div class="sub">Detalles: '+esc(o.delivery_note)+'</div>';
+    } else {
+      var addr=o.pickup_address||o.address||'';
+      if(addr)placeBlock='<div class="sub" style="margin-top:.4rem"><strong>Recogida:</strong> '+esc(addr)+'</div>';
+      if(o.owner_name&&o.owner_name!==gName)placeBlock+='<div class="sub">Dueño/a: '+esc(o.owner_name)+'</div>';
+    }
+    $('valeBox').innerHTML='<div class="vale-card panel"><div style="font-family:Instrument Serif,serif;font-size:1.4rem">'+esc(o.code)+'</div><span class="pill" style="margin-top:.4rem">'+esc(statusLabel(st,o))+'</span>'+lines+
+      '<div style="color:var(--gold);font-weight:700;margin-top:.75rem;font-size:1.05rem">Total · '+(o.currency||'')+' '+Number(o.total).toFixed(2)+'</div>'+
+      '<div class="sub" style="margin-top:.5rem">'+esc(o.client_name)+' · '+esc(o.client_phone)+'</div>'+
+      placeBlock+gestorBlock+actions+'</div>';
+    var bc=$('btnCancelReq');
+    if(bc)bc.onclick=async function(){
+      var d=await(await fetch(API+'/order/'+encodeURIComponent(o.id||o.code)+'/status',{method:'POST',headers:{'Content-Type':'application/json','X-LaTati-Thread':sid},body:JSON.stringify({status:'cancelled',thread:sid})})).json();
+      if(!d.ok){toast(d.error||'No se pudo cancelar');return}
+      renderVale(d.order);loadMyOrders();
+    };
+  }
+  async function refreshCurrentVale(forceToast){
+    if(!currentOrder)return;
+    if($('view-vale').classList.contains('hidden')&&!forceToast)return;
+    try{
+      var id=currentOrder.id||currentOrder.code;
+      if(!id)return;
+      var d=await(await fetch(API+'/order/'+encodeURIComponent(id)+'?thread='+encodeURIComponent(sid),{cache:'no-store'})).json();
+      if(!d.ok||!d.order)return;
+      var prev=(currentOrder.status||'').toLowerCase();
+      var st=(d.order.status||'').toLowerCase();
+      renderVale(d.order);
+      if(st&&st!==prev){
+        if(st==='pending')toast('Pedido confirmado · Preparando entrega');
+        else if(st==='ready')toast(statusLabel(st,d.order));
+        else if(st==='cancelled'){
+          var reason=d.order.cancel_reason||'';
+          toast(reason?('Pedido cancelado: '+reason):'Pedido cancelado');
+        }
+        else if(st==='delivered')toast('Pedido entregado');
+        else toast(statusLabel(st,d.order));
+      }
+    }catch(e){}
+  }
+  async function loadMyOrders(){
+    var d=await(await fetch(API+'/orders?thread='+encodeURIComponent(sid))).json();
+    var list=d.items||[],el=$('myOrders');
+    if(!list.length){el.innerHTML='<div class="empty"><strong>Sin pedidos</strong>Cuando solicites, aparecerán aquí</div>';return}
+    el.innerHTML=list.map(function(o){
+      return '<div class="panel"><strong>'+esc(o.code)+'</strong><div class="sub" style="margin:.25rem 0">'+esc(statusLabel(o.status,o))+'</div><div style="color:var(--gold);font-weight:700">'+(o.currency||'')+' '+Number(o.total).toFixed(2)+'</div><button type="button" class="btn btn-ghost see" data-id="'+o.id+'" style="margin-top:.55rem">Ver detalle</button></div>';
+    }).join('');
+    el.querySelectorAll('.see').forEach(function(b){b.onclick=async function(){
+      var d=await(await fetch(API+'/order/'+b.getAttribute('data-id')+'?thread='+encodeURIComponent(sid))).json();
+      if(d.ok){renderVale(d.order);show('vale')}
+    }});
+  }
+  async function loadChat(){
+    if(!requireClient())return;
+    var d=await(await fetch(API+'/chat?thread='+encodeURIComponent(sid))).json();
+    var box=$('chatBox');
+    box.innerHTML=(d.items||d.messages||[]).map(function(m){return '<div class="bubble '+(m.from==='client'?'me':'them')+'">'+esc(m.text)+'</div>'}).join('');
+    box.scrollTop=box.scrollHeight;
+  }
+  $('btnSend').onclick=async function(){
+    if(!requireClient())return;
+    var t=$('chatIn').value.trim();if(!t)return;$('chatIn').value='';
+    var c=clientInfo();
+    await fetch(API+'/chat',{method:'POST',headers:{'Content-Type':'application/json','X-LaTati-Thread':sid},body:JSON.stringify({thread:sid,from:'client',text:t,client_name:c.name||'',client_phone:c.phone||''})});
+    loadChat();
+  };
+  document.querySelectorAll('.nav button').forEach(function(b){
+    b.onclick=function(){
+      var v=b.getAttribute('data-v');
+      if(v==='catalog'){show('catalog');loadCatalog(true)}
+      if(v==='cart')show('cart');
+      if(v==='myorders'){show('myorders');loadMyOrders()}
+      if(v==='chat'){show('chat');pendingChat=0;var bc=$('badgeChat');if(bc){bc.textContent='0';bc.classList.remove('show')}loadChat()}
+      if(v==='profile'){show('profile');fillProfileForm()}
+    };
+  });
+  $('cartBarInner').onclick=function(){show('cart')};
+  if($('optPickup'))$('optPickup').onclick=function(){if(this.disabled)return;deliveryType='pickup';syncDeliveryOpts()};
+  if($('optDelivery'))$('optDelivery').onclick=function(){if(this.disabled)return;deliveryType='delivery';syncDeliveryOpts()};
+  var searchTimer=null;
+  $('qSearch').oninput=function(){
+    clearTimeout(searchTimer);
+    searchTimer=setTimeout(function(){searchQ=$('qSearch').value.trim();loadCatalog(true)},280);
+  };
+  $('sortBy').onchange=function(){sortBy=$('sortBy').value;loadCatalog(true)};
+
+  async function loadCatalog(force){
+    try{
+      var qs='?sort='+encodeURIComponent(sortBy);
+      if(activeCat)qs+='&category='+encodeURIComponent(activeCat);
+      if(searchQ)qs+='&q='+encodeURIComponent(searchQ);
+      var d=await(await fetch(API+'/catalog'+qs,{cache:'no-store'})).json();
+      if(d.profile){profile=d.profile;applyTheme(profile);$('brandName').textContent=profile.name||'La Tati';$('brandSub').textContent=profile.tagline||profile.bio||'Tienda · pedidos · recogida'}
+      var rev=d.rev||0;
+      if(!force&&rev&&rev===catalogRev&&items.length&&!searchQ&&!activeCat)return;
+      catalogRev=rev;items=d.items||[];allCats=d.categories||[];
+      renderChips();renderCatalog();
+      var pid=new URLSearchParams(location.search).get('p');
+      if(pid)openDetail(pid);
+    }catch(e){}
+  }
+  function sameTenant(ev){
+    try{
+      var d=ev&&ev.data?JSON.parse(ev.data):{};
+      if(!d||d.tenant==null||d.tenant==='')return true;
+      return String(d.tenant)===String(TENANT);
+    }catch(e){return true}
+  }
+  function bindLive(){
+    if(typeof EventSource==='undefined')return;
+    try{
+      function onCat(ev){if(!sameTenant(ev))return;loadCatalog(true)}
+      function onOrd(ev){
+        if(!sameTenant(ev))return;
+        loadMyOrders();
+        loadCatalog(true);
+        try{
+          var d=ev&&ev.data?JSON.parse(ev.data):{};
+          var oid=d.order_id||d.code||'';
+          var thr=d.thread||'';
+          // Actualizar vale si estamos viendo ese pedido (o cualquier cambio de nuestro hilo)
+          var watching=!$('view-vale').classList.contains('hidden')&&currentOrder;
+          var match=!oid||!currentOrder||oid===currentOrder.id||oid===currentOrder.code;
+          var myThread=!thr||thr===sid;
+          if(watching&&match&&myThread){
+            refreshCurrentVale(true);
+          } else if(myThread&&(d.status||oid)){
+            // pedido nuestro aunque no estemos en vale: toast sutil al confirmar
+            var ns=(d.status||'').toLowerCase();
+            if(ns==='pending')toast('Pedido confirmado · Preparando entrega');
+            else if(ns==='ready')toast('Entrega lista · revisa tu vale');
+            else if(ns==='cancelled')toast(d.cancel_reason?('Pedido cancelado: '+d.cancel_reason):'Pedido cancelado');
+          }
+        }catch(e){refreshCurrentVale(true)}
+      }
+      function onChat(ev){
+        if(!sameTenant(ev))return;
+        try{
+          var d=ev&&ev.data?JSON.parse(ev.data):{};
+          var thr=d.thread||'';
+          // Solo mensajes de nuestro hilo
+          if(thr&&thr!==sid)return;
+          // Si ya estamos en chat: refrescar
+          if(!$('view-chat').classList.contains('hidden')){loadChat();return}
+          // Fuera del chat: avisar
+          pendingChat=(pendingChat||0)+1;
+          var b=$('badgeChat');if(b){b.textContent=String(pendingChat);b.classList.add('show')}
+          toast('Nuevo mensaje de la tienda');
+        }catch(e){
+          if(!$('view-chat').classList.contains('hidden'))loadChat();
+          else toast('Nuevo mensaje de la tienda');
+        }
+      }
+      var es=new EventSource(API+'/events');
+      es.addEventListener('latati_hello',function(){liveConnected=true;loadCatalog(true)});
+      es.addEventListener('latati_catalog',onCat);
+      es.addEventListener('latati_order',onOrd);
+      es.addEventListener('latati_chat',onChat);
+      es.onerror=function(){liveConnected=false};
+      es.onopen=function(){liveConnected=true};
+      var es2=new EventSource('/api/pulse');
+      es2.addEventListener('latati_catalog',onCat);
+      es2.addEventListener('latati_order',onOrd);
+      es2.addEventListener('latati_chat',onChat);
+    }catch(e){}
+  }
+  $('nCat').innerHTML=ico('grid');$('nCart').innerHTML=ico('cart');$('nVales').innerHTML=ico('ticket');$('nChat').innerHTML=ico('chat');$('nYo').innerHTML=ico('user');
+  fillProfileForm();
+  if(!hasClient())show('profile');
+  loadCatalog(true);updateBar();bindLive();
+
+  (function setupPWA(){
+    var isGestion=!!document.getElementById('view-prods')||location.pathname.indexOf('gestion')>=0;
+    var base=typeof API!=='undefined'?API:'/api/latati';
+    var manifestURL=base+'/manifest.webmanifest'+(isGestion?'?gestion=1':'');
+    var link=document.querySelector('link[rel="manifest"]');
+    if(!link){link=document.createElement('link');link.rel='manifest';document.head.appendChild(link)}
+    link.href=manifestURL;
+    var icon=document.querySelector('link[rel="apple-touch-icon"]');
+    if(!icon){icon=document.createElement('link');icon.rel='apple-touch-icon';document.head.appendChild(icon)}
+    icon.href=base+'/icon-192.png';
+    var metaTheme=document.querySelector('meta[name="theme-color"]');
+    if(!metaTheme){metaTheme=document.createElement('meta');metaTheme.name='theme-color';document.head.appendChild(metaTheme)}
+    metaTheme.content='#e8b4c8';
+    var metaApple=document.querySelector('meta[name="apple-mobile-web-app-capable"]');
+    if(!metaApple){metaApple=document.createElement('meta');metaApple.name='apple-mobile-web-app-capable';metaApple.content='yes';document.head.appendChild(metaApple)}
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register(base+'/sw.js',{scope:'/'}).catch(function(){});
+    }
+    var btn=$('btnPwaInstall');
+    if(!btn)return;
+    var dismissed=localStorage.getItem('latati_pwa_dismiss')==='1';
+    var standalone=window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+    if(standalone){btn.classList.add('hidden-forced');return}
+    var deferred=null;
+    window.addEventListener('beforeinstallprompt',function(e){
+      e.preventDefault();
+      deferred=e;
+      if(!dismissed)btn.classList.add('show');
+    });
+    // iOS / browsers without beforeinstallprompt: show button with instructions
+    var isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+    var isSafari=/safari/i.test(navigator.userAgent)&&!/chrome|crios|fxios/i.test(navigator.userAgent);
+    if(!deferred && (isIOS||isSafari) && !dismissed){
+      setTimeout(function(){if(!deferred)btn.classList.add('show')},1200);
+    }
+    // Android Chrome sometimes fires late
+    setTimeout(function(){if(!standalone&&!dismissed&&(deferred||isIOS))btn.classList.add('show')},2500);
+    btn.onclick=async function(){
+      if(deferred){
+        deferred.prompt();
+        try{var ch=await deferred.userChoice;if(ch&&ch.outcome==='accepted'){btn.classList.add('hidden-forced');localStorage.setItem('latati_pwa_dismiss','1')}}catch(e){}
+        deferred=null;
+        return;
+      }
+      if(isIOS){
+        toast('En iPhone: toca Compartir → “Añadir a pantalla de inicio”');
+      }else{
+        toast('Usa el menú del navegador → “Instalar app” o “Añadir a pantalla de inicio”');
+      }
+    };
+    // long-press hide
+    var t=0;
+    btn.addEventListener('pointerdown',function(){t=Date.now()});
+    btn.addEventListener('pointerup',function(){if(Date.now()-t>700){localStorage.setItem('latati_pwa_dismiss','1');btn.classList.add('hidden-forced');toast('Botón oculto')}});
+  })();
+
+  setInterval(function(){
+    if(!$('view-catalog').classList.contains('hidden')||!$('view-detail').classList.contains('hidden'))loadCatalog(false);
+    if(!$('view-myorders').classList.contains('hidden'))loadMyOrders();
+    if(!$('view-chat').classList.contains('hidden'))loadChat();
+    // Mientras espera confirmación, refrescar el vale (fallback si SSE falla)
+    if(!$('view-vale').classList.contains('hidden')&&currentOrder){
+      var st=(currentOrder.status||'').toLowerCase();
+      if(st==='requested'||st==='pending'||st==='ready')refreshCurrentVale(false);
+    }
+  }, liveConnected?8000:4000);
+})();
+</script>
 </body>
 </html>
