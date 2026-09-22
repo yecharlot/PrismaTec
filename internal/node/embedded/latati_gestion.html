@@ -74,6 +74,8 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
         <option value="pickup">Solo recogida</option>
         <option value="delivery">Solo domicilio</option>
       </select>
+      <label class="sub">Dirección de recogida (opcional, si difiere del perfil)</label><input id="fPickup" placeholder="Calle, municipio…"/>
+      <label class="sub">Nombre del dueño/a del negocio (opcional)</label><input id="fOwner" placeholder="Ej. Dayanis Pérez Soria"/>
       <label class="sub">Descripción</label><textarea id="fDesc" rows="2"></textarea>
       <label class="sub">Precio (vacío = por confirmar)</label><input id="fPrice" type="number" step="0.01" inputmode="decimal"/>
       <label class="sub">Moneda</label>
@@ -243,6 +245,8 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     if(known.indexOf(cat)>=0){$('fCat').value=cat;$('fCatNew').classList.add('hidden');$('fCatNew').value=''}
     else{$('fCat').value='__new__';$('fCatNew').classList.remove('hidden');$('fCatNew').value=cat}
     $('fDelivery').value=(p.delivery_mode==='pickup'||p.delivery_mode==='delivery')?p.delivery_mode:'both';
+    if($('fPickup'))$('fPickup').value=p.pickup_address||'';
+    if($('fOwner'))$('fOwner').value=p.owner_name||'';
     $('fPrice').value=(p.price_pending||!(p.price>0))?'':p.price;
     $('fCur').value=p.currency||'CUP';$('fStock').value='';
     editingPhoto=null;$('fPreview').classList.add('hidden');
@@ -265,7 +269,7 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
     var catVal=$('fCat').value;
     if(catVal==='__new__'){catVal=($('fCatNew').value.trim()||'General')}
     var body={id:$('fId').value||undefined,title:$('fTitle').value.trim(),category:catVal,delivery_mode:$('fDelivery').value,description:$('fDesc').value.trim(),
-      currency:$('fCur').value,price:priceVal===''?0:Number(priceVal),price_pending:priceVal===''};
+      currency:$('fCur').value,price:priceVal===''?0:Number(priceVal),price_pending:priceVal==='',pickup_address:($('fPickup')&&$('fPickup').value.trim())||'',owner_name:($('fOwner')&&$('fOwner').value.trim())||''};
     if(!body.title){toast('Título requerido');return}
     var d=await(await fetch(API+'/gestor/products',{method:'POST',headers:H(1),body:JSON.stringify(body)})).json();
     if(!d.ok){toast(d.error||'Error');return}
@@ -278,7 +282,7 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
   };
 
   function stLabel(s){
-    return ({requested:'Por confirmar',pending:'Confirmado',ready:'Listo',delivered:'Entregado',cancelled:'Cancelado'})[s]||s||'—';
+    return ({requested:'Por confirmar',pending:'Confirmado · preparando',ready:'Listo para entrega/recogida',delivered:'Entregado',cancelled:'Cancelado'})[s]||s||'—';
   }
   async function loadOrders(){
     var d=await(await fetch(API+'/orders',{headers:H()})).json();
@@ -316,11 +320,19 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
         '<div class="price">'+(o.currency||'')+' '+Number(o.total).toFixed(2)+'</div>'+
         '<div class="sub">'+(o.lines||[]).map(function(l){return l.qty+'× '+l.title}).join(', ')+'</div>'+actions+'</div>';
     }).join('');
-    el.querySelectorAll('.st').forEach(function(b){b.onclick=async function(){
+        el.querySelectorAll('.st').forEach(function(b){b.onclick=async function(){
       var s=b.getAttribute('data-s');
-      var d=await(await fetch(API+'/order/'+encodeURIComponent(b.getAttribute('data-id'))+'/status',{method:'POST',headers:H(1),body:JSON.stringify({status:s})})).json();
+      var payload={status:s};
+      if(s==='cancelled'){
+        var reason=prompt('Motivo breve de la cancelación (se notificará al cliente):','');
+        if(reason===null)return;
+        reason=String(reason).trim();
+        if(!reason){toast('Indica un motivo breve');return}
+        payload.reason=reason;
+      }
+      var d=await(await fetch(API+'/order/'+encodeURIComponent(b.getAttribute('data-id'))+'/status',{method:'POST',headers:H(1),body:JSON.stringify(payload)})).json();
       if(!d.ok){toast(d.error||'Error');return}
-      toast(s==='confirm'||s==='pending'?'Confirmado · vale emitido':(s==='cancelled'?'Cancelado':'Actualizado'));
+      toast(s==='confirm'||s==='pending'?'Confirmado · preparando entrega':(s==='ready'?'Marcado listo':(s==='cancelled'?'Cancelado · cliente notificado':'Actualizado')));
       loadOrders();loadProds();
     }});
     el.querySelectorAll('.del').forEach(function(b){b.onclick=async function(){

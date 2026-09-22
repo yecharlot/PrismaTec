@@ -31,10 +31,12 @@ type ltProduct struct {
 	SoldOutAt    string  `json:"sold_out_at,omitempty"`
 	Photo        bool    `json:"photo"`
 	Category     string  `json:"category,omitempty"`
-	DeliveryMode string  `json:"delivery_mode,omitempty"` // pickup | delivery | both
-	Source       string  `json:"source,omitempty"`
-	CreatedAt    string  `json:"created_at"`
-	UpdatedAt    string  `json:"updated_at"`
+	DeliveryMode   string `json:"delivery_mode,omitempty"` // pickup | delivery | both
+	PickupAddress  string `json:"pickup_address,omitempty"` // opcional por producto
+	OwnerName      string `json:"owner_name,omitempty"`     // dueño/a del negocio (opcional por producto)
+	Source         string `json:"source,omitempty"`
+	CreatedAt      string `json:"created_at"`
+	UpdatedAt      string `json:"updated_at"`
 }
 
 type ltInterest struct {
@@ -68,12 +70,16 @@ type ltOrder struct {
 	Currency    string   `json:"currency"`
 	Status       string   `json:"status"` // requested | pending | ready | delivered | cancelled
 	Address      string   `json:"address"`
-	DeliveryType string   `json:"delivery_type,omitempty"` // pickup | delivery
-	DeliveryAddr string   `json:"delivery_address,omitempty"`
-	GestorName   string   `json:"gestor_name"`
-	GestorPhone  string   `json:"gestor_phone"`
-	Note         string   `json:"note,omitempty"`
-	Ts           string   `json:"ts"`
+	DeliveryType  string `json:"delivery_type,omitempty"` // pickup | delivery
+	DeliveryAddr  string `json:"delivery_address,omitempty"`
+	DeliveryNote  string `json:"delivery_note,omitempty"` // hora aprox. / detalles entrega
+	PickupAddress string `json:"pickup_address,omitempty"`
+	OwnerName     string `json:"owner_name,omitempty"`
+	GestorName    string `json:"gestor_name"`
+	GestorPhone   string `json:"gestor_phone"`
+	Note          string `json:"note,omitempty"`
+	CancelReason  string `json:"cancel_reason,omitempty"`
+	Ts            string `json:"ts"`
 }
 
 type ltMsg struct {
@@ -856,6 +862,8 @@ func (n *NodoAlset) ltProducts(w http.ResponseWriter, r *http.Request, rest []st
 			dm = "both"
 		}
 		in.DeliveryMode = dm
+		in.PickupAddress = strings.TrimSpace(in.PickupAddress)
+		in.OwnerName = strings.TrimSpace(in.OwnerName)
 		// registrar categoría en el catálogo de la tienda
 		foundCat := false
 		for _, c := range st.Categories {
@@ -985,6 +993,7 @@ func (n *NodoAlset) ltPlaceOrder(w http.ResponseWriter, r *http.Request) {
 		Note           string `json:"note"`
 		DeliveryType   string `json:"delivery_type"` // pickup | delivery
 		DeliveryAddr   string `json:"delivery_address"`
+		DeliveryNote   string `json:"delivery_note"` // hora / detalles
 		Items       []struct {
 			ProductID string `json:"product_id"`
 			Qty       int    `json:"qty"`
@@ -1079,14 +1088,32 @@ func (n *NodoAlset) ltPlaceOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Dirección / dueño de recogida: del producto si existe, si no del perfil de la tienda
+	pickupAddr := strings.TrimSpace(st.Profile.Address)
+	ownerName := strings.TrimSpace(st.Profile.Name)
+	for _, l := range lines {
+		p := st.Products[l.ProductID]
+		if p == nil {
+			continue
+		}
+		if strings.TrimSpace(p.PickupAddress) != "" {
+			pickupAddr = strings.TrimSpace(p.PickupAddress)
+		}
+		if strings.TrimSpace(p.OwnerName) != "" {
+			ownerName = strings.TrimSpace(p.OwnerName)
+		}
+		break
+	}
 	st.SeqOrder++
 	ord := ltOrder{
 		ID: ltRand(8), Code: fmt.Sprintf("LT-%04d", st.SeqOrder),
 		Thread: in.Thread, ClientName: strings.TrimSpace(in.ClientName),
 		ClientPhone: strings.TrimSpace(in.ClientPhone),
 		Lines: lines, Total: total, Currency: currency,
-		Status: "requested", Address: st.Profile.Address,
+		Status: "requested", Address: pickupAddr,
 		DeliveryType: dtype, DeliveryAddr: daddr,
+		DeliveryNote: strings.TrimSpace(in.DeliveryNote),
+		PickupAddress: pickupAddr, OwnerName: ownerName,
 		GestorName: st.Profile.Name, GestorPhone: st.Profile.WhatsApp,
 		Note: strings.TrimSpace(in.Note),
 		Ts: time.Now().UTC().Format(time.RFC3339),
@@ -1207,9 +1234,11 @@ func (n *NodoAlset) ltOrderStatus(w http.ResponseWriter, r *http.Request, id str
 	var in struct {
 		Status string `json:"status"`
 		Thread string `json:"thread"`
+		Reason string `json:"reason"`
 	}
 	_ = json.NewDecoder(r.Body).Decode(&in)
 	in.Status = strings.TrimSpace(strings.ToLower(in.Status))
+	in.Reason = strings.TrimSpace(in.Reason)
 	if in.Status == "" {
 		ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "status"})
 		return
@@ -1263,17 +1292,51 @@ func (n *NodoAlset) ltOrderStatus(w http.ResponseWriter, r *http.Request, id str
 					ltJSON(w, 400, map[string]interface{}{"ok": false, "error": err})
 					return
 				}
-				o.Address = st.Profile.Address
+				// Datos de la gestora (perfil de la tienda) siempre en el vale
 				o.GestorName = st.Profile.Name
 				o.GestorPhone = st.Profile.WhatsApp
+				if o.PickupAddress == "" {
+					o.PickupAddress = st.Profile.Address
+				}
+				if o.Address == "" {
+					o.Address = o.PickupAddress
+					if o.Address == "" {
+						o.Address = st.Profile.Address
+					}
+				}
+				if o.OwnerName == "" {
+					o.OwnerName = st.Profile.Name
+				}
+				msg := fmt.Sprintf("✅ Pedido %s confirmado. Preparando entrega.", o.Code)
+				if in.Status == "ready" {
+					if o.DeliveryType == "delivery" {
+						msg = fmt.Sprintf("✅ Pedido %s listo. Muestre su vale al domicilio.", o.Code)
+					} else {
+						msg = fmt.Sprintf("✅ Pedido %s listo. Muestre su vale para recoger.", o.Code)
+					}
+				}
 				st.Messages = append(st.Messages, ltMsg{
 					ID: ltRand(6), Thread: o.Thread, From: "gestor",
-					Text: fmt.Sprintf("✅ Pedido %s confirmado. Ya puedes usar tu vale de recogida.", o.Code),
+					Text: msg,
 					Ts:   time.Now().UTC().Format(time.RFC3339),
 				})
 			} else if prev == "cancelled" || prev == "delivered" {
 				ltJSON(w, 400, map[string]interface{}{"ok": false, "error": "estado no permite esta acción"})
 				return
+			}
+			// pending → ready: mensaje de listo
+			if prev == "pending" && in.Status == "ready" {
+				o.GestorName = st.Profile.Name
+				o.GestorPhone = st.Profile.WhatsApp
+				msg := fmt.Sprintf("✅ Pedido %s listo. Muestre su vale para recoger.", o.Code)
+				if o.DeliveryType == "delivery" {
+					msg = fmt.Sprintf("✅ Pedido %s listo. Muestre su vale al domicilio.", o.Code)
+				}
+				st.Messages = append(st.Messages, ltMsg{
+					ID: ltRand(6), Thread: o.Thread, From: "gestor",
+					Text: msg,
+					Ts:   time.Now().UTC().Format(time.RFC3339),
+				})
 			}
 			o.Status = in.Status
 		} else if in.Status == "cancelled" {
@@ -1282,13 +1345,20 @@ func (n *NodoAlset) ltOrderStatus(w http.ResponseWriter, r *http.Request, id str
 				_ = ltApplyStock(st, o.Lines, -1)
 			}
 			o.Status = "cancelled"
+			if gestor && in.Reason != "" {
+				o.CancelReason = in.Reason
+			}
 			who := "client"
 			if gestor {
 				who = "gestor"
 			}
+			txt := fmt.Sprintf("Pedido %s cancelado.", o.Code)
+			if o.CancelReason != "" {
+				txt = fmt.Sprintf("Pedido %s cancelado. Motivo: %s", o.Code, o.CancelReason)
+			}
 			st.Messages = append(st.Messages, ltMsg{
 				ID: ltRand(6), Thread: o.Thread, From: who,
-				Text: fmt.Sprintf("Pedido %s cancelado.", o.Code),
+				Text: txt,
 				Ts:   time.Now().UTC().Format(time.RFC3339),
 			})
 		} else if in.Status == "delivered" {
@@ -1304,12 +1374,15 @@ func (n *NodoAlset) ltOrderStatus(w http.ResponseWriter, r *http.Request, id str
 
 		rev := ltBump(st)
 		_ = saveLT(ltTen(r), st)
-		n.ltNotify("order", map[string]interface{}{"rev": rev, "order_id": o.ID, "code": o.Code, "status": o.Status, "thread": o.Thread, "tenant": ltTen(r)})
+		n.ltNotify("order", map[string]interface{}{"rev": rev, "order_id": o.ID, "code": o.Code, "status": o.Status, "thread": o.Thread, "cancel_reason": o.CancelReason, "tenant": ltTen(r)})
 		if prev == "requested" && (o.Status == "pending" || o.Status == "ready") {
 			n.ltNotify("catalog", map[string]interface{}{"rev": rev, "action": "stock_after_confirm", "tenant": ltTen(r)})
 		}
-		if o.Status == "cancelled" && (prev == "pending" || prev == "ready") {
-			n.ltNotify("catalog", map[string]interface{}{"rev": rev, "action": "stock_after_cancel", "tenant": ltTen(r)})
+		if o.Status == "cancelled" {
+			n.ltNotify("chat", map[string]interface{}{"rev": rev, "thread": o.Thread, "from": "gestor", "tenant": ltTen(r)})
+			if prev == "pending" || prev == "ready" {
+				n.ltNotify("catalog", map[string]interface{}{"rev": rev, "action": "stock_after_cancel", "tenant": ltTen(r)})
+			}
 		}
 		ltJSON(w, 200, map[string]interface{}{"ok": true, "order": *o, "rev": rev})
 		return

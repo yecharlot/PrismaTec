@@ -170,6 +170,8 @@ h2.section{font-family:"Instrument Serif",Georgia,serif;font-size:1.35rem;font-w
       <div id="deliveryAddrWrap" class="hidden">
         <label class="sub">Dirección de entrega</label>
         <textarea id="cDeliveryAddr" rows="2" placeholder="Calle, número, municipio, referencias…"></textarea>
+        <label class="sub">Detalles de entrega (hora aproximada, etc.)</label>
+        <textarea id="cDeliveryNote" rows="2" placeholder="Ej. entre 4 y 6 pm, llamar al llegar…"></textarea>
       </div>
       <label class="sub">Nombre</label><input id="cName"/>
       <label class="sub">Teléfono</label><input id="cPhone" inputmode="tel"/>
@@ -405,7 +407,7 @@ function ico(name){
     if(!ids.length){toast('Carrito vacío');return}
     syncDeliveryOpts();
     if(deliveryType==='delivery'&&!($('cDeliveryAddr').value||'').trim()){toast('Indica la dirección de entrega');return}
-    var d=await(await fetch(API+'/order',{method:'POST',headers:{'Content-Type':'application/json','X-LaTati-Thread':sid},body:JSON.stringify({thread:sid,client_name:name,client_phone:phone,note:$('cNote').value.trim(),delivery_type:deliveryType,delivery_address:($('cDeliveryAddr').value||'').trim(),items:ids.map(function(id){return{product_id:id,qty:1}})})})).json();
+    var d=await(await fetch(API+'/order',{method:'POST',headers:{'Content-Type':'application/json','X-LaTati-Thread':sid},body:JSON.stringify({thread:sid,client_name:name,client_phone:phone,note:$('cNote').value.trim(),delivery_type:deliveryType,delivery_address:($('cDeliveryAddr').value||'').trim(),delivery_note:($('cDeliveryNote')&&$('cDeliveryNote').value||'').trim(),items:ids.map(function(id){return{product_id:id,qty:1}})})})).json();
     if(!d.ok){toast(d.error||'Error');return}
     cart={};saveCart();renderVale(d.order);show('vale');toast('Solicitud enviada');loadCatalog(true);
   };
@@ -417,28 +419,69 @@ function ico(name){
     fillProfileForm();toast('Datos guardados');show('catalog');
   };
 
-  function statusLabel(s){return ({requested:'Esperando confirmación',pending:'Confirmado · vale listo',ready:'Listo para recoger',delivered:'Entregado',cancelled:'Cancelado'})[(s||'').toLowerCase()]||s||'—'}
+  function statusLabel(s,o){
+    s=(s||'').toLowerCase();
+    if(s==='requested')return 'Esperando confirmación';
+    if(s==='pending')return 'Pedido confirmado · Preparando entrega';
+    if(s==='ready'){
+      if(o&&(o.delivery_type||'')==='delivery')return 'Entrega lista · Muestre su vale al domicilio';
+      return 'Entrega lista · Muestre su vale para recoger';
+    }
+    if(s==='delivered')return 'Entregado';
+    if(s==='cancelled')return 'Cancelado';
+    return s||'—';
+  }
   function renderVale(o){
     currentOrder=o||null;
+    if(!o){if($('valeBox'))$('valeBox').innerHTML='';return}
     var st=(o.status||'').toLowerCase();
+    // Pedido cancelado: no mostrar vale; volver al flujo normal
+    if(st==='cancelled'){
+      currentOrder=null;
+      var reason=o.cancel_reason||'';
+      if($('valeBox'))$('valeBox').innerHTML='';
+      toast(reason?('Pedido cancelado: '+reason):'Pedido cancelado');
+      show('catalog');
+      loadMyOrders();
+      return;
+    }
     var isVale=st==='pending'||st==='ready'||st==='delivered';
     var lines=(o.lines||[]).map(function(l){
       var img=l.photo?API+'/photo/'+l.product_id:'';
       return '<div class="line">'+(img?'<img src="'+img+'" alt="">':'')+'<div><strong>'+esc(l.title)+'</strong><div class="sub">×'+l.qty+' · '+(l.currency||'')+' '+Number(l.price).toFixed(2)+'</div></div></div>';
     }).join('');
-    if($('valeHint'))$('valeHint').textContent=isVale?'Presenta este vale al recoger.':(st==='requested'?'La gestora confirma disponibilidad.':'');
+    var hint='';
+    if(st==='requested')hint='La gestora confirma disponibilidad.';
+    else if(st==='pending')hint='Pedido confirmado. Preparando entrega.';
+    else if(st==='ready'&&(o.delivery_type||'')==='delivery')hint='Entrega lista. Muestre este vale al domicilio.';
+    else if(st==='ready')hint='Entrega lista. Muestre este vale para recoger.';
+    else if(st==='delivered')hint='Pedido entregado.';
+    if($('valeHint'))$('valeHint').textContent=hint;
     var actions=(st==='requested'||st==='pending'||st==='ready')?'<button type="button" class="btn btn-ghost" id="btnCancelReq" style="margin-top:.75rem">'+(st==='requested'?'Cancelar solicitud':'Cancelar pedido')+'</button>':'';
-    $('valeBox').innerHTML='<div class="vale-card panel"><div style="font-family:Instrument Serif,serif;font-size:1.4rem">'+esc(o.code)+'</div><span class="pill" style="margin-top:.4rem">'+esc(statusLabel(st))+'</span>'+lines+
+    var gestorBlock='';
+    var gName=o.gestor_name||o.owner_name||'';
+    var gPhone=o.gestor_phone||'';
+    if(gName||gPhone){
+      gestorBlock='<div class="sub" style="margin-top:.65rem;padding-top:.55rem;border-top:1px solid var(--line)"><strong>Gestora / negocio</strong><br>'+esc(gName)+(gPhone?(' · '+esc(gPhone)):'')+'</div>';
+    }
+    var placeBlock='';
+    if((o.delivery_type||'')==='delivery'){
+      placeBlock='<div class="sub" style="margin-top:.4rem"><strong>Domicilio:</strong> '+esc(o.delivery_address||'—')+'</div>';
+      if(o.delivery_note)placeBlock+='<div class="sub">Detalles: '+esc(o.delivery_note)+'</div>';
+    } else {
+      var addr=o.pickup_address||o.address||'';
+      if(addr)placeBlock='<div class="sub" style="margin-top:.4rem"><strong>Recogida:</strong> '+esc(addr)+'</div>';
+      if(o.owner_name&&o.owner_name!==gName)placeBlock+='<div class="sub">Dueño/a: '+esc(o.owner_name)+'</div>';
+    }
+    $('valeBox').innerHTML='<div class="vale-card panel"><div style="font-family:Instrument Serif,serif;font-size:1.4rem">'+esc(o.code)+'</div><span class="pill" style="margin-top:.4rem">'+esc(statusLabel(st,o))+'</span>'+lines+
       '<div style="color:var(--gold);font-weight:700;margin-top:.75rem;font-size:1.05rem">Total · '+(o.currency||'')+' '+Number(o.total).toFixed(2)+'</div>'+
       '<div class="sub" style="margin-top:.5rem">'+esc(o.client_name)+' · '+esc(o.client_phone)+'</div>'+
-      (o.delivery_type==='delivery'
-        ?'<div class="sub">Domicilio: '+esc(o.delivery_address||'—')+'</div>'
-        :(o.address?'<div class="sub">Recogida: '+esc(o.address)+'</div>':''))+actions+'</div>';
+      placeBlock+gestorBlock+actions+'</div>';
     var bc=$('btnCancelReq');
     if(bc)bc.onclick=async function(){
       var d=await(await fetch(API+'/order/'+encodeURIComponent(o.id||o.code)+'/status',{method:'POST',headers:{'Content-Type':'application/json','X-LaTati-Thread':sid},body:JSON.stringify({status:'cancelled',thread:sid})})).json();
       if(!d.ok){toast(d.error||'No se pudo cancelar');return}
-      renderVale(d.order);toast('Cancelado');loadMyOrders();
+      renderVale(d.order);loadMyOrders();
     };
   }
   async function refreshCurrentVale(forceToast){
@@ -453,10 +496,14 @@ function ico(name){
       var st=(d.order.status||'').toLowerCase();
       renderVale(d.order);
       if(st&&st!==prev){
-        if(st==='pending'||st==='ready')toast('¡Pedido confirmado! Vale listo');
-        else if(st==='cancelled')toast('Pedido cancelado');
+        if(st==='pending')toast('Pedido confirmado · Preparando entrega');
+        else if(st==='ready')toast(statusLabel(st,d.order));
+        else if(st==='cancelled'){
+          var reason=d.order.cancel_reason||'';
+          toast(reason?('Pedido cancelado: '+reason):'Pedido cancelado');
+        }
         else if(st==='delivered')toast('Pedido entregado');
-        else toast(statusLabel(st));
+        else toast(statusLabel(st,d.order));
       }
     }catch(e){}
   }
@@ -465,7 +512,7 @@ function ico(name){
     var list=d.items||[],el=$('myOrders');
     if(!list.length){el.innerHTML='<div class="empty"><strong>Sin pedidos</strong>Cuando solicites, aparecerán aquí</div>';return}
     el.innerHTML=list.map(function(o){
-      return '<div class="panel"><strong>'+esc(o.code)+'</strong><div class="sub" style="margin:.25rem 0">'+esc(statusLabel(o.status))+'</div><div style="color:var(--gold);font-weight:700">'+(o.currency||'')+' '+Number(o.total).toFixed(2)+'</div><button type="button" class="btn btn-ghost see" data-id="'+o.id+'" style="margin-top:.55rem">Ver detalle</button></div>';
+      return '<div class="panel"><strong>'+esc(o.code)+'</strong><div class="sub" style="margin:.25rem 0">'+esc(statusLabel(o.status,o))+'</div><div style="color:var(--gold);font-weight:700">'+(o.currency||'')+' '+Number(o.total).toFixed(2)+'</div><button type="button" class="btn btn-ghost see" data-id="'+o.id+'" style="margin-top:.55rem">Ver detalle</button></div>';
     }).join('');
     el.querySelectorAll('.see').forEach(function(b){b.onclick=async function(){
       var d=await(await fetch(API+'/order/'+b.getAttribute('data-id')+'?thread='+encodeURIComponent(sid))).json();
@@ -548,9 +595,10 @@ function ico(name){
             refreshCurrentVale(true);
           } else if(myThread&&(d.status||oid)){
             // pedido nuestro aunque no estemos en vale: toast sutil al confirmar
-            if((d.status||'').toLowerCase()==='pending'||(d.status||'').toLowerCase()==='ready'){
-              toast('¡Pedido confirmado! Revisa Vales');
-            }
+            var ns=(d.status||'').toLowerCase();
+            if(ns==='pending')toast('Pedido confirmado · Preparando entrega');
+            else if(ns==='ready')toast('Entrega lista · revisa tu vale');
+            else if(ns==='cancelled')toast(d.cancel_reason?('Pedido cancelado: '+d.cancel_reason):'Pedido cancelado');
           }
         }catch(e){refreshCurrentVale(true)}
       }
