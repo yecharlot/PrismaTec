@@ -38,6 +38,15 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
 .pwa-install.show{display:inline-flex}
 .pwa-install.hidden-forced{display:none!important}
 
+
+.wake-overlay{position:fixed;inset:0;z-index:100;background:rgba(12,10,15,.88);display:none;align-items:center;justify-content:center;padding:1.5rem;text-align:center}
+.wake-overlay.show{display:flex}
+.wake-box{max-width:320px;background:#1a1520;border:1px solid rgba(232,180,200,.35);border-radius:16px;padding:1.25rem 1.1rem;color:#f5eef2}
+.wake-box strong{display:block;margin-bottom:.45rem;font-size:1.05rem}
+.wake-box p{font-size:.85rem;color:#b8a8b0;line-height:1.45;margin:0}
+.wake-spin{width:28px;height:28px;border:3px solid rgba(232,180,200,.25);border-top-color:#e8b4c8;border-radius:50%;margin:0 auto .85rem;animation:wakeSpin .8s linear infinite}
+@keyframes wakeSpin{to{transform:rotate(360deg)}}
+
 </style>
 </head>
 <body>
@@ -150,6 +159,7 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
   <button type="button" data-v="cfg"><span id="iCfg"></span>Perfil</button>
 </nav>
 <button type="button" class="pwa-install" id="btnPwaInstall" aria-label="Instalar app">⬇ Instala App</button>
+<div class="wake-overlay" id="wakeOverlay" aria-live="polite"><div class="wake-box"><div class="wake-spin"></div><strong>Despertando el servidor…</strong><p>El plan gratuito de Render duerme tras 15 min sin uso. En unos segundos vuelve. No cierres la app.</p></div></div>
 <div class="toast" id="toast"></div>
 <script>
 
@@ -167,6 +177,65 @@ input,textarea,select{width:100%;background:#120a14;border:1px solid var(--line)
   }
 
 (function(){
+
+  // —— Resiliencia Render Free (cold start ~60s) ——
+  (function(){
+    var wakeEl=null;
+    function showWake(on){
+      if(!wakeEl)wakeEl=document.getElementById('wakeOverlay');
+      if(!wakeEl)return;
+      wakeEl.classList.toggle('show',!!on);
+    }
+    var origFetch=window.fetch.bind(window);
+    window.fetch=async function(input, init){
+      init=init||{};
+      var attempts=0, max=4, lastErr=null;
+      while(attempts<max){
+        attempts++;
+        var ctrl=typeof AbortController!=='undefined'?new AbortController():null;
+        var timer=null;
+        try{
+          if(ctrl){
+            init={...init, signal:ctrl.signal};
+            // cold start can take ~60s on free plan
+            timer=setTimeout(function(){try{ctrl.abort()}catch(e){}}, attempts===1?25000:70000);
+          }
+          if(attempts>1)showWake(true);
+          var res=await origFetch(input, init);
+          if(timer)clearTimeout(timer);
+          // Render sometimes returns 502/503/504 while spinning up
+          if(res && (res.status===502||res.status===503||res.status===504||res.status===408) && attempts<max){
+            showWake(true);
+            await new Promise(function(r){setTimeout(r, 1500*attempts)});
+            continue;
+          }
+          showWake(false);
+          return res;
+        }catch(e){
+          if(timer)clearTimeout(timer);
+          lastErr=e;
+          var name=(e&&e.name)||'';
+          var msg=String((e&&e.message)||e||'');
+          var retryable=name==='AbortError'||/failed|network|fetch|load|timeout/i.test(msg);
+          if(retryable && attempts<max){
+            showWake(true);
+            await new Promise(function(r){setTimeout(r, 2000*attempts)});
+            continue;
+          }
+          showWake(false);
+          throw e;
+        }
+      }
+      showWake(false);
+      throw lastErr||new Error('servidor no responde');
+    };
+    // Ping ligero al abrir (ayuda a despertar sin quemar horas continuamente)
+    try{
+      var base=typeof API!=='undefined'?API:'/api/latati';
+      origFetch(base.replace(/\/$/,'')+'/',{method:'GET',cache:'no-store'}).catch(function(){});
+    }catch(e){}
+  })();
+
   function detectTenant(){
     var q=new URLSearchParams(location.search).get('t');
     if(q)return String(q).toLowerCase().replace(/[^a-z0-9-]/g,'').replace(/^gestion-/,'')||'latati';
